@@ -112,3 +112,22 @@ CI(`.github/workflows/test.yml`)의 `server` job 이 이 둘을 돌린다.
 
 합의를 절차로 요구하지는 않는다(2026-08-27, `_project/decisions/023`). 네 사람이 **같은 공간에서
 일하므로 필요하면 그 자리에서 말로 맞춘다.** 규칙이 할 일은 "무엇이 깨지는지 먼저 보라"까지다.
+
+---
+
+## 6. 배포 전제 — `../docs/infra-runbook.md`
+
+운영은 **단일 g4dn.xlarge + k3s**(AWS 서울, 담당 정성윤)다. 로컬에서 도는 것과 거기서 뜨는 것은 다르다.
+**파이프라인 배선·설정·HTTP 경계를 고칠 때는 런북 12·16·19장을 먼저 읽는다.**
+
+| 런북 | `server/` 가 지켜야 하는 것 |
+|---|---|
+| 12-2 | DB 접속은 k8s 시크릿 `db-credentials` 의 **`DATABASE_URL` 하나**로 들어온다. 개별 `POSTGRES_*` 는 주입되지 않는다 |
+| 16-1 | 주입되는 환경변수는 `DATABASE_URL` · `ELASTICSEARCH_URL=http://elasticsearch:9200` · `OLLAMA_URL=http://ollama:11434` · `HF_HOME=/models` 다. **`core/config.py` 가 읽는 키와 이 목록이 어긋나면 배포가 조용히 기본값으로 뜬다** |
+| 16-1 | 의존 서비스 주소는 호스트가 아니라 **같은 네임스페이스의 서비스 이름**이다. `localhost:9200` 을 기본값으로 굳히지 않는다 |
+| 19 | `GET /health` 의 **`spokes` 배열이 배포 검증 항목**이다(9번). 필드 이름·형태를 바꾸면 런북 19장이 깨진다. 스포크가 안 꽂히면 조용히 501 로 남는 것이 설계된 동작이다(`decisions/024`) |
+| 16-2 | 외부에 열리는 것은 Caddy 를 지나는 `server.solidbob.cloud` **443 하나**다. 새 포트가 필요한 설계는 인프라 변경이므로 정성윤과 함께 정한다 |
+| 만들지 말 것 | Kinesis·ElastiCache·ALB 를 전제한 코드를 쓰지 않는다. 캐시는 3.1절대로 **인메모리 LRU** 다 |
+
+> ⚠ **`../.env.example` 에 `OLLAMA_URL`·`HF_HOME` 키가 없다**(2026-09-04 확인). 런북 16-1 은 둘을 주입한다.
+> `.env.example` 은 자격증명 보호 훅(`protect-files.sh`)이 편집을 막으므로 사람이 직접 채운다 — SEC-2 체크리스트 항목이다.

@@ -58,3 +58,16 @@ interface RecommendationCard {
 ## 4. 테스트
 
 - `apps/dashboard/test/`에 컴포넌트 테스트 — 상세 규칙은 `.claude/rules/testing.md` 참고.
+
+## 5. 배포 전제 — `docs/infra-runbook.md`
+
+운영 인프라는 단일 EC2 + k3s + Caddy 다. **API 주소나 WebSocket 엔드포인트를 정하기 전에 런북 16-2·18장을 읽는다.**
+
+- 프론트가 붙는 주소는 **`https://server.solidbob.cloud` 하나**다(16-2·18). Caddy 가 443 만 열고 나머지는
+  클러스터 내부 ClusterIP 라, `elasticsearch:9200`·`ollama:11434` 를 브라우저에서 직접 부를 수 없다.
+- Cloudflare 는 **DNS 전용(회색 구름)** 이다(18장). 프록시를 켜면 Let's Encrypt 인증서 발급이 끊긴다 —
+  DNS·인증서에 걸리는 문제는 정성윤에게 넘긴다.
+- 개발은 로컬 `infra/docker-compose.yml`(PostgreSQL·ES) + `server/` 로 띄운다. **운영 주소를 개발 기본값으로 굳히지 않는다** —
+  주소는 환경변수로 빼고, 로컬 기본값은 로컬 것으로 둔다.
+- ⚠ `services/gateway`(WebSocket)는 **아직 코드가 0줄**이다(`_project/STATE.md`). 게이트웨이 주소는 확정되지 않았으므로
+  `lib/ws/gatewayClient.ts` 에 엔드포인트를 상수로 박기 전에 확인한다.
