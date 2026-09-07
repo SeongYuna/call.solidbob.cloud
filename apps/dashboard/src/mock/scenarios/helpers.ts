@@ -28,12 +28,14 @@ export function utterance(
   text: string,
   utterance_end_ms: number,
   maskType: TranscriptEvent["masked"][number]["type"] | null,
+  plain: string | null = null,
 ): TranscriptEvent {
   return {
     call_id: callId,
     segment_id,
     speaker,
     text,
+    ...(plain === null ? {} : { plain_text: plain }),
     masked:
       maskType === null ? [] : [{ type: maskType, span: asteriskSpan(text) }],
     is_final: true,

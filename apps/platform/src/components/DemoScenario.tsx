@@ -15,17 +15,69 @@ import {
   type DemoSpeaker,
 } from "../mock/demoScenario";
 
-const MASK_MARKS = [
-  "봉은사로 **길 **호",
-  "봉은사로 **길 **",
-  "010-****-6789",
+const MASK_FIELDS = [
+  {
+    masked: "봉은사로 **길 **호",
+    plain: "봉은사로 12길 34호",
+    field: "상세주소",
+  },
+  {
+    masked: "봉은사로 **길 **",
+    plain: "봉은사로 12길 34",
+    field: "상세주소",
+  },
+  {
+    masked: "010-****-6789",
+    plain: "010-1234-6789",
+    field: "전화번호",
+  },
 ] as const;
 
-const PLAIN_MARKS = [
-  "봉은사로 12길 34호",
-  "봉은사로 12길 34",
-  "010-1234-6789",
-] as const;
+type MaskField = (typeof MASK_FIELDS)[number];
+
+function findNextMask(
+  text: string,
+): { at: number; field: MaskField } | null {
+  let hit: { at: number; field: MaskField } | null = null;
+  for (const field of MASK_FIELDS) {
+    const at = text.indexOf(field.masked);
+    if (at === -1) {
+      continue;
+    }
+    if (hit === null || at < hit.at) {
+      hit = { at, field };
+    }
+  }
+  return hit;
+}
+
+function maskSpanId(turnAt: number, occurrence: number): string {
+  return `${turnAt}:${occurrence}`;
+}
+
+function allMaskSpanIds(): string[] {
+  const ids: string[] = [];
+  for (const turn of DEMO_TURNS) {
+    let remaining = turn.body;
+    let occurrence = 0;
+    while (remaining.length > 0) {
+      const hit = findNextMask(remaining);
+      if (hit === null) {
+        break;
+      }
+      ids.push(maskSpanId(turn.at, occurrence));
+      occurrence += 1;
+      remaining = remaining.slice(hit.at + hit.field.masked.length);
+    }
+  }
+  return ids;
+}
+
+function logMaskReveal(field: string, turnAt: number): void {
+  console.info(
+    `[열람 기록] ${field} 필드 열람 - ${formatClock(turnAt)} 시점`,
+  );
+}
 
 function formatClock(seconds: number): string {
   const total = Math.max(0, Math.min(DEMO_DURATION_SEC, Math.floor(seconds)));
@@ -48,21 +100,31 @@ function prefersReducedMotion(): boolean {
   return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 }
 
-function highlight(text: string, marks: readonly string[]): ReactNode {
-  let remaining = text;
+function MaskedDemoText({
+  body,
+  turnAt,
+  authorized,
+  revealAll,
+  openedIds,
+  onToggle,
+}: {
+  body: string;
+  turnAt: number;
+  authorized: boolean;
+  revealAll: boolean;
+  openedIds: ReadonlySet<string>;
+  onToggle: (
+    id: string,
+    field: string,
+    currentlyOpen: boolean,
+    turnAt: number,
+  ) => void;
+}): ReactNode {
+  let remaining = body;
   const nodes: ReactNode[] = [];
-  let key = 0;
+  let occurrence = 0;
   while (remaining.length > 0) {
-    let hit: { at: number; mark: string } | null = null;
-    for (const mark of marks) {
-      const at = remaining.indexOf(mark);
-      if (at === -1) {
-        continue;
-      }
-      if (hit === null || at < hit.at) {
-        hit = { at, mark };
-      }
-    }
+    const hit = findNextMask(remaining);
     if (hit === null) {
       nodes.push(remaining);
       break;
@@ -70,13 +132,45 @@ function highlight(text: string, marks: readonly string[]): ReactNode {
     if (hit.at > 0) {
       nodes.push(remaining.slice(0, hit.at));
     }
-    nodes.push(
-      <span key={key} className="rounded-sm bg-mask px-1 py-0.5 font-medium">
-        {hit.mark}
-      </span>,
-    );
-    key += 1;
-    remaining = remaining.slice(hit.at + hit.mark.length);
+    const id = maskSpanId(turnAt, occurrence);
+    const open = authorized && (revealAll || openedIds.has(id));
+    const className = open
+      ? "rounded-sm bg-amber/30 px-1 py-0.5 font-medium text-fg ring-1 ring-amber/50"
+      : "rounded-sm bg-mask px-1 py-0.5 font-medium";
+    const label = `${hit.field.field}${open ? " 원문" : " 마스킹"}`;
+    if (!authorized) {
+      nodes.push(
+        <span
+          key={id}
+          className={`${className} cursor-default`}
+          data-mask-span={id}
+          data-mask-open="false"
+          data-mask-clickable="false"
+        >
+          {hit.field.masked}
+        </span>,
+      );
+    } else {
+      nodes.push(
+        <button
+          key={id}
+          type="button"
+          className={`${className} m-0 inline cursor-pointer border-0 p-0 align-baseline underline decoration-dotted decoration-amber/80 underline-offset-2 hover:bg-amber/20`}
+          data-mask-span={id}
+          data-mask-open={open ? "true" : "false"}
+          data-mask-clickable="true"
+          aria-pressed={open}
+          aria-label={`${label} 열람 전환`}
+          onClick={() => {
+            onToggle(id, hit.field.field, open, turnAt);
+          }}
+        >
+          {open ? hit.field.plain : hit.field.masked}
+        </button>,
+      );
+    }
+    occurrence += 1;
+    remaining = remaining.slice(hit.at + hit.field.masked.length);
   }
   return nodes;
 }
@@ -91,8 +185,39 @@ export function DemoScenario(): ReactElement {
   const [time, setTime] = useState(0);
   const [playing, setPlaying] = useState(false);
   const [authorized, setAuthorized] = useState(false);
-  const [revealed, setRevealed] = useState(false);
+  const [revealAll, setRevealAll] = useState(false);
+  const [openedIds, setOpenedIds] = useState<ReadonlySet<string>>(
+    () => new Set(),
+  );
   const [includeOriginal, setIncludeOriginal] = useState(false);
+
+  const toggleSpan = useCallback(
+    (id: string, field: string, currentlyOpen: boolean, turnAt: number) => {
+      if (!authorized) {
+        return;
+      }
+      if (currentlyOpen) {
+        if (revealAll) {
+          setRevealAll(false);
+          setOpenedIds(new Set(allMaskSpanIds().filter((key) => key !== id)));
+        } else {
+          setOpenedIds((current) => {
+            const next = new Set(current);
+            next.delete(id);
+            return next;
+          });
+        }
+        return;
+      }
+      setOpenedIds((current) => {
+        const next = new Set(current);
+        next.add(id);
+        return next;
+      });
+      logMaskReveal(field, turnAt);
+    },
+    [authorized, revealAll],
+  );
 
   const setClock = useCallback((next: number) => {
     const clipped = Math.max(0, Math.min(DEMO_DURATION_SEC, next));
@@ -272,6 +397,7 @@ export function DemoScenario(): ReactElement {
                 <button
                   type="button"
                   className="rounded-full border border-line px-3 py-1 text-[12px] text-fg"
+                  aria-pressed={authorized}
                   onClick={() => {
                     setAuthorized(true);
                   }}
@@ -282,11 +408,17 @@ export function DemoScenario(): ReactElement {
                   type="button"
                   className="rounded-full border border-line px-3 py-1 text-[12px] text-fg disabled:opacity-40"
                   disabled={!authorized}
+                  aria-pressed={revealAll}
                   onClick={() => {
-                    setRevealed((value) => !value);
+                    if (revealAll) {
+                      setRevealAll(false);
+                      setOpenedIds(new Set());
+                      return;
+                    }
+                    setRevealAll(true);
                   }}
                 >
-                  원본 보기
+                  원문 보기
                 </button>
               </div>
               <p className="mt-3 m-0 text-[12px] leading-relaxed text-muted">
@@ -302,8 +434,6 @@ export function DemoScenario(): ReactElement {
                 </li>
               ) : (
                 visibleTurns.map((turn) => {
-                  const text = revealed ? turn.bodyPlain : turn.body;
-                  const marks = revealed ? PLAIN_MARKS : MASK_MARKS;
                   return (
                     <li
                       key={turn.at}
@@ -317,7 +447,14 @@ export function DemoScenario(): ReactElement {
                         <span className="mr-2 text-[12px] font-semibold text-muted">
                           {turn.speaker}
                         </span>
-                        {highlight(text, marks)}
+                        <MaskedDemoText
+                          body={turn.body}
+                          turnAt={turn.at}
+                          authorized={authorized}
+                          revealAll={revealAll}
+                          openedIds={openedIds}
+                          onToggle={toggleSpan}
+                        />
                         {turn.translation !== undefined ? (
                           <span className="mt-2 block border-l-2 border-live pl-3 text-[13.5px] text-muted">
                             {turn.translation}

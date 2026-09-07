@@ -31,7 +31,7 @@ F·G·H·I 동결 판정은 **6주차 종료 시점**이다(그 전까지는 적
 | `server/` | 장민석 | 엔드포인트 14개 · 테스트 321 + integration 3. **모델 없이 할 수 있는 일은 끝났다.** 남은 501 은 `POST /hub/recommendations`(트리거 대기) 하나 |
 | `ai/` | 류준 | 검색(BM25+nori) ✅ · 트리거 v1 ✅ · B-0 v1 ✅ · 평가 하네스 ✅. 분류기는 학습했으나 v1 을 못 넘어 기본값에서 뺐다. 컴플라이언스(6주차) 미착수 |
 | 인프라 · CI | 정성윤 | CI 3종 · main 보호 · **사이트 배포 ✅ `https://docs.solidbob.cloud`**(DNS 는 클라우드플레어 — `decisions/102~104`). **저장소 소유권 `SeongYuna` 로 이전 완료**(09-03, `decisions/106` — 룰셋·Pages·협업자 전부 보존). **프론트 2종 배포 ✅ 정성윤 Vercel + Git 연동** — 소개 `www.solidbob.cloud`(`apps/platform`) · 데모 `call.solidbob.cloud`(`apps/dashboard`, mock 모드). 조서희 계정에서 무중단 이관(TXT 검증). ⚠ **`main` 머지로 자동배포가 실제로 도는지는 아직 안 봤다.** **운영 AWS 는 코드까지만** — `infra/terraform/`(EC2+RDS+ES, `validate` 통과) · `infra/docker/`(Dockerfile·compose.prod·Caddyfile) 를 09-03 에 썼으나 **`apply` 안 함, 뜬 리소스 0개**(자격증명 미설정). 도커 빌드도 미검증(데몬 없음). **A(STT) 는 `services/` 디렉터리 자체가 없다 — 코드 0줄.** 배치 전사 `scripts/transcribe_batch.py` 는 결함 3건 수정했으나 **실제 API 경로 여전히 미검증** — 이 머신에 오디오도 `.venv` 도 없다 |
-| `apps/` | 조서희 | 대시보드: `/` = 대기화면 ⇄ 어시스트/요약. 대기화면 테마 토글(랜딩 `ThemeToggle` 재사용). 비밀번호는 「재설정」만. 랜딩: 다크 레퍼런스 + 해/달 토글. |
+| `apps/` | 조서희 | 대시보드: `/` = 대기화면 ⇄ 어시스트/요약. `ko-masking`은 권한 확인 후 스팬 클릭으로 원문 토글. `ko-grant-delay` 욕설은 별표 마스킹+배너. 랜딩: 다크 레퍼런스 + 해/달 토글. |
 
 ---
 

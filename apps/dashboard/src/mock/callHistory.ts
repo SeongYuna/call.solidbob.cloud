@@ -88,6 +88,7 @@ function playbackFromScenario(
       segment_id: index + 1,
       speaker: event.speaker,
       text: event.text,
+      ...(event.plain_text === undefined ? {} : { plain_text: event.plain_text }),
       masked: event.masked,
       is_final: event.is_final,
       utterance_end_ms: event.utterance_end_ms,
@@ -184,6 +185,11 @@ const HISTORY_META: Record<
     started_at: "2026-08-31T09:12:00+09:00",
     inquiry_type: "시설 민원 · 콜가드",
     hex: "c6a1",
+  },
+  "ko-grant-delay": {
+    started_at: "2026-08-31T15:20:00+09:00",
+    inquiry_type: "고객 응대 · 콜가드 감지",
+    hex: "d9c2",
   },
   "ko-accent": {
     started_at: "2026-08-31T10:04:00+09:00",

@@ -614,6 +614,44 @@ button {
   gap: 12px;
 }
 
+.transcript-head-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.mask-auth-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.mask-auth-btn {
+  padding: 5px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-pill);
+  background: #fff;
+  color: var(--text);
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  word-break: keep-all;
+  cursor: pointer;
+}
+
+.mask-auth-btn[aria-pressed="true"] {
+  background: #f5f4f0;
+  border-color: #c8c6be;
+}
+
+.mask-auth-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
 .transcript-search {
   display: flex;
   align-items: center;
@@ -1039,6 +1077,10 @@ button {
   background: #f8d4d4;
 }
 
+.compliance-banner.customer-risk.is-elevated {
+  box-shadow: inset 3px 0 0 #8f2a29;
+}
+
 .compliance-banner.customer-risk.is-distress {
   background: #eef0fd;
 }
@@ -1075,17 +1117,34 @@ button {
   min-width: 0;
 }
 
-.utterance-bubble.has-pii-lock {
+.utterance-bubble.has-pii-lock,
+.utterance-bubble.has-abuse-lock {
   padding-right: 22px;
 }
 
-.pii-lock {
+.utterance-bubble.has-pii-lock.has-abuse-lock {
+  padding-right: 38px;
+}
+
+.pii-lock,
+.abuse-lock {
   position: absolute;
   top: 0;
   right: 0;
   display: inline-flex;
-  color: var(--muted);
   cursor: default;
+}
+
+.pii-lock {
+  color: var(--muted);
+}
+
+.abuse-lock {
+  color: #8f2a29;
+}
+
+.utterance-bubble.has-pii-lock.has-abuse-lock .abuse-lock {
+  right: 16px;
 }
 
 @keyframes compliance-in {
@@ -1120,10 +1179,19 @@ button {
   background: #fdebeb;
   border: 0;
   color: #8f2a29;
+  font-family: inherit;
   font-size: 11px;
   font-weight: 600;
   letter-spacing: 0.01em;
   white-space: nowrap;
+}
+
+.alert-pill:disabled {
+  cursor: default;
+}
+
+.alert-pill:not(:disabled) {
+  cursor: pointer;
 }
 
 .callguard-row {
@@ -1165,6 +1233,38 @@ button {
   font-size: 13.5px;
   padding: 0 3px;
   border-radius: 4px;
+}
+
+.masked-span.is-clickable {
+  cursor: pointer;
+  text-decoration: underline;
+  text-decoration-style: dotted;
+  text-underline-offset: 3px;
+}
+
+.masked-span.is-revealed {
+  background: #fdf3e0;
+  color: var(--text);
+}
+
+.masked-span-btn {
+  display: inline;
+  margin: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: inherit;
+}
+
+.masked-span.is-pii {
+  background: rgba(120, 124, 132, 0.16);
+  color: #5c616a;
+}
+
+.masked-span.is-abuse {
+  background: rgba(226, 75, 74, 0.16);
+  color: #8f2a29;
 }
 
 .search-hit {
