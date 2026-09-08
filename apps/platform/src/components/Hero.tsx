@@ -2,117 +2,103 @@ import type { ReactElement } from "react";
 
 export function Hero(): ReactElement {
   return (
-    <section id="hero" className="relative overflow-hidden bg-linear-to-br from-brand-deep via-brand to-brand-bright text-white">
-      <div className="mx-auto grid max-w-[1120px] grid-cols-1 items-center gap-12 px-5 pt-16 pb-8 mid:grid-cols-2 mid:pt-20 mid:pb-10">
+    <section
+      id="hero"
+      className="relative overflow-hidden scroll-mt-[88px] bg-page px-5 pt-12 pb-20 mid:pt-16 mid:pb-24"
+    >
+      <div
+        className="pointer-events-none absolute -top-24 right-0 h-[420px] w-[420px] rounded-full bg-[radial-gradient(circle,rgba(240,164,76,0.16),transparent_68%)]"
+        aria-hidden="true"
+      />
+      <div className="relative mx-auto grid max-w-[1180px] grid-cols-1 items-center gap-12 mid:grid-cols-2">
         <div>
-          <p className="mb-5 inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-[12.5px] text-white/90">
-            <span className="h-1.5 w-1.5 rounded-full bg-teal" aria-hidden="true" />
-            다산콜센터 상담 시나리오 기반 · SOLIDBOB 8주 스프린트
+          <p className="mb-6 inline-flex items-center gap-2 rounded-full border border-amber/45 px-3 py-1.5 text-[12.5px] text-fg/90">
+            <span
+              className="anim-rec h-1.5 w-1.5 rounded-full bg-live"
+              aria-hidden="true"
+            />
+            LIVE · 상담원 옆의 실시간 어시스트
           </p>
-          <h1 className="m-0 text-[clamp(28px,4vw,42px)] font-semibold leading-[1.25] tracking-tight">
-            상담사가 통화 중 놓치는 것을,
-            <br />
-            AI가 옆에서 같이 찾아드립니다
+          <h1 className="heading m-0 max-w-[14em] text-[clamp(32px,4.6vw,52px)] leading-[1.28] tracking-tight">
+            <span className="block font-[300]">사람을 대체하는 AI가 아닌,</span>
+            <span className="block font-[500]">
+              상담원 <span className="text-amber">옆에서</span> 듣고 돕는 AI
+            </span>
           </h1>
-          <p className="mt-5 max-w-[36em] text-[16px] leading-relaxed text-white/80">
-            CallGuard는 통화 내용을 실시간으로 이해하고 필요한 서류, 규정,
-            번역을 그 자리에서 찾아주는 상담사 어시스트 RAG 시스템입니다.
+          <p className="mt-6 max-w-[38em] text-[16px] leading-relaxed text-muted">
+            CallGuard는 서울시 다산콜센터 상담원이 통화하는 순간, 대화 흐름을 함께
+            읽어 필요한 서류·근거문서와 대체 표현을 조용히 건네는 현장
+            파트너입니다.
           </p>
           <div className="mt-8 flex flex-wrap gap-3">
             <a
-              href="#features"
-              className="rounded-[10px] bg-white px-4 py-2.5 text-[14px] font-semibold text-brand-deep"
+              href="#cta"
+              className="rounded-full bg-amber-fill px-5 py-2.5 text-[14px] font-semibold text-[#1a1408]"
             >
-              핵심 기능 보기
+              도입 문의하기
             </a>
             <a
-              href="#how"
-              className="rounded-[10px] border border-white/35 px-4 py-2.5 text-[14px] font-semibold text-white"
+              href="#realtime-assist"
+              className="rounded-full border border-line px-5 py-2.5 text-[14px] font-semibold text-fg"
             >
-              작동 방식 보기
+              상담 데모 보기
             </a>
           </div>
-          <dl className="mt-10 grid grid-cols-3 gap-4 text-[12.5px] text-white/75">
-            <div>
-              <dt className="font-semibold text-white">5개</dt>
-              <dd className="m-0 mt-1 leading-snug">동시 통번역 언어</dd>
-            </div>
-            <div>
-              <dt className="font-semibold text-white">4개</dt>
-              <dd className="m-0 mt-1 leading-snug">핵심 어시스트 기능</dd>
-            </div>
-            <div>
-              <dt className="font-semibold text-white">8주</dt>
-              <dd className="m-0 mt-1 leading-snug">스프린트 개발</dd>
-            </div>
-          </dl>
+          <p className="mt-10 text-[12.5px] text-muted">
+            5개 언어 동시 통번역
+            <span className="mx-2 text-line" aria-hidden="true">
+              ·
+            </span>
+            통화 중 실시간
+          </p>
         </div>
-        <CallMock />
+        <HeroCallCard />
       </div>
-      <svg
-        className="block w-full text-bg"
-        viewBox="0 0 1440 72"
-        preserveAspectRatio="none"
-        aria-hidden="true"
-      >
-        <path
-          fill="currentColor"
-          d="M0 40c180 28 360 28 540 8s360-40 540-28 360 40 360 40V72H0Z"
-        />
-      </svg>
     </section>
   );
 }
 
-function CallMock(): ReactElement {
+function HeroCallCard(): ReactElement {
   return (
-    <article className="rounded-[16px] bg-card p-5 text-ink shadow-[0_8px_28px_rgba(22,27,46,0.12)]">
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-2 border-b border-line pb-3">
-        <div className="flex items-center gap-2 text-[13px] font-semibold">
-          <span className="anim-rec h-2 w-2 rounded-full bg-amber" aria-hidden="true" />
-          <span className="text-amber">REC</span>
-          <span className="font-medium text-ink-soft">상담 진행 중 · 02:47</span>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <span className="rounded-[10px] bg-teal-bg px-2 py-0.5 text-[11px] font-semibold text-teal">
-            KO
-          </span>
-          <span className="rounded-[10px] bg-teal-bg px-2 py-0.5 text-[11px] font-semibold text-teal">
-            VI
-          </span>
-        </div>
+    <article className="rounded-[22px] border border-line bg-card p-5 shadow-[0_24px_60px_rgba(0,0,0,0.28)]">
+      <div className="mb-5 flex items-center justify-between gap-3">
+        <p className="m-0 flex items-center gap-2 text-[13px] font-semibold">
+          <span
+            className="anim-rec h-2 w-2 rounded-full bg-live"
+            aria-hidden="true"
+          />
+          02-120 · 통화 중 00:42
+        </p>
+        <p className="m-0 text-[12.5px] font-semibold text-amber">실시간</p>
       </div>
-      <p className="mb-4 text-[12.5px] text-ink-soft">
-        외국인 민원 · 등록증 재발급 문의
+      <p className="m-0 text-[11.5px] font-semibold tracking-wide text-muted">
+        라이브 트랜스크립트
       </p>
-      <div className="flex flex-col gap-3">
-        <p className="max-w-[92%] rounded-[10px] bg-bg px-3.5 py-2.5 text-[13.5px] leading-relaxed">
-          <span className="mb-1 block text-[11px] font-semibold text-ink-soft">
-            발신자
-          </span>
-          등본… 다시 발급받으려면 뭐가 필요해요? 동생이 대신 가도 되나요?
+      <p className="mt-2 m-0 text-[14.5px] font-semibold leading-relaxed">
+        “저희 지역 도서관 연장 이용 가능한지 확인하고 싶은데요.”
+      </p>
+      <p className="mt-2 m-0 text-[14px] leading-relaxed text-muted">
+        “네, 도서를 지참하시면 즉시 연장 처리됩니다. ...”
+      </p>
+      <hr className="my-4 border-0 border-t border-line" />
+      <div className="flex items-center justify-between gap-3">
+        <p className="m-0 text-[11.5px] font-semibold tracking-wide text-muted">
+          추천 · 민원 유형
         </p>
-        <p className="ml-auto max-w-[92%] rounded-[10px] bg-teal-bg px-3.5 py-2.5 text-[13.5px] leading-relaxed">
-          <span className="mb-1 block text-[11px] font-semibold text-teal">
-            상담사
-          </span>
-          대리 신청이면 위임장과 대리인 신분증이 필요합니다.
-        </p>
-        <div className="anim-assist rounded-[10px] border border-line bg-bg px-3.5 py-3">
-          <div className="flex items-center justify-between gap-2">
-            <p className="m-0 text-[11px] font-semibold text-teal">AI 추천</p>
-            <span className="text-[11px] font-semibold text-teal">유사도 92%</span>
-          </div>
-          <p className="mt-1 text-[13.5px] font-semibold">
-            외국인등록증 재발급 절차 안내
-          </p>
-          <p className="mt-1 text-[12px] text-ink-soft">F-2 필요서류 · 목업</p>
-        </div>
-        <div className="anim-warn rounded-[10px] bg-amber-bg px-3.5 py-2.5 text-[13px] leading-relaxed text-ink">
-          <span className="font-semibold text-amber">권장 표현</span>
-          {" — “불법체류” 대신 “체류기간 경과”로 안내하세요."}
-        </div>
+        <span className="rounded-md border border-line px-2 py-0.5 text-[11px] text-muted">
+          도서관_연장
+        </span>
       </div>
+      <p className="mt-2 m-0 text-[14px] leading-relaxed">
+        필요서류: 신분증 · 필요근거: 도서관 자율관리 3조
+      </p>
+      <hr className="my-4 border-0 border-t border-line" />
+      <p className="m-0 text-[11.5px] font-semibold tracking-wide text-live">
+        통번역 · EN / 日本語
+      </p>
+      <p className="mt-2 m-0 text-[14px] leading-relaxed text-amber">
+        “Library extensions are available on-site with your ID.”
+      </p>
     </article>
   );
 }

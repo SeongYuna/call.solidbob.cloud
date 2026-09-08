@@ -4,6 +4,7 @@ import { adminThScenario } from "./adminTh";
 import { callGuardKoScenario } from "./callGuardKo";
 import { covidZhScenario } from "./covidZh";
 import { dasanScenario, maskingKoScenario } from "./dasan";
+import { grantDelayKoScenario } from "./grantDelayKo";
 import { sewerJaScenario } from "./sewerJa";
 import { transitEnScenario } from "./transitEn";
 import type { MockScenario } from "./types";
@@ -19,6 +20,7 @@ export type MockScenarioId =
   | "th-admin"
   | "ko-masking"
   | "ko-callguard"
+  | "ko-grant-delay"
   | "ko-accent";
 
 const BY_ID: Record<MockScenarioId, MockScenario> = {
@@ -29,6 +31,7 @@ const BY_ID: Record<MockScenarioId, MockScenario> = {
   "th-admin": adminThScenario,
   "ko-masking": maskingKoScenario,
   "ko-callguard": callGuardKoScenario,
+  "ko-grant-delay": grantDelayKoScenario,
   "ko-accent": accentKoScenario,
 };
 
@@ -54,5 +57,6 @@ export const MOCK_SCENARIO_FLAG: Record<MockScenarioId, string> = {
   "th-admin": LANGUAGE_META.TH.flag,
   "ko-masking": "🇰🇷",
   "ko-callguard": "🇰🇷",
+  "ko-grant-delay": "🇰🇷",
   "ko-accent": "🇰🇷",
 };

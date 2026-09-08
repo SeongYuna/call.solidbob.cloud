@@ -6,9 +6,12 @@ export interface CharRange {
   end: number;
 }
 
+export type DisplayMaskKind = "contract" | "pii" | "abuse";
+
 export interface TextRun {
   text: string;
   masked: boolean;
+  maskKind: DisplayMaskKind | null;
   hit: boolean;
   active: boolean;
 }
@@ -59,14 +62,26 @@ export function buildTextRuns(
   masked: MaskedSpan[],
   hits: CharRange[],
   activeHit: CharRange | null,
+  displayMasks: {
+    pii?: readonly CharRange[];
+    abuse?: readonly CharRange[];
+  } = {},
 ): TextRun[] {
   const chars = Array.from(text);
-  const maskFlags = new Uint8Array(chars.length);
+  const contractFlags = new Uint8Array(chars.length);
+  const piiFlags = new Uint8Array(chars.length);
+  const abuseFlags = new Uint8Array(chars.length);
   const hitFlags = new Uint8Array(chars.length);
   const activeFlags = new Uint8Array(chars.length);
 
   masked.forEach((span) => {
-    mark(maskFlags, { start: span.span[0], end: span.span[1] });
+    mark(contractFlags, { start: span.span[0], end: span.span[1] });
+  });
+  (displayMasks.pii ?? []).forEach((range) => {
+    mark(piiFlags, range);
+  });
+  (displayMasks.abuse ?? []).forEach((range) => {
+    mark(abuseFlags, range);
   });
   hits.forEach((range) => {
     mark(hitFlags, range);
@@ -75,16 +90,29 @@ export function buildTextRuns(
     mark(activeFlags, activeHit);
   }
 
+  function kindAt(index: number): DisplayMaskKind | null {
+    if (abuseFlags[index] === 1) {
+      return "abuse";
+    }
+    if (piiFlags[index] === 1) {
+      return "pii";
+    }
+    if (contractFlags[index] === 1) {
+      return "contract";
+    }
+    return null;
+  }
+
   const runs: TextRun[] = [];
   let cursor = 0;
   while (cursor < chars.length) {
-    const isMasked = maskFlags[cursor] === 1;
+    const maskKind = kindAt(cursor);
     const isHit = hitFlags[cursor] === 1;
     const isActive = activeFlags[cursor] === 1;
     let end = cursor + 1;
     while (
       end < chars.length &&
-      (maskFlags[end] === 1) === isMasked &&
+      kindAt(end) === maskKind &&
       (hitFlags[end] === 1) === isHit &&
       (activeFlags[end] === 1) === isActive
     ) {
@@ -92,7 +120,8 @@ export function buildTextRuns(
     }
     runs.push({
       text: chars.slice(cursor, end).join(""),
-      masked: isMasked,
+      masked: maskKind !== null,
+      maskKind,
       hit: isHit,
       active: isActive,
     });

@@ -6,18 +6,13 @@ import { ForcePasswordSetup } from "./components/ForcePasswordSetup";
 import { TermsPanel } from "./components/TermsPanel";
 import { TranscriptPanel } from "./components/TranscriptPanel";
 import { useGatewaySession } from "./hooks/useGatewaySession";
-import {
-  completeMockPasswordSetup,
-  getMockAgentAccount,
-} from "./mock/agentAuth";
+import { getMockAgentAccount } from "./mock/agentAuth";
 import { useCallStore } from "./store/callStore";
 
 export function App(): ReactElement {
   const { startCall, replay, leaveToStandby, manualSearch, endCall, wrapUp } =
     useGatewaySession();
-  const [mustChangePassword, setMustChangePassword] = useState(
-    () => getMockAgentAccount().mustChangePassword,
-  );
+  const [voluntaryPassword, setVoluntaryPassword] = useState(false);
   const phase = useCallStore((state) => state.phase);
   const shell = useCallStore((state) => state.shell);
   const viewMode = useCallStore((state) => state.viewMode);
@@ -39,15 +34,17 @@ export function App(): ReactElement {
     resumeCall();
   }
 
-  if (mustChangePassword) {
+  if (voluntaryPassword) {
     return (
       <div className="app-viewport">
         <div className="app-shell">
           <ForcePasswordSetup
-            tempPasswordUsed
+            mode="voluntary"
             onComplete={() => {
-              completeMockPasswordSetup();
-              setMustChangePassword(false);
+              setVoluntaryPassword(false);
+            }}
+            onCancel={() => {
+              setVoluntaryPassword(false);
             }}
           />
         </div>
@@ -76,6 +73,9 @@ export function App(): ReactElement {
           <AgentStandbyScreen
             agentName={agentName}
             onStartCall={startCall}
+            onResetPassword={() => {
+              setVoluntaryPassword(true);
+            }}
           />
         ) : (
           <main className="panels">

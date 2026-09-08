@@ -9,7 +9,7 @@ import {
   type UIEvent,
 } from "react";
 import { BrandLockup } from "./AppHeader";
-import { MaskedText } from "./MaskedText";
+import { MaskedText, revealSpansFor, type RevealSpan } from "./MaskedText";
 import { formatOffsetMs } from "../lib/text/codepoints";
 import { formatCallStartedAt } from "../lib/formatCallTime";
 import { findMatches, type CharRange } from "../lib/text/highlight";
@@ -22,7 +22,11 @@ import { detectCustomerRisk } from "../lib/customerRisk/detectCustomerRisk";
 import type { BannerRiskMatch } from "../lib/customerRisk/detectCustomerRisk";
 import type { CustomerRiskMatch } from "../lib/customerRisk/detectCustomerRisk";
 import { targetLanguageFromCode } from "../lib/language/languageMeta";
-import { maskSensitiveText } from "../lib/customerRisk/maskSensitiveText";
+import {
+  logPlainReveal,
+  maskSensitiveText,
+  sensitiveRanges,
+} from "../lib/customerRisk/maskSensitiveText";
 import {
   logSupervisorAlert,
   type SupervisorAlert,
@@ -70,10 +74,20 @@ function historyAsUtterance(segment: TranscriptQuerySegment): Utterance {
     segment_id: String(segment.segment_id),
     speaker: segment.speaker,
     text: segment.text,
+    ...(segment.plain_text === undefined
+      ? {}
+      : { plain_text: segment.plain_text }),
     masked: segment.masked,
     is_final: segment.is_final,
     utterance_end_ms: segment.utterance_end_ms ?? 0,
   };
+}
+
+function revealClock(ms: number): string {
+  const total = Math.max(0, Math.floor(ms / 1000));
+  const m = Math.floor(total / 60);
+  const s = total % 60;
+  return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
 }
 
 export function TranscriptPanel({
@@ -118,6 +132,11 @@ export function TranscriptPanel({
   const [notifiedKeys, setNotifiedKeys] = useState<ReadonlySet<string>>(
     () => new Set(),
   );
+  const [authorized, setAuthorized] = useState(false);
+  const [revealAll, setRevealAll] = useState(false);
+  const [openedIds, setOpenedIds] = useState<ReadonlySet<string>>(
+    () => new Set(),
+  );
   const notifiedRef = useRef(new Set<string>());
   const prevModeRef = useRef(viewMode);
 
@@ -143,6 +162,9 @@ export function TranscriptPanel({
     setDismissed(new Set());
     notifiedRef.current = new Set();
     setNotifiedKeys(new Set());
+    setAuthorized(false);
+    setRevealAll(false);
+    setOpenedIds(new Set());
   }, [callId, historyCallId, viewMode]);
 
   useEffect(() => {
@@ -221,6 +243,113 @@ export function TranscriptPanel({
     });
     return grouped;
   }, [matches]);
+
+  const allRevealIds = useMemo(() => {
+    const ids: string[] = [];
+    for (const item of utterances) {
+      const customerRisks =
+        item.speaker === "customer" ? detectCustomerRisk(item.text) : [];
+      const piiMatches = customerRisks.filter((risk) => risk.type === "pii");
+      const abuseMatches = customerRisks.filter(
+        (risk) => risk.type === "abuse",
+      );
+      const contractMasked =
+        piiMatches.length > 0 || abuseMatches.length > 0
+          ? []
+          : item.masked;
+      for (const span of revealSpansFor(
+        item.segment_id,
+        contractMasked,
+        sensitiveRanges(item.text, piiMatches, "pii"),
+        sensitiveRanges(item.text, abuseMatches, "abuse"),
+      )) {
+        ids.push(span.id);
+      }
+    }
+    return ids;
+  }, [utterances]);
+
+  const toggleSpan = useCallback(
+    (
+      id: string,
+      field: string,
+      currentlyOpen: boolean,
+      clock: string,
+    ) => {
+      if (!authorized) {
+        return;
+      }
+      if (currentlyOpen) {
+        if (revealAll) {
+          setRevealAll(false);
+          setOpenedIds(new Set(allRevealIds.filter((key) => key !== id)));
+        } else {
+          setOpenedIds((current) => {
+            const next = new Set(current);
+            next.delete(id);
+            return next;
+          });
+        }
+        return;
+      }
+      setOpenedIds((current) => {
+        const next = new Set(current);
+        next.add(id);
+        return next;
+      });
+      logPlainReveal(field, clock, callId ?? historyCallId ?? "");
+    },
+    [allRevealIds, authorized, callId, historyCallId, revealAll],
+  );
+
+  const toggleLineSpans = useCallback(
+    (spans: readonly RevealSpan[], clock: string) => {
+      if (!authorized || spans.length === 0) {
+        return;
+      }
+      const allOpen =
+        revealAll || spans.every((span) => openedIds.has(span.id));
+      if (allOpen) {
+        const closing = new Set(spans.map((span) => span.id));
+        if (revealAll) {
+          setRevealAll(false);
+          setOpenedIds(
+            new Set(allRevealIds.filter((id) => !closing.has(id))),
+          );
+        } else {
+          setOpenedIds((current) => {
+            const next = new Set(current);
+            for (const span of spans) {
+              next.delete(span.id);
+            }
+            return next;
+          });
+        }
+        return;
+      }
+      setOpenedIds((current) => {
+        const next = new Set(current);
+        for (const span of spans) {
+          next.add(span.id);
+        }
+        return next;
+      });
+      const logId = callId ?? historyCallId ?? "";
+      for (const span of spans) {
+        if (!openedIds.has(span.id)) {
+          logPlainReveal(span.field, clock, logId);
+        }
+      }
+    },
+    [
+      allRevealIds,
+      authorized,
+      callId,
+      historyCallId,
+      openedIds,
+      revealAll,
+    ],
+  );
 
   const total = matches.length;
   const current = total === 0 ? -1 : Math.min(hitIndex, total - 1);
@@ -373,7 +502,37 @@ export function TranscriptPanel({
         </div>
       ) : null}
       <header className="panel-head transcript-head">
-        <h2 id="transcript-heading">실시간 자막</h2>
+        <div className="transcript-head-row">
+          <h2 id="transcript-heading">실시간 자막</h2>
+          <div className="mask-auth-bar">
+            <button
+              type="button"
+              className="mask-auth-btn"
+              aria-pressed={authorized}
+              onClick={() => {
+                setAuthorized(true);
+              }}
+            >
+              권한 확인 (데모)
+            </button>
+            <button
+              type="button"
+              className="mask-auth-btn"
+              disabled={!authorized}
+              aria-pressed={revealAll}
+              onClick={() => {
+                if (revealAll) {
+                  setRevealAll(false);
+                  setOpenedIds(new Set());
+                  return;
+                }
+                setRevealAll(true);
+              }}
+            >
+              원문 보기
+            </button>
+          </div>
+        </div>
         <div className="transcript-search">
           <svg
             className="search-icon"
@@ -495,10 +654,29 @@ export function TranscriptPanel({
               const piiMatches = customerRisks.filter(
                 (risk) => risk.type === "pii",
               );
-              const displayText =
-                piiMatches.length > 0
-                  ? maskSensitiveText(item.text, piiMatches)
-                  : item.text;
+              const abuseMatches = customerRisks.filter(
+                (risk) => risk.type === "abuse",
+              );
+              const sensitive = maskSensitiveText(item.text, customerRisks);
+              const displayText = sensitive.masked;
+              const revealPlain = item.plain_text ?? sensitive.plain;
+              const piiRanges = sensitiveRanges(item.text, piiMatches, "pii");
+              const abuseRanges = sensitiveRanges(
+                item.text,
+                abuseMatches,
+                "abuse",
+              );
+              const contractMasked =
+                piiMatches.length > 0 || abuseMatches.length > 0
+                  ? []
+                  : item.masked;
+              const lineSpans = revealSpansFor(
+                item.segment_id,
+                contractMasked,
+                piiRanges,
+                abuseRanges,
+              );
+              const lineClock = revealClock(item.utterance_end_ms);
               const bannerRisks = uniqueCustomerBanners(customerRisks).filter(
                 (risk) =>
                   !dismissed.has(
@@ -506,7 +684,7 @@ export function TranscriptPanel({
                   ),
               );
               const hideLegacyGuard = customerRisks.some(
-                (risk) => risk.type !== "pii",
+                (risk) => risk.type === "abuse" || risk.type === "distress",
               );
               const compliance =
                 item.speaker === "agent" && !dismissed.has(item.segment_id)
@@ -582,8 +760,17 @@ export function TranscriptPanel({
                         <span className="accent-badge">억양 인식</span>
                       ) : null}
                       <div
-                        className={`utterance-bubble${piiMatches.length > 0 ? " has-pii-lock" : ""}`}
+                        className={`utterance-bubble${piiMatches.length > 0 ? " has-pii-lock" : ""}${abuseMatches.length > 0 ? " has-abuse-lock" : ""}`}
                       >
+                        {abuseMatches.length > 0 ? (
+                          <span
+                            className="abuse-lock"
+                            title="부적절한 표현이 마스킹되었습니다"
+                            aria-label="부적절한 표현이 마스킹되었습니다"
+                          >
+                            <AbuseMaskIcon />
+                          </span>
+                        ) : null}
                         {piiMatches.length > 0 ? (
                           <span
                             className="pii-lock"
@@ -596,14 +783,38 @@ export function TranscriptPanel({
                         <p className="utterance-text">
                           <MaskedText
                             text={displayText}
-                            masked={piiMatches.length > 0 ? [] : item.masked}
+                            plainText={revealPlain}
+                            masked={contractMasked}
+                            piiRanges={piiRanges}
+                            abuseRanges={abuseRanges}
                             hits={hits}
                             activeHit={activeHit}
+                            authorized={authorized}
+                            revealAll={revealAll}
+                            openedIds={openedIds}
+                            spanIdPrefix={item.segment_id}
+                            onToggle={(id, field, currentlyOpen) => {
+                              toggleSpan(
+                                id,
+                                field,
+                                currentlyOpen,
+                                lineClock,
+                              );
+                            }}
                           />
                         </p>
                       </div>
                       {hasAlert ? (
-                        <span className="alert-pill">⚠ 경고</span>
+                        <button
+                          type="button"
+                          className="alert-pill"
+                          disabled={!authorized}
+                          onClick={() => {
+                            toggleLineSpans(lineSpans, lineClock);
+                          }}
+                        >
+                          ⚠ 경고
+                        </button>
                       ) : null}
                     </div>
                     {guard !== undefined && !hideLegacyGuard ? (
@@ -622,6 +833,7 @@ export function TranscriptPanel({
                       <p className="utterance-translation">
                         <MaskedText
                           text={translation.translated_text}
+                          plainText={translation.translated_text}
                           masked={[]}
                           hits={translationHits}
                           activeHit={activeTranslationHit}
@@ -637,6 +849,7 @@ export function TranscriptPanel({
                           matchedText={risk.matchedText}
                           guidance={CUSTOMER_GUIDANCE[risk.type]}
                           supervisorNotified={notifiedKeys.has(key)}
+                          emphasized={risk.matchedText.includes("가만 안 둘")}
                           onDismiss={() => {
                             setDismissed((current) => {
                               const next = new Set(current);
@@ -690,6 +903,25 @@ export function TranscriptPanel({
         </button>
       ) : null}
     </section>
+  );
+}
+
+function AbuseMaskIcon(): ReactElement {
+  return (
+    <svg
+      width="12"
+      height="12"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M12 3 5 6v6c0 5 3.2 7.8 7 9 3.8-1.2 7-4 7-9V6l-7-3Z" />
+      <path d="M9 12h6" />
+    </svg>
   );
 }
 

@@ -6,6 +6,7 @@ interface CustomerRiskBannerProps {
   matchedText: string;
   guidance: string;
   supervisorNotified: boolean;
+  emphasized?: boolean;
   onDismiss: () => void;
 }
 
@@ -22,14 +23,17 @@ export function CustomerRiskBanner({
   matchedText,
   guidance,
   supervisorNotified,
+  emphasized = false,
   onDismiss,
 }: CustomerRiskBannerProps): ReactElement {
   const copy = COPY[type];
   return (
     <div
-      className={`compliance-banner customer-risk is-${type}`}
+      className={`compliance-banner customer-risk is-${type}${emphasized ? " is-elevated" : ""}`}
       role="alert"
       aria-label={`고객 위험 감지: ${copy.aria}`}
+      data-customer-risk={type}
+      data-risk-phrase={matchedText}
     >
       <span className="compliance-icon" aria-hidden="true">
         {type === "abuse" ? <ShieldIcon /> : <EscalateIcon />}

@@ -1,8 +1,10 @@
 import { useState, type FormEvent, type ReactElement } from "react";
 
 interface ForcePasswordSetupProps {
-  tempPasswordUsed: boolean;
+  mode: "forced" | "voluntary";
+  tempPasswordUsed?: boolean;
   onComplete: () => void;
+  onCancel?: () => void;
 }
 
 function passwordError(value: string, confirm: string): string | null {
@@ -19,13 +21,16 @@ function passwordError(value: string, confirm: string): string | null {
 }
 
 export function ForcePasswordSetup({
-  tempPasswordUsed,
+  mode,
+  tempPasswordUsed = false,
   onComplete,
+  onCancel,
 }: ForcePasswordSetupProps): ReactElement {
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [submitted, setSubmitted] = useState(false);
   const error = passwordError(password, confirm);
+  const voluntary = mode === "voluntary";
 
   function onSubmit(event: FormEvent<HTMLFormElement>): void {
     event.preventDefault();
@@ -39,18 +44,24 @@ export function ForcePasswordSetup({
   return (
     <main className="force-password">
       <section className="wrapup-card force-password-card">
-        <p className="wrapup-eyebrow">최초 로그인</p>
-        <h1 className="force-password-title">비밀번호를 설정해주세요</h1>
-        {tempPasswordUsed ? (
-          <p className="force-password-lead">
-            관리자가 발급한 임시 비밀번호로 로그인했습니다. 본인만 아는
-            비밀번호로 바꾼 뒤에 대기화면으로 들어갑니다.
-          </p>
-        ) : (
-          <p className="force-password-lead">
-            이 계정은 비밀번호를 한 번 설정해야 사용할 수 있습니다.
-          </p>
-        )}
+        {voluntary && onCancel !== undefined ? (
+          <button type="button" className="btn-outline force-password-back" onClick={onCancel}>
+            ← 취소
+          </button>
+        ) : null}
+        <p className="wrapup-eyebrow">
+          {voluntary ? "비밀번호 변경" : "최초 로그인"}
+        </p>
+        <h1 className="force-password-title">
+          {voluntary ? "비밀번호를 변경해주세요" : "비밀번호를 설정해주세요"}
+        </h1>
+        <p className="force-password-lead">
+          {voluntary
+            ? "비밀번호를 변경합니다. 본인만 아는 비밀번호로 설정해주세요."
+            : tempPasswordUsed
+              ? "관리자가 발급한 임시 비밀번호로 로그인했습니다. 본인만 아는 비밀번호로 바꾼 뒤에 대기화면으로 들어갑니다."
+              : "이 계정은 비밀번호를 한 번 설정해야 사용할 수 있습니다."}
+        </p>
         <form className="force-password-form" onSubmit={onSubmit} noValidate>
           <label className="force-password-field">
             <span>새 비밀번호</span>

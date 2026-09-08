@@ -1,35 +1,79 @@
 @import "tailwindcss";
 
-@theme {
-  --color-ink: #161b2e;
-  --color-ink-soft: #4b5170;
-  --color-bg: #f6f7fb;
-  --color-card: #ffffff;
-  --color-line: #e4e7f1;
-  --color-brand-deep: #232b57;
-  --color-brand: #3b49a3;
-  --color-brand-bright: #5d6ce0;
-  --color-amber: #e8930c;
-  --color-amber-bg: #fff4e0;
-  --color-teal: #1b9c87;
-  --color-teal-bg: #e4f7f3;
+@theme inline {
+  --color-page: var(--page);
+  --color-fg: var(--fg);
+  --color-muted: var(--muted);
+  --color-card: var(--card);
+  --color-line: var(--line);
+  --color-amber: var(--amber);
+  --color-amber-fill: var(--amber-fill);
+  --color-amber-hot: var(--amber-fill);
+  --color-live: var(--live);
+  --color-mask: var(--mask);
   --font-sans: "Pretendard", system-ui, sans-serif;
-  --radius-card: 16px;
-  --radius-soft: 10px;
   --breakpoint-mid: 900px;
-  --shadow-card: 0 8px 28px rgba(22, 27, 46, 0.06);
+}
+
+:root,
+[data-theme="dark"] {
+  --page: #0f1420;
+  --fg: #f4f6fb;
+  --muted: #9aa3b5;
+  --card: #161c2b;
+  --line: rgba(255, 255, 255, 0.1);
+  --amber: #e8b67d;
+  --amber-fill: #f0a44c;
+  --live: #2dd4bf;
+  --mask: rgba(96, 165, 250, 0.22);
+}
+
+[data-theme="light"] {
+  --page: #f6f4ee;
+  --fg: #16181f;
+  --muted: #5f6470;
+  --card: #ffffff;
+  --line: rgba(22, 24, 31, 0.1);
+  --amber: #c4a06a;
+  --amber-fill: #e09b45;
+  --live: #0f766e;
+  --mask: rgba(37, 99, 235, 0.14);
 }
 
 html {
   scroll-behavior: smooth;
 }
 
+html,
+body {
+  font-family: "Pretendard", system-ui, sans-serif;
+}
+
 body {
   margin: 0;
   min-height: 100%;
-  background: var(--color-bg);
-  color: var(--color-ink);
-  font-family: var(--font-sans);
+  background: var(--page);
+  color: var(--fg);
+  word-break: keep-all;
+  overflow-wrap: break-word;
+  line-break: strict;
+}
+
+button,
+input,
+select,
+textarea,
+a {
+  font-family: inherit;
+}
+
+.heading {
+  font-family: inherit;
+  font-weight: 300;
+  word-break: keep-all;
+  overflow-wrap: break-word;
+  line-break: strict;
+  text-wrap: pretty;
 }
 
 @keyframes rec-blink {
@@ -42,29 +86,8 @@ body {
   }
 }
 
-@keyframes rise-in {
-  from {
-    opacity: 0;
-    transform: translateY(6px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
 .anim-rec {
   animation: rec-blink 1.4s ease-in-out infinite;
-}
-
-.anim-assist {
-  animation: rise-in 0.55s ease both;
-  animation-delay: 1.1s;
-}
-
-.anim-warn {
-  animation: rise-in 0.55s ease both;
-  animation-delay: 1.7s;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -72,15 +95,7 @@ body {
     scroll-behavior: auto;
   }
 
-  .anim-rec,
-  .anim-assist,
-  .anim-warn {
+  .anim-rec {
     animation: none;
-  }
-
-  .anim-assist,
-  .anim-warn {
-    opacity: 1;
-    transform: none;
   }
 }

@@ -3,15 +3,21 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>CallGuard — 다산콜센터 상담사 어시스트</title>
+    <title>CallGuard — 서울시 다산콜센터 실시간 어시스트</title>
     <meta
       name="description"
-      content="CallGuard는 통화 내용을 실시간으로 이해하고 필요한 서류, 규정, 번역을 그 자리에서 찾아주는 상담사 어시스트 RAG 시스템입니다."
+      content="CallGuard는 서울시 다산콜센터 상담원이 통화하는 순간, 대화 흐름을 함께 읽어 필요한 서류·근거문서와 대체 표현을 조용히 건네는 현장 파트너입니다."
     />
     <link
       rel="stylesheet"
-      href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css"
+      href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css"
     />
+    <script>
+      document.documentElement.dataset.theme =
+        localStorage.getItem("callguard-platform-theme") === "light"
+          ? "light"
+          : "dark";
+    </script>
   </head>
   <body>
     <div id="root"></div>

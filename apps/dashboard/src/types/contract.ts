@@ -48,6 +48,11 @@ export interface TranscriptEvent {
   segment_id: string;
   speaker: Speaker;
   text: string;
+  /**
+   * mock 전용. 마스킹본 `text` 와 같은 길이의 원문.
+   * 권한 확인 후 스팬 열람에만 쓴다. 7.3절 계약 필드는 아니다.
+   */
+  plain_text?: string;
   masked: MaskedSpan[];
   is_final: boolean;
   utterance_end_ms: number;
@@ -219,6 +224,7 @@ export interface TranscriptQuerySegment {
   segment_id: number;
   speaker: Speaker;
   text: string;
+  plain_text?: string;
   masked: MaskedSpan[];
   is_final: boolean;
   utterance_end_ms: number | null;

@@ -1,0 +1,21 @@
+---
+description: TypeScript/React ESLint 규칙을 코드 작성 시 지킨다.
+globs: "**/*.{ts,tsx}"
+alwaysApply: true
+---
+
+# ESLint 규칙
+
+이 저장소 루트와 `apps/platform`에는 `.eslintrc` / `eslint.config`가 없다. ESLint 패키지도 없다. 아래는 팀이 코드 작성 시 맞출 규칙이다. 설정 파일이 생기면 그 파일 내용을 이 규칙의 정본으로 옮긴다.
+
+- `no-unused-vars`: 쓰지 않는 변수·import 금지
+- `@typescript-eslint/no-explicit-any`: `any` 금지, 타입을 명시한다
+- `react-hooks/exhaustive-deps`: `useEffect` 등 의존성 배열을 빠짐없이 적는다
+- `import/order`: 외부 라이브러리 → 내부 모듈 → 상대경로
+- `eslint-disable`로 우회하지 않는다. 정말 필요할 때만 쓰고, 이유를 주석으로 남긴다
+
+코드를 고친 뒤에는 진단(린트)을 보고 위반을 직접 고친다.
+
+## 줄바꿈
+
+한국어 UI는 CSS `word-break: keep-all`로 음절 중간에서 끊지 않는다. 헤드라인은 `text-wrap: pretty`로 어색한 줄바꿈을 줄인다. JSX는 긴 `className`을 여러 줄로 나눈다.

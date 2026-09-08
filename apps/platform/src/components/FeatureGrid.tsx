@@ -2,78 +2,59 @@ import type { ReactElement } from "react";
 
 const FEATURES = [
   {
-    wide: true,
-    title: "실시간 문서 추천",
-    body: "유사도 점수와 함께 카드를 자동으로 띄웁니다. 문서가 없으면 「관련 문서 없음」을 분명히 표시합니다.",
-    tags: ["B-5", "B-6"],
-    tone: "teal" as const,
+    num: "01",
+    title: "실시간 대화 분석",
+    body: "말이 흐르는 속도로 핵심 민원·요청·이슈를 분리해 화면에 정리합니다.",
   },
   {
-    wide: false,
-    title: "컴플라이언스 가드",
-    body: "부적절 표현을 감지하면 경고와 권장 대체 표현을 같이 보여 줍니다.",
-    tags: ["C-1~C-4"],
-    tone: "amber" as const,
+    num: "02",
+    title: "서류·근거문서 추천",
+    body: "민원 유형에 맞는 필요서류와 근거 조항을 그 자리에서 제시합니다.",
   },
   {
-    wide: false,
-    title: "5개 언어 동시 통번역",
-    body: "외국인 민원인 발화를 상담사 화면에 한글로 같이 띄웁니다.",
-    tags: ["A-5"],
-    tone: "teal" as const,
+    num: "03",
+    title: "컴플라이언스 감지",
+    body: "부적절 표현·위반 단어를 감지하고 바로 대체 표현을 제안합니다.",
   },
   {
-    wide: false,
-    title: "필요서류 체크리스트",
-    body: "민원 유형별로 제출 서류를 빠짐없이 안내합니다. 하나라도 빠지면 완료 처리가 열리지 않습니다.",
-    tags: ["F-2"],
-    tone: "brand" as const,
+    num: "04",
+    title: "정서 위기 알림",
+    body: "욕설·위협·정서 위기 신호를 조기에 포착해 관리자에게 알립니다.",
   },
   {
-    wide: true,
-    title: "통화 후 자동 요약",
-    body: "요약, 유형 분류, 후속 조치까지 정리합니다. 상담사가 확인하고 남깁니다.",
-    tags: ["D-1~D-4", "G-2"],
-    tone: "brand" as const,
+    num: "05",
+    title: "5개 언어 통번역",
+    body: "외국인 고객과 5개 언어로 동시 통번역해 장벽 없이 소통합니다.",
+  },
+  {
+    num: "06",
+    title: "통화 후 자동 정리",
+    body: "요약·유형분류·후속조치·지역자원 연계를 통화 종료 즉시 생성합니다.",
   },
 ] as const;
 
 export function FeatureGrid(): ReactElement {
   return (
-    <section id="features" className="bg-bg px-5 pb-20">
-      <div className="mx-auto max-w-[1120px]">
-        <p className="mb-3 text-[13px] font-semibold text-brand">핵심 기능</p>
-        <h2 className="m-0 max-w-[16em] text-[clamp(22px,3vw,32px)] font-semibold tracking-tight">
-          통화가 이어지는 동안, 화면이 같이 일합니다
+    <section id="features" className="scroll-mt-[88px] bg-page px-5 pb-20">
+      <div className="mx-auto max-w-[1180px]">
+        <p className="mb-3 text-[13px] font-semibold text-amber">(b) 6가지 기능</p>
+        <h2 className="heading m-0 max-w-[14em] text-[clamp(26px,3.4vw,40px)] leading-snug tracking-tight">
+          상담원 화면 위로 올라오는{" "}
+          <span className="text-amber">조용한 도움</span>
         </h2>
-        <ul className="mt-10 grid list-none grid-cols-1 gap-4 p-0 mid:grid-cols-4">
+        <ul className="mt-10 grid list-none grid-cols-1 gap-4 p-0 mid:grid-cols-3">
           {FEATURES.map((item) => (
             <li
-              key={item.title}
-              className={`rounded-[16px] border border-line bg-card p-6 shadow-[0_8px_28px_rgba(22,27,46,0.06)] ${
-                item.wide ? "mid:col-span-2" : "mid:col-span-1"
-              }`}
+              key={item.num}
+              className="relative rounded-[22px] border border-line bg-card p-6"
             >
-              <span
-                className={`mb-4 flex h-[42px] w-[42px] items-center justify-center rounded-[10px] ${iconWrap[item.tone]}`}
-                aria-hidden="true"
-              >
-                <FeatureMark tone={item.tone} />
-              </span>
-              <h3 className="m-0 text-[17px] font-semibold">{item.title}</h3>
-              <p className="mt-2 mb-5 text-[14px] leading-relaxed text-ink-soft">
+              <FeatureIcon index={item.num} />
+              <p className="m-0 pr-8 text-[13px] font-semibold text-amber">
+                {item.num} · {item.title}
+              </p>
+              <p className="mt-4 mb-0 text-[14.5px] leading-relaxed text-fg">
                 {item.body}
               </p>
-              <div className="flex flex-wrap gap-1.5">
-                {item.tags.map((tag) => (
-                  <span
-                    key={tag}
-                    className="rounded-full bg-bg px-2.5 py-1 text-[11px] font-semibold text-ink-soft"
-                  >
-                    {tag}
-                  </span>
-                ))}
-              </div>
             </li>
           ))}
         </ul>
@@ -82,35 +63,34 @@ export function FeatureGrid(): ReactElement {
   );
 }
 
-const iconWrap = {
-  teal: "bg-teal-bg text-teal",
-  amber: "bg-amber-bg text-amber",
-  brand: "bg-bg text-brand",
-} as const;
-
-function FeatureMark({
-  tone,
-}: {
-  tone: "teal" | "amber" | "brand";
-}): ReactElement {
-  if (tone === "amber") {
-    return (
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-        <path d="M12 9v4M12 17h.01M10.3 4.7 2.8 17.5A2 2 0 0 0 4.5 20.5h15a2 2 0 0 0 1.7-3L13.7 4.7a2 2 0 0 0-3.4 0Z" />
-      </svg>
-    );
-  }
-  if (tone === "brand") {
-    return (
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-        <path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01" />
-      </svg>
-    );
-  }
+function FeatureIcon({ index }: { index: string }): ReactElement {
   return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <path d="M4 19V5h10l6 6v8H4Z" />
-      <path d="M14 5v6h6" />
+    <svg
+      className="absolute top-5 right-5 text-amber"
+      width="18"
+      height="18"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      aria-hidden="true"
+    >
+      {index === "01" ? (
+        <path d="M4 6h16v9H8l-4 4V6Z" />
+      ) : index === "02" ? (
+        <path d="M7 3h8l5 5v13H7V3Z M15 3v5h5" />
+      ) : index === "03" ? (
+        <path d="M12 3 5 6v6c0 5 3.2 7.8 7 9 3.8-1.2 7-4 7-9V6l-7-3Z" />
+      ) : index === "04" ? (
+        <path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2 4 4 0 0 1 7 2c0 5.6-7 10-7 10Z" />
+      ) : index === "05" ? (
+        <>
+          <circle cx="12" cy="12" r="9" />
+          <path d="M3 12h18M12 3c3 3.2 3 14.8 0 18M12 3c-3 3.2-3 14.8 0 18" />
+        </>
+      ) : (
+        <path d="M8 4h8v16H8zM8 9h8M8 14h8M11 4v16" />
+      )}
     </svg>
   );
 }
