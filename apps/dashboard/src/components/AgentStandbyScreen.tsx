@@ -3,7 +3,7 @@ import { BrandLockup } from "./AppHeader";
 import { CallHistoryPanel } from "./CallHistoryPanel";
 import { CallVolumeChart } from "./CallVolumeChart";
 import { KpiCard } from "./KpiCard";
-import { ThemeToggle } from "../../../platform/src/components/ThemeToggle";
+import { ThemeToggle } from "./ThemeToggle";
 import {
   MOCK_HOURLY_VOLUME,
   MOCK_STANDBY_KPI,
