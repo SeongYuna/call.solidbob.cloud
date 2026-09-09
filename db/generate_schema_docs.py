@@ -45,10 +45,26 @@ class Column:
 
 @dataclass
 class Table:
+    """테이블 하나.
+
+    2026-09-09 스키마 QA(`_project/decisions/205`)로 셋이 늘었다 —
+    **복합 PK 없이는 `transcript_segment` 가 통화를 가로질러 덮어써지고**(실제로 재현했다),
+    **부분 유니크 없이는 `blacklist_entry` 가 재등록을 못 받는다.**
+    """
+
     name: str
     comment: str
     columns: list[Column] = field(default_factory=list)
     cluster: str = ""
+    # 복합 PK. None 이면 `Column.key == "PK"` 하나를 쓴다(기존 동작)
+    primary_key: tuple[str, ...] | None = None
+    # 복합 FK: (자식 컬럼들, "부모테이블", 부모 컬럼들)
+    composite_fks: list[tuple[tuple[str, ...], str, tuple[str, ...]]] = field(default_factory=list)
+    unique: list[tuple[str, ...]] = field(default_factory=list)
+    # (컬럼들, WHERE 절) — 「조건을 만족하는 행 안에서만」 유일. PostgreSQL 부분 인덱스다
+    partial_unique: list[tuple[tuple[str, ...], str]] = field(default_factory=list)
+    # 인덱스: (컬럼 표현들, WHERE 절 또는 None)
+    indexes: list[tuple[tuple[str, ...], str | None]] = field(default_factory=list)
 
 
 TABLES: list[Table] = [
@@ -73,6 +89,13 @@ TABLES: list[Table] = [
             Column("agent_id", "VARCHAR(20)", "PK", nullable=False),
             Column("display_name", "VARCHAR(30)", nullable=False),
             Column("team", "VARCHAR(30)"),
+            Column("role", "ENUM('agent','admin')", nullable=False,
+                   note="J-4 는 관리자만 승인할 수 있는데(`decisions/204`) DB 가 그것을 "
+                        "식별할 방법이 없었다 — 요청 페이로드의 문자열에만 의존했다(`decisions/205` ⑦)"),
+            Column("hired_on", "DATE",
+                   note="J-5 베테랑 판정(기본 3년 이상, `_project/decisions/204`). "
+                        "근속 「연수」가 아니라 **입사일**을 둔다 — 연수를 저장하면 매년 "
+                        "갱신해야 하고, 갱신을 잊으면 조용히 틀린 배정이 된다"),
         ],
     ),
     Table(
@@ -87,6 +110,10 @@ TABLES: list[Table] = [
             Column("started_at", "DATETIME", nullable=False),
             Column("ended_at", "DATETIME"),
             Column("channel_count", "TINYINT", nullable=False, note="V1 확인: 전부 1(모노)"),
+            Column("summary_confirmed_at", "DATETIME",
+                   note="D-1~D-3 — **NULL 이면 초안이다**(`decisions/205` ⑧). `CallSummaryDraft.confirmed` 를 "
+                        "담을 자리가 없어서, 모델이 만든 초안과 상담원이 확정한 것을 DB 가 구분하지 "
+                        "못했다 — 부록 A-1 이 금지한 「모델이 정한 것을 확정한 것처럼」이 저장 계층에서 일어난다"),
             Column("stt_engine", "VARCHAR(30)", nullable=False),
             Column("status", "VARCHAR(20)", nullable=False),
             Column("summary_text", "TEXT", note="D-1, 통화 후 생성"),
@@ -94,10 +121,15 @@ TABLES: list[Table] = [
         ],
     ),
     Table(
-        "transcript_segment", "전사 세그먼트 — 발화 1건 = 1행 (1NF: 통화 전체를 한 칸에 몰아넣지 않음)",
+        "transcript_segment", "전사 세그먼트 — 발화 1건 = 1행 (1NF: 통화 전체를 한 칸에 몰아넣지 않음). "
+        "⚠ **PK 는 `(call_id, segment_id)` 복합키다**(2026-09-09, `_project/decisions/205`) — "
+        "`segment_id` 는 게이트웨이가 **통화 안에서** 매기는 순번이라(§7.3) 전역 유일하지 않다. "
+        "단독 PK 로 두었을 때 두 번째 통화의 1번 발화가 첫 통화의 1번 행을 덮어쓰는 것을 실제로 재현했다",
         cluster="통화",
+        primary_key=("call_id", "segment_id"),
         columns=[
-            Column("segment_id", "BIGINT", "PK", nullable=False),
+            Column("segment_id", "BIGINT", nullable=False,
+                   note="통화 안에서의 순번. **통화를 넘어 유일하지 않다** — call_id 와 함께 써야 한다"),
             Column("call_id", "VARCHAR(40)", "FK", "call.call_id", nullable=False, identifying=True),
             Column("speaker", "ENUM('customer','agent')", nullable=False),
             Column("text", "TEXT", nullable=False, note="마스킹 완료본만 — 원문 저장 금지 (SEC-1)"),
@@ -109,9 +141,13 @@ TABLES: list[Table] = [
     Table(
         "masking_event", "C-5 마스킹 이벤트 — 세그먼트당 여러 개 가능해 분리 (1NF)",
         cluster="통화",
+        composite_fks=[(("call_id", "segment_id"), "transcript_segment", ("call_id", "segment_id"))],
+        indexes=[(("\"call_id\"", "\"segment_id\""), None)],
         columns=[
             Column("id", "BIGINT", "PK", nullable=False, auto_increment=True),
-            Column("segment_id", "BIGINT", "FK", "transcript_segment.segment_id", nullable=False, identifying=True),
+            Column("call_id", "VARCHAR(40)", nullable=False,
+                   note="transcript_segment 복합 FK 의 짝(`decisions/205`)"),
+            Column("segment_id", "BIGINT", nullable=False, identifying=True),
             Column("pattern", "VARCHAR(4)", nullable=False, note="P1~P7"),
             Column("span_start", "INT", nullable=False),
             Column("span_end", "INT", nullable=False),
@@ -130,11 +166,16 @@ TABLES: list[Table] = [
         ],
     ),
     Table(
-        "compliance_flag", "C-1~C-4 위반 탐지 — D-4(놓친 위반 표현 누적)의 원천 데이터",
+        "compliance_flag", "C-1~C-4 위반 탐지 — D-4(놓친 위반 표현 누적)의 원천 데이터. "
+        "⚠ **C-6(고객 폭언)을 여기 담지 않는다** — `rule_code` 가 `compliance_rule`(C-1~C-4)에 FK 로 "
+        "묶여 있고, 무엇보다 **화자가 반대라** 섞으면 D-4 재학습 데이터가 오염된다. C-6 은 `call_guard_flag` 다",
         cluster="통화",
+        composite_fks=[(("call_id", "segment_id"), "transcript_segment", ("call_id", "segment_id"))],
         columns=[
             Column("id", "BIGINT", "PK", nullable=False, auto_increment=True),
-            Column("segment_id", "BIGINT", "FK", "transcript_segment.segment_id", nullable=False, identifying=True),
+            Column("call_id", "VARCHAR(40)", nullable=False,
+                   note="transcript_segment 복합 FK 의 짝(`decisions/205`)"),
+            Column("segment_id", "BIGINT", nullable=False, identifying=True),
             Column("rule_code", "VARCHAR(4)", "FK", "compliance_rule.rule_code", nullable=False),
             Column("phrase", "VARCHAR(200)", nullable=False),
             Column("confidence", "FLOAT"),
@@ -232,14 +273,18 @@ TABLES: list[Table] = [
         ],
     ),
     Table(
-        "knowledge_gap", "D-4 공백 리포트 — B/C/F 세 모듈의 실패 사례를 한 곳에 누적",
+        "knowledge_gap", "D-4 공백 리포트 — B/C/F 세 모듈의 실패 사례를 한 곳에 누적. "
+        "⚠ `description` 은 자유 입력이라 **저장 전에 마스킹을 통과시킨다**(`decisions/205` ⑤)",
         cluster="후속처리",
         columns=[
             Column("id", "BIGINT", "PK", nullable=False, auto_increment=True),
             Column("module", "ENUM('B','C','F')", nullable=False),
             Column("description", "VARCHAR(300)", nullable=False),
             Column("call_id", "VARCHAR(40)", "FK", "call.call_id"),
-            Column("segment_id", "BIGINT", "FK", "transcript_segment.segment_id"),
+            Column("call_id_seg", "VARCHAR(40)",
+                   note="transcript_segment 복합 FK 의 짝. call_id 와 같은 값이지만 "
+                        "이 표의 call_id 는 NULL 이 가능해 따로 둔다(`decisions/205`)"),
+            Column("segment_id", "BIGINT"),
             Column("closure_id", "BIGINT", "FK", "closure.closure_id"),
             Column("created_at", "DATETIME", nullable=False),
             Column("status", "ENUM('open','resolved')", nullable=False),
@@ -281,6 +326,148 @@ TABLES: list[Table] = [
             Column("phone", "VARCHAR(20)"),
             Column("operating_hours", "VARCHAR(50)"),
             Column("is_active", "BOOLEAN", nullable=False, note="폐지·이전 기관 반환 0건 검증용"),
+        ],
+    ),
+    Table(
+        "call_guard_flag", "C-6 고객 폭언·위기 신호 탐지 이벤트(2026-09-09, `_project/decisions/205` ②). "
+        "`compliance_flag` 와 **방향이 반대다** — 저쪽은 상담원 발화, 이쪽은 고객 발화다. "
+        "합치지 않는 이유 셋: ① `compliance_rule` 카탈로그가 C-1~C-4 뿐 ② 갈래 4종을 담을 컬럼이 없다 "
+        "③ 화자를 섞으면 D-4 재학습 데이터가 오염된다",
+        cluster="통화",
+        composite_fks=[(("call_id", "segment_id"), "transcript_segment", ("call_id", "segment_id"))],
+        columns=[
+            Column("id", "BIGINT", "PK", nullable=False, auto_increment=True),
+            Column("call_id", "VARCHAR(40)", nullable=False, identifying=True),
+            Column("segment_id", "BIGINT", nullable=False),
+            Column("category", "ENUM('insult','threat','sexual','distress')", nullable=False,
+                   note="⚠ `distress` 는 나머지 셋과 **대응이 정반대다**(MANUAL-5.4 — 통화를 끊지 않고 "
+                        "전문 기관 연결). 한 값으로 뭉치면 위기 상황에서 전화를 끊게 된다"),
+            Column("phrase", "VARCHAR(200)", nullable=False,
+                   note="⚠ **마스킹된 자막에서 잘라낸 구간**이다(MANUAL-5.5). 원문이 아니다"),
+            Column("span_start", "INT", nullable=False, note="문자(코드포인트) 오프셋 — 7.3절"),
+            Column("span_end", "INT", nullable=False),
+            Column("source_doc_id", "VARCHAR(30)", "FK", "document.document_id",
+                   note="근거 조항(DASAN-MANUAL-5.x). 갈래마다 다르다"),
+            Column("detected_at", "DATETIME", nullable=False),
+        ],
+    ),
+    Table(
+        "voice_outlier", "D-5 통화 온도 이상 구간(2026-09-09, `_project/decisions/203`·`205` ③). "
+        "⚠ **오디오를 보관하지 않으므로**(절대 원칙 7) 통화가 끝나면 재계산이 불가능하다 — "
+        "저장하지 않으면 통화 후 처리가 보여줄 것이 사라진다",
+        cluster="통화",
+        composite_fks=[(("call_id", "segment_id"), "transcript_segment", ("call_id", "segment_id"))],
+        columns=[
+            Column("id", "BIGINT", "PK", nullable=False, auto_increment=True),
+            Column("call_id", "VARCHAR(40)", nullable=False, identifying=True),
+            Column("segment_id", "BIGINT", nullable=False),
+            Column("speaker", "ENUM('customer','agent')", nullable=False,
+                   note="기준선은 **화자별**로 만든다 — 절대 임계값을 쓰면 베테랑 상담사가 "
+                        "통화 내내 걸린다(2026-09-09 실측)"),
+            Column("robust_z", "FLOAT", nullable=False,
+                   note="⚠ **화면에 내지 않는다**(부록 A-1). 저장하는 이유는 임계값 3.5 가 "
+                        "「재서 고른 값이 아니라」 나중에 바꿔 재판정해야 하기 때문이다 — "
+                        "저장과 표시는 다르다"),
+            Column("baseline_n", "SMALLINT", nullable=False,
+                   note="기준선을 만든 발화 수. 8 미만이면 애초에 판정하지 않는다"),
+            Column("detected_at", "DATETIME", nullable=False),
+        ],
+    ),
+    Table(
+        "blacklist_request", "J-1·J-2 상담원이 올린 블랙리스트 전환 요청 "
+        "(`_project/decisions/204`). ⚠ **시스템은 판정하지 않는다** — 상담원이 요청하고 "
+        "관리자가 결정한다. 그래서 요청과 등록(blacklist_entry)이 별도 테이블이다: "
+        "한 테이블에 status 만 두면 「승인된 적 없는 등록」과 「반려된 요청」이 섞인다. "
+        "근거 컬럼(insult/threat/sexual/temperature)을 펼쳐 둔 것은 **역정규화**다 — "
+        "요청 1건에 각 1개뿐인 값이라 별도 테이블로 빼면 조인만 늘고 얻는 것이 없다",
+        cluster="J(콜 라우팅 보호)",
+        columns=[
+            Column("request_id", "BIGINT", "PK", nullable=False, auto_increment=True),
+            Column("call_id", "VARCHAR(40)", "FK", "call.call_id", nullable=False, identifying=True),
+            Column("customer_ref", "VARCHAR(64)", nullable=False,
+                   note="⚠ **전화번호의 HMAC-SHA256 이다. 평문을 넣지 않는다**(`decisions/205` ③) — "
+                        "전화번호는 C-5 의 P4 이고, 자막에서 지운 값을 여기 평문으로 두면 "
+                        "마스킹을 앞단에 둔 의미가 사라진다. 키는 .env(SEC-2)"),
+            Column("display_hint", "VARCHAR(8)",
+                   note="화면 표시 전용(뒤 4자리 등). 조회·배정은 customer_ref 로만 한다"),
+            Column("requested_by", "VARCHAR(20)", "FK", "agent.agent_id", nullable=False),
+            Column("reason", "VARCHAR(500)", nullable=False, note="상담원이 적은 사유"),
+            Column("context_excerpt", "TEXT", nullable=False,
+                   note="⚠ **마스킹된 자막**이다. 원문을 넣지 않는다 — MANUAL-5.5 · C-5 · SEC-1"),
+            Column("call_duration_s", "INT", nullable=False),
+            Column("insult_count", "TINYINT", nullable=False),
+            Column("threat_count", "TINYINT", nullable=False),
+            Column("sexual_count", "TINYINT", nullable=False),
+            # ⚠ distress_count 를 **일부러 두지 않는다**(`decisions/205` ④).
+            # 자해·극단적 선택 암시 건수는 정신건강에 관한 정보이고, 그것이 고객 식별자와
+            # 같은 행에 무기한 남으면 「이 사람이 자해를 N회 암시했다」는 레코드가 된다.
+            # 화면 경고에 필요한 것은 요청 시점의 불리언 하나이고 프론트가 이미 그렇게 쓴다
+            # (`hasDistress()`). MANUAL-5.4 가 위기 신호를 폭언과 **다르게** 다루라고 정한
+            # 취지와도 맞는다 — 차단 대상으로 집계하지 않는다.
+            Column("temperature_outliers", "TINYINT", nullable=False,
+                   note="D-5 통화 온도 이상 구간 수(`decisions/203`). 점수가 아니라 건수다 — 부록 A-1"),
+            Column("status", "ENUM('pending','approved','rejected')", nullable=False,
+                   note="**요청의 상태만** 담는다(`decisions/205` ②). 해제(released)는 등록의 상태이지 "
+                        "요청의 상태가 아니다 — 두 곳에 두면 한쪽만 갱신돼 어긋난다. "
+                        "상담원은 pending 까지만 만들 수 있다"),
+            Column("requested_at", "DATETIME", nullable=False),
+            Column("decided_by", "VARCHAR(20)", "FK", "agent.agent_id"),
+            Column("decided_at", "DATETIME"),
+            Column("evidence_snapshot_at", "DATETIME", nullable=False,
+                   note="위 *_count 를 집계한 시각. 원천은 call_guard_flag·voice_outlier 이고 "
+                        "여기 값은 **관리자가 본 시점의 스냅샷**이다(`decisions/205`)"),
+        ],
+        indexes=[(('"status"', '"requested_at" DESC'), None)],
+    ),
+    Table(
+        "blacklist_entry", "J-4 등록 **에피소드**. 고객이 아니라 「이번 등록」이 한 행이다 — "
+        "해제 후 재등록되면 행이 하나 더 생기고 옛 행은 released_at 이 찍힌 채 남는다. "
+        "⚠ PK 를 customer_ref 로 두었더니 **재등록이 PK 위반이거나 첫 등록 이력을 덮어썼다**"
+        "(`decisions/205` ②). ⚠ **차단 목록이 아니다** — 전화는 정상적으로 받고, "
+        "바뀌는 것은 누구에게 배정되는가뿐이다",
+        cluster="J(콜 라우팅 보호)",
+        unique=[("request_id",)],
+        # 「활성 등록은 고객당 하나」만 보장한다. 이력은 쌓인다.
+        # 이 인덱스가 그대로 J-5 인입 조회(released_at IS NULL)가 타는 인덱스이기도 하다.
+        partial_unique=[(("customer_ref",), '"released_at" IS NULL')],
+        columns=[
+            Column("entry_id", "BIGINT", "PK", nullable=False, auto_increment=True),
+            Column("customer_ref", "VARCHAR(64)", nullable=False,
+                   note="전화번호의 HMAC. blacklist_request 와 같은 체계다(`decisions/205` ③)"),
+            Column("request_id", "BIGINT", "FK", "blacklist_request.request_id",
+                   nullable=False, identifying=True),
+            Column("approved_at", "DATETIME", nullable=False,
+                   note="등록 시작. 에피소드의 고유 사실이다. 승인자는 request.decided_by 로 따라간다"),
+            Column("expires_at", "DATETIME", nullable=False,
+                   note="**만료가 없으면 영구 표시가 된다**(`decisions/205` ⑤). J-5 는 "
+                        "released_at IS NULL AND expires_at > now() 만 본다. 연장은 새 요청 + 새 근거로만"),
+            Column("released_at", "DATETIME",
+                   note="해제 시각. **행을 지우지 않는다** — 지우면 「왜 풀렸는지」가 사라진다(절대 원칙 8)"),
+            Column("released_by", "VARCHAR(20)", "FK", "agent.agent_id",
+                   note="⚠ 행만 남기고 이 컬럼이 없어서 **어차피 「왜 풀렸는지」가 기록되지 않았다**"),
+            Column("release_reason", "VARCHAR(500)"),
+            Column("note", "VARCHAR(500)",
+                   note="**관리자 승인 메모**다. 요청 사유의 사본이 아니다 — 사본을 두면 "
+                        "같은 개인정보가 두 벌이 된다(`decisions/205` ⑤)"),
+        ],
+    ),
+    Table(
+        "routing_log", "J-5 배정 결과. **떨어뜨린 경우를 세는 것**이 이 테이블의 목적이다 — "
+        "「베테랑이 부족하다」가 fell_back 의 집계다",
+        cluster="J(콜 라우팅 보호)",
+        columns=[
+            Column("id", "BIGINT", "PK", nullable=False, auto_increment=True),
+            Column("call_id", "VARCHAR(40)", "FK", "call.call_id", nullable=False, identifying=True),
+            # ⚠ customer_ref 를 **일부러 두지 않는다**(`decisions/205` ③).
+            # 이 표의 목적은 fell_back 을 세는 것이고 거기에 고객 식별자가 필요 없다.
+            # 두면 「특정 번호의 민원 이력」이 쌓이는데, 그건 F-3(반복 문의 연결)을
+            # 폐기했던 이유를 뒷문으로 되살리는 것이다. 필요하면 call_id 로 따라간다.
+            Column("is_blacklisted", "BOOLEAN", nullable=False),
+            Column("assigned_agent_id", "VARCHAR(20)", "FK", "agent.agent_id"),
+            Column("fell_back", "BOOLEAN", nullable=False,
+                   note="베테랑이 없어 일반 배정으로 떨어진 건"),
+            Column("reason", "VARCHAR(200)", nullable=False),
+            Column("routed_at", "DATETIME", nullable=False),
         ],
     ),
 ]
@@ -355,13 +542,37 @@ def to_sql(tables: list[Table]) -> str:
                 fk_lines.append(
                     f"    FOREIGN KEY ({q(c.name)}) REFERENCES {q(ref_table)}({q(ref_col)})"
                 )
-        if pk_col:
+        for child_cols, ref_table, ref_cols in t.composite_fks:
+            child = ", ".join(q(x) for x in child_cols)
+            parent = ", ".join(q(x) for x in ref_cols)
+            fk_lines.append(
+                f"    FOREIGN KEY ({child}) REFERENCES {q(ref_table)}({parent})"
+            )
+        if t.primary_key:
+            col_lines.append(
+                "    PRIMARY KEY (" + ", ".join(q(x) for x in t.primary_key) + ")"
+            )
+        elif pk_col:
             col_lines.append(f"    PRIMARY KEY ({q(pk_col)})")
+        for cols in t.unique:
+            col_lines.append("    UNIQUE (" + ", ".join(q(x) for x in cols) + ")")
         col_lines.extend(check_lines)
         col_lines.extend(fk_lines)
         lines.append(",\n".join(col_lines))
         lines.append(");")
         lines.extend(comment_lines)
+        # 부분 유니크·인덱스는 CREATE TABLE 밖에 나온다 (PostgreSQL 문법)
+        for i, (cols, where) in enumerate(t.partial_unique):
+            name = f"{t.name}_uq{i}"
+            cols_sql = ", ".join(q(x) for x in cols)
+            lines.append(
+                f"CREATE UNIQUE INDEX {q(name)} ON {q(t.name)} ({cols_sql}) WHERE {where};"
+            )
+        for i, (cols, where) in enumerate(t.indexes):
+            name = f"{t.name}_idx{i}"
+            cols_sql = ", ".join(cols)  # `col DESC` 같은 표현을 그대로 받는다
+            tail = f" WHERE {where}" if where else ""
+            lines.append(f"CREATE INDEX {q(name)} ON {q(t.name)} ({cols_sql}){tail};")
         lines.append("")
     return "\n".join(lines)
 
