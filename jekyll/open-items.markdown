@@ -53,6 +53,22 @@ permalink: /open-items/
 4. **`.env.example` 에 `OLLAMA_URL`·`HF_HOME` 키가 없다.** 런북 16-1 은 파드에 둘을 주입한다.
    `.env.example` 은 자격증명 보호 훅이 편집을 막으므로 사람이 직접 채워야 한다(SEC-2)
 
+### 프론트 연동을 막는 세 겹 중 인프라 몫 (2026-09-09)
+
+프론트가 붙으려면 CORS → DB 스키마 → ES 적재 순서로 세 겹이 열려야 한다. CORS 는 `server/` 에서
+열었다([w3-cors-dashboard](/backlog/w3-cors-dashboard/)). 나머지는 kubectl 권한이 있는 쪽 일이라 올린다.
+
+1. **대시보드를 어디서 서빙할지 정해지지 않았다.** 런북은 외부에 여는 주소가 `server.solidbob.cloud` 443
+   하나라고만 적었고(16-2·18) 대시보드 호스팅은 어디에도 없다. 같은 도메인에서 Caddy 가 정적 파일로 내주면
+   CORS 가 필요 없고, 다른 origin 이면 배포 env 에 `CORS_ALLOWED_ORIGINS` 를 넣어야 한다(런북 16-1 주입 목록에
+   아직 없다). 런북 16-2 가 참조하는 `infra/docker/Caddyfile` 도 저장소에 없다 — 정성윤·조서희
+2. **런북에 지식베이스 적재 단계가 없다.** 15장(Elasticsearch)은 기동·nori 확인까지만이고,
+   `scripts/index_knowledge_base.py --to-es --recreate` 를 운영 ES 에 도는 절차가 없다. ES 는 ClusterIP 라
+   밖에서 못 치므로 클러스터 안 Job 이나 `kubectl exec` 절차가 필요하다. 이게 없으면 `/hub/search` 는
+   운영에서 계속 빈 인덱스를 본다 — 정성윤(실행)·류준(명령)
+3. **DB 스키마 적용은 런북 17장 그대로 정성윤 실행 항목이다.** 09-04 의 어긋남 4건과 별개로, 배포 순서에
+   17장·위 2번 적재가 들어가야 프론트가 붙일 게 생긴다
+
 ## 이번 주 할 일 (1주차)
 
 - [x] AI Hub 회원가입 + 휴대폰 인증 + 데이터 신청 — 5개 데이터셋(`data/raw/`) 다운로드·정리 완료
