@@ -30,7 +30,7 @@ def test_출처를_반드시_채운다():
 
 def test_점수를_그대로_옮긴다():
     """화면에 표시되는 유사도다 — '위험도'가 아니다 (부록 A-1)."""
-    assert [c.score for c in _cards(DOCS)] == [0.91, 0.55]
+    assert [c.similarity_score for c in _cards(DOCS)] == [0.91, 0.55]
 
 
 def test_검색_순서를_바꾸지_않는다():
