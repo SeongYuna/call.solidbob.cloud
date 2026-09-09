@@ -61,7 +61,11 @@ export function useGatewaySession(): GatewaySession {
             batch.cards,
             batch.call_id,
             batch.trigger_at_ms,
+            batch.fired,
           );
+        },
+        onRecommendationPending: () => {
+          useCallStore.getState().startCardsLoading();
         },
         onClosure: (event) => {
           useCallStore.getState().applyClosure(event);

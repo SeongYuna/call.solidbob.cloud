@@ -67,10 +67,10 @@ export function cardBatch(
   cards: RecommendationCard[],
 ): RecommendationBatch {
   return {
+    fired: true,
     call_id: callId,
     trigger_at_ms,
     internal_latency_ms: 780,
-    e2e_latency_ms: 1240,
     domain,
     cards,
   };

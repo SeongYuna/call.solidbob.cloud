@@ -13,6 +13,12 @@ import type { TargetLanguage } from "../language/languageMeta";
 export interface GatewayListener {
   onTranscript: (event: TranscriptEvent) => void;
   onRecommendation: (event: RecommendationBatch) => void;
+  /**
+   * 카드 추천 요청이 나가 응답을 기다리는 중임을 알린다 — §7.3 계약에 없다.
+   * mock만 보낸다(트리거 발동 시점에 쏘고 internal_latency_ms 뒤 onRecommendation).
+   * 실서버는 아직 이 신호가 없어 로딩 인디케이터가 뜨지 않는다 — 계약이 생기면 연결한다.
+   */
+  onRecommendationPending?: (callId: string) => void;
   onClosure: (event: ClosureEvent) => void;
   onStatus: (status: GatewayStatus) => void;
   onError: (message: string) => void;
