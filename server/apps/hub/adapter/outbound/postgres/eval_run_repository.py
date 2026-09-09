@@ -31,6 +31,12 @@ _MODULE_ID = {
     "compliance": "C",
     "masking": "C-5",
     "closure_gate": "F-2",
+    # 2026-09-09 추가. 없어서 `call_guard` 가 섹션명 그대로 들어갔고, **10자라 우연히
+    # VARCHAR(10) 에 맞아** 에러 없이 통과했다 — 다른 행은 `B-2`·`C-5` 인데 이것만
+    # 섹션명이었다(`_project/decisions/205`).
+    "call_guard": "C-6",
+    "voice_signal": "D-5",
+    "asr": "A-5",
 }
 
 # 절대 규칙이 걸린 모듈만 `passed_absolute_rule` 을 채운다 — 그 외는 NULL 이다.
