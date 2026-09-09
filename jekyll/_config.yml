@@ -23,8 +23,12 @@ email: fbwns1234@gmail.com
 description: >- # this means to ignore newlines until "baseurl:"
   StreamRAG : CallGuard — 통화 음성 스트림을 실시간으로 분석하고, 하이브리드 RAG와
   가드레일로 지식과 컴플라이언스를 동시에 지원하는 AICC 어시스트.
-baseurl: "" # the subpath of your site, e.g. /blog
-url: "" # the base hostname & protocol for your site, e.g. http://example.com
+# ⚠ baseurl 은 비워 둔다 — 사이트 안의 링크가 전부 `/docs/09/` 같은 루트 절대경로다(405곳).
+# 커스텀 도메인(docs.solidbob.cloud)에서는 이게 맞고, `solidbob02.github.io/call.solidbob.cloud/`
+# 같은 프로젝트 페이지 주소에서는 전부 404 가 된다. 배포 워크플로가 `--baseurl` 로
+# 덮어쓰므로(`pages.yml`) 여기 값은 로컬 `jekyll serve` 기준이다. `_project/decisions/102`·`104`
+baseurl: ""
+url: "https://docs.solidbob.cloud"
 github_username:  solidbob02
 
 # Build settings

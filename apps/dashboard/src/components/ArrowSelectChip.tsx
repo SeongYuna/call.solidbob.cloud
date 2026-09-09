@@ -1,4 +1,11 @@
-import { useEffect, useId, useRef, useState, type ReactElement } from "react";
+import {
+  useEffect,
+  useId,
+  useRef,
+  useState,
+  type ReactElement,
+  type ReactNode,
+} from "react";
 
 export interface ArrowSelectOption<T extends string = string> {
   value: T;
@@ -6,12 +13,27 @@ export interface ArrowSelectOption<T extends string = string> {
   color?: string;
 }
 
-interface ArrowSelectChipProps<T extends string> {
+interface ArrowSelectChipSelectProps<T extends string> {
   options: readonly ArrowSelectOption<T>[];
   value: T;
   onChange: (value: T) => void;
   "aria-label"?: string;
+  label?: never;
+  children?: never;
 }
+
+interface ArrowSelectChipPanelProps {
+  label: string;
+  children: ReactNode;
+  "aria-label"?: string;
+  options?: never;
+  value?: never;
+  onChange?: never;
+}
+
+type ArrowSelectChipProps<T extends string> =
+  | ArrowSelectChipSelectProps<T>
+  | ArrowSelectChipPanelProps;
 
 const closers = new Map<symbol, () => void>();
 
@@ -23,17 +45,22 @@ function closeOthers(self: symbol): void {
   }
 }
 
-export function ArrowSelectChip<T extends string>({
-  options,
-  value,
-  onChange,
-  "aria-label": ariaLabel,
-}: ArrowSelectChipProps<T>): ReactElement {
+export function ArrowSelectChip<T extends string>(
+  props: ArrowSelectChipProps<T>,
+): ReactElement {
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
   const self = useRef(Symbol("arrow-select"));
   const menuId = useId();
-  const selected = options.find((option) => option.value === value);
+  const isPanel = props.children !== undefined;
+  const selected =
+    props.options === undefined
+      ? undefined
+      : props.options.find((option) => option.value === props.value);
+  const triggerLabel =
+    props.label !== undefined
+      ? props.label
+      : (selected?.label ?? props.value ?? "");
 
   useEffect(() => {
     const id = self.current;
@@ -77,36 +104,36 @@ export function ArrowSelectChip<T extends string>({
     setOpen(true);
   }
 
-  function pick(next: T): void {
-    onChange(next);
-    setOpen(false);
-  }
-
   return (
     <div className={`arrow-select${open ? " is-open" : ""}`} ref={rootRef}>
       <button
         type="button"
         className="arrow-select-trigger"
-        aria-label={ariaLabel}
-        aria-haspopup="listbox"
+        aria-label={props["aria-label"]}
+        aria-haspopup={isPanel ? "dialog" : "listbox"}
         aria-expanded={open}
         aria-controls={menuId}
         onClick={toggle}
       >
-        {selected?.color !== undefined ? (
+        {!isPanel && selected?.color !== undefined ? (
           <span
             className="arrow-select-dot"
             style={{ background: selected.color }}
             aria-hidden="true"
           />
         ) : null}
-        <span className="arrow-select-label">{selected?.label ?? value}</span>
+        <span className="arrow-select-label">{triggerLabel}</span>
         <ChevronIcon />
       </button>
-      {open ? (
+      {open && isPanel ? (
+        <div className="arrow-select-panel" id={menuId} role="dialog">
+          {props.children}
+        </div>
+      ) : null}
+      {open && props.options !== undefined ? (
         <ul className="arrow-select-menu" id={menuId} role="listbox">
-          {options.map((option) => {
-            const active = option.value === value;
+          {props.options.map((option) => {
+            const active = option.value === props.value;
             return (
               <li key={option.value} role="presentation">
                 <button
@@ -115,7 +142,8 @@ export function ArrowSelectChip<T extends string>({
                   role="option"
                   aria-selected={active}
                   onClick={() => {
-                    pick(option.value);
+                    props.onChange?.(option.value);
+                    setOpen(false);
                   }}
                 >
                   {option.color !== undefined ? (

@@ -10,6 +10,8 @@ import {
   type ClosureEvent,
   type DemoDomain,
 } from "../types/contract";
+import { DOMAIN_COLORS } from "../lib/domainColors";
+import { evidenceHint } from "../lib/evidenceHints";
 import { cardId, evidenceTally, useCallStore } from "../store/callStore";
 import type { PanelCard } from "../store/callStore";
 import { SessionControls } from "./AppHeader";
@@ -18,6 +20,7 @@ import {
   type ArrowSelectOption,
 } from "./ArrowSelectChip";
 import { BookmarkDock } from "./BookmarkDock";
+import { CallHistoryPanel } from "./CallHistoryPanel";
 
 type TermsContentView = "closure" | "popup";
 
@@ -25,13 +28,6 @@ const VIEW_OPTIONS: readonly ArrowSelectOption<TermsContentView>[] = [
   { value: "closure", label: "충족요건" },
   { value: "popup", label: "팝업창" },
 ];
-
-const DOMAIN_COLORS: Record<DemoDomain, string> = {
-  finance: "#2DD4BF",
-  dasan: "#818cf8",
-  shopping: "#F5A623",
-  health: "#2DD4BF",
-};
 
 const DOMAIN_OPTIONS: readonly ArrowSelectOption<DemoDomain>[] = DEMO_DOMAINS.map(
   (domain) => ({
@@ -47,6 +43,10 @@ function categoryFromDocId(docId: string): string {
 
 function cardDomId(index: number): string {
   return `term-card-${index}`;
+}
+
+function hasClosureType(item: PanelCard): boolean {
+  return item.closure !== null && item.closure.closure_type.length > 0;
 }
 
 interface TermsPanelProps {
@@ -102,6 +102,9 @@ export function TermsPanel({
               aria-label="도메인"
             />
           ) : null}
+          <ArrowSelectChip label="상담기록" aria-label="상담기록">
+            <CallHistoryPanel />
+          </ArrowSelectChip>
         </div>
         {view === "closure" && tally !== null ? (
           <div className="tally-chip">
@@ -111,20 +114,53 @@ export function TermsPanel({
         ) : null}
       </header>
       <div className="panel-body terms-body" ref={bodyRef}>
-        {cards.length === 0 ? (
-          <p className="empty">관련 문서가 아직 없습니다.</p>
+        {view === "popup" ? (
+          cards.length === 0 ? (
+            <p className="empty">관련 문서가 아직 없습니다.</p>
+          ) : (
+            <ul className="term-card-list">
+              {cards.map((item, index) => (
+                <li key={`${item.card.source.doc_id}-${item.card.title}`}>
+                  <TermCard item={item} index={index} view="popup" />
+                </li>
+              ))}
+            </ul>
+          )
         ) : (
-          <ul className="term-card-list">
-            {cards.map((item, index) => (
-              <li key={`${item.card.source.doc_id}-${item.card.title}`}>
-                <TermCard item={item} index={index} view={view} />
-              </li>
-            ))}
-          </ul>
+          <ClosureCardList cards={cards} />
         )}
       </div>
       <BookmarkDock onJump={jumpTo} />
     </section>
+  );
+}
+
+/**
+ * 충족요건 탭: closure_type 있는 카드만 그린다. 없는 카드는 「충족요건 없음」을
+ * 개별 표시하지 않고 목록에서 뺀다. 여러 건이면 전부 보여 준다 — 「하나만」은
+ * 빈 목록일 때 안내 문구를 하나로 합친다는 뜻이지, 카드를 1장으로 제한하는 게 아니다.
+ */
+function ClosureCardList({ cards }: { cards: PanelCard[] }): ReactElement {
+  const linked = cards
+    .map((item, index) => ({ item, index }))
+    .filter(({ item }) => hasClosureType(item));
+
+  if (linked.length === 0) {
+    return (
+      <p className="empty closure-panel-empty">
+        충족요건이 필요한 처리가 아직 없습니다
+      </p>
+    );
+  }
+
+  return (
+    <ul className="term-card-list">
+      {linked.map(({ item, index }) => (
+        <li key={`${item.card.source.doc_id}-${item.card.title}`}>
+          <TermCard item={item} index={index} view="closure" />
+        </li>
+      ))}
+    </ul>
   );
 }
 
@@ -136,7 +172,7 @@ function TermCard({
   item: PanelCard;
   index: number;
   view: TermsContentView;
-}): ReactElement {
+}): ReactElement | null {
   const settleClosure = useCallStore((state) => state.settleClosure);
   const toggleAdoption = useCallStore((state) => state.toggleAdoption);
   const adopted = useCallStore(
@@ -147,6 +183,10 @@ function TermCard({
   const manual = cardSourceType(item.card) === "manual";
   const canSettle =
     closure !== null && closure.missing.length === 0 && !item.settled;
+
+  if (view === "closure" && !hasClosureType(item)) {
+    return null;
+  }
 
   function onAdopt(): void {
     toggleAdoption(item.card);
@@ -159,7 +199,7 @@ function TermCard({
       data-category={category}
     >
       <div className="term-card-body">
-        {view === "popup" ? (
+        {view === "popup" || closure === null ? (
           <>
             <div className="card-head">
               <p className={`card-category cat-${category.toLowerCase()}`}>
@@ -175,17 +215,18 @@ function TermCard({
               <span>{item.card.source.title}</span>
             </p>
           </>
-        ) : closure !== null ? (
-          <ClosureBlock
-            closure={closure}
-            canSettle={canSettle}
-            category={category}
-            onSettle={() => {
-              settleClosure(closure.closure_type);
-            }}
-          />
         ) : (
-          <p className="closure-empty">충족요건 없음</p>
+          <>
+            <h3>{item.card.title}</h3>
+            <ClosureBlock
+              closure={closure}
+              canSettle={canSettle}
+              category={category}
+              onSettle={() => {
+                settleClosure(closure.closure_type);
+              }}
+            />
+          </>
         )}
       </div>
     </article>
@@ -244,10 +285,22 @@ function ClosureBlock({
       <ul className="evidence-list">
         {keys.map((key) => {
           const met = closure.evidence[key] === true;
+          const hint = evidenceHint(key);
+          const label = key.replace(/_/g, " ");
           return (
             <li key={key} className={met ? "met" : "missing"}>
               {met ? <CheckIcon /> : <CrossIcon />}
-              <span>{key.replace(/_/g, " ")}</span>
+              <div className="evidence-copy">
+                <p className="evidence-label">
+                  <span>{label}</span>
+                  {hint.clause !== null ? (
+                    <span className="evidence-clause">{` — ${hint.clause}`}</span>
+                  ) : null}
+                </p>
+                {met ? null : (
+                  <p className="evidence-say">{`→ ${hint.say}`}</p>
+                )}
+              </div>
             </li>
           );
         })}

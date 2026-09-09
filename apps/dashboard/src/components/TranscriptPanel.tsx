@@ -11,10 +11,12 @@ import {
 import { BrandLockup } from "./AppHeader";
 import { MaskedText } from "./MaskedText";
 import { formatOffsetMs } from "../lib/text/codepoints";
+import { formatCallStartedAt } from "../lib/formatCallTime";
 import { findMatches, type CharRange } from "../lib/text/highlight";
 import { ManualSearchBar } from "./ManualSearchBar";
 import type { ManualSearchOutcome } from "../hooks/useGatewaySession";
-import { useCallStore } from "../store/callStore";
+import { useCallStore, type Utterance } from "../store/callStore";
+import type { TranscriptQuerySegment } from "../types/contract";
 
 /** 이 거리 안이면 맨 아래에 있는 것으로 본다. */
 const PIN_THRESHOLD_PX = 80;
@@ -29,10 +31,34 @@ interface TranscriptPanelProps {
   onManualSearch: (query: string) => Promise<ManualSearchOutcome>;
 }
 
+function historyAsUtterance(segment: TranscriptQuerySegment): Utterance {
+  return {
+    segment_id: String(segment.segment_id),
+    speaker: segment.speaker,
+    text: segment.text,
+    masked: segment.masked,
+    is_final: segment.is_final,
+    utterance_end_ms: segment.utterance_end_ms ?? 0,
+  };
+}
+
 export function TranscriptPanel({
   onManualSearch,
 }: TranscriptPanelProps): ReactElement {
-  const utterances = useCallStore((state) => state.utterances);
+  const liveUtterances = useCallStore((state) => state.utterances);
+  const viewMode = useCallStore((state) => state.viewMode);
+  const historySegments = useCallStore((state) => state.historySegments);
+  const historyStartedAt = useCallStore((state) => state.historyStartedAt);
+  const resumeLive = useCallStore((state) => state.resumeLive);
+  const isHistory = viewMode === "history";
+  const utterances = useMemo(
+    () =>
+      isHistory
+        ? historySegments.map(historyAsUtterance)
+        : liveUtterances,
+    [isHistory, historySegments, liveUtterances],
+  );
+  const prevModeRef = useRef(viewMode);
 
   const bodyRef = useRef<HTMLDivElement>(null);
   const itemRefs = useRef(new Map<string, HTMLLIElement>());
@@ -43,6 +69,14 @@ export function TranscriptPanel({
   const [showJump, setShowJump] = useState(false);
   const [query, setQuery] = useState("");
   const [hitIndex, setHitIndex] = useState(0);
+
+  useEffect(() => {
+    if (prevModeRef.current === "history" && viewMode === "live") {
+      pinnedRef.current = true;
+      setShowJump(false);
+    }
+    prevModeRef.current = viewMode;
+  }, [viewMode]);
 
   const needle = query.trim();
 
@@ -128,6 +162,15 @@ export function TranscriptPanel({
   }
 
   useEffect(() => {
+    if (isHistory) {
+      setShowJump(false);
+      pinnedRef.current = false;
+      const el = bodyRef.current;
+      if (el !== null) {
+        el.scrollTop = 0;
+      }
+      return;
+    }
     if (utterances.length === 0) {
       pinnedRef.current = true;
       setShowJump(false);
@@ -148,7 +191,7 @@ export function TranscriptPanel({
     return () => {
       window.cancelAnimationFrame(frame);
     };
-  }, [utterances, scrollToBottom]);
+  }, [isHistory, utterances, scrollToBottom]);
 
   function jumpToLatest(): void {
     pinnedRef.current = true;
@@ -201,6 +244,16 @@ export function TranscriptPanel({
       <header className="pane-header left-pane-header">
         <BrandLockup />
       </header>
+      {isHistory && historyStartedAt !== null ? (
+        <div className="history-banner" role="status">
+          <span>
+            지난 통화 보는 중 · {formatCallStartedAt(historyStartedAt)}
+          </span>
+          <button type="button" className="history-banner-back" onClick={resumeLive}>
+            실시간으로 돌아가기
+          </button>
+        </div>
+      ) : null}
       <header className="panel-head transcript-head">
         <h2 id="transcript-heading">실시간 자막</h2>
         <div className="transcript-search">
@@ -337,12 +390,14 @@ export function TranscriptPanel({
                       <span className="speaker">
                         {item.speaker === "customer" ? "고객" : "상담원"}
                       </span>
-                      <time
-                        className="ts"
-                        dateTime={`+${item.utterance_end_ms}ms`}
-                      >
-                        {formatOffsetMs(item.utterance_end_ms)}
-                      </time>
+                      {!isHistory || item.utterance_end_ms > 0 ? (
+                        <time
+                          className="ts"
+                          dateTime={`+${item.utterance_end_ms}ms`}
+                        >
+                          {formatOffsetMs(item.utterance_end_ms)}
+                        </time>
+                      ) : null}
                     </div>
                     <div className="utterance-line">
                       <p className="utterance-text">
@@ -367,7 +422,7 @@ export function TranscriptPanel({
 
       <ManualSearchBar onSearch={onManualSearch} />
 
-      {showJump ? (
+      {showJump && !isHistory ? (
         <button type="button" className="jump-latest" onClick={jumpToLatest}>
           <svg
             className="jump-latest-icon"

@@ -47,6 +47,12 @@ jobs:
         id: pages
         uses: actions/configure-pages@v5
 
+      # ⚠ `--baseurl` 은 Pages 설정에서 자동으로 온다. 커스텀 도메인이 붙기 전에는
+      # `/call.solidbob.cloud`, 붙은 뒤에는 빈 문자열이다(`configure-pages` 가 page_url 의
+      # 경로 부분을 넘긴다). 사이트 안의 링크 405곳이 `/docs/09/` 같은 루트 절대경로라
+      # **baseurl 이 비어 있어야만 맞는다** — 그래서 커스텀 도메인이 곧 404 수정이다.
+      # 커스텀 도메인은 저장소 Settings → Pages 에서 정한다(Actions 배포는 `jekyll/CNAME`
+      # 파일을 읽지 않는다 — 그 파일은 표식·이관용이다). `_project/decisions/102`
       - name: 지킬 빌드
         run: bundle exec jekyll build --baseurl "${{ steps.pages.outputs.base_path }}"
         working-directory: jekyll

@@ -29,6 +29,5 @@ paths:
 
 ## 아직 안 된 것
 
-- `frontend` → `main` PR이 없어 공개 Pages에는 이 티켓·오늘 로그가 없다
 - 아키텍처·역할 문서에 `apps/platform`을 올릴지는 미결
-- 히어로 파형이 자연스러운지는 브라우저 육안 확인이 남았다
+- 공개 URL: [https://www.solidbob.cloud/](https://www.solidbob.cloud/) (2026-08-28 Vercel)

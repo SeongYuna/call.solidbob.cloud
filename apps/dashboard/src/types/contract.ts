@@ -16,6 +16,9 @@ export interface MaskedSpan {
 
 export type DemoDomain = "finance" | "dasan" | "shopping" | "health";
 
+/** 목록·이력 계약에서 쓰는 이름. 값은 DemoDomain 과 같다. */
+export type Domain = DemoDomain;
+
 export const DEMO_DOMAINS: readonly DemoDomain[] = [
   "finance",
   "dasan",
@@ -115,4 +118,37 @@ export function hasCardSource(card: RecommendationCard): boolean {
 
 export function cardSourceType(card: RecommendationCard): CardSourceType {
   return card.source_type === "manual" ? "manual" : "auto";
+}
+
+/**
+ * 통화 목록 한 줄. 목록 API(`GET /hub/calls`)는 아직 계약에 없다.
+ * 자막 재조회는 `GET /hub/calls/{call_id}/transcript` 가 있다.
+ */
+export interface CallHistoryItem {
+  call_id: string;
+  started_at: string;
+  domain: Domain;
+  inquiry_type: string;
+  customer_ref: string;
+}
+
+/**
+ * 자막 재조회 세그먼트. `TranscriptEvent.segment_id` 는 아직 string
+ * (팀 결정 대기). 이 타입만 백엔드 `TranscriptSegmentSchema` 의 number 를 따른다.
+ */
+export interface TranscriptQuerySegment {
+  segment_id: number;
+  speaker: Speaker;
+  text: string;
+  masked: MaskedSpan[];
+  is_final: boolean;
+  utterance_end_ms: number | null;
+}
+
+export interface TranscriptPage {
+  call_id: string;
+  segments: TranscriptQuerySegment[];
+  total: number;
+  limit: number;
+  offset: number;
 }

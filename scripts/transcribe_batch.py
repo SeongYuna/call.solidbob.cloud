@@ -36,6 +36,7 @@ import os
 import sys
 import wave
 from pathlib import Path
+from typing import NamedTuple
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 OUT_DIR = REPO_ROOT / "data" / "processed" / "stt"
@@ -58,13 +59,26 @@ def load_env(path: Path) -> dict[str, str]:
     return env
 
 
-def audio_seconds(path: Path) -> float:
-    """wav 헤더로 길이를 잰다. 요청을 보내기 전에 알아야 캡을 지킬 수 있다."""
+class AudioMeta(NamedTuple):
+    seconds: float
+    rate: int
+    channels: int
+
+
+def audio_meta(path: Path) -> AudioMeta:
+    """wav 헤더에서 길이·샘플레이트·채널을 읽는다.
+
+    길이는 요청 전에 캡을 지키려고 필요하고, **샘플레이트·채널은 요청 자체에 필요하다.**
+    전에는 길이만 읽고 샘플레이트는 --sample-rate 기본값(8000)을 그대로 보냈다.
+    실제 파일이 16kHz 거나 스테레오면 구글은 엉뚱한 전사를 돌려주고 **요금은 그대로 나간다.**
+    헤더에 답이 있는데 안 읽을 이유가 없다.
+    """
     try:
         with contextlib.closing(wave.open(str(path), "rb")) as w:
-            return w.getnframes() / float(w.getframerate() or DEFAULT_SAMPLE_RATE)
+            rate = w.getframerate() or DEFAULT_SAMPLE_RATE
+            return AudioMeta(w.getnframes() / float(rate), rate, w.getnchannels() or 1)
     except (wave.Error, EOFError, OSError):
-        return 0.0
+        return AudioMeta(0.0, 0, 0)
 
 
 def file_key(path: Path) -> str:
@@ -117,12 +131,13 @@ class Budget:
 
 # ─────────────────────────────────────────────── 전사
 
-def transcribe(client, speech, path: Path, sample_rate: int) -> dict:
+def transcribe(client, speech, path: Path, meta: "AudioMeta") -> dict:
     with open(path, "rb") as f:
         content = f.read()
     config = speech.RecognitionConfig(
         encoding=speech.RecognitionConfig.AudioEncoding.LINEAR16,
-        sample_rate_hertz=sample_rate,
+        sample_rate_hertz=meta.rate,             # 헤더 값. 추측하면 요금만 내고 결과를 버린다
+        audio_channel_count=meta.channels,       # 스테레오를 모노로 보내면 전사가 깨진다
         language_code=LANGUAGE,
         enable_word_time_offsets=True,   # 발화 종료 시각 — 골든셋 스펙에 필요
         enable_automatic_punctuation=True,
@@ -151,7 +166,8 @@ def main() -> int:
     ap.add_argument("paths", nargs="*", help="전사할 wav 파일")
     ap.add_argument("--manifest", help="파일 목록이 한 줄에 하나씩 든 텍스트")
     ap.add_argument("--limit", type=int, help="앞에서 N개만")
-    ap.add_argument("--sample-rate", type=int, default=DEFAULT_SAMPLE_RATE)
+    ap.add_argument("--sample-rate", type=int,
+                    help="wav 헤더 대신 이 값을 쓴다 (헤더가 틀린 파일용 — 보통 필요 없다)")
     ap.add_argument("--dry-run", action="store_true",
                     help="쓸 초만 계산하고 요청은 보내지 않는다")
     ap.add_argument("--force", action="store_true", help="캐시를 무시하고 다시 전사")
@@ -194,13 +210,29 @@ def main() -> int:
         client = speech.SpeechClient()
 
     done = cached = skipped = failed = 0
-    planned = 0.0
+    planned = 0.0        # 캡을 지키며 이번 실행이 실제로 쓸 초
+    total_seconds = 0.0  # 캡과 무관한 대상 전체 길이 (남의 계산과 대조하는 값)
+    too_long = 0
+    rates: dict[tuple[int, int], int] = {}
+    dry_used = 0.0       # dry-run 에서 charge() 대신 누적하는 가상 사용량
 
     for path in files:
-        seconds = audio_seconds(path)
+        meta = audio_meta(path)
+        if args.sample_rate:
+            meta = meta._replace(rate=args.sample_rate)
+        seconds = meta.seconds
         if seconds <= 0:
             print(f"  건너뜀 (wav 헤더를 읽을 수 없음): {path}")
             failed += 1
+            continue
+        total_seconds += seconds
+        rates[(meta.rate, meta.channels)] = rates.get((meta.rate, meta.channels), 0) + 1
+
+        # v1 동기 recognize 는 60초·10MB 가 상한이다. 넘으면 요청이 실패한다
+        # (긴 파일은 long_running_recognize + GCS 가 필요하다).
+        if seconds > 60:
+            print(f"  건너뜀 (60초 초과 — v1 동기 recognize 한도): {path.name} [{seconds:.0f}초]")
+            too_long += 1
             continue
 
         out_path = OUT_DIR / f"{file_key(path)}.json"
@@ -208,7 +240,10 @@ def main() -> int:
             cached += 1
             continue
 
-        ok, why = budget.allows(seconds)
+        # dry-run 은 charge() 를 안 하므로 캡이 영원히 0 이다 — 가상 사용량을 더해 준다.
+        # 이걸 안 하면 "새로 쓸 초" 가 캡을 무시한 전체 길이로 나와서, 실제 실행이
+        # 하루 600초에서 멈춘다는 사실이 안 보인다.
+        ok, why = budget.allows(dry_used + seconds if args.dry_run else seconds)
         if not ok:
             print(f"  건너뜀 ({why}): {path.name} [{seconds:.0f}초]")
             skipped += 1
@@ -216,10 +251,11 @@ def main() -> int:
 
         planned += seconds
         if args.dry_run:
+            dry_used += seconds
             continue
 
         try:
-            result = transcribe(client, speech, path, args.sample_rate)
+            result = transcribe(client, speech, path, meta)
         except Exception as exc:                      # API 오류로 배치 전체가 죽지 않게
             print(f"  실패: {path.name} — {type(exc).__name__}: {exc}")
             failed += 1
@@ -230,18 +266,27 @@ def main() -> int:
             "source": str(path.relative_to(REPO_ROOT)) if path.is_absolute() else str(path),
             "seconds": round(seconds, 2),
             "language": LANGUAGE,
-            "sample_rate": args.sample_rate,
+            "sample_rate": meta.rate,
+            "channels": meta.channels,
             "transcribed_at": dt.datetime.now().isoformat(timespec="seconds"),
             **result,
         }, ensure_ascii=False, indent=2), encoding="utf-8")
         done += 1
         print(f"  전사: {path.name} [{seconds:.0f}초] → {out_path.name}")
 
-    print(f"\n전사 {done} · 캐시 {cached} · 한도로 건너뜀 {skipped} · 실패 {failed}")
+    print(f"\n전사 {done} · 캐시 {cached} · 한도로 건너뜀 {skipped} "
+          f"· 60초 초과 {too_long} · 실패 {failed}")
+    if rates:
+        fmt = " · ".join(f"{r}Hz/{c}ch {n}개" for (r, c), n in sorted(rates.items()))
+        print(f"헤더: {fmt}")
     if args.dry_run:
-        ok, why = budget.allows(planned)
-        print(f"--dry-run: 새로 쓸 초 {planned:.0f} "
-              f"({'한도 안' if ok else '한도 초과 — ' + why})")
+        print(f"--dry-run: 대상 전체 {total_seconds:.0f}초 "
+              f"({total_seconds / 3600:.1f}시간, {len(files)}건)")
+        print(f"--dry-run: 이번 실행이 실제로 쓸 초 {planned:.0f} "
+              f"(캡 {budget.per_day}초/일 · {budget.per_month}초/월 적용 후)")
+        remaining = total_seconds - planned
+        if remaining > 0:
+            print(f"           남는 {remaining:.0f}초는 캡에 막혀 이번 실행에서 처리되지 않는다")
     else:
         print(f"오늘 사용 {budget.used_today:.0f}/{budget.per_day}초 · "
               f"이번 달 {budget.used_month:.0f}/{budget.per_month}초")

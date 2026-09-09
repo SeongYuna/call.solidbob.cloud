@@ -11,7 +11,9 @@ requirement:
 depends_on:
   - "w2-baseline"
 paths:
-  - ".github/workflows/*"
+  # 게이트는 `test.yml` 에 붙는다. 전에는 `.github/workflows/*` 였는데, 그러면
+  # 배포 워크플로(`pages.yml`)만 고쳐도 이 티켓이 걸린 것처럼 경고가 뜬다(2026-08-28 실제로 겪었다).
+  - ".github/workflows/test.yml"
   - "ai/apps/evaluation/*"
 ---
 

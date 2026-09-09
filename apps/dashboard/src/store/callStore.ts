@@ -1,14 +1,17 @@
 import { create } from "zustand";
 import { cardSourceType, hasCardSource } from "../types/contract";
 import type {
+  CallHistoryItem,
   ClosureEvent,
   DemoDomain,
   MaskType,
   RecommendationCard,
   Speaker,
   TranscriptEvent,
+  TranscriptQuerySegment,
   MaskedSpan,
 } from "../types/contract";
+import { getCallTranscript } from "../lib/api/coreClient";
 import type { GatewayMode } from "../lib/ws";
 import { sliceByCodepoints } from "../lib/text/codepoints";
 
@@ -40,6 +43,9 @@ export interface PanelCard {
 /** 통화 중인가, 통화 후 처리 중인가. */
 export type CallPhase = "live" | "wrapup";
 
+/** 왼쪽 자막이 실시간인지, 상담기록인지. 실시간 발화 배열은 건드리지 않는다. */
+export type TranscriptViewMode = "live" | "history";
+
 /**
  * 상담원이 직접 찾은 기록. 못 찾은 질의가 §2.5 D-4 지식베이스 공백 후보다 —
  * 자동 추천이 놓친 것은 화면 밖에서 알 수 없으므로, 여기서 관찰되는 것만 센다.
@@ -67,6 +73,10 @@ export interface CallState {
   phase: CallPhase;
   callId: string | null;
   utterances: Utterance[];
+  viewMode: TranscriptViewMode;
+  historyCallId: string | null;
+  historyStartedAt: string | null;
+  historySegments: TranscriptQuerySegment[];
   cards: PanelCard[];
   maskingLog: MaskingLogEntry[];
   manualSearches: ManualSearchLogEntry[];
@@ -91,12 +101,18 @@ export interface CallState {
   setError: (message: string) => void;
   setDemoDomain: (domain: DemoDomain) => void;
   resetCall: () => void;
+  openHistory: (item: CallHistoryItem) => void;
+  resumeLive: () => void;
 }
 
 const emptyCall = {
   phase: "live" as CallPhase,
   callId: null as string | null,
   utterances: [] as Utterance[],
+  viewMode: "live" as TranscriptViewMode,
+  historyCallId: null as string | null,
+  historyStartedAt: null as string | null,
+  historySegments: [] as TranscriptQuerySegment[],
   cards: [] as PanelCard[],
   maskingLog: [] as MaskingLogEntry[],
   manualSearches: [] as ManualSearchLogEntry[],
@@ -337,5 +353,27 @@ export const useCallStore = create<CallState>((set) => ({
 
   resetCall: () => {
     set({ ...emptyCall, error: null });
+  },
+
+  openHistory: (item) => {
+    const page = getCallTranscript(item.call_id);
+    if (page === null) {
+      return;
+    }
+    set({
+      viewMode: "history",
+      historyCallId: item.call_id,
+      historyStartedAt: item.started_at,
+      historySegments: page.segments,
+    });
+  },
+
+  resumeLive: () => {
+    set({
+      viewMode: "live",
+      historyCallId: null,
+      historyStartedAt: null,
+      historySegments: [],
+    });
   },
 }));
