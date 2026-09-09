@@ -1,0 +1,50 @@
+# Requirement: B-2
+# **로컬 k3s 리허설용.** EC2 에 올리기 전에 같은 매니페스트를 노트북에서 돌려 본다.
+#
+#   kubectl apply -k infra/k8s/local/
+#   kubectl create secret generic server-env -n callguard \
+#     --from-literal=DATABASE_URL='postgresql://callguard:local@localhost:5432/callguard' \
+#     --from-literal=ELASTICSEARCH_URL='http://elasticsearch:9200'
+#   kubectl -n callguard port-forward svc/callguard-server 8000:80
+#
+# 운영과 다른 점 셋 —
+#  ① Ingress 를 뺀다. 로컬엔 도메인·인증서·cert-manager 가 없다. 확인은 port-forward 로.
+#  ② Elasticsearch 힙을 1g → 512m, 요청 자원도 낮춘다. 노트북 RAM 을 다 먹지 않게.
+#  ③ Google STT 키 볼륨을 뺀다. 로컬엔 그 시크릿이 없어 파드가 뜨지 못한다.
+#
+# 나머지(이미지·이름·포트·envFrom·프로브)는 운영과 **같은 것**을 쓴다.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - ../base/
+
+patches:
+  # ① Ingress 제거
+  - patch: |-
+      apiVersion: networking.k8s.io/v1
+      kind: Ingress
+      metadata:
+        name: callguard-server
+      $patch: delete
+
+  # ② ES 힙·자원 축소
+  - target: { kind: StatefulSet, name: elasticsearch }
+    patch: |-
+      - op: replace
+        path: /spec/template/spec/containers/0/env/2/value
+        value: "-Xms512m -Xmx512m"
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/requests/memory
+        value: "1Gi"
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/limits/memory
+        value: "2Gi"
+
+  # ③ GCP STT 키 볼륨 제거 (로컬엔 시크릿이 없다)
+  - target: { kind: Deployment, name: callguard-server }
+    patch: |-
+      - op: remove
+        path: /spec/template/spec/volumes
+      - op: remove
+        path: /spec/template/spec/containers/0/volumeMounts

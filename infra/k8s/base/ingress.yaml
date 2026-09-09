@@ -1,0 +1,33 @@
+# Requirement: SEC-2
+# HTTPS 종단. **k3s 내장 Traefik** 이 80/443 을 잡고, **cert-manager** 가
+# Let's Encrypt 인증서를 받아 `callguard-server-tls` 시크릿에 넣는다.
+#
+# Caddy 를 쓰지 않는다 — k3s 가 Traefik 을 기본 탑재하고, 그 위에 cert-manager 를
+# 얹는 쪽이 부품이 하나 적다. 따라서 k3s 를 `--disable=traefik` 로 설치하면 안 된다.
+#
+# ⚠ Cloudflare 의 `server` 레코드는 **회색 구름(DNS 전용)** 이어야 한다.
+#    주황 구름(프록시)이면 HTTP-01 챌린지가 끊겨 인증서를 못 받는다 (`decisions/103`).
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: callguard-server
+  annotations:
+    # 이 한 줄이 cert-manager 에게 인증서를 받아 오라고 시킨다.
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+spec:
+  ingressClassName: traefik
+  rules:
+    - host: server.solidbob.cloud
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: callguard-server
+                port:
+                  number: 80
+  tls:
+    - hosts: [server.solidbob.cloud]
+      # cert-manager 가 이 이름으로 시크릿을 만들어 넣는다. 직접 만들지 않는다.
+      secretName: callguard-server-tls

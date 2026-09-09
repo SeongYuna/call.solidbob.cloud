@@ -45,7 +45,11 @@ permalink: /docs/06/
 (검색 B 케이스 14건 / 도메인 라벨 34건) · **재현**:
 
 ```bash
-cd infra && docker compose up -d elasticsearch && cd ..
+# ES 기동 — 컴포즈는 2026-09-08 에 걷어냈다(decisions/107). 측정 당시 명령은
+# `cd infra && docker compose up -d elasticsearch` 였고, 같은 이미지·같은 버전이다.
+docker run -d --name callguard-elasticsearch -p 127.0.0.1:9200:9200 \
+  -e discovery.type=single-node -e xpack.security.enabled=false \
+  -e ES_JAVA_OPTS="-Xms512m -Xmx512m" seongyuna/callguard-es:9.5.1
 export ELASTICSEARCH_URL=http://localhost:9200
 .venv/bin/python scripts/index_knowledge_base.py --to-es --recreate
 .venv/bin/python scripts/run_eval.py --golden-set golden-set/v1-50.json --runs 3

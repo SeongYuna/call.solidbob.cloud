@@ -1,0 +1,62 @@
+# Requirement: [Task 1] FastAPI 앱 골격, SEC-1, SEC-2
+# server(FastAPI) + ai/apps 한 컨테이너. 프로젝트의 유일한 배포 단위다
+# (`_project/decisions/024`·`105`).
+#
+# **PostgreSQL 은 클러스터 안에 없다.** RDS 를 독립적으로 쓰고, 접속 정보는
+# `server-env` 시크릿으로만 들어온다(secret.example.yaml 참고).
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: callguard-server
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: callguard-server }
+  template:
+    metadata:
+      labels: { app: callguard-server }
+    spec:
+      containers:
+        - name: server
+          image: seongyuna/callguard-server:0.1.0
+          imagePullPolicy: IfNotPresent
+          envFrom:
+            # .env 전체(16개 키)가 여기로 들어온다. 없으면 파드가 뜨지 않는다 —
+            # optional: true 로 두면 postgres_configured=false 인 채 조용히 떠서
+            # 문제를 늦게 발견한다.
+            - secretRef: { name: server-env }
+          ports:
+            - { containerPort: 8000, protocol: TCP }
+          readinessProbe:
+            # ⚠ 운영 클러스터가 실제로 쓰는 값이라 그대로 뒀다.
+            #   `/health` 로 바꾸면 무엇이 안 붙었는지까지 알 수 있다(spokes·postgres·es).
+            #   바꾸려면 롤아웃이 한 번 돈다.
+            httpGet: { path: /docs, port: 8000 }
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          resources:
+            requests: { cpu: 200m, memory: 512Mi }
+            limits:   { memory: 1Gi }
+          volumeMounts:
+            # Google STT(A-1) 서비스 계정 키 파일. 값이 아니라 **파일**이라
+            # 시크릿을 볼륨으로 마운트한다 — server-env 의
+            # GOOGLE_APPLICATION_CREDENTIALS 가 이 경로를 가리켜야 한다.
+            - name: gcp-stt-credentials
+              mountPath: /home/hi/.gcp
+              readOnly: true
+      volumes:
+        - name: gcp-stt-credentials
+          secret:
+            secretName: gcp-stt-credentials
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: callguard-server
+spec:
+  type: ClusterIP
+  selector: { app: callguard-server }
+  ports:
+    # Ingress 백엔드가 80 을 본다. 컨테이너는 8000 이다.
+    - { port: 80, targetPort: 8000 }
