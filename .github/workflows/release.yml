@@ -182,33 +182,6 @@ jobs:
             exit 1
           fi
 
-      # ⚠ 일회용 진단 단계. OIDC 가 붙으면 삭제한다.
-      #   토큰 자체는 절대 찍지 않는다 — 신뢰 정책이 보는 클레임 넷만 본다.
-      #   AWS 쪽(공급자 URL·대상·신뢰 정책·역할 존재)은 CloudShell 로 전부 검증했는데도
-      #   Not authorized 가 나서, GitHub 이 실제로 보내는 값을 확인한다.
-      - name: "[진단] OIDC 클레임 · Secret ARN 대조"
-        env:
-          ARN: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
-        run: |
-          EXPECT="arn:aws:iam::621724235711:role/callguard-deploy-role"
-          if [ "$ARN" = "$EXPECT" ]; then
-            echo "ARN: ✅ 기대값과 정확히 일치"
-          else
-            echo "ARN: ❌ 불일치 — 저장된 길이 ${#ARN} / 기대 ${#EXPECT}"
-          fi
-
-          TOKEN=$(curl -sS -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
-            "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=sts.amazonaws.com" | jq -r .value)
-          if [ -z "$TOKEN" ] || [ "$TOKEN" = "null" ]; then
-            echo "::error::OIDC 토큰을 못 받았습니다 — permissions.id-token 을 확인하세요."
-            exit 0
-          fi
-          PAYLOAD=$(echo "$TOKEN" | cut -d. -f2)
-          case $(( ${#PAYLOAD} % 4 )) in 2) PAYLOAD="$PAYLOAD==" ;; 3) PAYLOAD="$PAYLOAD=" ;; esac
-          echo "GitHub 이 보내는 클레임:"
-          echo "$PAYLOAD" | tr '_-' '/+' | base64 -d 2>/dev/null \
-            | jq '{sub, aud, repository, repository_owner, ref}'
-
       - name: AWS 자격증명 (OIDC — 저장된 키 없음)
         uses: aws-actions/configure-aws-credentials@v4
         with:
