@@ -100,6 +100,10 @@ export interface CallState {
   /** 히스토리 모드 전용. 실시간 cards 와 섞지 않는다. */
   historyCards: PanelCard[];
   cards: PanelCard[];
+  /** 가장 최근 추천 응답의 fired 값. 응답을 아직 못 받았으면 null. */
+  lastFired: boolean | null;
+  /** 카드 추천 요청을 보낸 뒤 응답(cards 또는 fired:false)을 기다리는 중인가. */
+  cardsLoading: boolean;
   maskingLog: MaskingLogEntry[];
   manualSearches: ManualSearchLogEntry[];
   /** 카드 식별자 → 채택 기록. 통화가 바뀌면 함께 비워진다. */
@@ -117,7 +121,10 @@ export interface CallState {
     cards: RecommendationCard[],
     callId: string,
     triggerAtMs: number,
+    fired: boolean,
   ) => void;
+  /** 카드 추천 요청이 나가 응답을 기다리는 중임을 표시한다. */
+  startCardsLoading: () => void;
   /** 수동 검색 결과를 패널에 붙이고, 실제로 새로 추가된 건수를 돌려준다. */
   applyManualResult: (cards: RecommendationCard[]) => number;
   logManualSearch: (query: string, found: boolean) => void;
@@ -162,6 +169,8 @@ const emptyCall = {
   historyAccentHints: {} as Record<string, true>,
   historyCards: [] as PanelCard[],
   cards: [] as PanelCard[],
+  lastFired: null as boolean | null,
+  cardsLoading: false,
   maskingLog: [] as MaskingLogEntry[],
   manualSearches: [] as ManualSearchLogEntry[],
   adoptions: {} as Record<string, CardAdoption>,
@@ -316,7 +325,7 @@ export const useCallStore = create<CallState>((set) => ({
     });
   },
 
-  applyRecommendation: (incoming, callId, triggerAtMs) => {
+  applyRecommendation: (incoming, callId, triggerAtMs, fired) => {
     set((state) => {
       const withSource = incoming.filter(hasCardSource);
       const arriving = new Set(withSource.map(cardId));
@@ -330,7 +339,7 @@ export const useCallStore = create<CallState>((set) => ({
           : item,
       );
       if (added.length === 0) {
-        return { callId, cards: promoted };
+        return { callId, cards: promoted, lastFired: fired, cardsLoading: false };
       }
       let cards: PanelCard[] = [
         ...promoted,
@@ -349,8 +358,12 @@ export const useCallStore = create<CallState>((set) => ({
           cards = withClosure(cards, state.closure);
         }
       }
-      return { callId, cards };
+      return { callId, cards, lastFired: fired, cardsLoading: false };
     });
+  },
+
+  startCardsLoading: () => {
+    set({ cardsLoading: true });
   },
 
   applyManualResult: (incoming) => {

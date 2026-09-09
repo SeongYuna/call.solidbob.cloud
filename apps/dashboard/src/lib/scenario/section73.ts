@@ -19,6 +19,7 @@ export const SECTION_73_TRANSCRIPT: TranscriptEvent = {
 };
 
 export const SECTION_73_RECOMMENDATION: RecommendationBatch = {
+  fired: true,
   call_id: "c_001",
   trigger_at_ms: 3150,
   cards: [
@@ -30,7 +31,6 @@ export const SECTION_73_RECOMMENDATION: RecommendationBatch = {
     },
   ],
   internal_latency_ms: 780,
-  e2e_latency_ms: 1240,
 };
 
 export const SECTION_73_CLOSURE: ClosureEvent = {
