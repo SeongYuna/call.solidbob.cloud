@@ -1,0 +1,290 @@
+# Requirement: [Task 1], B-2, SEC-2
+#
+# 릴리스 — 이미지를 굽고 EC2 의 k3s 에 배포한다.
+#
+# 왜 이 모양인가
+#  ① **버전은 저장소가 정한다.** `infra/k8s/base/kustomization.yaml` 의 images.newTag 를
+#     읽어 그 태그로 굽는다. CI 가 태그를 만들어 저장소에 되쓰지 않는다 — main 이 보호돼
+#     있어 봇이 push 할 수 없고, 되쓰면 「저장소 = 클러스터」 불변식이 흔들린다.
+#     **버전 올리기는 PR 안에서 사람이 한다.** 그래서 "이번 머지가 배포인가"가 눈에 보인다.
+#  ② **인스턴스에서 git 을 쓰지 않는다.** 러너가 `kubectl kustomize` 로 렌더한 YAML 을
+#     SSM 으로 실어 보낸다. 인스턴스에 git 도 저장소 클론도 없고(2026-09-09 확인),
+#     굳이 만들 이유도 없다 — **CI 가 렌더한 그 YAML 이 그대로 적용된다.**
+#  ③ **SSM 을 쓰는 이유는 포트를 열지 않기 위해서다.** 러너 IP 는 매번 바뀌는데
+#     6443·22 는 담당자 IP 하나로만 열려 있다. SSM 은 인바운드를 하나도 열지 않는다.
+#  ④ **자격증명을 저장하지 않는다.** OIDC 로 callguard-deploy-role 을 빌린다(1시간 임시).
+#     신뢰 정책이 이 저장소의 refs/heads/main 으로 한정한다.
+#
+# ⚠ 이 워크플로를 main 룰셋의 **필수 통과 검사에 넣지 않는다.** 넣으면 배포가 PR 머지를 막는다.
+
+name: 릴리스 — 이미지 빌드 · k3s 배포
+
+on:
+  push:
+    branches: [main]
+    # 문서만 고친 머지로는 배포하지 않는다. main 머지가 곧 사이트 배포이기도 해서
+    # (pages.yml) 걸러 두지 않으면 진행 기록 한 줄에 API 가 재배포된다.
+    paths:
+      - "server/**"
+      - "ai/**"
+      - "infra/docker/**"
+      - "infra/k8s/**"
+      - ".dockerignore"
+      - ".github/workflows/release.yml"
+  workflow_dispatch:
+    inputs:
+      force_build:
+        description: "같은 태그가 레지스트리에 있어도 덮어써서 굽는다"
+        type: boolean
+        default: false
+
+permissions:
+  id-token: write # OIDC 토큰 발급 — 이게 없으면 역할을 못 빌린다
+  contents: read
+
+concurrency:
+  group: release
+  # 배포 도중에 취소하면 클러스터가 어중간한 상태로 남는다. 줄을 세운다.
+  cancel-in-progress: false
+
+env:
+  AWS_REGION: ap-northeast-2
+  SERVER_IMAGE: seongyuna/callguard-server
+  HEALTH_URL: https://server.solidbob.cloud/health
+
+jobs:
+  # ── 무엇을 배포할지 정한다 ────────────────────────────────────────────────
+  plan:
+    name: plan
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.read.outputs.tag }}
+      build: ${{ steps.changed.outputs.build }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2 # 직전 커밋과 비교해야 한다
+
+      - name: kustomization 에서 이미지 태그를 읽는다
+        id: read
+        run: |
+          python3 - <<'PY' >> "$GITHUB_OUTPUT"
+          import re, pathlib, sys
+          text = pathlib.Path("infra/k8s/base/kustomization.yaml").read_text(encoding="utf-8")
+          m = re.search(r'-\s*name:\s*seongyuna/callguard-server\s*\n\s*newTag:\s*"?([^"\s]+)"?', text)
+          if not m:
+              sys.exit("kustomization.yaml 에서 callguard-server 의 newTag 를 찾지 못했습니다.")
+          print(f"tag={m.group(1)}")
+          PY
+          echo "배포할 태그: $(grep '^tag=' "$GITHUB_OUTPUT" | tail -1)"
+
+      - name: 이미지를 다시 구워야 하는지 본다
+        id: changed
+        run: |
+          TAG="${{ steps.read.outputs.tag }}"
+
+          # ① 레지스트리에 그 태그가 있는가.
+          #    없으면 반드시 구워야 한다 — 없는 이미지를 적용하면 ImagePullBackOff 다.
+          #    매니페스트만 바꿔 newTag 를 올린 PR 이 정확히 이 경우다.
+          if docker manifest inspect "$SERVER_IMAGE:$TAG" > /dev/null 2>&1; then
+            EXISTS=true
+          else
+            EXISTS=false
+          fi
+          echo "레지스트리에 $TAG 있음: $EXISTS"
+
+          # ② 이미지에 들어가는 코드가 바뀌었는가.
+          BEFORE="${{ github.event.before }}"
+          if [ -z "$BEFORE" ] || [ "$BEFORE" = "0000000000000000000000000000000000000000" ]; then
+            BEFORE="HEAD~1"
+          fi
+          CHANGED=$(git diff --name-only "$BEFORE" "${{ github.sha }}" 2>/dev/null || git diff --name-only HEAD~1 HEAD)
+          echo "$CHANGED"
+          if echo "$CHANGED" | grep -qE '^(server/|ai/|infra/docker/|\.dockerignore)'; then
+            CODE=true
+          else
+            CODE=false
+          fi
+          echo "이미지 대상 코드 변경: $CODE"
+
+          # ③ 코드가 바뀌었는데 태그가 그대로면 **조용히 옛 이미지가 계속 돈다.**
+          #    imagePullPolicy: IfNotPresent 라 노드가 캐시를 재사용하기 때문이다.
+          #    rollout restart 를 해도 새 이미지를 안 받아온다 — 명령은 성공한 것처럼 보인다.
+          if [ "$CODE" = "true" ] && [ "$EXISTS" = "true" ] && [ "${{ inputs.force_build }}" != "true" ]; then
+            echo "::error::server/ai 코드가 바뀌었는데 newTag 가 '$TAG' 그대로입니다."
+            echo "같은 태그로 다시 구워도 노드는 캐시된 옛 이미지를 계속 씁니다(IfNotPresent)."
+            echo "infra/k8s/base/kustomization.yaml 의 newTag 를 올려 PR 로 넣으세요."
+            exit 1
+          fi
+
+          if [ "$EXISTS" = "false" ] || [ "${{ inputs.force_build }}" = "true" ]; then
+            echo "build=true"  >> "$GITHUB_OUTPUT"
+          else
+            echo "build=false" >> "$GITHUB_OUTPUT"
+          fi
+
+  # ── 이미지를 굽고 Docker Hub 에 올린다 ────────────────────────────────────
+  image:
+    name: image
+    needs: plan
+    if: needs.plan.outputs.build == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: 빌드 · 푸시
+        uses: docker/build-push-action@v6
+        with:
+          context: . # ⚠ 저장소 루트. main.py 가 ../ai/apps 를 참조한다
+          file: infra/docker/server.Dockerfile
+          platforms: linux/amd64 # EC2 가 x86_64 다. arm64 로 구우면 exec format error
+          push: true
+          tags: |
+            ${{ env.SERVER_IMAGE }}:${{ needs.plan.outputs.tag }}
+            ${{ env.SERVER_IMAGE }}:sha-${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  # ── k3s 에 적용한다 ──────────────────────────────────────────────────────
+  deploy:
+    name: deploy
+    needs: [plan, image]
+    # image 가 건너뛰어졌어도(매니페스트만 변경) 배포는 돈다.
+    if: always() && !cancelled() && (needs.image.result == 'success' || needs.image.result == 'skipped')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: kubectl 설치
+        run: |
+          # 러너 이미지에 kubectl 이 있다는 보장이 없다. /usr/local/bin 에 직접 쓰면
+          # 권한에 걸릴 수 있어 받아서 sudo 로 옮긴다.
+          VER=$(curl -sL https://dl.k8s.io/release/stable.txt)
+          curl -sLo kubectl "https://dl.k8s.io/release/${VER}/bin/linux/amd64/kubectl"
+          chmod +x kubectl
+          sudo mv kubectl /usr/local/bin/kubectl
+          kubectl version --client
+
+      - name: 매니페스트를 렌더한다
+        run: |
+          kubectl kustomize infra/k8s/base/ > manifest.yaml
+          echo "렌더된 리소스:"; grep -E '^kind:' manifest.yaml | sort | uniq -c
+          # 자격증명이 섞여 들어가지 않았는지 확인한다 (SEC-2).
+          if grep -qE '^kind: Secret' manifest.yaml; then
+            echo "::error::렌더 결과에 Secret 이 들어 있습니다. kustomization 의 resources 를 확인하세요."
+            exit 1
+          fi
+
+      - name: AWS 자격증명 (OIDC — 저장된 키 없음)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: 인스턴스가 켜져 있는지 본다
+        id: state
+        run: |
+          STATE=$(aws ec2 describe-instances \
+            --instance-ids "${{ secrets.EC2_INSTANCE_ID }}" \
+            --query 'Reservations[0].Instances[0].State.Name' --output text)
+          echo "인스턴스 상태: $STATE"
+          echo "state=$STATE" >> "$GITHUB_OUTPUT"
+          if [ "$STATE" != "running" ]; then
+            echo "::notice::인스턴스가 '$STATE' 라 배포를 건너뜁니다. 켜면 부팅 시 자동 수렴이 최신 상태를 적용합니다."
+          fi
+
+      - name: SSM 으로 적용한다
+        id: apply
+        if: steps.state.outputs.state == 'running'
+        run: |
+          # YAML 을 base64 로 실어 보낸다 — 따옴표·줄바꿈 이스케이프 문제를 통째로 없앤다.
+          B64=$(base64 -w0 manifest.yaml)
+          KC="KUBECONFIG=/etc/rancher/k3s/k3s.yaml"
+
+          python3 - "$B64" > params.json <<'PY'
+          import json, sys
+          b64 = sys.argv[1]
+          kc = "KUBECONFIG=/etc/rancher/k3s/k3s.yaml"
+          cmds = [
+            "set -e",
+            "mkdir -p /opt/callguard",
+            # 부팅 시 자동 수렴 유닛이 이 파일을 다시 적용한다.
+            f"echo '{b64}' | base64 -d > /opt/callguard/current.yaml",
+            f"{kc} kubectl apply -f /opt/callguard/current.yaml",
+            f"{kc} kubectl -n callguard rollout status deploy/callguard-server --timeout=180s",
+            f"{kc} kubectl -n callguard get pods -o wide",
+          ]
+          json.dump({"commands": cmds}, open(1, "w"))
+          PY
+
+          CID=$(aws ssm send-command \
+            --instance-ids "${{ secrets.EC2_INSTANCE_ID }}" \
+            --document-name AWS-RunShellScript \
+            --comment "release ${{ needs.plan.outputs.tag }} (${{ github.sha }})" \
+            --parameters file://params.json \
+            --query 'Command.CommandId' --output text)
+          echo "명령 ID: $CID"
+
+          # 끝날 때까지 기다린다. 결과를 회수하지 않으면 실패해도 CI 가 초록이 된다.
+          # 끝나거나 5분이 지날 때까지 기다린다.
+          for i in $(seq 1 60); do
+            sleep 5
+            ST=$(aws ssm get-command-invocation --command-id "$CID" \
+                   --instance-id "${{ secrets.EC2_INSTANCE_ID }}" \
+                   --query 'Status' --output text 2>/dev/null || echo Pending)
+            case "$ST" in
+              Success|Failed|Cancelled|TimedOut)
+                echo "SSM 명령 종료: $ST"
+                break
+                ;;
+            esac
+          done
+
+          echo "── 표준 출력 ──"
+          aws ssm get-command-invocation --command-id "$CID" \
+            --instance-id "${{ secrets.EC2_INSTANCE_ID }}" \
+            --query 'StandardOutputContent' --output text
+          echo "── 표준 오류 ──"
+          aws ssm get-command-invocation --command-id "$CID" \
+            --instance-id "${{ secrets.EC2_INSTANCE_ID }}" \
+            --query 'StandardErrorContent' --output text
+
+          FINAL=$(aws ssm get-command-invocation --command-id "$CID" \
+                    --instance-id "${{ secrets.EC2_INSTANCE_ID }}" \
+                    --query 'Status' --output text)
+          echo "최종 상태: $FINAL"
+          [ "$FINAL" = "Success" ]
+
+      - name: 스모크 테스트
+        if: steps.state.outputs.state == 'running'
+        run: |
+          # `spokes` 에 retrieval 이 있어야 검색이 꽂힌 것이다. 서버는 떠도 검색만
+          # 조용히 501 로 남을 수 있다(_project/decisions/024).
+          for i in $(seq 1 12); do
+            BODY=$(curl -fsS -m 10 "$HEALTH_URL" || true)
+            echo "$BODY"
+            if echo "$BODY" | grep -q '"retrieval"'; then
+              echo "✅ /health 정상 — spokes 에 retrieval 있음"; exit 0
+            fi
+            sleep 5
+          done
+          echo "::error::/health 가 retrieval 을 보고하지 않습니다."
+          exit 1
+
+      - name: 실패하면 되돌린다
+        if: failure() && steps.apply.outcome == 'failure'
+        run: |
+          echo "::warning::배포 실패 — 직전 리비전으로 되돌립니다."
+          CID=$(aws ssm send-command \
+            --instance-ids "${{ secrets.EC2_INSTANCE_ID }}" \
+            --document-name AWS-RunShellScript \
+            --parameters 'commands=["KUBECONFIG=/etc/rancher/k3s/k3s.yaml kubectl -n callguard rollout undo deploy/callguard-server"]' \
+            --query 'Command.CommandId' --output text)
+          echo "롤백 명령 ID: $CID"
