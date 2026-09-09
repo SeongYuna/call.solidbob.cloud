@@ -79,7 +79,7 @@ jobs:
 
       - name: 테스트 의존성 설치
         # 버전은 ai/requirements.txt 의 고정값과 같게 유지한다.
-        run: pip install pytest==9.1.1 pydantic==2.13.4 import-linter==2.13
+        run: pip install pytest==9.1.1 pydantic==2.13.4 import-linter==2.13 numpy==2.5.2
 
       - name: 테스트 실행
         # evaluation 이 hub 의 계약(포트·DTO)을 import 한다 — 의존 방향 ai → server.
