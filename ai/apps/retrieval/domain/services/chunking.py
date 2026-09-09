@@ -1,7 +1,7 @@
 # Requirement: B-2
 """지식베이스 마크다운 → 색인 청크. 순수 규칙 계산이므로 domain 계층에 둔다.
 
-**1 조항 = 1 청크.** 각 조항은 `knowledge-base/` 안에 `<!-- id: FIN-TERM-1.1 -->` 주석으로
+**1 조항 = 1 청크.** 각 조항은 `knowledge-base/` 안에 `<!-- id: DASAN-TERM-1.1 -->` 주석으로
 이미 경계와 ID 가 표시돼 있고, 그 ID 가 골든셋 `expected_doc_ids` 의 단위다. 고정 길이로
 자르면 조항 경계를 넘나들어 청크 하나가 여러 조항에 걸치고, 그러면 Recall@5 를 채점할 수
 없다 — 그래서 상한(`MAX_CHARS`)을 넘는 조항만 예외적으로 쪼갠다.
@@ -23,7 +23,7 @@ _HEADING = re.compile(r"^#{2,6}\s+(.*)$", re.MULTILINE)
 
 
 def parse_doc_id(doc_id: str) -> tuple[str, str]:
-    """`FIN-TERM-3.2` → ("finance", "TERM"). 접두어를 모르면 ValueError."""
+    """`DASAN-TERM-3.2` → ("dasan", "TERM"). 접두어를 모르면 ValueError."""
     parts = doc_id.split("-")
     if len(parts) < 3:
         raise ValueError(f"조항 ID 형식이 아니다: {doc_id!r}")

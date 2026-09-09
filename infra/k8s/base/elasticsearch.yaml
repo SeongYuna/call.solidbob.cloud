@@ -1,0 +1,63 @@
+# Requirement: B-2
+# nori(BM25) 하이브리드 검색용. 이미지는 infra/elasticsearch/Dockerfile 로 구운 것이다.
+#
+# **StatefulSet 인 이유**: 데이터 볼륨이 파드에 1:1 로 따라붙어야 한다.
+# Deployment + PVC 로 두면 롤링 업데이트 때 새 파드가 같은 ReadWriteOnce 볼륨을
+# 잡으려다 멈춘다. volumeClaimTemplates 는 파드 이름에 묶인 볼륨을 만든다.
+#
+# ⚠ Service 를 headless(ClusterIP: None)로 둔다 — StatefulSet 의 안정적인 이름
+#   (elasticsearch-0.elasticsearch)을 쓰기 위해서다. `http://elasticsearch:9200` 도 그대로 된다.
+# ⚠ Ingress·NodePort 로 열지 않는다. xpack.security 를 껐으므로 인증이 없다.
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: elasticsearch
+spec:
+  replicas: 1
+  serviceName: elasticsearch
+  selector:
+    matchLabels: { app: elasticsearch }
+  template:
+    metadata:
+      labels: { app: elasticsearch }
+    spec:
+      securityContext:
+        # ES 이미지가 uid/gid 1000 으로 돈다. 볼륨 소유권을 맞춰주지 않으면
+        # 데이터 디렉터리에 못 써서 기동에 실패한다.
+        fsGroup: 1000
+      containers:
+        - name: elasticsearch
+          image: seongyuna/callguard-es:9.5.1
+          imagePullPolicy: IfNotPresent
+          env:
+            - { name: discovery.type, value: single-node }
+            - { name: xpack.security.enabled, value: "false" }
+            # JVM 의 g 접미사는 GiB(2^30)다. 물리 RAM 의 절반 이하로 잡는다 —
+            # 나머지는 Lucene 이 파일 캐시로 쓴다.
+            - { name: ES_JAVA_OPTS, value: "-Xms1g -Xmx1g" }
+          ports:
+            - { containerPort: 9200, protocol: TCP }
+          resources:
+            requests: { cpu: 500m, memory: 2Gi }
+            limits:   { memory: 3Gi }
+          volumeMounts:
+            - { name: data, mountPath: /usr/share/elasticsearch/data }
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: [ReadWriteOnce]
+        resources:
+          requests:
+            storage: 10Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: elasticsearch
+spec:
+  clusterIP: None          # headless
+  selector: { app: elasticsearch }
+  ports:
+    - { port: 9200, targetPort: 9200 }

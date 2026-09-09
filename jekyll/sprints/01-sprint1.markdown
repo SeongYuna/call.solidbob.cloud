@@ -18,7 +18,7 @@ permalink: /sprints/01/
 <tr><td class="nowrap" rowspan="4">08-25 (화)</td><td>기획서 rev.4(실시간 상담원 어시스트 RAG) 확정 — 사업명 <strong>CallGuard</strong>(StreamRAG : CallGuard)</td><td>완료</td></tr>
 <tr><td>팀 구성 재확정: 정성윤(AWS·인프라) · 류준(백엔드·AI) · 장민석(앱·프론트엔드), 3인</td><td>완료</td></tr>
 <tr><td>사이트 전체 마이그레이션 — 표지, 개발목차, 본문 15개 페이지(<code>docs/01</code>~<code>docs/15</code>) 재구성</td><td>완료</td></tr>
-<tr><td>깃허브 원격을 <code>github.com/solidbob02/call.solidbob.cloud</code>로 교체, 로컬 <code>backend</code> 브랜치 생성</td><td>완료</td></tr>
+<tr><td>깃허브 원격을 <code>github.com/SeongYuna/call.solidbob.cloud</code>로 교체, 로컬 <code>backend</code> 브랜치 생성</td><td>완료</td></tr>
 
 <tr><td class="nowrap" rowspan="6">08-26 (수)</td><td>AI Hub 데이터 신청·승인, <strong>V1~V4 전제 4건 실측</strong>(채널 구성 / GPU / STT 숫자 출력 / 부분 결과 지연)</td><td>완료</td></tr>
 <tr><td>인터페이스 스키마 <strong>v2</strong> 확정 — interim 교체용 <code>segment_id</code> 추가</td><td>완료</td></tr>

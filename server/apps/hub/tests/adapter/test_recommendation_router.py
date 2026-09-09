@@ -51,6 +51,10 @@ def test_발동하면_카드를_계약_형태로_돌려준다():
         assert b["cards"][0]["source"]["doc_id"] == "SHOP-TERM-4.1"
         assert b["cards"][0]["summary"] == "단순 변심은 고객 부담"
         assert b["internal_latency_ms"] is not None
+        # 7.3절 계약 필드명 — DB recommendation_card.similarity_score 와 같다 (decisions/003).
+        # 이 단언이 없어서 표면이 score 로 어긋난 채 3주를 갔다.
+        assert b["cards"][0]["similarity_score"] == 0.91
+        assert "score" not in b["cards"][0]
     finally:
         app.dependency_overrides.clear()
 

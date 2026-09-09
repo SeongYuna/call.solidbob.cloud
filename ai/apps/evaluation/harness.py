@@ -56,6 +56,16 @@ class Ports:
 
 NOT_IMPLEMENTED = "측정 불가 — 모듈 미구현"
 
+# 스포크는 꽂혔는데 **골든셋에 채점 대상이 없는** 상태. `NOT_IMPLEMENTED` 와 구분한다 —
+# 전자는 "만들지 않았다", 이쪽은 "만들었는데 잴 표본이 없다"이고 다음 할 일이 다르다.
+#
+# ⚠ 이 상수가 없으면 **표본 0건이 통과로 보고된다.** 채점기는 "틀린 게 없으면 통과"로
+# 계산하므로(`len(failures) == 0`) 빈 입력에 `absolute_rule_passed: True` 를 낸다.
+# 절대 규칙(C-5·F-2)에서 그건 가짜 만점이다 — 트리거를 일부러 안 꽂아 둔 것과 같은 이유다
+# (절대 원칙 10). 장민석이 2026-08-27 에 `test_골든셋에_C5_케이스가_실려있다` 로 pytest
+# 쪽에 세운 「빈 채로 초록불」 가드를, 2026-08-28 에 하네스 리포트 쪽에도 세웠다.
+NO_SAMPLES = "측정 불가 — 골든셋에 채점 대상이 없다"
+
 
 def _event_from_item(item: GoldenItem) -> TranscriptEvent:
     """골든셋 항목을 트리거 포트가 받는 전사 이벤트로 바꾼다. 골든셋 발화는 이미 마스킹된 텍스트 취급."""
@@ -163,12 +173,19 @@ def run_eval(items: list[GoldenItem], ports: Ports) -> dict:
                         was_masked=pii.pattern in predicted_patterns,
                     )
                 )
-        report["masking"] = masking_metrics.score_masking(cases)
+        # 마스킹도 같다 — 표본이 0건이면 「누락 0건 통과」가 아니라 「잴 것이 없다」다.
+        report["masking"] = masking_metrics.score_masking(cases) if cases else NO_SAMPLES
 
     # F-2: 종결 게이트 (절대 규칙)
     f2_items = [it for it in items if it.f2_case is not None]
     if ports.closure_gate is None:
         report["closure_gate"] = NOT_IMPLEMENTED
+    elif not f2_items:
+        # 2026-08-28 다산 단일 도메인 전환(`decisions/201`)으로 종결 케이스가 0건이 됐다.
+        # 여기서 채점기를 부르면 `absolute_rule_passed: True` 가 나온다 — **통과가 아니라
+        # 잴 것이 없는 것**이므로 구분해서 보고한다. 필요서류 체크리스트 케이스가 생기면
+        # 이 분기를 타지 않게 되고, 그때 F-2 는 다시 진짜로 채점된다.
+        report["closure_gate"] = NO_SAMPLES
     else:
         predictions = []
         for it in f2_items:

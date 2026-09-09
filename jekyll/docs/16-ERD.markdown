@@ -4,6 +4,8 @@ title: 데이터베이스 ERD
 permalink: /docs/16/
 ---
 
+{% include pivot-201.html note="**이 페이지에서 바뀐 것**: `call.domain` 컬럼은 값이 `dasan` 하나뿐이라 사실상 상수가 됐다. **컬럼을 지우지는 않았다** — 되돌릴 때 마이그레이션이 더 비싸다. 새 기능(A-3 언어 코드 · C-6 폭언 · D 감정)에 필요한 스키마는 아직 설계되지 않았다." %}
+
 [3장 시스템 아키텍처](/docs/03/)는 `call`·`transcript`·`recommendation`·`closure`·
 `eval_result` 5개 테이블만 언급한다. 이건 아키텍처 다이어그램에 들어간 5개 큰 덩어리일
 뿐, 기능 명세를 하나씩 대조해보면 1:N 관계로 쪼개야 할 하위 데이터와 원래 계획엔 없던
@@ -15,12 +17,12 @@ permalink: /docs/16/
 > `db/docs/ERD.md`(이 페이지의 상세 버전 + 팀 교차검증 체크리스트).
 
 > **✅ 도메인 4종 정리 완료 (2026-08-26)**: 데모 도메인을 통신 단일에서 4종(금융보험·
-> 다산콜센터·쇼핑·질병관리본부)으로 바꾸면서([`_project/decisions/004`](https://github.com/solidbob02/call.solidbob.cloud)),
+> 다산콜센터·쇼핑·질병관리본부)으로 바꾸면서([`_project/decisions/004`](https://github.com/SeongYuna/call.solidbob.cloud)),
 > 통신 전용이던 `plan`(요금제) 테이블을 제거하고 `subscriber`를 `customer`로 정리했다.
 > `call`에 `domain` 컬럼을 추가해 도메인 라우팅 정보를 스키마에 명시했고, `closure`의
 > `closure_type`·evidence 컬럼을 실제 F-2 적용 도메인(금융보험·쇼핑)의 처리 유형으로
 > 교체했다. 17개 → 16개 테이블. 상세: `_project/decisions/006-db-스키마-도메인-정리.md`,
-> [`db/docs/ERD.md`](https://github.com/solidbob02/call.solidbob.cloud/blob/main/db/docs/ERD.md).
+> [`db/docs/ERD.md`](https://github.com/SeongYuna/call.solidbob.cloud/blob/main/db/docs/ERD.md).
 
 ## ERD
 
@@ -59,7 +61,7 @@ permalink: /docs/16/
 **논의로 남긴 것**: F-2 근거를 `closure`에 넓게 둘지, 팀원처럼 `closure_requirement`
 (요건 정의 테이블) + `closure_evidence`(EAV, 근거 세그먼트 추적) 구조로 갈지는 결정하지
 않았다. 팀원 방식이 확장성·추적성 면에서 실질적 장점이 있어 F-2 구현 시 재검토한다.
-상세 비교는 [`db/docs/ERD.md`](https://github.com/solidbob02/call.solidbob.cloud) 참고.
+상세 비교는 [`db/docs/ERD.md`](https://github.com/SeongYuna/call.solidbob.cloud) 참고.
 
 ## 관계선 표기법 — 실선(식별) vs 점선(비식별)
 
@@ -114,7 +116,7 @@ ERD.png 왼쪽 위 범례 참고. **실선**은 자식이 부모 없이는 존�
 5. **통화 → 후속처리**: 종료 후 `follow_up_action` 여러 건, 실패 시 `knowledge_gap`에
    누적 — `call`·`transcript_segment`·`closure` 세 곳을 전부 (nullable) FK로 가리킴.
 6. **평가는 별도 축**: `eval_run` 1건에 `eval_result` 여러 건. 통화 데이터와 직접 연결
-   안 됨 — 골든셋 기반([golden-set/README.md](https://github.com/solidbob02/call.solidbob.cloud)
+   안 됨 — 골든셋 기반([golden-set/README.md](https://github.com/SeongYuna/call.solidbob.cloud)
    참고).
 7. **`resource_center`는 고립 노드**: G-2 조건부라 지금은 FK 관계 없음.
 

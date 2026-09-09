@@ -43,12 +43,34 @@ from hub.adapter.outbound.postgres.eval_run_repository import (  # noqa: E402
     EvalRunRecord,
     PostgresEvalRunRepository,
 )
-from masking.adapter.outbound.rule_masking_adapter import RuleMaskingAdapter  # noqa: E402
+from masking.adapter.outbound.rule_masking_adapter import (  # noqa: E402
+    PARTIAL_PATTERNS,
+    SUPPORTED_PATTERNS,
+    RuleMaskingAdapter,
+)
 from retrieval.adapter.outbound.es_bm25_retriever import EsBm25Retriever  # noqa: E402
 from retrieval.adapter.outbound.es_index import SINGLE_INDEX  # noqa: E402
-from retrieval.adapter.outbound.search_domain_router import SearchDomainRouter  # noqa: E402
 
-DEFAULT_CLASSIFIER_DIR = ROOT / "models" / "domain-classifier"
+
+def masking_coverage(items) -> dict[str, list[str]]:
+    """어댑터가 **지원한다고 선언한 패턴**과 **골든셋이 실제로 재는 패턴**을 대조한다.
+
+    **여기서 하는 이유**: 어댑터의 선언(`SUPPORTED_PATTERNS`·`PARTIAL_PATTERNS`)은
+    `server/apps/masking/` 에 있고 골든셋은 `evaluation` 이 읽는다. 둘을 동시에 아는 코드는
+    양쪽 계약 밖의 **합성 루트**에 있어야 한다 — 이 파일이 그 자리다. 포트를 넓히지 않고
+    상수를 읽기만 하므로 `MaskingPort` 계약은 그대로다.
+
+    장민석이 2026-08-27 에 `PARTIAL_PATTERNS` 를 두며 *"완전 지원과 뭉뚱그리면 평가
+    하네스가 수치를 해석할 수 없다"* 고 적었다. 그 선언을 실제로 읽는 곳이 없어서
+    (`ai/` 에서 grep 0건) 2026-08-28 에 이었다.
+    """
+    measured = {p.pattern for it in items for p in it.pii_patterns}
+    return {
+        "measured": sorted(measured),
+        "uncovered": sorted(set(SUPPORTED_PATTERNS) - measured),
+        "rule_fallback": sorted(set(PARTIAL_PATTERNS) & measured),
+    }
+
 
 
 def _es_client(url: str | None):
@@ -71,48 +93,8 @@ def _es_client(url: str | None):
     return client
 
 
-def build_domain_router(kind: str, retriever, *, model_dir: Path):
-    """B-0 라우터를 고른다. `decisions/007` 의 ①(분류기) / ②(검색 폴백)에 대응한다.
-
-    `auto` 는 **검색 기반 v1** 을 쓴다. 분류기가 있어도 마찬가지다 —
-    2026-08-27 실측에서 분류기(골든셋 0.786)가 v1(0.857)을 못 넘었기 때문이다.
-    AI Hub 검증에서는 0.879 인데 골든셋에서는 안 오른다(분포가 다르다).
-
-    분류기가 v1 을 넘는 것이 측정되면 이 기본값을 뒤집는다. 그때까지 분류기를 보려면
-    `--domain-router model` 로 **명시적으로** 고른다 — 더 나쁜 쪽이 기본값으로 조용히
-    끼어들면 안 된다. 어느 쪽으로 쟀는지는 실행할 때 출력에 찍힌다.
-    """
-    if kind == "none":
-        return None
-    if kind == "model" and model_dir.is_dir():
-        from training.adapter.outbound.model_domain_router import ModelDomainRouter
-
-        print(f"B-0: 분류기 사용 — {model_dir}")
-        return ModelDomainRouter(model_dir)
-    if kind == "model":
-        raise SystemExit(
-            f"분류기가 없다: {model_dir}\n"
-            "  .venv/bin/python scripts/train_domain_classifier.py 로 먼저 학습한다"
-        )
-    if model_dir.is_dir():
-        print("B-0: 검색 기반 v1 사용 (분류기가 있지만 v1 이 더 낫다 — --domain-router model 로 강제)")
-    else:
-        print("B-0: 검색 기반 v1 사용 (분류기 없음)")
-    return SearchDomainRouter(retriever)
-
-
-def build_ports(
-    client,
-    *,
-    index: str,
-    domain_router: str = "auto",
-    model_dir: Path = DEFAULT_CLASSIFIER_DIR,
-) -> Ports:
+def build_ports(client, *, index: str) -> Ports:
     """구현된 스포크만 꽂는다. 나머지는 None — 하네스가 "미구현"으로 보고한다.
-
-    B-0 인자 둘은 CLI 기본값과 같은 값을 기본으로 갖는다. `main()` 은 항상 명시적으로
-    넘기고, 배선만 보는 테스트(`ai/tests/test_eval_wiring.py`)는 `build_ports(None, index=...)`
-    로 부른다 — 둘을 필수로 두면 그 테스트가 시그니처 때문에 깨진다.
 
     `masking`·`closure_gate` 는 `server/apps/` 에 산다. 규칙 기반 판정이라 요청 경로에서
     매번 실행되기 때문이다(`server/CLAUDE.md` §0). **여기서 꽂는 것이 계약 위반이 아닌 이유**:
@@ -120,7 +102,7 @@ def build_ports(
     **밖의 합성 루트**라 어느 쪽 계약에도 걸리지 않는다.
 
     ⚠ **ES 가 없어도 마스킹·F-2 는 채점된다.** 둘 다 외부 의존이 없는 순수 규칙이라
-    `ELASTICSEARCH_URL` 없이도 숫자가 나온다 — 검색·B-0 만 "측정 불가"로 남는다.
+    `ELASTICSEARCH_URL` 없이도 숫자가 나온다 — 검색만 "측정 불가"로 남는다.
     """
     if client is None:
         # ES 가 없을 때도 순수 규칙 두 개는 꽂는다 — 여기서 Ports() 를 비워 돌려주면
@@ -133,7 +115,6 @@ def build_ports(
     retriever = EsBm25Retriever(client, index=index)
     return Ports(
         retrieval=retriever,
-        domain_routing=build_domain_router(domain_router, retriever, model_dir=model_dir),
         masking=RuleMaskingAdapter(),           # C-5 (server/apps/masking)
         closure_gate=RuleClosureGateAdapter(),  # F-2 (server/apps/closure_gate)
         # ⚠ trigger 는 **구현이 있는데도 일부러 꽂지 않는다**(IsFinalTrigger, B-1).
@@ -144,6 +125,9 @@ def build_ports(
         #   시각을 실어 보내게 되면 그때 꽂는다. 서버 경로에는 꽂는다(발동 여부는 진짜 판정이다).
         #
         # 아직 구현이 없는 것: compliance(6주차) · postcall D-1~D-3(7주차)
+        #
+        # B-0 도메인 라우팅은 2026-08-28 단일 도메인 전환으로 사라졌다(`decisions/201`).
+        # 허브 포트는 계약으로 남아 있고 구현체가 없어 계속 "측정 불가"로 보고된다.
     )
 
 
@@ -154,13 +138,6 @@ def main() -> int:
     ap.add_argument("--runs", type=int, default=1, help="N 번 돌려 최저치를 함께 낸다 (절대 원칙 4)")
     ap.add_argument("--record", action="store_true",
                     help="결과를 PostgreSQL 의 eval_run/eval_result 에 남긴다 (CLAUDE.md §5)")
-    ap.add_argument(
-        "--domain-router",
-        choices=("auto", "model", "search", "none"),
-        default="auto",
-        help="B-0 판정 방식. auto(기본): 검색 기반 v1 — 분류기가 아직 v1 을 못 넘었다",
-    )
-    ap.add_argument("--classifier", type=Path, default=DEFAULT_CLASSIFIER_DIR)
     args = ap.parse_args()
 
     golden_path = args.golden_set or (ROOT / "golden-set" / "v1-10.json")
@@ -169,11 +146,13 @@ def main() -> int:
     if client is None:
         print("⚠ ELASTICSEARCH_URL 이 없다 — 검색은 '측정 불가'로 보고된다.\n")
 
-    ports = build_ports(
-        client, index=args.index, domain_router=args.domain_router, model_dir=args.classifier
-    )
+    ports = build_ports(client, index=args.index)
     reports = [run_eval(items, ports) for _ in range(args.runs)]
-    print_report(reports[0], golden_set_path=golden_path)
+    print_report(
+        reports[0],
+        golden_set_path=golden_path,
+        masking_coverage=masking_coverage(items),
+    )
 
     if args.runs > 1:
         _print_worst(reports)

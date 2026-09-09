@@ -1,6 +1,5 @@
 import type {
   CallWrapUp,
-  DemoDomain,
   ManualSearchRequest,
   RecommendationBatch,
   RecommendationCard,
@@ -8,6 +7,12 @@ import type {
 } from "../types/contract";
 import type { GatewayClient, GatewayListener } from "../lib/ws/types";
 import { getScenario } from "./scenarios";
+import { DEFAULT_LOCAL_RESOURCES } from "./localResources";
+import { sentimentFromScenario } from "./sentiment";
+import {
+  mockAgentTts,
+  mockCustomerTranslation,
+} from "../lib/translation/mockSource";
 
 /** 발화 직후 종결 상태를 보내는 간격. 실측이 아님. */
 const CLOSURE_AFTER_UTTERANCE_MS = 800;
@@ -20,32 +25,58 @@ const MANUAL_SEARCH_MS = 800;
 const WRAP_UP_MS = 600;
 
 /**
- * domain 으로 시나리오 하나를 골라 재생한다.
+ * 다산콜센터 mock 시나리오를 재생한다.
  * 발화 시각은 utterance_end_ms 를 쓰되, 발화 사이 간격만 2초 줄여 재생한다.
  */
 export class MockGatewayClient implements GatewayClient {
   readonly mode = "mock" as const;
   private timers: number[] = [];
   private aborted = false;
-
-  constructor(private readonly domain: DemoDomain) {}
+  /** connect 시점 시나리오. 칩만 바꾸고 재생 전이면 검색·랩업이 다른 통화와 섞이지 않게 한다. */
+  private playing = getScenario();
 
   connect(listeners: GatewayListener): void {
     this.disconnect();
     this.aborted = false;
     listeners.onStatus({ mode: "mock", connected: true });
 
-    const scenario = getScenario(this.domain);
+    const scenario = getScenario();
+    this.playing = scenario;
+    listeners.onCallLanguage?.(scenario.targetLanguage ?? null);
     const playAt = playbackClock(scenario.transcripts);
 
     for (const event of scenario.transcripts) {
       this.schedule(playAt(event.utterance_end_ms), () => {
         listeners.onTranscript(event);
+        const translation = mockCustomerTranslation(scenario, event.segment_id);
+        if (translation !== undefined) {
+          listeners.onTranslation?.(event.segment_id, translation);
+        }
+        const tts = mockAgentTts(scenario, event.segment_id);
+        if (tts !== undefined) {
+          listeners.onAgentTts?.(event.segment_id, tts);
+        }
+        const guard = scenario.callGuard?.[event.segment_id];
+        if (guard !== undefined) {
+          listeners.onCallGuard?.(event.segment_id, guard);
+        }
+        if (
+          scenario.accentRecognition === true &&
+          event.speaker === "customer"
+        ) {
+          listeners.onAccentRecognition?.(event.segment_id);
+        }
       });
     }
 
     for (const batch of scenario.cardBatches) {
-      this.schedule(playAt(batch.trigger_at_ms), () => {
+      const firedAt = playAt(batch.trigger_at_ms);
+      // 트리거 발동 시점에 "검색 중" 신호를 먼저 보내고, internal_latency_ms 만큼
+      // 뒤에 카드를 배달한다 — 실측이 아니라 로딩 인디케이터 표시용 값이다.
+      this.schedule(firedAt, () => {
+        listeners.onRecommendationPending?.(batch.call_id);
+      });
+      this.schedule(firedAt + batch.internal_latency_ms, () => {
         listeners.onRecommendation(batch);
       });
     }
@@ -79,11 +110,13 @@ export class MockGatewayClient implements GatewayClient {
     // 버려지면 promise 가 영영 안 풀려 화면이 "검색 중" 에 갇힌다.
     return new Promise((resolve) => {
       window.setTimeout(() => {
-        const pool = getScenario(this.domain).cardBatches.flatMap(
+        const pool = this.playing.cardBatches.flatMap(
           (batch) => batch.cards,
         );
         const matched = bestMatch(pool, request.query);
         resolve({
+          // 수동 검색은 상담원이 직접 건 것이라 항상 "검색은 했다" — 자동 트리거 개념(fired)과는 별개다.
+          fired: true,
           call_id: request.call_id,
           // 수동 검색은 트리거가 없다. 지연도 실측이 아니다.
           trigger_at_ms: 0,
@@ -92,17 +125,25 @@ export class MockGatewayClient implements GatewayClient {
               ? []
               : [{ ...matched, source_type: "manual" as const }],
           internal_latency_ms: MANUAL_SEARCH_MS,
-          e2e_latency_ms: MANUAL_SEARCH_MS,
         });
       }, MANUAL_SEARCH_MS);
     });
   }
 
-  /** 요약·분류 모델이 없어 시나리오에 적어둔 문장을 그대로 돌려준다. */
+  /** 요약·분류·감정분석 모델이 없어 시나리오 문장과 C-6 건수만 돌려준다. */
   wrapUp(callId: string): Promise<CallWrapUp> {
     return new Promise((resolve) => {
       window.setTimeout(() => {
-        resolve({ call_id: callId, ...getScenario(this.domain).wrapUp });
+        resolve({
+          call_id: callId,
+          ...this.playing.wrapUp,
+          local_resources:
+            this.playing.wrapUp.local_resources !== undefined &&
+            this.playing.wrapUp.local_resources.length > 0
+              ? this.playing.wrapUp.local_resources
+              : [...DEFAULT_LOCAL_RESOURCES],
+          sentiment: sentimentFromScenario(this.playing, callId),
+        });
       }, WRAP_UP_MS);
     });
   }

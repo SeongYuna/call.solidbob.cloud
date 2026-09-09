@@ -19,16 +19,16 @@
     app.dependency_overrides[get_trigger_port] = build_trigger_provider()
     SPOKES.append("trigger")
 
-    # B-0 은 선택이라 허브 기본값이 None 이다(501 이 아니다). v1 골든셋 0.857 로
-    # 목표(0.95)에 못 미쳐, 켜면 약 7건 중 1건은 틀린 도메인으로 검색이 좁아진다.
-    # app.dependency_overrides[get_domain_routing_port] = build_domain_routing_provider(...)
+    # B-0 도메인 라우팅은 2026-08-28 단일 도메인 전환으로 사라졌다(`decisions/201`).
+    # 허브 포트(`DomainRoutingPort`)는 계약으로 남아 있지만 구현체가 없다 —
+    # 기본값이 None 이라 501 이 아니고, 하네스는 "측정 불가"로 보고한다.
 
-`sys.path` 에 **`ai/apps` 와 `ai` 둘 다** 올린다 — 앞의 것은 `retrieval`·`training` 을 최상위
+`sys.path` 에 **`ai/apps` 와 `ai` 둘 다** 올린다 — 앞의 것은 `retrieval`·`evaluation` 을 최상위
 패키지로 보이게 하고, 뒤의 것은 이 파일 자체를 `provider` 로 import 하기 위해서다.
 `main.py` 가 이미 `server/apps` 에 대해 하는 일과 같다.
 
-**이 파일이 `apps/` 밖에 있는 이유**: `retrieval`(검색 기반 B-0)과 `training`(모델 기반 B-0)을
-동시에 알아야 하는데, 두 모듈이 서로를 import 하면 `.importlinter` 계약 2 가 깨진다.
+**이 파일이 `apps/` 밖에 있는 이유**: 여러 스포크를 동시에 알아야 하는데, 스포크끼리 서로를
+import 하면 `.importlinter` 계약 2(module-independence)가 깨진다.
 합성은 계약 밖에서 한다 — `ai/tests/` 와 같은 자리다.
 
 **설정은 인자로 받는다.** 여기서 `os.environ` 을 읽지 않는다 — `ai/` 에는 config 모듈이 없고,
@@ -40,14 +40,12 @@ from __future__ import annotations
 
 from typing import Any, Callable
 
-from hub.app.ports.output.domain_routing_port import DomainRoutingPort
 from hub.app.ports.output.retrieval_port import RetrievalPort
 from hub.app.ports.output.trigger_port import TriggerPort
 
 from retrieval.adapter.outbound.es_bm25_retriever import EsBm25Retriever
 from retrieval.adapter.outbound.es_index import SINGLE_INDEX
 from retrieval.adapter.outbound.is_final_trigger import IsFinalTrigger
-from retrieval.adapter.outbound.search_domain_router import SearchDomainRouter
 
 
 def build_es_client(url: str, api_key: str | None = None) -> Any:
@@ -78,40 +76,6 @@ def build_retrieval_provider(
     요청량이 늘면 `AsyncElasticsearch` 로 바꾸는 편이 낫다 — 그때 이 팩토리만 고치면 된다.
     """
     port = EsBm25Retriever(client or build_es_client(url, api_key), index=index)
-    return lambda: port
-
-
-def build_domain_routing_provider(
-    url: str,
-    *,
-    api_key: str | None = None,
-    index: str = SINGLE_INDEX,
-    client: Any | None = None,
-) -> Callable[[], DomainRoutingPort]:
-    """`get_domain_routing_port` 를 대체할 프로바이더 (B-0 v1).
-
-    ⚠ **분류 모델이 아니다.** 검색 결과의 도메인 분포로 판정한다.
-    2026-08-27 실측 골든셋 **0.857**(n=14, 목표 ≥0.95 미달) — 그런데 **파인튜닝한 분류기
-    (0.786)보다 낫다.** 자세한 건 `w1-domain-routing` 티켓.
-    """
-    port = SearchDomainRouter(EsBm25Retriever(client or build_es_client(url, api_key), index=index))
-    return lambda: port
-
-
-def build_model_domain_routing_provider(
-    model_dir: str = "models/domain-classifier",
-) -> Callable[[], DomainRoutingPort]:
-    """`decisions/007` 설계 ① — 파인튜닝한 KcELECTRA 분류기.
-
-    모델은 **처음 판정할 때** 올라간다(생성자에서는 경로만 확인). 기동을 느리게 하지 않는다.
-
-    ⚠ **2026-08-27 기준 이걸 켜면 더 나빠진다.** 골든셋 0.786 vs 검색 기반 v1 0.857.
-    AI Hub 검증에서는 0.879 인데 골든셋에서는 안 오른다 — 분포가 다르다.
-    `w1-domain-routing` 티켓을 읽고 켠다.
-    """
-    from training.adapter.outbound.model_domain_router import ModelDomainRouter
-
-    port = ModelDomainRouter(model_dir)
     return lambda: port
 
 

@@ -2,7 +2,7 @@
 title: "B-0 도메인 라우팅(자동 분류) — 평가 하네스 배선"
 assignee: "류준·장민석"
 role: "ai"
-status: "in-progress"
+status: "done"
 sprint: 1
 priority: 9
 date: 2026-08-26
@@ -199,3 +199,23 @@ AI Hub 검증 도메인별: dasan **0.572 → 0.746**, finance 0.871, health 0.8
 조용히 끼어들면 안 된다. 분류기를 보려면 `--domain-router model` 로 명시한다.
 
 **`done` 이 아닌 이유**: 목표(0.95) 미달이고, **n=14 로는 그 목표를 판정할 수도 없다.**
+
+
+---
+
+## ⚠ 2026-08-28 — 완료가 아니라 **취소**로 닫는다 (류준)
+
+도메인이 다산 하나가 되면서(`_project/decisions/201`) **분류할 도메인이 없어졌다.**
+칸반 상태 어휘가 `todo|in-progress|done` 셋뿐이라 `done` 으로 옮겼지만,
+**이 티켓의 완료 조건은 달성되지 않았다** — 아래를 그대로 남긴다(절대 원칙 8).
+
+| | |
+|---|---|
+| 달성한 것 | 검색 기반 v1 라우터 · KcELECTRA 분류기 학습 · 하네스 배선 · 실측 비교 |
+| **미달** | 목표였던 **분류 정확도 ≥0.95 를 넘지 못했다.** 최종 실측 **0.857**(B 케이스 14건) |
+| 지운 것 | `ai/apps/training/` 전체 · `search_domain_router.py` · `scripts/train_domain_classifier.py` |
+| 남긴 것 | hub 의 `DomainRoutingPort`·`DomainClassificationDTO` (계약, 구현체 없음 — 장민석 소관) |
+
+**이 실험에서 남는 사실**: AI Hub 전사 데이터로 학습한 분류기(0.879)가 골든셋 문체에
+**전혀 전이되지 않았다** — 혼동 행렬이 검색 기반 v1 과 동일했다. 분포 차이가 그만큼 컸다.
+A-3·C-6·D 에서 모델을 학습할 때 같은 함정을 밟지 않도록 이 기록을 남긴다.

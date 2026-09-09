@@ -1,4 +1,5 @@
 import type {
+  AgentTtsStatus,
   DemoDomain,
   RecommendationBatch,
   RecommendationCard,
@@ -27,18 +28,36 @@ export function utterance(
   text: string,
   utterance_end_ms: number,
   maskType: TranscriptEvent["masked"][number]["type"] | null,
+  plain: string | null = null,
 ): TranscriptEvent {
   return {
     call_id: callId,
     segment_id,
     speaker,
     text,
+    ...(plain === null ? {} : { plain_text: plain }),
     masked:
       maskType === null ? [] : [{ type: maskType, span: asteriskSpan(text) }],
     is_final: true,
     utterance_end_ms,
     domain,
   };
+}
+
+/** A-5 mock. 상담원 세그먼트마다 TTS 「전송됨」. */
+export function agentTtsSent(
+  targetLang: AgentTtsStatus["target_lang"],
+  segmentIds: readonly string[],
+): Record<string, AgentTtsStatus> {
+  const out: Record<string, AgentTtsStatus> = {};
+  for (const [index, id] of segmentIds.entries()) {
+    out[id] = {
+      segment_id: (index + 1) * 2,
+      target_lang: targetLang,
+      status: "sent",
+    };
+  }
+  return out;
 }
 
 export function cardBatch(
@@ -48,10 +67,10 @@ export function cardBatch(
   cards: RecommendationCard[],
 ): RecommendationBatch {
   return {
+    fired: true,
     call_id: callId,
     trigger_at_ms,
     internal_latency_ms: 780,
-    e2e_latency_ms: 1240,
     domain,
     cards,
   };

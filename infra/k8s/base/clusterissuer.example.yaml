@@ -1,0 +1,28 @@
+# Requirement: SEC-2
+#
+# ⚠ **이 파일은 그대로 apply 하지 않는다.** 이메일이 들어가므로 kustomization 의
+#    resources 에서 빼 두었다(공개 저장소, CLAUDE.md §8).
+#
+# 클러스터에 **한 번만** 넣는다. 네임스페이스가 없는 클러스터 스코프 자원이다.
+# cert-manager 를 먼저 설치해야 한다:
+#
+#   kubectl apply -f https://github.com/cert-manager/cert-manager/releases/latest/download/cert-manager.yaml
+#   kubectl wait --for=condition=Available -n cert-manager deploy --all --timeout=180s
+#   # 아래 이메일을 채워 apply
+#
+# 이메일은 Let's Encrypt 만료 알림을 받는 주소다. 인증서는 90일짜리이고
+# cert-manager 가 자동 갱신하므로 보통 알림이 올 일은 없다.
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: letsencrypt-prod
+spec:
+  acme:
+    email: "<만료 알림 받을 이메일>"
+    server: https://acme-v02.api.letsencrypt.org/directory
+    privateKeySecretRef:
+      name: letsencrypt-prod-key
+    solvers:
+      - http01:
+          ingress:
+            ingressClassName: traefik

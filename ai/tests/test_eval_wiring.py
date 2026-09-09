@@ -13,8 +13,10 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import pytest
+
 from evaluation.golden_set import load_golden_set
-from evaluation.harness import NOT_IMPLEMENTED, Ports, run_eval
+from evaluation.harness import NO_SAMPLES, NOT_IMPLEMENTED, Ports, run_eval
 from retrieval.adapter.outbound.es_bm25_retriever import EsBm25Retriever
 
 GOLDEN_SET = Path(__file__).resolve().parents[2] / "golden-set" / "v1-50.json"
@@ -111,8 +113,12 @@ def test_ES가_없어도_마스킹과_F2는_채점된다():
 
     assert report["retrieval"] == NOT_IMPLEMENTED          # ES 가 없으니 당연하다
     assert isinstance(report["masking"], dict), "마스킹이 '미구현'으로 보고됐다"
-    assert isinstance(report["closure_gate"], dict), "F-2 가 '미구현'으로 보고됐다"
-    assert report["masking"]["n"] > 0 and report["closure_gate"]["n"] > 0
+    assert report["masking"]["n"] > 0
+    # ⚠ 2026-08-28 단일 도메인 전환(`decisions/201`) — 다산에는 종결 처리 유형이 없어
+    #   F-2 채점 케이스가 0건이다. 스포크는 꽂히지만 잴 것이 없다.
+    #   **그 상태가 「미구현」과도 「통과」와도 다르게 보고되는지**를 여기서 고정한다.
+    assert report["closure_gate"] == NO_SAMPLES, (
+        f"F-2 가 '잴 것이 없음' 이 아닌 값으로 보고됐다: {report['closure_gate']!r}")
 
 
 def test_절대_규칙은_건_단위로_보고된다():
@@ -123,5 +129,14 @@ def test_절대_규칙은_건_단위로_보고된다():
 
     assert report["masking"]["absolute_rule_passed"] is True, (
         f"C-5 누락 {report['masking']['miss_count']}건 — {report['masking']['missed_items']}")
+
+    # F-2 도 같은 자리에서 본다. 지금은 케이스가 0건이라 **skip 으로 남긴다** —
+    # `assert` 로 두면 스위트가 빨간불이라 다른 회귀를 못 보고, 조건을 지우면 0건인 채로
+    # 초록불이 된다(장민석이 `test_golden_set_closure.py` 에서 고른 것과 같은 논리).
+    # skip 은 "지금 이 절대 규칙을 안 재고 있다"를 **출력에 남긴다.**
+    # 필요서류 체크리스트 케이스가 실리면 이 skip 이 저절로 사라지고 아래 단언이 살아난다.
+    if report["closure_gate"] == NO_SAMPLES:
+        pytest.skip("F-2 채점 케이스 0건 — 다산 단일 도메인 전환(decisions/201). "
+                    "필요서류 체크리스트 케이스가 생기면 이 skip 이 사라진다")
     assert report["closure_gate"]["absolute_rule_passed"] is True, (
         f"F-2 오판정 — {report['closure_gate']['failed_items']}")

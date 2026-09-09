@@ -153,7 +153,7 @@ seq: 1                  # 같은 날 안에서의 순서. 자기 것만 1, 2, 3�
 남과 겹쳐도 됩니다 — 파일명에 작성자가 함께 들어가 있어 **서로 다른 파일이 되고,
 브랜치를 합칠 때 충돌이 나지 않습니다.** 겹치면 같은 날 안에서 둘의 앞뒤만 이름순으로 정해집니다.
 
-한 번 쓴 항목은 고치지 않습니다. 틀린 것은 새 항목으로 정정합니다([CLAUDE.md 절대 원칙 8](https://github.com/solidbob02/call.solidbob.cloud/blob/main/CLAUDE.md)).
+한 번 쓴 항목은 고치지 않습니다. 틀린 것은 새 항목으로 정정합니다([CLAUDE.md 절대 원칙 8](https://github.com/SeongYuna/call.solidbob.cloud/blob/main/CLAUDE.md)).
 
 ---
 

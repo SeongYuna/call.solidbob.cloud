@@ -1,0 +1,36 @@
+# 이미지에 들어갈 것은 server/ 와 ai/apps 뿐이다 (infra/docker/server.Dockerfile).
+# 나머지를 빌드 컨텍스트에서 빼면 업로드가 빨라지고, 실수로 자격증명이 섞이지 않는다(SEC-2).
+
+.git
+.github
+.venv
+node_modules
+
+# 자격증명 — 절대 이미지에 넣지 않는다. 값은 k8s Secret 으로 주입한다.
+.env
+.env.*
+!.env.example
+
+# 사이트·문서·기획
+jekyll
+docs
+_project
+_site
+
+# 데이터·모델 — 용량이 크고 이미지가 쓰지 않는다
+data
+resources
+models
+golden-set
+knowledge-base
+
+# 이미지가 쓰지 않는 코드·자산
+apps
+db
+scripts
+infra
+
+**/__pycache__
+**/*.pyc
+**/.pytest_cache
+**/.DS_Store

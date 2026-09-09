@@ -164,7 +164,7 @@ ERD.png를 왼쪽 위 "고객"부터 시계방향으로 따라가면서 설명�
 ## 2026-08-26 도메인 4종 정리
 
 데모 도메인을 가상 통신사 "한별텔레콤" 단일 시나리오에서 실제 확보 데이터 4종(금융보험·
-다산콜센터·쇼핑·질병관리본부)으로 한정하면서([`_project/decisions/004`](https://github.com/solidbob02/call.solidbob.cloud)),
+다산콜센터·쇼핑·질병관리본부)으로 한정하면서([`_project/decisions/004`](https://github.com/SeongYuna/call.solidbob.cloud)),
 스키마에 남아 있던 통신 전용 내용을 정리했다. 근거·상세:
 `_project/decisions/006-db-스키마-도메인-정리.md`.
 
@@ -175,7 +175,7 @@ ERD.png를 왼쪽 위 "고객"부터 시계방향으로 따라가면서 설명�
 | `call.subscriber_id` | `call.customer_id` + **`call.domain`**(신규) | 도메인 라우팅 정보가 스키마에 아예 없었다 — [3.2절](/docs/03/)에서 지적된 공백을 이번에 메웠다 |
 | `closure.closure_type`: `해지`/`명의변경`/`보상` | `상품해지`/`보상`/`반품`/`교환` | F-2가 실제로 적용되는 도메인(금융보험·쇼핑)의 처리 유형으로 교체 |
 | `closure`의 evidence 7컬럼(위약금_안내 등) | evidence 10컬럼(중도해지수수료_안내 등, 도메인별 POLICY 문서와 1:1 대응) | 명의변경 관련 2컬럼(본인확인_수단·요청경위_확인) 제거, 반품·교환용 5컬럼 신설 |
-| `document.document_id` 예시 `TERM-3.2` | `FIN-TERM-3.2` | 지식베이스 ID 체계가 도메인 접두어를 쓰도록 바뀜([knowledge-base/README.md](https://github.com/solidbob02/call.solidbob.cloud/blob/main/knowledge-base/README.md)) |
+| `document.document_id` 예시 `TERM-3.2` | `FIN-TERM-3.2` | 지식베이스 ID 체계가 도메인 접두어를 쓰도록 바뀜([knowledge-base/README.md](https://github.com/SeongYuna/call.solidbob.cloud/blob/main/knowledge-base/README.md)) |
 
 **F-3(반복 문의 연결)는 그대로 유지된다** — "동일 고객" 식별 자체는 도메인과 무관한
 일반 기능이라 `customer` 테이블로 계속 지원한다. 17개 → **16개** 테이블로 줄었다(`plan`

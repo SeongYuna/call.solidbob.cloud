@@ -46,13 +46,52 @@ Show DNS configuration** 이고, **복사 버튼으로** 가져와야 한다. �
 두 해시 모두 같은 IP(`216.198.79.1`·`64.29.17.1`)로 풀린다. **IP 가 아니라 호스트명 문자열
 자체가 프로젝트 식별자**라 한 글자도 틀리면 안 된다.
 
-## 클라우드플레어 이관 후 목표 상태
+## 현재 존 (2026-09-03 실측, 권위 서버 = 클라우드플레어)
 
-위 4건 + 아래 1건. **프록시는 전부 회색 구름(DNS only)** — 근거: `_project/decisions/103`.
+**프록시는 전부 회색 구름(DNS only)** — 근거: `_project/decisions/103`.
 
-| Type | Name | Content | Proxy |
+| Type | Name | Content | 용도 |
 |---|---|---|---|
-| `CNAME` | `call` | `solidbob02.github.io` | **DNS only** |
+| `A` | `@` | `216.198.79.1` | Vercel apex (→ `www` 307). **계정이 바뀌어도 같은 값** — 공용 IP |
+| `CNAME` | `www` | `ea6aaafa6f786127.vercel-dns-017.com.` | 소개 페이지 `apps/platform`. **정성윤 계정** ⚠ 값은 옛 해시 — 아래 참조 |
+| `CNAME` | `call` | `2ff10b62284009c0.vercel-dns-017.com.` | 데모 `apps/dashboard`. **정성윤 계정**(09-03 신설) |
+| `TXT` | `_vercel` ×2 | `solidbob.cloud,d6ed4bb765cc19600009` · `www.solidbob.cloud,8b6c87dca5bf2a244207` | **09-03 교체** — 정성윤 계정 값 |
+| `CNAME` | `docs` | ~~`solidbob02.github.io`~~ → **`seongyuna.github.io`** | GitHub Pages. ⚠ **아래 참조** |
+| `CNAME` | `api` | Railway (`uivwfh8v.up.railway.app`) | 백엔드 임시. **TLS 미발급 — 안 열린다** |
+| `CNAME` | `server` | `solidbob.cloud` | 자리표시자. AWS 배포 때 실주소로 |
+
+**TTL 은 전부 Auto(300초), 프록시는 전부 회색 구름(DNS only).**
+
+> ⚠ **`www` CNAME 이 아직 옛 프로젝트 해시다.** `ea6aaafa…` 는 조서희 프로젝트 식별자인데,
+> 도메인 소유가 정성윤 계정으로 넘어온 뒤에도 **정상 서빙된다** — Vercel 엣지는 CNAME 의 해시가
+> 아니라 **Host 헤더로 프로젝트를 판단**하기 때문이다. 해시는 Vercel 이 설정 검증에 쓰는 표식이라
+> 대시보드에 경고가 남을 수 있다. 바꾸려면 `www` 행을 **`Edit`** 한다(`Add record` 는 거부된다 —
+> 한 이름에 CNAME 은 하나뿐이다). **이 문서의 옛 판이 「호스트명 문자열 자체가 프로젝트 식별자라
+> 한 글자도 틀리면 안 된다」고 적어 뒀는데, 실측으로 그렇지 않았다.**
+
+> ⚠ **`call` 은 GitHub Pages 가 아니다.** 이 표의 옛 판은 `call CNAME solidbob02.github.io` 를
+> 목표로 적어 뒀는데, 그건 `decisions/102` 안(지킬을 `call` 에 붙인다)이고 **`104` 가 철회했다** —
+> 지킬은 `docs`, `call` 은 프론트엔드다.
+
+## ⚠ `docs` CNAME 대상이 낡았다 (2026-09-03)
+
+저장소 소유권이 `solidbob02` → `SeongYuna` 로 넘어갔다(`decisions/106`). 그런데 `docs` 는
+아직 `solidbob02.github.io` 를 가리킨다. **지금은 동작한다** — 두 이름이 같은 GitHub Pages
+애니캐스트 IP(`185.199.108~111.153`)로 풀리고 GitHub 이 리다이렉트도 유지한다. 다만 정본은
+소유 계정 호스트이므로 **`seongyuna.github.io` 로 바꾼다.** `solidbob02` 계정이 사라지거나
+이름이 바뀌면 그때 죽는다.
+
+## ⚠ apex `_vercel` TXT 토큰은 그 뒤 고쳐졌다 (2026-09-03 확인)
+
+이 문서가 「한 글자가 빠졌다(19자)」고 적어 둔 값은 **지금 20자로 맞다.**
+
+```
+문서에 적힌 값   e0cf45c2f12745718ea    19자  ← 낡음
+현재 DNS        e0cf45c2f127745718ea   20자  ✅
+www            66d9dffd08201b066afb   20자
+```
+
+누가 언제 고쳤는지는 기록이 없다. **위 「토큰이 틀렸다」 절은 당시 기록으로 남긴다**(절대 원칙 8).
 
 ## 확인 방법 (권위 서버에 직접 묻는다)
 

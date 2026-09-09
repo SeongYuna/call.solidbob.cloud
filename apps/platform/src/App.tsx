@@ -1,22 +1,25 @@
 import type { ReactElement } from "react";
-import { Header } from "./components/Header";
+import { ClosingCTA } from "./components/ClosingCTA";
+import { DemoScenario } from "./components/DemoScenario";
+import { FeatureGrid } from "./components/FeatureGrid";
 import { Hero } from "./components/Hero";
-import { Problem } from "./components/Problem";
-import { Features } from "./components/Features";
-import { Domains } from "./components/Domains";
-import { TeamCta } from "./components/TeamCta";
+import { Nav } from "./components/Nav";
+import { PrivacySection } from "./components/PrivacySection";
+import { ValueComparison } from "./components/ValueComparison";
+import { ThemeProvider } from "./theme";
 
 export function App(): ReactElement {
   return (
-    <>
-      <Header />
+    <ThemeProvider>
+      <Nav />
       <main>
         <Hero />
-        <Problem />
-        <Features />
-        <Domains />
-        <TeamCta />
+        <ValueComparison />
+        <DemoScenario />
+        <FeatureGrid />
+        <PrivacySection />
+        <ClosingCTA />
       </main>
-    </>
+    </ThemeProvider>
   );
 }

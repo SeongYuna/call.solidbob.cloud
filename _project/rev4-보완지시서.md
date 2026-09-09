@@ -339,7 +339,7 @@ rev.4는 F 모듈 도메인을 "코어와 같은 통신사 콜센터 업무"로 
 
 ## 10.1 문제
 
-rev.4는 "3인 실명 버전"으로 채택됐고([`_project/decisions/001`](https://github.com/solidbob02/call.solidbob.cloud)),
+rev.4는 "3인 실명 버전"으로 채택됐고([`_project/decisions/001`](https://github.com/SeongYuna/call.solidbob.cloud)),
 [7.2절 부하 경고](/docs/07/)는 **류준이 백엔드·AI를 혼자 맡는 구조적 과부하**를 지적하며
 C-5·CI 운영을 정성윤에게 이관하는 완화 조치를 뒀다. 완화 조치일 뿐 근본 해결은 아니었다.
 

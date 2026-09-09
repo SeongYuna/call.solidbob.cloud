@@ -1,7 +1,7 @@
 # Requirement: B-1, B-2
 """스포크 프로바이더 팩토리 — `server/main.py` 가 쓰는 배선 지점.
 
-**여기가 `apps/` 밖인 이유**: 팩토리(`ai/provider.py`)가 `retrieval`·`training` 을 동시에 아는
+**여기가 `apps/` 밖인 이유**: 팩토리(`ai/provider.py`)가 여러 스포크를 동시에 아는
 합성 지점이고, 그런 코드는 계약(module-independence) 밖에 있어야 한다. 팩토리 자체도 같은
 이유로 2026-08-27 에 `retrieval/` 밖으로 옮겼다. `server/tests/` 가 `main.py` 에 대해 하는 역할과 같다.
 
@@ -29,11 +29,11 @@ class FakeClient:
             "hits": {
                 "hits": [
                     {
-                        "_id": "SHOP-TERM-4.2",
+                        "_id": "DASAN-TERM-4.2",
                         "_score": 9.98,
                         "_source": {
-                            "doc_id": "SHOP-TERM-4.2",
-                            "title": "반품 배송비 부담",
+                            "doc_id": "DASAN-TERM-4.2",
+                            "title": "대리 신청 구비서류",
                             "text": "본문",
                         },
                     }
@@ -55,18 +55,22 @@ def test_클라이언트를_기동_시_한_번만_만든다():
 
 def test_검색_프로바이더가_실제로_검색한다():
     provider = build_retrieval_provider("http://localhost:9200", client=FakeClient())
-    docs = asyncio.run(provider().retrieve("반품 배송비", top_k=5))
-    assert [d.doc_id for d in docs] == ["SHOP-TERM-4.2"]
+    docs = asyncio.run(provider().retrieve("대리 신청 서류", top_k=5))
+    assert [d.doc_id for d in docs] == ["DASAN-TERM-4.2"]
 
 
 def test_인덱스를_바꿔_끼울_수_있다():
-    """레이아웃 전환(single ↔ per-domain) 때 팩토리 인자만 바꾸면 된다 — decisions/017."""
+    """인덱스 이름을 팩토리 인자로 갈아끼울 수 있다 — decisions/017.
+
+    ⚠ 2026-08-28 단일 도메인 전환(`decisions/201`) 이후 per-domain 레이아웃은 쓸 일이 없다.
+    그래도 이 주입 지점은 남긴다 — dense_vector 를 얹은 새 인덱스로 옮길 때 같은 자리를 쓴다.
+    """
     c = FakeClient()
     calls = []
     c.search = lambda **kw: (calls.append(kw), FakeClient().search(**kw))[1]
-    provider = build_retrieval_provider("x", client=c, index="callguard-kb-finance")
-    asyncio.run(provider().retrieve("해지"))
-    assert calls[0]["index"] == "callguard-kb-finance"
+    provider = build_retrieval_provider("x", client=c, index="callguard-kb-v2")
+    asyncio.run(provider().retrieve("구비서류"))
+    assert calls[0]["index"] == "callguard-kb-v2"
 
 
 def test_트리거_프로바이더가_포트를_돌려준다():
@@ -94,21 +98,3 @@ def test_빈_URL_은_거부한다():
     """설정이 비었는데 조용히 뜨면 런타임에 이유 없는 연결 실패로 나타난다."""
     with pytest.raises(ValueError):
         build_es_client("")
-
-
-def test_도메인_라우팅_프로바이더가_포트를_돌려준다():
-    """⚠ v1 정확도 0.647 (목표 ≥0.95). 켤지는 팀 판단 — 배선 자체만 확인한다."""
-    from hub.app.ports.output.domain_routing_port import DomainRoutingPort
-
-    from provider import build_domain_routing_provider
-
-    provider = build_domain_routing_provider("http://localhost:9200", client=FakeClient())
-    assert isinstance(provider(), DomainRoutingPort)
-    assert provider() is provider()
-
-
-def test_도메인_라우팅이_실제로_판정한다():
-    from provider import build_domain_routing_provider
-
-    provider = build_domain_routing_provider("x", client=FakeClient())
-    assert asyncio.run(provider().classify("반품 배송비")).domain == "shopping"

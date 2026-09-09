@@ -12,10 +12,35 @@ vendor
 /data/raw/
 /data/processed/
 
+# --- 음성·통화 데이터 (CLAUDE.md §8 · 절대 원칙 7) --------------------------
+# ⚠ 이 저장소는 GitHub Pages 로 **공개 게시**된다. 커밋이 곧 발행이다.
+#    통화 오디오는 개인정보를 담고 있어 어떤 경로로도 커밋하지 않는다.
+#    2026-09-03 에 `resources/0001.wav` 가 무방비로 놓여 있는 것을 발견해 추가했다.
+/resources/
+*.wav
+*.mp3
+*.m4a
+*.flac
+
 # 모델 가중치 — 용량이 크고 HuggingFace에서 다시 받을 수 있어 커밋하지 않는다.
 /models/
 # 로컬 개발 인프라 오버라이드 (포트·비밀번호 등). SEC-2
 /infra/.env
+
+# --- Terraform (SEC-2) -------------------------------------------------------
+# ⚠ state 에는 RDS 비밀번호가 **평문으로** 들어간다. 백엔드를 원격으로 옮기기 전까지
+#    로컬에만 두고 절대 커밋하지 않는다. tfvars 도 마찬가지다 — 예시만 커밋한다.
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfplan
+crash.log
+crash.*.log
+*.auto.tfvars
+terraform.tfvars
+!terraform.tfvars.example
+.terraformrc
+terraform.rc
 
 /.venv/
 /logs/

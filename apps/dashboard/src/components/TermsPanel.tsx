@@ -4,13 +4,9 @@ import {
   type ReactElement,
 } from "react";
 import {
-  DEMO_DOMAIN_LABELS,
-  DEMO_DOMAINS,
   cardSourceType,
   type ClosureEvent,
-  type DemoDomain,
 } from "../types/contract";
-import { DOMAIN_COLORS } from "../lib/domainColors";
 import { evidenceHint } from "../lib/evidenceHints";
 import { cardId, evidenceTally, useCallStore } from "../store/callStore";
 import type { PanelCard } from "../store/callStore";
@@ -19,23 +15,16 @@ import {
   ArrowSelectChip,
   type ArrowSelectOption,
 } from "./ArrowSelectChip";
+import { ProgressRing } from "./ProgressRing";
 import { BookmarkDock } from "./BookmarkDock";
 import { CallHistoryPanel } from "./CallHistoryPanel";
 
 type TermsContentView = "closure" | "popup";
 
 const VIEW_OPTIONS: readonly ArrowSelectOption<TermsContentView>[] = [
-  { value: "closure", label: "충족요건" },
+  { value: "closure", label: "필요서류" },
   { value: "popup", label: "팝업창" },
 ];
-
-const DOMAIN_OPTIONS: readonly ArrowSelectOption<DemoDomain>[] = DEMO_DOMAINS.map(
-  (domain) => ({
-    value: domain,
-    label: DEMO_DOMAIN_LABELS[domain],
-    color: DOMAIN_COLORS[domain],
-  }),
-);
 
 function categoryFromDocId(docId: string): string {
   return docId.split("-")[0] ?? docId;
@@ -52,16 +41,24 @@ function hasClosureType(item: PanelCard): boolean {
 interface TermsPanelProps {
   onReplay: () => void;
   onEndCall: () => void;
+  onLeaveToStandby: () => void;
 }
 
 export function TermsPanel({
   onReplay,
   onEndCall,
+  onLeaveToStandby,
 }: TermsPanelProps): ReactElement {
-  const cards = useCallStore((state) => state.cards);
-  const mode = useCallStore((state) => state.mode);
-  const demoDomain = useCallStore((state) => state.demoDomain);
-  const setDemoDomain = useCallStore((state) => state.setDemoDomain);
+  const cards = useCallStore((state) =>
+    state.viewMode === "history" ? state.historyCards : state.cards,
+  );
+  // 상담기록 재생은 완료된 통화라 로딩·미발동 상태가 없다 — 항상 "발동됨"으로 본다.
+  const cardsLoading = useCallStore((state) =>
+    state.viewMode === "history" ? false : state.cardsLoading,
+  );
+  const lastFired = useCallStore((state) =>
+    state.viewMode === "history" ? true : state.lastFired,
+  );
   const error = useCallStore((state) => state.error);
   const [view, setView] = useState<TermsContentView>("closure");
   const pending = cards.find((item) => item.closure !== null && !item.settled);
@@ -80,12 +77,16 @@ export function TermsPanel({
   return (
     <section className="panel terms-panel" aria-labelledby="terms-heading">
       <header className="pane-header right-pane-header">
-        <SessionControls onReplay={onReplay} onEndCall={onEndCall} />
+        <SessionControls
+          onReplay={onReplay}
+          onEndCall={onEndCall}
+          onLeaveToStandby={onLeaveToStandby}
+        />
         {error !== null ? <p className="header-error">{error}</p> : null}
       </header>
       <header className="panel-head terms-head">
         <h2 id="terms-heading" className="sr-only">
-          이용약관 · 충족요건
+          민원 안내 · 필요서류
         </h2>
         <div className="terms-chips">
           <ArrowSelectChip
@@ -94,29 +95,27 @@ export function TermsPanel({
             onChange={setView}
             aria-label="콘텐츠 보기"
           />
-          {mode === "mock" ? (
-            <ArrowSelectChip
-              options={DOMAIN_OPTIONS}
-              value={demoDomain}
-              onChange={setDemoDomain}
-              aria-label="도메인"
-            />
-          ) : null}
           <ArrowSelectChip label="상담기록" aria-label="상담기록">
-            <CallHistoryPanel />
+            <CallHistoryPanel onReplay={onReplay} />
           </ArrowSelectChip>
         </div>
         {view === "closure" && tally !== null ? (
           <div className="tally-chip">
             <ProgressRing met={tally.met} total={tally.total} />
-            <span>{`근거 ${tally.met}/${tally.total} 충족`}</span>
+            <span>{`서류 ${tally.met}/${tally.total} 안내 완료`}</span>
           </div>
         ) : null}
       </header>
       <div className="panel-body terms-body" ref={bodyRef}>
         {view === "popup" ? (
           cards.length === 0 ? (
-            <p className="empty">관련 문서가 아직 없습니다.</p>
+            cardsLoading ? (
+              <CardsLoadingIndicator />
+            ) : lastFired === false ? (
+              <p className="empty">이 민원 유형은 서류 안내 대상이 아닙니다.</p>
+            ) : (
+              <p className="empty">관련 문서가 아직 없습니다.</p>
+            )
           ) : (
             <ul className="term-card-list">
               {cards.map((item, index) => (
@@ -135,10 +134,19 @@ export function TermsPanel({
   );
 }
 
+/** 카드 추천 요청을 보낸 뒤 응답을 기다리는 동안 보여준다. 정확한 지연시간 대신 상태만 알린다. */
+function CardsLoadingIndicator(): ReactElement {
+  return (
+    <p className="empty cards-loading" role="status">
+      <span className="spinner" aria-hidden="true" />
+      서류 불러오는 중...
+    </p>
+  );
+}
+
 /**
- * 충족요건 탭: closure_type 있는 카드만 그린다. 없는 카드는 「충족요건 없음」을
- * 개별 표시하지 않고 목록에서 뺀다. 여러 건이면 전부 보여 준다 — 「하나만」은
- * 빈 목록일 때 안내 문구를 하나로 합친다는 뜻이지, 카드를 1장으로 제한하는 게 아니다.
+ * 필요서류 탭: closure_type 있는 카드만 그린다. 없는 카드는 목록에서 뺀다.
+ * 연결된 카드가 없으면 안내 문구 하나, 여러 건이면 전부 보여 준다.
  */
 function ClosureCardList({ cards }: { cards: PanelCard[] }): ReactElement {
   const linked = cards
@@ -148,7 +156,7 @@ function ClosureCardList({ cards }: { cards: PanelCard[] }): ReactElement {
   if (linked.length === 0) {
     return (
       <p className="empty closure-panel-empty">
-        충족요건이 필요한 처리가 아직 없습니다
+        필요서류 안내가 필요한 민원이 아직 없습니다
       </p>
     );
   }
@@ -206,6 +214,9 @@ function TermCard({
                 {category}
               </p>
               {manual ? <span className="card-flag">수동 검색</span> : null}
+              {closure?.is_example === true ? (
+                <span className="example-badge">예시</span>
+              ) : null}
               <AdoptToggle adopted={adopted} onToggle={onAdopt} />
             </div>
             <h3>{item.card.title}</h3>
@@ -217,7 +228,12 @@ function TermCard({
           </>
         ) : (
           <>
-            <h3>{item.card.title}</h3>
+            <h3 className="term-card-title">
+              <span>{item.card.title}</span>
+              {closure.is_example === true ? (
+                <span className="example-badge">예시</span>
+              ) : null}
+            </h3>
             <ClosureBlock
               closure={closure}
               canSettle={canSettle}
@@ -277,10 +293,10 @@ function ClosureBlock({
 
   return (
     <div className="closure-block">
-      <h4 className="closure-subhead">종결 충족요건</h4>
+      <h4 className="closure-subhead">제출 필요 서류</h4>
       <div className={`tally-row cat-${category.toLowerCase()}`}>
         <ProgressRing met={tally.met} total={tally.total} />
-        <p className="evidence-tally">{`근거 ${tally.total}건 중 ${tally.met}건 충족`}</p>
+        <p className="evidence-tally">{`서류 ${tally.total}건 중 ${tally.met}건 안내 완료`}</p>
       </div>
       <ul className="evidence-list">
         {keys.map((key) => {
@@ -307,67 +323,10 @@ function ClosureBlock({
       </ul>
       {canSettle ? (
         <button type="button" className="btn-primary" onClick={onSettle}>
-          종결 처리
+          안내 완료로 표시
         </button>
       ) : null}
     </div>
-  );
-}
-
-function ProgressRing({
-  met,
-  total,
-}: {
-  met: number;
-  total: number;
-}): ReactElement {
-  const size = 38;
-  const stroke = 2.2;
-  const radius = (size - stroke) / 2;
-  const center = size / 2;
-  const circumference = 2 * Math.PI * radius;
-  const ratio = total === 0 ? 0 : met / total;
-  const offset = circumference * (1 - ratio);
-
-  return (
-    <svg
-      className={`progress-ring${met === total && total > 0 ? " is-complete" : ""}`}
-      width={size}
-      height={size}
-      viewBox={`0 0 ${size} ${size}`}
-      aria-hidden="true"
-    >
-      <circle
-        cx={center}
-        cy={center}
-        r={radius}
-        fill="none"
-        stroke="var(--line)"
-        strokeWidth={stroke}
-      />
-      <circle
-        className="progress-ring-arc"
-        cx={center}
-        cy={center}
-        r={radius}
-        fill="none"
-        stroke="currentColor"
-        strokeWidth={stroke}
-        strokeLinecap="round"
-        strokeDasharray={circumference}
-        strokeDashoffset={offset}
-        transform={`rotate(-90 ${center} ${center})`}
-      />
-      <text
-        x={center}
-        y={center}
-        textAnchor="middle"
-        dominantBaseline="central"
-        className="progress-ring-label"
-      >
-        {`${met}/${total}`}
-      </text>
-    </svg>
   );
 }
 

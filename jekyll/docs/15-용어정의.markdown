@@ -4,6 +4,8 @@ title: 용어 정의
 permalink: /docs/15/
 ---
 
+{% include pivot-201.html note="**이 페이지에서 바뀐 것**: 폐기된 도메인 접두어 `FIN-`·`SHOP-`·`HLT-`·`TELCO-` 는 이제 `parse_doc_id()` 가 **ValueError 로 거부**한다. 유효한 접두어는 `DASAN-` 하나다." %}
+
 | 용어 | 정의 |
 |---|---|
 | **Agent Assist** | 상담원과 고객 사이의 대화를 실시간으로 분석해 상담원에게 정보·경고·추천을 제공하는 제품 범주. Amazon Q in Connect, Google Agent Assist 등이 대표 사례 |

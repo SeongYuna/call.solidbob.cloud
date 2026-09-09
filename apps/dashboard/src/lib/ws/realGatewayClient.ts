@@ -126,7 +126,8 @@ export function parseGatewayMessage(value: unknown): ParsedMessage | null {
   if (hasKeys(body, ["segment_id", "speaker", "text"])) {
     return parseByKind("transcript", body);
   }
-  if (hasKeys(body, ["cards", "trigger_at_ms"])) {
+  // fired:false 응답에는 cards·trigger_at_ms 가 없다 (server/apps/hub 참고) — fired 단독으로도 잡는다.
+  if (hasKeys(body, ["cards", "trigger_at_ms"]) || hasKeys(body, ["fired"])) {
     return parseByKind("recommendation", body);
   }
   if (hasKeys(body, ["verdict", "evidence", "missing"])) {
@@ -194,15 +195,34 @@ function parseTranscript(body: Record<string, unknown>): TranscriptEvent | null 
 }
 
 function parseRecommendation(body: Record<string, unknown>): RecommendationBatch | null {
+  const fired = readBoolean(body, "fired");
+  if (fired === null) {
+    return null;
+  }
+
+  if (!fired) {
+    // 트리거 미발동 — 검색조차 하지 않았다. 서버는 call_id·cards 등을 보내지 않는다.
+    const batch: RecommendationBatch = {
+      fired: false,
+      call_id: readString(body, "call_id") ?? "",
+      trigger_at_ms: readNumber(body, "trigger_at_ms") ?? 0,
+      cards: [],
+      internal_latency_ms: readNumber(body, "internal_latency_ms") ?? 0,
+    };
+    const domain = readDomain(body.domain);
+    if (domain !== undefined) {
+      batch.domain = domain;
+    }
+    return batch;
+  }
+
   const call_id = readString(body, "call_id");
   const trigger_at_ms = readNumber(body, "trigger_at_ms");
   const internal_latency_ms = readNumber(body, "internal_latency_ms");
-  const e2e_latency_ms = readNumber(body, "e2e_latency_ms");
   if (
     call_id === null ||
     trigger_at_ms === null ||
     internal_latency_ms === null ||
-    e2e_latency_ms === null ||
     !Array.isArray(body.cards)
   ) {
     return null;
@@ -219,11 +239,11 @@ function parseRecommendation(body: Record<string, unknown>): RecommendationBatch
     cards.push(card);
   }
   const batch: RecommendationBatch = {
+    fired: true,
     call_id,
     trigger_at_ms,
     cards,
     internal_latency_ms,
-    e2e_latency_ms,
   };
   const domain = readDomain(body.domain);
   if (domain !== undefined) {
@@ -235,7 +255,11 @@ function parseRecommendation(body: Record<string, unknown>): RecommendationBatch
 function parseCard(body: Record<string, unknown>): RecommendationCard | null {
   const title = readString(body, "title");
   const summary = readString(body, "summary");
-  const similarity_score = readNumber(body, "similarity_score");
+  // NOTE: 서버가 아직 decisions/003(similarity_score) 대신 score로
+  // 응답하고 있어 임시 방어 처리. 장민석님이 서버 고치면 이 fallback은
+  // 제거 가능.
+  const similarity_score =
+    readNumber(body, "similarity_score") ?? readNumber(body, "score");
   const source = parseSource(body.source);
   if (title === null || summary === null || similarity_score === null || source === null) {
     return null;
@@ -279,6 +303,9 @@ function parseClosure(body: Record<string, unknown>): ClosureEvent | null {
   const domain = readDomain(body.domain);
   if (domain !== undefined) {
     event.domain = domain;
+  }
+  if (body.is_example === true) {
+    event.is_example = true;
   }
   return event;
 }
@@ -361,7 +388,12 @@ function readSpeaker(value: unknown): Speaker | null {
   return null;
 }
 
-function readClosureType(value: unknown): ClosureType | null {
+function readClosureType(value: unknown): ClosureType | string | null {
+  if (typeof value !== "string" || value.length === 0) {
+    return null;
+  }
+  // 금융·쇼핑 ClosureType — 4도메인 시절 코드, decisions/201로 다산 단일화되며
+  // 신규 시나리오에는 쓰지 않는다. 파서는 그대로 받는다.
   if (
     value === "상품해지" ||
     value === "보상" ||
@@ -370,7 +402,8 @@ function readClosureType(value: unknown): ClosureType | null {
   ) {
     return value;
   }
-  return null;
+  // 다산 RequiredDocsType — 서비스명 문자열.
+  return value;
 }
 
 function readVerdict(value: unknown): ClosureVerdict | null {
@@ -396,12 +429,7 @@ function readMaskType(value: unknown): MaskType | null {
 }
 
 function readDomain(value: unknown): DemoDomain | undefined {
-  if (
-    value === "finance" ||
-    value === "dasan" ||
-    value === "shopping" ||
-    value === "health"
-  ) {
+  if (value === "dasan") {
     return value;
   }
   return undefined;

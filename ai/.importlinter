@@ -15,14 +15,14 @@
 # (../server/apps 를 올리는 이유: evaluation 이 hub 의 포트·DTO 를 import 한다.
 #  의존 방향은 ai → server 한쪽뿐이며, 반대는 server/.importlinter 계약 2 가 막는다.)
 # 모듈을 새로 만들면 root_packages 와 계약 1·2 의 목록에 이름을 추가한다.
-# 예정: generation(B-4~B-6) · compliance(C-1~C-4) · training(모델 학습) · orchestration(랭그래프)
+# 예정: generation(B-4~B-6) · compliance(C-1~C-4) · orchestration(랭그래프)
+#       training(모델 학습)은 B-0 소멸로 2026-08-28 삭제 — 언어 판별을 시작할 때 git 이력에서 되살린다
 # =============================================================================
 
 [importlinter]
 root_packages =
     evaluation
     retrieval
-    training
 include_external_packages = True
 
 # -----------------------------------------------------------------------------
@@ -41,7 +41,6 @@ layers =
 containers =
     evaluation
     retrieval
-    training
 
 # -----------------------------------------------------------------------------
 # 계약 2) 모듈 상호 독립 — 스포크끼리 직접 참조하지 않는다
@@ -55,7 +54,6 @@ type = independence
 modules =
     evaluation
     retrieval
-    training
 
 # -----------------------------------------------------------------------------
 # 계약 3) 도메인 순수성 — 알고리즘 계층은 프레임워크·모델 라이브러리를 모른다
@@ -69,7 +67,6 @@ type = forbidden
 source_modules =
     evaluation
     retrieval.domain
-    training.domain
 forbidden_modules =
     fastapi
     sqlalchemy

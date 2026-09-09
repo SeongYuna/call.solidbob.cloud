@@ -12,7 +12,9 @@ export type ManualSearchOutcome =
   | { kind: "error"; message: string };
 
 export interface GatewaySession {
+  startCall: () => void;
   replay: () => void;
+  leaveToStandby: () => void;
   manualSearch: (query: string) => Promise<ManualSearchOutcome>;
   endCall: () => void;
   wrapUp: () => Promise<CallWrapUp>;
@@ -50,6 +52,7 @@ export function useGatewaySession(): GatewaySession {
 
   const attach = useCallback(
     (client: GatewayClient) => {
+      useCallStore.getState().enterAssist();
       useCallStore.getState().resetCall();
       client.connect({
         onTranscript: queueTranscript,
@@ -58,7 +61,11 @@ export function useGatewaySession(): GatewaySession {
             batch.cards,
             batch.call_id,
             batch.trigger_at_ms,
+            batch.fired,
           );
+        },
+        onRecommendationPending: () => {
+          useCallStore.getState().startCardsLoading();
         },
         onClosure: (event) => {
           useCallStore.getState().applyClosure(event);
@@ -69,17 +76,29 @@ export function useGatewaySession(): GatewaySession {
         onError: (message) => {
           useCallStore.getState().setError(message);
         },
+        onTranslation: (segmentId, event) => {
+          useCallStore.getState().applyTranslation(segmentId, event);
+        },
+        onAgentTts: (segmentId, event) => {
+          useCallStore.getState().applyAgentTts(segmentId, event);
+        },
+        onCallGuard: (segmentId, event) => {
+          useCallStore.getState().applyCallGuard(segmentId, event);
+        },
+        onAccentRecognition: (segmentId) => {
+          useCallStore.getState().applyAccentHint(segmentId);
+        },
+        onCallLanguage: (lang) => {
+          useCallStore.getState().setTargetLanguage(lang);
+        },
       });
     },
     [queueTranscript],
   );
 
-  const demoDomain = useCallStore((state) => state.demoDomain);
-
   useEffect(() => {
-    const client = createGatewayClient(demoDomain);
+    const client = createGatewayClient();
     clientRef.current = client;
-    attach(client);
     return () => {
       if (rafRef.current !== 0) {
         window.cancelAnimationFrame(rafRef.current);
@@ -89,7 +108,15 @@ export function useGatewaySession(): GatewaySession {
       client.disconnect();
       clientRef.current = null;
     };
-  }, [attach, demoDomain]);
+  }, []);
+
+  const startCall = useCallback(() => {
+    const client = clientRef.current;
+    if (client === null) {
+      return;
+    }
+    attach(client);
+  }, [attach]);
 
   const replay = useCallback(() => {
     const client = clientRef.current;
@@ -132,6 +159,17 @@ export function useGatewaySession(): GatewaySession {
     useCallStore.getState().endCall();
   }, []);
 
+  const leaveToStandby = useCallback(() => {
+    clientRef.current?.disconnect();
+    pendingRef.current.clear();
+    if (rafRef.current !== 0) {
+      window.cancelAnimationFrame(rafRef.current);
+      rafRef.current = 0;
+    }
+    useCallStore.getState().resumeLive();
+    useCallStore.getState().enterStandby();
+  }, []);
+
   const wrapUp = useCallback(async (): Promise<CallWrapUp> => {
     const client = clientRef.current;
     if (client === null) {
@@ -140,5 +178,5 @@ export function useGatewaySession(): GatewaySession {
     return client.wrapUp(useCallStore.getState().callId ?? "");
   }, []);
 
-  return { replay, manualSearch, endCall, wrapUp };
+  return { startCall, replay, leaveToStandby, manualSearch, endCall, wrapUp };
 }

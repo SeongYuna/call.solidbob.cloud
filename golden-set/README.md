@@ -58,7 +58,7 @@
 
 - [x] 1주차 10개 팀 리뷰 완료 (2026-08-26 팀 회의)
 - [x] **2주차 50개 작성 완료**(2026-08-26) — `v1-50.json`. F-2 케이스는 규정 작성자(류준·
-      장민석)가 아닌 사람이 검수해야 한다([보완지시서 3번](https://github.com/solidbob02/call.solidbob.cloud)) — **팀 리뷰 대기**
+      장민석)가 아닌 사람이 검수해야 한다([보완지시서 3번](https://github.com/SeongYuna/call.solidbob.cloud)) — **팀 리뷰 대기**
 - [ ] 3주차: 150개로 확장 → 공식 기준선 확정, CI에 고정
 - [x] `ai/apps/evaluation/`에서 이 JSON을 그대로 읽어 채점 — 로더가 `domain` 필드를
       파싱한다(`ai/apps/evaluation/golden_set.py`). B-0 도메인 분류 정확도는 `harness.py`에

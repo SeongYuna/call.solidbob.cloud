@@ -3,22 +3,27 @@ import { cardSourceType, hasCardSource } from "../types/contract";
 import type {
   CallHistoryItem,
   ClosureEvent,
-  DemoDomain,
   MaskType,
   RecommendationCard,
   Speaker,
   TranscriptEvent,
   TranscriptQuerySegment,
   MaskedSpan,
+  TranslatedUtterance,
+  AgentTtsStatus,
+  CallGuardFlag,
 } from "../types/contract";
-import { getCallTranscript } from "../lib/api/coreClient";
+import { getHistoryPlayback } from "../lib/api/coreClient";
+import { getScenarioById } from "../mock/scenarios";
 import type { GatewayMode } from "../lib/ws";
 import { sliceByCodepoints } from "../lib/text/codepoints";
+import type { TargetLanguage } from "../lib/language/languageMeta";
 
 export interface Utterance {
   segment_id: string;
   speaker: Speaker;
   text: string;
+  plain_text?: string;
   masked: MaskedSpan[];
   is_final: boolean;
   utterance_end_ms: number;
@@ -46,6 +51,12 @@ export type CallPhase = "live" | "wrapup";
 /** 왼쪽 자막이 실시간인지, 상담기록인지. 실시간 발화 배열은 건드리지 않는다. */
 export type TranscriptViewMode = "live" | "history";
 
+/** 로그인 직후 대기인지, 통화 어시스트인지. */
+export type AgentShell = "standby" | "assist";
+
+/** 통화 후 요약에서 돌아갈 자리. */
+export type SummaryReturn = "standby" | "assist";
+
 /**
  * 상담원이 직접 찾은 기록. 못 찾은 질의가 §2.5 D-4 지식베이스 공백 후보다 —
  * 자동 추천이 놓친 것은 화면 밖에서 알 수 없으므로, 여기서 관찰되는 것만 센다.
@@ -69,26 +80,51 @@ export interface CallState {
   mode: GatewayMode;
   connected: boolean;
   error: string | null;
-  demoDomain: DemoDomain;
   phase: CallPhase;
+  shell: AgentShell;
+  summaryReturn: SummaryReturn;
   callId: string | null;
+  /** A-5. 실시간 통화의 대상 언어. 한국어 전용 mock은 null. */
+  targetLanguage: TargetLanguage | null;
   utterances: Utterance[];
   viewMode: TranscriptViewMode;
   historyCallId: string | null;
   historyStartedAt: string | null;
   historySegments: TranscriptQuerySegment[];
+  historyTargetLanguage: TargetLanguage | null;
+  /** 히스토리 모드 전용. 실시간 translations 과 섞지 않는다. */
+  historyTranslations: Record<string, TranslatedUtterance>;
+  historyAgentTts: Record<string, AgentTtsStatus>;
+  historyCallGuard: Record<string, CallGuardFlag>;
+  historyAccentHints: Record<string, true>;
+  /** 히스토리 모드 전용. 실시간 cards 와 섞지 않는다. */
+  historyCards: PanelCard[];
   cards: PanelCard[];
+  /** 가장 최근 추천 응답의 fired 값. 응답을 아직 못 받았으면 null. */
+  lastFired: boolean | null;
+  /** 카드 추천 요청을 보낸 뒤 응답(cards 또는 fired:false)을 기다리는 중인가. */
+  cardsLoading: boolean;
   maskingLog: MaskingLogEntry[];
   manualSearches: ManualSearchLogEntry[];
   /** 카드 식별자 → 채택 기록. 통화가 바뀌면 함께 비워진다. */
   adoptions: Record<string, CardAdoption>;
   closure: ClosureEvent | null;
+  /** A-5 mock. 키는 TranscriptEvent.segment_id. */
+  translations: Record<string, TranslatedUtterance>;
+  agentTts: Record<string, AgentTtsStatus>;
+  /** C-6 mock. 키는 TranscriptEvent.segment_id. */
+  callGuard: Record<string, CallGuardFlag>;
+  /** A-5 ⓑ. 키만. 점수는 없다. */
+  accentHints: Record<string, true>;
   applyTranscript: (event: TranscriptEvent) => void;
   applyRecommendation: (
     cards: RecommendationCard[],
     callId: string,
     triggerAtMs: number,
+    fired: boolean,
   ) => void;
+  /** 카드 추천 요청이 나가 응답을 기다리는 중임을 표시한다. */
+  startCardsLoading: () => void;
   /** 수동 검색 결과를 패널에 붙이고, 실제로 새로 추가된 건수를 돌려준다. */
   applyManualResult: (cards: RecommendationCard[]) => number;
   logManualSearch: (query: string, found: boolean) => void;
@@ -99,25 +135,50 @@ export interface CallState {
   settleClosure: (closureType: ClosureEvent["closure_type"]) => void;
   setStatus: (mode: GatewayMode, connected: boolean) => void;
   setError: (message: string) => void;
-  setDemoDomain: (domain: DemoDomain) => void;
+  applyTranslation: (
+    transcriptSegmentId: string,
+    event: TranslatedUtterance,
+  ) => void;
+  applyAgentTts: (transcriptSegmentId: string, event: AgentTtsStatus) => void;
+  applyCallGuard: (transcriptSegmentId: string, event: CallGuardFlag) => void;
+  applyAccentHint: (transcriptSegmentId: string) => void;
+  setTargetLanguage: (lang: TargetLanguage | null) => void;
   resetCall: () => void;
-  openHistory: (item: CallHistoryItem) => void;
+  enterAssist: () => void;
+  enterStandby: () => void;
+  openHistory: (
+    item: CallHistoryItem,
+    options?: { returnTo?: SummaryReturn },
+  ) => void;
   resumeLive: () => void;
 }
 
 const emptyCall = {
   phase: "live" as CallPhase,
   callId: null as string | null,
+  targetLanguage: null as TargetLanguage | null,
   utterances: [] as Utterance[],
   viewMode: "live" as TranscriptViewMode,
   historyCallId: null as string | null,
   historyStartedAt: null as string | null,
   historySegments: [] as TranscriptQuerySegment[],
+  historyTargetLanguage: null as TargetLanguage | null,
+  historyTranslations: {} as Record<string, TranslatedUtterance>,
+  historyAgentTts: {} as Record<string, AgentTtsStatus>,
+  historyCallGuard: {} as Record<string, CallGuardFlag>,
+  historyAccentHints: {} as Record<string, true>,
+  historyCards: [] as PanelCard[],
   cards: [] as PanelCard[],
+  lastFired: null as boolean | null,
+  cardsLoading: false,
   maskingLog: [] as MaskingLogEntry[],
   manualSearches: [] as ManualSearchLogEntry[],
   adoptions: {} as Record<string, CardAdoption>,
   closure: null as ClosureEvent | null,
+  translations: {} as Record<string, TranslatedUtterance>,
+  agentTts: {} as Record<string, AgentTtsStatus>,
+  callGuard: {} as Record<string, CallGuardFlag>,
+  accentHints: {} as Record<string, true>,
 };
 
 /**
@@ -134,8 +195,8 @@ function isAuto(item: PanelCard): boolean {
 }
 
 /**
- * F-2 종결은 자동 추천 카드에만 붙인다. 상담원이 직접 찾아온 카드에 붙으면
- * 종결 요건이 그 검색 결과에 딸린 것처럼 읽힌다.
+ * F-2(필요서류) 게이트는 자동 추천 카드에만 붙인다. 상담원이 직접 찾아온 카드에
+ * 붙으면 서류 목록이 그 검색 결과에 딸린 것처럼 읽힌다.
  */
 function attachIndex(cards: PanelCard[], event: ClosureEvent): number {
   const sameType = cards.findIndex(
@@ -173,6 +234,37 @@ function withClosure(
   );
 }
 
+/** 끝난 통화: 시나리오가 가진 카드를 한꺼번에. 실시간처럼 순차로 쌓지 않는다. */
+function panelFromScenario(scenario: {
+  cardBatches: { trigger_at_ms: number; cards: RecommendationCard[] }[];
+  closures: { event: ClosureEvent }[];
+}): PanelCard[] {
+  const cards: PanelCard[] = [];
+  const seen = new Set<string>();
+  for (const batch of scenario.cardBatches) {
+    for (const card of batch.cards) {
+      if (!hasCardSource(card)) {
+        continue;
+      }
+      const id = cardId(card);
+      if (seen.has(id)) {
+        continue;
+      }
+      seen.add(id);
+      cards.push({
+        card,
+        trigger_at_ms: batch.trigger_at_ms,
+        closure: null,
+        settled: false,
+      });
+    }
+  }
+  return scenario.closures.reduce(
+    (acc, item) => withClosure(acc, item.event),
+    cards,
+  );
+}
+
 export function evidenceTally(closure: ClosureEvent): {
   met: number;
   total: number;
@@ -188,7 +280,8 @@ export const useCallStore = create<CallState>((set) => ({
   mode: "mock",
   connected: false,
   error: null,
-  demoDomain: "finance",
+  shell: "standby" as AgentShell,
+  summaryReturn: "assist" as SummaryReturn,
   ...emptyCall,
 
   applyTranscript: (event) => {
@@ -197,6 +290,9 @@ export const useCallStore = create<CallState>((set) => ({
         segment_id: event.segment_id,
         speaker: event.speaker,
         text: event.text,
+        ...(event.plain_text === undefined
+          ? {}
+          : { plain_text: event.plain_text }),
         masked: event.masked,
         is_final: event.is_final,
         utterance_end_ms: event.utterance_end_ms,
@@ -229,7 +325,7 @@ export const useCallStore = create<CallState>((set) => ({
     });
   },
 
-  applyRecommendation: (incoming, callId, triggerAtMs) => {
+  applyRecommendation: (incoming, callId, triggerAtMs, fired) => {
     set((state) => {
       const withSource = incoming.filter(hasCardSource);
       const arriving = new Set(withSource.map(cardId));
@@ -243,7 +339,7 @@ export const useCallStore = create<CallState>((set) => ({
           : item,
       );
       if (added.length === 0) {
-        return { callId, cards: promoted };
+        return { callId, cards: promoted, lastFired: fired, cardsLoading: false };
       }
       let cards: PanelCard[] = [
         ...promoted,
@@ -262,8 +358,12 @@ export const useCallStore = create<CallState>((set) => ({
           cards = withClosure(cards, state.closure);
         }
       }
-      return { callId, cards };
+      return { callId, cards, lastFired: fired, cardsLoading: false };
     });
+  },
+
+  startCardsLoading: () => {
+    set({ cardsLoading: true });
   },
 
   applyManualResult: (incoming) => {
@@ -347,24 +447,79 @@ export const useCallStore = create<CallState>((set) => ({
     set({ error: message, connected: false });
   },
 
-  setDemoDomain: (demoDomain) => {
-    set({ demoDomain });
+  applyTranslation: (transcriptSegmentId, event) => {
+    set((state) => ({
+      translations: {
+        ...state.translations,
+        [transcriptSegmentId]: event,
+      },
+    }));
+  },
+
+  applyAgentTts: (transcriptSegmentId, event) => {
+    set((state) => ({
+      agentTts: {
+        ...state.agentTts,
+        [transcriptSegmentId]: event,
+      },
+    }));
+  },
+
+  applyCallGuard: (transcriptSegmentId, event) => {
+    set((state) => ({
+      callGuard: {
+        ...state.callGuard,
+        [transcriptSegmentId]: event,
+      },
+    }));
+  },
+
+  applyAccentHint: (transcriptSegmentId) => {
+    set((state) => ({
+      accentHints: {
+        ...state.accentHints,
+        [transcriptSegmentId]: true,
+      },
+    }));
+  },
+
+  setTargetLanguage: (lang) => {
+    set({ targetLanguage: lang });
   },
 
   resetCall: () => {
     set({ ...emptyCall, error: null });
   },
 
-  openHistory: (item) => {
-    const page = getCallTranscript(item.call_id);
-    if (page === null) {
+  enterAssist: () => {
+    set({ shell: "assist" });
+  },
+
+  enterStandby: () => {
+    set({
+      shell: "standby",
+      phase: "live",
+      summaryReturn: "standby",
+    });
+  },
+
+  openHistory: (item, options) => {
+    const playback = getHistoryPlayback(item.call_id);
+    if (playback === null) {
       return;
     }
     set({
       viewMode: "history",
+      summaryReturn: options?.returnTo ?? "assist",
       historyCallId: item.call_id,
       historyStartedAt: item.started_at,
-      historySegments: page.segments,
+      historySegments: playback.page.segments,
+      historyTargetLanguage: playback.targetLanguage ?? null,
+      historyTranslations: playback.translations,
+      historyAgentTts: playback.agentTts,
+      historyCallGuard: playback.callGuard,
+      historyAccentHints: playback.accentHints,
+      historyCards: panelFromScenario(getScenarioById(playback.scenarioId)),
     });
   },
 
@@ -374,6 +529,12 @@ export const useCallStore = create<CallState>((set) => ({
       historyCallId: null,
       historyStartedAt: null,
       historySegments: [],
+      historyTargetLanguage: null,
+      historyTranslations: {},
+      historyAgentTts: {},
+      historyCallGuard: {},
+      historyAccentHints: {},
+      historyCards: [],
     });
   },
 }));
