@@ -12,6 +12,9 @@ import type {
   TranslatedUtterance,
   AgentTtsStatus,
   CallGuardFlag,
+  BlacklistEntryItem,
+  BlacklistEvidence,
+  BlacklistRequestItem,
 } from "../types/contract";
 import { getHistoryPlayback } from "../lib/api/coreClient";
 import { getScenarioById } from "../mock/scenarios";
@@ -52,7 +55,10 @@ export type CallPhase = "live" | "wrapup";
 export type TranscriptViewMode = "live" | "history";
 
 /** 로그인 직후 대기인지, 통화 어시스트인지. */
-export type AgentShell = "standby" | "assist";
+// 2026-09-09 `admin` 이 늘었다 — J-3 관리자 대시보드(`_project/decisions/204`).
+// 상담원 화면과 같은 앱에 두는 이유: 데모에서 두 역할을 오가며 보여줘야 하고,
+// 라우터가 없는 구조라 shell 하나로 전환하는 것이 기존 패턴과 같다.
+export type AgentShell = "standby" | "assist" | "admin";
 
 /** 통화 후 요약에서 돌아갈 자리. */
 export type SummaryReturn = "standby" | "assist";
@@ -116,6 +122,10 @@ export interface CallState {
   callGuard: Record<string, CallGuardFlag>;
   /** A-5 ⓑ. 키만. 점수는 없다. */
   accentHints: Record<string, true>;
+  /** J — 블랙리스트 전환 요청. 상담원이 올리고 관리자가 결정한다. */
+  blacklistRequests: BlacklistRequestItem[];
+  /** J-4 — 승인되어 적용 중인 등록. 배정(J-5)이 보는 것은 이쪽이다. */
+  blacklistEntries: BlacklistEntryItem[];
   applyTranscript: (event: TranscriptEvent) => void;
   applyRecommendation: (
     cards: RecommendationCard[],
@@ -151,6 +161,25 @@ export interface CallState {
     options?: { returnTo?: SummaryReturn },
   ) => void;
   resumeLive: () => void;
+  /** J-1 — 상담원이 전환 요청을 올린다. **항상 `pending` 으로 들어간다.** */
+  submitBlacklistRequest: (input: {
+    callId: string;
+    customerRef: string;
+    displayHint: string;
+    requestedBy: string;
+    reason: string;
+    contextExcerpt: string;
+    evidence: BlacklistEvidence;
+  }) => void;
+  /** J-4 — 관리자 판단. 승인이면 등록까지 이어진다. */
+  decideBlacklistRequest: (
+    requestId: string,
+    approve: boolean,
+    decidedBy: string,
+  ) => void;
+  /** J-4 — 해제. 행을 지우지 않고 `released_at` 을 채운다(절대 원칙 8). */
+  releaseBlacklistEntry: (entryId: string, releasedBy: string, reason: string) => void;
+  enterAdmin: () => void;
 }
 
 const emptyCall = {
@@ -282,6 +311,10 @@ export const useCallStore = create<CallState>((set) => ({
   error: null,
   shell: "standby" as AgentShell,
   summaryReturn: "assist" as SummaryReturn,
+  // J — 통화가 바뀌어도 남는다. `emptyCall` 에 넣지 않는 이유가 그것이다:
+  // 블랙리스트는 **다음 통화**를 위한 기록이라 통화 초기화에 쓸려가면 안 된다.
+  blacklistRequests: [] as BlacklistRequestItem[],
+  blacklistEntries: [] as BlacklistEntryItem[],
   ...emptyCall,
 
   applyTranscript: (event) => {
@@ -537,4 +570,129 @@ export const useCallStore = create<CallState>((set) => ({
       historyCards: [],
     });
   },
+
+  // ── J — 콜 라우팅 보호 (`_project/decisions/204`) ──────────────────────
+  //
+  // ⚠ **상담원은 `pending` 까지만 만들 수 있다.** 바로 `active` 로 올리는 경로를
+  //    두지 않는다 — 기분 상한 통화 한 건으로 고객이 영구히 표시되고, 그 판단을
+  //    검토한 사람이 아무도 없게 된다. 서버 쪽에서도 도메인 규칙이 같은 것을 막는다
+  //    (`server/apps/blacklist/domain/services/transitions.py`).
+  submitBlacklistRequest: (input) => {
+    set((state) => ({
+      blacklistRequests: [
+        {
+          request_id: `req-${Date.now()}`,
+          call_id: input.callId,
+          customer_ref: input.customerRef,
+          display_hint: input.displayHint,
+          requested_by: input.requestedBy,
+          reason: input.reason,
+          context_excerpt: input.contextExcerpt,
+          evidence: input.evidence,
+          status: "pending",
+          requested_at: new Date().toISOString(),
+          decided_by: null,
+          decided_at: null,
+        },
+        ...state.blacklistRequests,
+      ],
+    }));
+  },
+
+  decideBlacklistRequest: (requestId, approve, decidedBy) => {
+    set((state) => {
+      const target = state.blacklistRequests.find(
+        (r) => r.request_id === requestId,
+      );
+      if (!target || target.status !== "pending") {
+        // 규칙표에 없는 전이는 조용히 무시한다 — 반려된 요청을 되살리려면
+        // 새 요청을 올린다(그래야 근거도 새로 붙는다).
+        return {};
+      }
+      const decidedAt = new Date().toISOString();
+      const requests = state.blacklistRequests.map((r) =>
+        r.request_id === requestId
+          ? {
+              ...r,
+              status: approve ? ("approved" as const) : ("rejected" as const),
+              decided_by: decidedBy,
+              decided_at: decidedAt,
+            }
+          : r,
+      );
+      if (!approve) {
+        return { blacklistRequests: requests };
+      }
+      const already = state.blacklistEntries.some(
+        (e) => e.customer_ref === target.customer_ref && e.released_at === null,
+      );
+      // 만료 기본값 6개월. **만료가 없으면 영구 표시가 된다**(`decisions/205` ⑤).
+      // 「6개월」은 우리가 재서 고른 값이 아니라 기본값이다 — 팀이 정하면 바꾼다.
+      const expires = new Date(Date.now() + 182 * 24 * 60 * 60 * 1000).toISOString();
+      return {
+        blacklistRequests: requests,
+        blacklistEntries: already
+          ? state.blacklistEntries
+          : [
+              {
+                entry_id: `ent-${Date.now()}`,
+                customer_ref: target.customer_ref,
+                display_hint: target.display_hint,
+                request_id: target.request_id,
+                approved_at: decidedAt,
+                expires_at: expires,
+                released_at: null,
+                released_by: null,
+                release_reason: null,
+                // ⚠ 요청 사유를 복사하지 않는다 — 같은 개인정보가 두 벌이 된다
+                // (`decisions/205` ⑤). 사유는 request_id 로 따라간다.
+                note: null,
+              },
+              ...state.blacklistEntries,
+            ],
+      };
+    });
+  },
+
+  // 행을 지우지 않고 `released_at` 을 채운다 — 지우면 「왜 풀렸는지」가 사라진다
+  // (절대 원칙 8). DB 스키마도 같은 방식이다.
+  releaseBlacklistEntry: (entryId, releasedBy, reason) => {
+    set((state) => ({
+      blacklistEntries: state.blacklistEntries.map((e) =>
+        e.entry_id === entryId && e.released_at === null
+          ? {
+              ...e,
+              released_at: new Date().toISOString(),
+              // ⚠ 행만 남기고 이 둘이 없어서 **어차피 「왜 풀렸는지」가 기록되지
+              // 않았다**(`decisions/205` ②).
+              released_by: releasedBy,
+              release_reason: reason,
+            }
+          : e,
+      ),
+    }));
+  },
+
+  enterAdmin: () => {
+    set({ shell: "admin", viewMode: "live" });
+  },
 }));
+
+/**
+ * J-5 — 이 고객이 지금 적용 중인 블랙리스트인가.
+ *
+ * **해제와 만료를 함께 본다**(`decisions/205` ⑤). 해제만 보면 만료된 등록이 계속 살아
+ * 있고, 번호가 재할당돼 다른 사람이 그 대상이 된다.
+ */
+export function isBlacklisted(
+  entries: BlacklistEntryItem[],
+  customerRef: string,
+  now: Date = new Date(),
+): boolean {
+  return entries.some(
+    (e) =>
+      e.customer_ref === customerRef &&
+      e.released_at === null &&
+      new Date(e.expires_at) > now,
+  );
+}
