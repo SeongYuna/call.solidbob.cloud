@@ -24,6 +24,16 @@ def _env_int(name: str, default: int | None = None) -> int | None:
     return int(raw) if raw is not None else default
 
 
+def _env_csv(name: str, default: tuple[str, ...]) -> tuple[str, ...]:
+    raw = _env(name)
+    if raw is None:
+        return default
+    return tuple(item.strip() for item in raw.split(",") if item.strip())
+
+
+_LOCAL_VITE_ORIGINS = ("http://localhost:5173", "http://127.0.0.1:5173")
+
+
 @dataclass(frozen=True)
 class Settings:
     # --- PostgreSQL (call · transcript_segment · recommendation · closure · eval_result …) ---
@@ -40,6 +50,11 @@ class Settings:
 
     # --- HuggingFace (임베딩·분류기·카드 요약 모델; 공개 모델이면 비워도 됨) ---
     huggingface_token: str | None
+
+    # --- CORS (apps/dashboard 가 브라우저에서 코어 API 를 부른다) ---
+    # 기본값은 로컬 Vite 뿐이다. 운영 origin 은 배포 env 가 넣는다 — 운영 주소를 개발 기본값으로 굳히지 않는다
+    # (`.claude/rules/dashboard.md` §5). 대시보드를 `server.solidbob.cloud` 와 같은 origin 에서 내주면 이 값은 쓰이지 않는다.
+    cors_allowed_origins: tuple[str, ...]
 
     @property
     def postgres_configured(self) -> bool:
@@ -65,4 +80,5 @@ def load_settings() -> Settings:
         elasticsearch_url=_env("ELASTICSEARCH_URL"),
         elasticsearch_api_key=_env("ELASTICSEARCH_API_KEY"),
         huggingface_token=_env("HUGGINGFACE_TOKEN"),
+        cors_allowed_origins=_env_csv("CORS_ALLOWED_ORIGINS", _LOCAL_VITE_ORIGINS),
     )

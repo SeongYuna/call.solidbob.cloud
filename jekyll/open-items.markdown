@@ -52,6 +52,38 @@ permalink: /open-items/
 배분을 다시 잡자는 게 아니다. **측정 방법에 반영할지**만 정하면 되고, 3주차 150건 확장 때
 비율을 다시 볼 기회가 있다.
 
+### 인프라 런북을 하네스로 걸면서 드러난 어긋남 4건 (2026-09-04)
+
+`docs/infra-runbook.md` 를 각 영역 규칙에 배선하면서(루트 CLAUDE.md §0) 저장소와 다른 곳이 나왔다.
+**전부 인프라(정성윤) 소관이라 고치지 않고 올린다.**
+
+1. **배포가 한 파드인가 두 도메인인가.** 런북은 `server` 파드 하나에 임베딩·분류기까지 올리고
+   `server.solidbob.cloud` 만 연다(13-1·16-1·19장). 반면 루트 `CLAUDE.md` §3 과 `ai/CLAUDE.md` 머리말은
+   `ai.solidbob.cloud` 를 배포 대상으로 적고 있다. `decisions/024`(검색 스포크를 같은 프로세스에서 꽂는다)와
+   같은 사안이고, `STATE.md` 의 정성윤 회신 대기 항목이 아직 열려 있다
+2. **저장소 주소가 다르다.** 런북 13장은 `github.com/SeongYuna/call.solidbob.cloud.git` 을 클론하는데
+   루트 문서·실제 원격은 `github.com/solidbob02/call.solidbob.cloud` 다. 한쪽으로 맞춰야 서버에서 그대로 붙여 쓸 수 있다
+3. **부록 B 의 결정 기록 9건이 아직 없다.** 런북 18장은 이미 `decisions/103`(Cloudflare 프록시 금지)을 참조하지만
+   파일이 없다. 번호대는 정성윤 `1xx` 다(§4)
+4. **`.env.example` 에 `OLLAMA_URL`·`HF_HOME` 키가 없다.** 런북 16-1 은 파드에 둘을 주입한다.
+   `.env.example` 은 자격증명 보호 훅이 편집을 막으므로 사람이 직접 채워야 한다(SEC-2)
+
+### 프론트 연동을 막는 세 겹 중 인프라 몫 (2026-09-09)
+
+프론트가 붙으려면 CORS → DB 스키마 → ES 적재 순서로 세 겹이 열려야 한다. CORS 는 `server/` 에서
+열었다([w3-cors-dashboard](/backlog/w3-cors-dashboard/)). 나머지는 kubectl 권한이 있는 쪽 일이라 올린다.
+
+1. **대시보드를 어디서 서빙할지 정해지지 않았다.** 런북은 외부에 여는 주소가 `server.solidbob.cloud` 443
+   하나라고만 적었고(16-2·18) 대시보드 호스팅은 어디에도 없다. 같은 도메인에서 Caddy 가 정적 파일로 내주면
+   CORS 가 필요 없고, 다른 origin 이면 배포 env 에 `CORS_ALLOWED_ORIGINS` 를 넣어야 한다(런북 16-1 주입 목록에
+   아직 없다). 런북 16-2 가 참조하는 `infra/docker/Caddyfile` 도 저장소에 없다 — 정성윤·조서희
+2. **런북에 지식베이스 적재 단계가 없다.** 15장(Elasticsearch)은 기동·nori 확인까지만이고,
+   `scripts/index_knowledge_base.py --to-es --recreate` 를 운영 ES 에 도는 절차가 없다. ES 는 ClusterIP 라
+   밖에서 못 치므로 클러스터 안 Job 이나 `kubectl exec` 절차가 필요하다. 이게 없으면 `/hub/search` 는
+   운영에서 계속 빈 인덱스를 본다 — 정성윤(실행)·류준(명령)
+3. **DB 스키마 적용은 런북 17장 그대로 정성윤 실행 항목이다.** 09-04 의 어긋남 4건과 별개로, 배포 순서에
+   17장·위 2번 적재가 들어가야 프론트가 붙일 게 생긴다
+
 ## 이번 주 할 일 (1주차)
 
 - [x] AI Hub 회원가입 + 휴대폰 인증 + 데이터 신청 — 5개 데이터셋(`data/raw/`) 다운로드·정리 완료

@@ -20,6 +20,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent / "apps"))
 
 from fastapi import FastAPI, Request  # noqa: E402
+from fastapi.middleware.cors import CORSMiddleware  # noqa: E402
 
 from core.config import Settings, load_settings  # noqa: E402
 from hub.adapter.inbound.api.v1.card_feedback_router import card_feedback_router  # noqa: E402
@@ -103,6 +104,15 @@ app = FastAPI(
     summary="실시간 상담원 어시스트 RAG — FastAPI 코어",
     version="0.1.0",
     lifespan=lifespan,
+)
+
+# CORS 는 미들웨어라 기동 전에 붙어야 한다(Starlette 는 시작 뒤 add_middleware 를 거부한다).
+# 그래서 lifespan 의 settings 를 기다리지 않고 여기서 한 번 더 읽는다 — 이 값 하나만이다.
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=list(load_settings().cors_allowed_origins),
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 app.include_router(card_feedback_router)

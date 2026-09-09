@@ -20,6 +20,21 @@
 **그 디렉터리의 `CLAUDE.md` 를 함께 읽는다** — `server/CLAUDE.md`(요청이 흐르는 길) · `ai/CLAUDE.md`(품질을 만들고 재는 쪽).
 프론트엔드 작업은 `.claude/rules/dashboard.md`도 함께 본다.
 
+**배포·런타임에 닿는 작업은 `docs/infra-runbook.md`(AWS 운영 환경 정본)를 먼저 읽는다 — 네 영역 모두 해당한다.**
+로컬에서 되는 코드가 운영에서 안 되는 이유가 거의 전부 여기 적혀 있다.
+
+| 영역 | 읽을 절 | 무엇이 걸리나 |
+|---|---|---|
+| `server/` (장민석) | 12 · 16 · 19 · 「만들지 말 것」 | 주입되는 환경변수 · 서비스 이름(ClusterIP) · `/health` 스포크 검증 |
+| `ai/` (류준) | 11 · 14 · 15 · 22 | GPU 1장을 파드끼리 나눠 쓰는 방식 · Ollama 호출 규약 · ES nori 이미지 · 측정 인스턴스 분리 |
+| `apps/` (조서희) | 16-2 · 18 | 프론트가 붙는 주소는 `https://server.solidbob.cloud` 하나다. 내부 포트는 열려 있지 않다 |
+| `infra/`·AWS (정성윤) | 전체 + 부록 A·B | 자원 이름 · 비용 · 자동 중지. `infra/CLAUDE.md` 를 함께 읽는다 |
+
+훅이 이것을 강제한다 — `.claude/scripts/infra_runbook_guard.py`(PreToolUse)가 배포에 닿는 파일
+(`infra/` · `Dockerfile` · `Caddyfile` · `compose*.yml` · `.github/workflows/` · `server/core/config.py` ·
+`.env.example` · `db/schema.sql`) 편집을 **런북을 읽기 전에는 막는다.** 판정이 틀렸으면
+`CALLGUARD_SKIP_INFRA_CHECK=1` 로 통과시킨다.
+
 ---
 
 ## 0.5. 세션 종료 루틴 (작업이 있었던 모든 세션, 예외 없음)
@@ -213,7 +228,8 @@ _project/                ⚠ 비공개. 지킬 루트 밖이라 사이트에 올
 db/                      schema.sql(DDL) · ERD.md · erd.dot · generate_schema_docs.py
 knowledge-base/          dasan/ 만 남았다 — terms / manual / policy (조항 20개, decisions/201)
 golden-set/              골든셋 (v1-10.json …)
-docs/                    구조 하네스(harness.md) · 아키텍처(architecture.md) · 도메인(domain.md) · 기획서 rev.4.1 사본. 공개, 지킬 밖
+docs/                    구조 하네스(harness.md) · 아키텍처(architecture.md) · 도메인(domain.md) · 기획서 rev.4.1 사본
+                         · AWS 운영 인프라 런북(infra-runbook.md — 배포 정본). 공개, 지킬 밖
 server/                  요청이 흐르는 길 (Python 3.13). 계약(포트·DTO)·파이프라인 배선·클린 아키텍처.
                          main.py(합성 루트) · core/config.py · apps/hub/(7.3절 계약 DTO+포트, 슬라이스 transcript_ingest·myself)
                          · .importlinter(계약 4종) · requirements.txt · pytest.ini · CLAUDE.md(영역 규칙).
@@ -228,6 +244,8 @@ ai/                      품질을 만들고 재는 쪽 (Python 3.13). 청킹·B
                          검증: cd ai && pytest && PYTHONPATH=apps:../server/apps lint-imports --config .importlinter
                          의존 방향은 ai → server 한쪽뿐이다 (evaluation 이 hub 계약을 import). 역방향은 계약이 막는다
 apps/                    dashboard(상담원). 고객 화면은 `_project/decisions/014` 로 철회(013 철회)
+infra/                   로컬 개발 인프라(compose · ES nori 이미지) + 운영 배포 산출물.
+                         CLAUDE.md(AWS 전제 · 만들지 말 것) · README.md(로컬 사용법). 담당: 정성윤
 scripts/ data/           유틸리티 / 데이터 (원본은 .gitignore)
 .github/workflows/       Pages 배포(pages.yml) · CI(test.yml — server · ai · jekyll job) · branch-protection.json
 jekyll/                  지킬 사이트 루트 — 지킬 명령은 전부 이 안에서 실행
