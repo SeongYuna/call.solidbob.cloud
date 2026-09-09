@@ -80,14 +80,19 @@ class _FixedDelayTrigger(TriggerPort):
 
 
 def test_trigger_wiring_reports_latency_distribution():
+    """⚠ 표본 수를 **골든셋에서 계산한다**(2026-09-09). 전에는 `== 6` 으로 박아 뒀는데,
+    골든셋이 늘 때마다 여기가 깨지고 그때마다 숫자를 고치게 된다 — 그러면 이 테스트가
+    「배선이 맞는가」가 아니라 「골든셋이 그대로인가」를 재는 것이 된다."""
     items = load_golden_set()
+    expected_n = sum(1 for it in items if it.utterance_end_ms is not None)
     report = run_eval(items, Ports(trigger=_FixedDelayTrigger()))
     result = report["trigger"]
-    assert result["n"] == 6  # utterance_end_ms 가 있는 B 케이스 6건 (2026-08-28 재구성)
+    assert expected_n > 0
+    assert result["n"] == expected_n
     assert result["on_time_rate"] == 1.0  # 900ms는 0~1,500ms 허용 창 안
     assert result["latency_ms"]["p50"] == 900
     assert result["latency_ms"]["p95"] == 900
-    assert result["latency_ms"]["n"] == 6
+    assert result["latency_ms"]["n"] == expected_n
     assert result["not_fired"] == 0
 
 

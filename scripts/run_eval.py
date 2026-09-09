@@ -4,7 +4,7 @@
 
     cd infra && docker compose up -d && cd ..
     export ELASTICSEARCH_URL=http://localhost:9200
-    .venv/bin/python scripts/run_eval.py                                  # v1-10
+    .venv/bin/python scripts/run_eval.py                                  # v1-150
     .venv/bin/python scripts/run_eval.py --golden-set golden-set/v1-50.json
     .venv/bin/python scripts/run_eval.py --runs 3                         # 최저치 확인용
     .venv/bin/python scripts/run_eval.py --record                          # 결과를 DB 에 남긴다
@@ -33,6 +33,9 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 sys.path[:0] = [str(ROOT / "ai" / "apps"), str(ROOT / "server" / "apps")]
 
+from call_guard.adapter.outbound.rule_call_guard_adapter import (  # noqa: E402
+    RuleCallGuardAdapter,
+)
 from closure_gate.adapter.outbound.rule_closure_gate_adapter import (  # noqa: E402
     RuleClosureGateAdapter,
 )
@@ -110,6 +113,7 @@ def build_ports(client, *, index: str) -> Ports:
         return Ports(
             masking=RuleMaskingAdapter(),           # C-5 (server/apps/masking)
             closure_gate=RuleClosureGateAdapter(),  # F-2 (server/apps/closure_gate)
+            call_guard=RuleCallGuardAdapter(),      # C-6 (ai/apps/call_guard)
         )
 
     retriever = EsBm25Retriever(client, index=index)
@@ -117,6 +121,7 @@ def build_ports(client, *, index: str) -> Ports:
         retrieval=retriever,
         masking=RuleMaskingAdapter(),           # C-5 (server/apps/masking)
         closure_gate=RuleClosureGateAdapter(),  # F-2 (server/apps/closure_gate)
+        call_guard=RuleCallGuardAdapter(),      # C-6 (ai/apps/call_guard) — 규칙 기반, 외부 의존 없음
         # ⚠ trigger 는 **구현이 있는데도 일부러 꽂지 않는다**(IsFinalTrigger, B-1).
         #   TranscriptEvent 에 이벤트 도착 시각이 없어서 발동 시각을 "발화 종료 + STT 지연
         #   상수(346ms)"로 모형화하고 있다. 그대로 채점하면 지연 분포가 상수 하나로 수렴해
@@ -133,14 +138,14 @@ def build_ports(client, *, index: str) -> Ports:
 
 def main() -> int:
     ap = argparse.ArgumentParser(description="골든셋으로 구현된 스포크를 채점한다")
-    ap.add_argument("--golden-set", type=Path, default=None, help="기본: golden-set/v1-10.json")
+    ap.add_argument("--golden-set", type=Path, default=None, help="기본: golden-set/v1-150.json")
     ap.add_argument("--index", default=SINGLE_INDEX)
     ap.add_argument("--runs", type=int, default=1, help="N 번 돌려 최저치를 함께 낸다 (절대 원칙 4)")
     ap.add_argument("--record", action="store_true",
                     help="결과를 PostgreSQL 의 eval_run/eval_result 에 남긴다 (CLAUDE.md §5)")
     args = ap.parse_args()
 
-    golden_path = args.golden_set or (ROOT / "golden-set" / "v1-10.json")
+    golden_path = args.golden_set or (ROOT / "golden-set" / "v1-150.json")
     items = load_golden_set(golden_path)
     client = _es_client(os.environ.get("ELASTICSEARCH_URL"))
     if client is None:
@@ -164,10 +169,28 @@ def main() -> int:
 
 
 def _git_commit() -> str | None:
-    """어느 코드로 잰 값인지. 못 읽으면 None — **지어내지 않는다**(§5)."""
+    """어느 코드로 잰 값인지. 못 읽으면 None — **지어내지 않는다**(§5).
+
+    ⚠ **워킹트리가 더러우면 뒤에 `-dirty` 를 붙인다**(2026-09-09). 커밋 해시만 남기면
+    "이 커밋으로 재현된다"는 뜻이 되는데, 커밋되지 않은 변경으로 잰 값은 그 커밋을
+    체크아웃해도 나오지 않는다. 실제로 골든셋 150건 확장을 커밋 전에 재면서 겪었다 —
+    HEAD 는 확장 이전인데 수치는 확장 이후 것이었다. 재현 불가를 재현 가능한 것처럼
+    적지 않는다(절대 원칙 10).
+    """
     r = subprocess.run(["git", "-C", str(ROOT), "rev-parse", "HEAD"],
                        capture_output=True, text=True)
-    return r.stdout.strip() or None if r.returncode == 0 else None
+    if r.returncode != 0 or not r.stdout.strip():
+        return None
+    commit = r.stdout.strip()
+    dirty = subprocess.run(["git", "-C", str(ROOT), "status", "--porcelain"],
+                           capture_output=True, text=True)
+    if dirty.returncode == 0 and dirty.stdout.strip():
+        # `eval_run.git_commit` 이 VARCHAR(40) 이라 40자 해시에 접미어를 붙이면 넘친다.
+        # 더러운 상태에서는 **짧은 해시 + `-dirty`** 로 남긴다 — 어차피 그 커밋으로
+        # 재현되지 않으므로 전체 해시의 정밀도가 의미를 갖지 않는다. 스키마를 넓히지
+        # 않는 이유: `db/schema.sql` 변경은 운영 RDS 마이그레이션을 부른다(정성윤 소관).
+        return f"{commit[:7]}-dirty"
+    return commit
 
 
 def _record(report: dict, golden_path: Path) -> None:
