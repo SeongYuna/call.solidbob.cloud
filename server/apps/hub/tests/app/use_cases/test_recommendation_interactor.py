@@ -44,7 +44,7 @@ class _Generation(GenerationPort):
         if self.cards is not None:
             return list(self.cards)
         return [Card(title=d.title, summary=d.snippet, source=Source(doc_id=d.doc_id, title=d.title),
-                     score=d.score) for d in docs]
+                     similarity_score=d.score) for d in docs]
 
 
 class _Routing(DomainRoutingPort):
@@ -121,7 +121,7 @@ def test_미발동이면_지연을_재지_않는다():
 
 def test_생성이_준_카드를_그대로_내보낸다():
     """허브가 카드를 만들거나 순서를 바꾸지 않는다 — 지어내지 않는다(B-6)."""
-    only = [Card(title="X", summary="Y", source=Source(doc_id="FIN-TERM-1.1", title="X"), score=0.5)]
+    only = [Card(title="X", summary="Y", source=Source(doc_id="FIN-TERM-1.1", title="X"), similarity_score=0.5)]
     result, _ = _run(generation=_Generation(cards=only))
     assert len(result.cards.cards) == 1
     assert result.cards.cards[0].source.doc_id == "FIN-TERM-1.1"

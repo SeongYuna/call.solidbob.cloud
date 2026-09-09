@@ -29,7 +29,7 @@ class CardSchema(BaseModel):
     title: str
     summary: str
     source: SourceSchema  # 필수 — 출처 없는 카드는 만들지 않는다 (B-5)
-    score: float
+    similarity_score: float  # 7.3절 계약 필드명. DB recommendation_card.similarity_score 와 같다 (decisions/003)
 
 
 class RecommendResponse(BaseModel):

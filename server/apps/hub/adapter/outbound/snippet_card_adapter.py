@@ -24,7 +24,7 @@ class SnippetCardAdapter(GenerationPort):
                 title=doc.title,
                 summary=doc.snippet,  # 그대로 옮긴다 — 요약하지 않으므로 없는 말이 섞일 수 없다
                 source=Source(doc_id=doc.doc_id, title=doc.title),
-                score=doc.score,
+                similarity_score=doc.score,
             )
             for doc in docs
             if doc.doc_id  # 출처 없는 문서는 카드가 되지 않는다 (B-6)

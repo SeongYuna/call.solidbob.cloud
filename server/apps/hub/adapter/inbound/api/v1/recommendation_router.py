@@ -52,7 +52,7 @@ async def recommend(
                 title=c.title,
                 summary=c.summary,
                 source=SourceSchema(doc_id=c.source.doc_id, title=c.source.title),
-                score=c.score,
+                similarity_score=c.similarity_score,
             )
             for c in cards.cards
         ],

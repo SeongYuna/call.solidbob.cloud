@@ -5,7 +5,7 @@
     {"call_id": "c_001", "trigger_at_ms": 3150,
      "cards": [{"title": "프로모션 할인 적용 시점 안내",
                 "summary": "신규 가입 할인은 가입 다음 달 청구서부터 반영됩니다.",
-                "source": {"doc_id": "TERM-3.2", "title": "요금제약관 3.2조"}, "score": 0.87}],
+                "source": {"doc_id": "TERM-3.2", "title": "요금제약관 3.2조"}, "similarity_score": 0.87}],
      "internal_latency_ms": 780, "e2e_latency_ms": 1240}
 
 - source 는 필수다. 출처 없는 카드는 만들 수 없다 (B-5). doc_id 는 knowledge-base 조항 ID (decisions/003 ②).
@@ -29,7 +29,7 @@ class Card:
     title: str
     summary: str
     source: Source
-    score: float  # 유사도/RRF 점수. 화면에 그대로 표시 (B-5). "위험도"가 아니다.
+    similarity_score: float  # 유사도/RRF 점수. 화면에 그대로 표시 (B-5). "위험도"가 아니다.
 
 
 @dataclass(frozen=True)
