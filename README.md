@@ -25,7 +25,7 @@
 | `db/` | `schema.sql`(DDL) · ERD(`ERD.md` · `erd.dot` · `ERD.png`) · 생성 스크립트 |
 | `server/` | **요청이 흐르는 길**(Python 3.13). 계약(포트·DTO)·파이프라인 배선·클린 아키텍처. `apps/hub` · `core/config.py` · `.importlinter`. → `server.solidbob.cloud` |
 | `ai/` | **품질을 만들고 재는 쪽**(Python 3.13). 청킹·BM25·리랭크·모델 학습·평가 하네스. `apps/retrieval` · `apps/evaluation`. **서비스가 아니라 라이브러리라 `server` 와 한 컨테이너로 배포된다**(`decisions/024`·`105`) |
-| `infra/` | 로컬 개발 인프라(`docker-compose.yml` — PostgreSQL · nori ES) · **운영 AWS**(`terraform/`) · 배포 산출물(`docker/`) |
+| `infra/` | `docker/`(server 이미지) · `elasticsearch/`(nori 이미지) · `k8s/`(k3s 매니페스트 — `base/` 운영 · `local/` 리허설). **도커 컴포즈는 2026-09-08 에 걷어냈다**(`decisions/107`) |
 | `knowledge-base/` | `dasan/` × terms / manual / policy — **다산콜센터 단일 도메인**(2026-08-28, `decisions/201`) |
 | `golden-set/` | 골든셋 시나리오 (`v1-10.json` · `v1-50.json` — 다산 기준. 3주차에 재확장) |
 | `scripts/`, `data/` | 유틸리티 / 데이터 (원본은 커밋하지 않는다) |

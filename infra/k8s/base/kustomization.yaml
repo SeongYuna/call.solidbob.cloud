@@ -1,0 +1,29 @@
+# Requirement: [Task 1], B-2, SEC-2
+#
+#   kubectl apply -k infra/k8s/base/
+#
+# **이 파일은 2026-09-08 EC2 에 실제로 떠 있는 구성을 그대로 옮긴 것이다.**
+# 손으로 만든 클러스터가 인스턴스 안에만 있으면 인스턴스가 사라질 때 같이 사라진다.
+#
+# 먼저 넣어야 하는 것 (kustomize 밖 — 자격증명·클러스터 스코프라 저장소에 두지 않는다):
+#   ① cert-manager 설치 + clusterissuer.example.yaml (이메일 채워서)
+#   ② secret.example.yaml 의 시크릿 2개 (server-env · gcp-stt-credentials)
+#
+# 이미지 태그를 올릴 때는 아래 images: 한 곳만 고친다.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: callguard
+
+resources:
+  - namespace.yaml
+  - elasticsearch.yaml
+  - server.yaml
+  - ingress.yaml
+  # secret.example.yaml · clusterissuer.example.yaml 은 일부러 넣지 않는다.
+
+images:
+  - name: seongyuna/callguard-server
+    newTag: "0.1.0"
+  - name: seongyuna/callguard-es
+    newTag: "9.5.1"

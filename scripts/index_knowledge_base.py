@@ -11,7 +11,10 @@
 ES 적재(2026-08-27 추가). 기본은 `single` — 인덱스 하나 + `domain` 필터다
 (`_project/decisions/017`). `per-domain` 은 도메인이 늘었을 때를 대비해 남겨 둔 경로다.
 
-    cd infra && docker compose up -d      # ES 9.5.1 + nori
+    # ES 9.5.1 + nori — 컴포즈는 걷어냈다(decisions/107). 자세한 것은 infra/README.md
+    docker run -d --name callguard-elasticsearch -p 127.0.0.1:9200:9200 \
+      -e discovery.type=single-node -e xpack.security.enabled=false \
+      -e ES_JAVA_OPTS="-Xms512m -Xmx512m" seongyuna/callguard-es:9.5.1
     export ELASTICSEARCH_URL=http://localhost:9200
     .venv/bin/python scripts/index_knowledge_base.py --to-es --recreate
     .venv/bin/python scripts/index_knowledge_base.py --to-es            # 재적재 재현 확인

@@ -2,7 +2,7 @@
 title: "대시보드 Vercel 빌드 실패를 고친다 — 앱 경계를 넘는 import 제거"
 assignee: "정성윤"
 role: "infra"
-status: "in-progress"
+status: "done"
 sprint: 3
 priority: 4
 date: 2026-09-08
@@ -45,7 +45,8 @@ Error: Command "npm run build" exited with 2
 - [x] `main.tsx`·`AgentStandbyScreen.tsx` 의 import 를 프로젝트 안쪽으로 교체
 - [x] `vite.config.ts` 의 `server.fs.allow: [".."]` 제거 (같은 커밋 `9f730f9` 에서 들어온 임시방편)
 - [x] `apps/platform/node_modules` 가 **없는** 상태에서 `tsc --noEmit` · `vite build` 통과 확인
-- [ ] 푸시 후 Vercel 재배포가 실제로 초록인지 확인
+- [x] 푸시 후 Vercel 재배포가 실제로 초록인지 확인 — PR #50 의 Vercel 검사 2건 통과,
+      머지 후 Production 배포 2건 `success`, 라이브 번들 해시가 로컬 빌드와 일치(`index-BycDJbT8.js`)
 - [ ] 조서희에게 통보 — `apps/dashboard/` 는 조서희 소관인데 배포 복구라 PM 이 먼저 손댔다
 
 ## 남은 것
