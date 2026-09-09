@@ -120,11 +120,17 @@ export interface ManualSearchRequest {
 }
 
 export interface RecommendationBatch {
+  /**
+   * 트리거 발동 여부. `false` 면 검색조차 하지 않았다 — `cards`는 이때 빈 배열이다
+   * (서버는 `null`을 보내지만 프론트는 "안 씀"과 "빈 배열"을 굳이 구분하지 않는다).
+   * `fired: true, cards: []`(관련 문서 없음, B-6)와는 이 필드로만 구분된다.
+   * `_project/decisions/401` — 서버 `RecommendResponse.fired`(필수 필드)를 그대로 받는다.
+   */
+  fired: boolean;
   call_id: string;
   trigger_at_ms: number;
   cards: RecommendationCard[];
   internal_latency_ms: number;
-  e2e_latency_ms: number;
   domain?: DemoDomain;
 }
 

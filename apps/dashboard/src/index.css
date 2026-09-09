@@ -840,6 +840,12 @@ button {
   color: var(--muted);
 }
 
+.cards-loading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .utterance-list,
 .term-card-list,
 .evidence-list {

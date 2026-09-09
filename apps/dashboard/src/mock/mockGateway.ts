@@ -70,7 +70,13 @@ export class MockGatewayClient implements GatewayClient {
     }
 
     for (const batch of scenario.cardBatches) {
-      this.schedule(playAt(batch.trigger_at_ms), () => {
+      const firedAt = playAt(batch.trigger_at_ms);
+      // 트리거 발동 시점에 "검색 중" 신호를 먼저 보내고, internal_latency_ms 만큼
+      // 뒤에 카드를 배달한다 — 실측이 아니라 로딩 인디케이터 표시용 값이다.
+      this.schedule(firedAt, () => {
+        listeners.onRecommendationPending?.(batch.call_id);
+      });
+      this.schedule(firedAt + batch.internal_latency_ms, () => {
         listeners.onRecommendation(batch);
       });
     }
@@ -109,6 +115,8 @@ export class MockGatewayClient implements GatewayClient {
         );
         const matched = bestMatch(pool, request.query);
         resolve({
+          // 수동 검색은 상담원이 직접 건 것이라 항상 "검색은 했다" — 자동 트리거 개념(fired)과는 별개다.
+          fired: true,
           call_id: request.call_id,
           // 수동 검색은 트리거가 없다. 지연도 실측이 아니다.
           trigger_at_ms: 0,
@@ -117,7 +125,6 @@ export class MockGatewayClient implements GatewayClient {
               ? []
               : [{ ...matched, source_type: "manual" as const }],
           internal_latency_ms: MANUAL_SEARCH_MS,
-          e2e_latency_ms: MANUAL_SEARCH_MS,
         });
       }, MANUAL_SEARCH_MS);
     });

@@ -52,6 +52,13 @@ export function TermsPanel({
   const cards = useCallStore((state) =>
     state.viewMode === "history" ? state.historyCards : state.cards,
   );
+  // 상담기록 재생은 완료된 통화라 로딩·미발동 상태가 없다 — 항상 "발동됨"으로 본다.
+  const cardsLoading = useCallStore((state) =>
+    state.viewMode === "history" ? false : state.cardsLoading,
+  );
+  const lastFired = useCallStore((state) =>
+    state.viewMode === "history" ? true : state.lastFired,
+  );
   const error = useCallStore((state) => state.error);
   const [view, setView] = useState<TermsContentView>("closure");
   const pending = cards.find((item) => item.closure !== null && !item.settled);
@@ -102,7 +109,13 @@ export function TermsPanel({
       <div className="panel-body terms-body" ref={bodyRef}>
         {view === "popup" ? (
           cards.length === 0 ? (
-            <p className="empty">관련 문서가 아직 없습니다.</p>
+            cardsLoading ? (
+              <CardsLoadingIndicator />
+            ) : lastFired === false ? (
+              <p className="empty">이 민원 유형은 서류 안내 대상이 아닙니다.</p>
+            ) : (
+              <p className="empty">관련 문서가 아직 없습니다.</p>
+            )
           ) : (
             <ul className="term-card-list">
               {cards.map((item, index) => (
@@ -118,6 +131,16 @@ export function TermsPanel({
       </div>
       <BookmarkDock onJump={jumpTo} />
     </section>
+  );
+}
+
+/** 카드 추천 요청을 보낸 뒤 응답을 기다리는 동안 보여준다. 정확한 지연시간 대신 상태만 알린다. */
+function CardsLoadingIndicator(): ReactElement {
+  return (
+    <p className="empty cards-loading" role="status">
+      <span className="spinner" aria-hidden="true" />
+      서류 불러오는 중...
+    </p>
   );
 }
 

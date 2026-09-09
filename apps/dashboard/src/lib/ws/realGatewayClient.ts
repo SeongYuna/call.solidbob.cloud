@@ -126,7 +126,8 @@ export function parseGatewayMessage(value: unknown): ParsedMessage | null {
   if (hasKeys(body, ["segment_id", "speaker", "text"])) {
     return parseByKind("transcript", body);
   }
-  if (hasKeys(body, ["cards", "trigger_at_ms"])) {
+  // fired:false 응답에는 cards·trigger_at_ms 가 없다 (server/apps/hub 참고) — fired 단독으로도 잡는다.
+  if (hasKeys(body, ["cards", "trigger_at_ms"]) || hasKeys(body, ["fired"])) {
     return parseByKind("recommendation", body);
   }
   if (hasKeys(body, ["verdict", "evidence", "missing"])) {
@@ -194,15 +195,34 @@ function parseTranscript(body: Record<string, unknown>): TranscriptEvent | null 
 }
 
 function parseRecommendation(body: Record<string, unknown>): RecommendationBatch | null {
+  const fired = readBoolean(body, "fired");
+  if (fired === null) {
+    return null;
+  }
+
+  if (!fired) {
+    // 트리거 미발동 — 검색조차 하지 않았다. 서버는 call_id·cards 등을 보내지 않는다.
+    const batch: RecommendationBatch = {
+      fired: false,
+      call_id: readString(body, "call_id") ?? "",
+      trigger_at_ms: readNumber(body, "trigger_at_ms") ?? 0,
+      cards: [],
+      internal_latency_ms: readNumber(body, "internal_latency_ms") ?? 0,
+    };
+    const domain = readDomain(body.domain);
+    if (domain !== undefined) {
+      batch.domain = domain;
+    }
+    return batch;
+  }
+
   const call_id = readString(body, "call_id");
   const trigger_at_ms = readNumber(body, "trigger_at_ms");
   const internal_latency_ms = readNumber(body, "internal_latency_ms");
-  const e2e_latency_ms = readNumber(body, "e2e_latency_ms");
   if (
     call_id === null ||
     trigger_at_ms === null ||
     internal_latency_ms === null ||
-    e2e_latency_ms === null ||
     !Array.isArray(body.cards)
   ) {
     return null;
@@ -219,11 +239,11 @@ function parseRecommendation(body: Record<string, unknown>): RecommendationBatch
     cards.push(card);
   }
   const batch: RecommendationBatch = {
+    fired: true,
     call_id,
     trigger_at_ms,
     cards,
     internal_latency_ms,
-    e2e_latency_ms,
   };
   const domain = readDomain(body.domain);
   if (domain !== undefined) {
@@ -235,7 +255,11 @@ function parseRecommendation(body: Record<string, unknown>): RecommendationBatch
 function parseCard(body: Record<string, unknown>): RecommendationCard | null {
   const title = readString(body, "title");
   const summary = readString(body, "summary");
-  const similarity_score = readNumber(body, "similarity_score");
+  // NOTE: 서버가 아직 decisions/003(similarity_score) 대신 score로
+  // 응답하고 있어 임시 방어 처리. 장민석님이 서버 고치면 이 fallback은
+  // 제거 가능.
+  const similarity_score =
+    readNumber(body, "similarity_score") ?? readNumber(body, "score");
   const source = parseSource(body.source);
   if (title === null || summary === null || similarity_score === null || source === null) {
     return null;
