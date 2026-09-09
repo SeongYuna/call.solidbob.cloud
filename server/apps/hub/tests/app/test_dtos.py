@@ -17,7 +17,7 @@ def test_recommendation_cards_empty_means_no_relevant_document():
     empty = RecommendationCards(call_id="c_001", trigger_at_ms=3150)
     assert empty.no_relevant_document
     card = Card(title="프로모션 할인 적용 시점 안내", summary="…",
-                source=Source(doc_id="TERM-3.2", title="요금제약관 3.2조"), score=0.87)
+                source=Source(doc_id="TERM-3.2", title="요금제약관 3.2조"), similarity_score=0.87)
     assert not RecommendationCards(call_id="c_001", trigger_at_ms=3150, cards=(card,)).no_relevant_document
 
 
