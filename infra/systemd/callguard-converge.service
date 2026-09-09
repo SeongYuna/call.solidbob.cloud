@@ -1,0 +1,28 @@
+# Requirement: [Task 1]
+# 부팅 시 저장소(main) 상태로 클러스터를 맞춘다. 설치:
+#
+#   sudo install -D -m 0755 infra/systemd/converge.sh /opt/callguard/converge.sh
+#   sudo install -D -m 0644 infra/systemd/callguard-converge.service \
+#     /etc/systemd/system/callguard-converge.service
+#   sudo systemctl daemon-reload && sudo systemctl enable --now callguard-converge
+#
+# 확인:  systemctl status callguard-converge  ·  journalctl -u callguard-converge
+
+[Unit]
+Description=CallGuard — 부팅 시 저장소 상태로 수렴
+# k3s 가 떠 있어야 하고, 저장소를 받아야 하므로 네트워크도 필요하다.
+After=k3s.service network-online.target
+Wants=network-online.target
+Requires=k3s.service
+
+[Service]
+Type=oneshot
+ExecStart=/opt/callguard/converge.sh
+RemainAfterExit=yes
+# k3s API 대기까지 포함해 넉넉히 준다. 초과하면 실패로 남아 journalctl 에 드러난다.
+TimeoutStartSec=600
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
