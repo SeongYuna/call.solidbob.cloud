@@ -66,7 +66,6 @@ export function AdminPanel({
     <main className="admin-page">
       <header className="admin-page-header">
         <div>
-          <p className="wrapup-eyebrow">관리자</p>
           <h2>관리자 화면</h2>
         </div>
         <div className="wrapup-actions">
