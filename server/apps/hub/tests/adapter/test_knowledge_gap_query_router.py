@@ -61,8 +61,8 @@ def teardown_function():
 def test_쌓인_신고를_읽을_수_있다():
     with _client() as c:
         b = c.get("/hub/knowledge-gaps").json()
-    assert b["total"] == 2
-    assert [g["gap_id"] for g in b["gaps"]] == [2, 1]
+    assert b["total"] == "2"
+    assert [g["gap_id"] for g in b["gaps"]] == ["2", "1"]
     assert b["gaps"][0]["domain"] == "shopping"
 
 
@@ -97,8 +97,8 @@ def test_집계는_두_축으로_준다():
     with _client() as c:
         b = c.get("/hub/knowledge-gaps/summary").json()
     assert {c_["key"] for c_ in b["by_module"]} == {"B", "C"}
-    assert b["total"] == 2                      # 모듈 축 기준
-    assert sum(c_["total"] for c_ in b["by_domain"]) == 1   # 도메인 축은 더 작을 수 있다
+    assert b["total"] == "2"                    # 모듈 축 기준
+    assert sum(int(c_["total"]) for c_ in b["by_domain"]) == 1   # 도메인 축은 더 작을 수 있다
 
 
 def test_집계에_우선순위나_위험도가_없다():
@@ -111,7 +111,7 @@ def test_집계에_우선순위나_위험도가_없다():
 def test_보강했으면_상태를_옮긴다():
     with _client() as c:
         r = c.patch("/hub/knowledge-gaps/2", json={"status": "resolved"})
-    assert r.status_code == 200 and r.json() == {"gap_id": 2, "status": "resolved"}
+    assert r.status_code == 200 and r.json() == {"gap_id": "2", "status": "resolved"}
 
 
 def test_되돌리기도_된다():

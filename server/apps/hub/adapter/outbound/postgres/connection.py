@@ -4,6 +4,11 @@
 2026-08-27 MySQL 에서 전환 — `_project/decisions/018-DB-PostgreSQL-전환.md`.
 리포지토리는 이 모듈의 `ConnectionFactory` 타입만 알고 psycopg 를 직접 import 하지 않는다 —
 테스트가 가짜 커넥션을 꽂을 수 있어야 실제 DB 없이도 SEC-1 을 검증할 수 있다.
+
+**`DATABASE_URL` 이 있으면 그것을 쓴다 (2026-09-10).** 운영(k3s)은 시크릿으로 `DATABASE_URL`
+하나만 주입한다(`docs/infra-runbook.md` 12-2 · 16-1). 전에는 개별 `POSTGRES_*` 만 읽어서
+`/health` 가 `postgres_configured: true` 를 보고하면서도 실제 연결은 호스트 없이 시도되는
+구조였다. 개별 키는 로컬 편의용으로 남긴다.
 """
 
 from __future__ import annotations
@@ -30,6 +35,23 @@ class ConnectionFactory(Protocol):
     def __call__(self) -> AsyncContextManager[Connection]: ...
 
 
+def conninfo_for(settings: Any) -> str:
+    """설정 → libpq 접속 문자열. `DATABASE_URL` 이 있으면 그대로, 없으면 개별 키로 조립한다.
+
+    psycopg 없이도 호출할 수 있게 문자열 조립은 직접 한다(테스트가 드라이버 없이 돈다).
+    """
+    if settings.database_url:
+        return settings.database_url
+    parts = {
+        "host": settings.postgres_host,
+        "port": settings.postgres_port,
+        "user": settings.postgres_user,
+        "password": settings.postgres_password,
+        "dbname": settings.postgres_db_name,
+    }
+    return " ".join(f"{k}={v}" for k, v in parts.items() if v is not None)
+
+
 def build_connection_factory(settings: Any) -> ConnectionFactory:
     """`core.config.Settings` 로 psycopg 커넥션 팩토리를 만든다.
 
@@ -41,13 +63,7 @@ def build_connection_factory(settings: Any) -> ConnectionFactory:
 
     import psycopg  # noqa: PLC0415  (선택적 의존성 — 위 주석 참고)
 
-    conninfo = psycopg.conninfo.make_conninfo(
-        host=settings.postgres_host,
-        port=settings.postgres_port,
-        user=settings.postgres_user,
-        password=settings.postgres_password,
-        dbname=settings.postgres_db_name,
-    )
+    conninfo = conninfo_for(settings)
 
     @asynccontextmanager
     async def factory():

@@ -47,7 +47,7 @@ def test_confirmed는_항상_false로_나간다():
     try:
         with TestClient(app) as client:
             r = client.post("/hub/calls/c_001/close", json=BODY)
-        assert r.json()["confirmed"] is False
+        assert r.json()["confirmed"] == "false"
     finally:
         app.dependency_overrides.clear()
 

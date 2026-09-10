@@ -52,7 +52,8 @@ async def list_knowledge_gaps(
         gaps=[
             KnowledgeGapItemSchema(
                 gap_id=g.gap_id, module=g.module, description=g.description, status=g.status,
-                created_at=g.created_at, call_id=g.call_id, segment_id=g.segment_id,
+                created_at=g.created_at, call_id=g.call_id,
+                segment_id=None if g.segment_id is None else str(g.segment_id),
                 closure_id=g.closure_id, domain=g.domain,
             )
             for g in page.gaps
