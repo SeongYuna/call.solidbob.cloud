@@ -243,3 +243,83 @@ export interface TranscriptPage {
   limit: number;
   offset: number;
 }
+
+/* ─────────────────────────────────────────────────────────────────────────
+ * J — 콜 라우팅 보호 (`_project/decisions/204`, 2026-09-09)
+ *
+ * C-6 이 통화 **중** 폭언을 경고한다면, J 는 **다음 통화**를 다루는 경로다.
+ * §7.3 계약에 아직 없다 — 백엔드 DTO(`server/apps/hub/app/dtos/blacklist_dto.py`)와
+ * 같은 모양으로 먼저 맞춰 뒀다. 계약이 확정되면 그쪽을 정본으로 삼는다.
+ * ───────────────────────────────────────────────────────────────────────── */
+
+/**
+ * **요청의 상태만** 담는다(2026-09-09, `_project/decisions/205` ②).
+ * 해제(`released`)는 **등록**(`BlacklistEntryItem.released_at`)의 상태이지 요청의 상태가
+ * 아니다 — 두 곳에 두었더니 한쪽만 갱신돼 관리창이 「승인」과 「해제됨」을 동시에
+ * 보여주는 상태가 실제로 나왔다.
+ */
+export type BlacklistStatus = "pending" | "approved" | "rejected";
+
+/**
+ * 관리자가 **통화를 다시 듣지 않고** 판단할 수 있게 싣는 근거.
+ * ⚠ 전부 셀 수 있는 건수다 — 위험도 점수를 만들지 않는다(부록 A-1).
+ */
+export interface BlacklistEvidence {
+  call_duration_s: number;
+  insult_count: number;
+  threat_count: number;
+  sexual_count: number;
+  /**
+   * ⚠ **블랙리스트 사유가 아니고, 서버에 저장되지도 않는다**(`decisions/205` ④).
+   * DASAN-MANUAL-5.4 — 자해·극단적 선택 암시는 폭언과 다르게 다룬다. 도움이 필요한
+   * 사람을 차단 대상으로 올리는 것은 정반대 방향이다.
+   *
+   * 자해 암시 건수는 **정신건강에 관한 정보**라 고객 식별자와 같은 행에 무기한 남기면
+   * 「이 사람이 자해를 N회 암시했다」는 레코드가 된다. 그래서 `blacklist_request` 에
+   * 대응 컬럼이 없다 — 이 값은 **요청 화면의 경고를 띄우기 위한 일회성 값**이다.
+   */
+  distress_count: number;
+  /** D-5 통화 온도 이상 구간 수(`decisions/203`). 점수가 아니라 건수다. */
+  temperature_outliers: number;
+}
+
+export interface BlacklistRequestItem {
+  request_id: string;
+  call_id: string;
+  /**
+   * ⚠ **전화번호의 HMAC 이다. 평문을 넣지 않는다**(`decisions/205` ③) — 전화번호는
+   * C-5 의 P4 이고, 자막에서 지운 값을 여기 평문으로 두면 마스킹을 앞단에 둔 의미가
+   * 사라진다. 화면 표시는 `display_hint` 를 쓴다.
+   */
+  customer_ref: string;
+  /** 화면 표시 전용(뒤 4자리 등). 조회·배정은 `customer_ref` 로만 한다. */
+  display_hint: string;
+  requested_by: string;
+  reason: string;
+  /** ⚠ **마스킹된 자막**이다. 원문이 아니다 — DASAN-MANUAL-5.5 · C-5. */
+  context_excerpt: string;
+  evidence: BlacklistEvidence;
+  status: BlacklistStatus;
+  requested_at: string;
+  decided_by: string | null;
+  decided_at: string | null;
+}
+
+/**
+ * 등록 **에피소드** 1건. 「고객 1명 = 1행」이 아니다(`decisions/205` ②) —
+ * 해제 후 재등록되면 행이 하나 더 생기고 옛 행은 `released_at` 이 찍힌 채 남는다.
+ */
+export interface BlacklistEntryItem {
+  entry_id: string;
+  customer_ref: string;
+  display_hint: string;
+  request_id: string;
+  approved_at: string;
+  /** 만료가 없으면 영구 표시가 된다(`decisions/205` ⑤). */
+  expires_at: string;
+  released_at: string | null;
+  released_by: string | null;
+  release_reason: string | null;
+  /** **관리자 승인 메모.** 요청 사유의 사본이 아니다 — 사본을 두면 같은 개인정보가 두 벌이 된다. */
+  note: string | null;
+}

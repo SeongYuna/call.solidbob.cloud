@@ -14,7 +14,8 @@
 #
 # (apps/ 를 경로에 올려야 hub 가 최상위 패키지로 보인다. main.py 의 sys.path.insert 와 동일한 맥락.)
 # 스포크를 새로 만들면 root_packages 와 계약 1 의 containers 에 이름을 추가한다.
-# 등록됨: masking(C-5) · closure_gate(F-2).  예정: postcall(D-4)  — 규칙 기반 판정이라 server 쪽이다.
+# 등록됨: masking(C-5) · closure_gate(F-2) · blacklist(J-4·J-5, 2026-09-09 `decisions/204`).
+# 예정: postcall(D-4)  — 규칙 기반 판정이라 server 쪽이다.
 # =============================================================================
 
 [importlinter]
@@ -22,6 +23,7 @@ root_packages =
     hub
     masking
     closure_gate
+    blacklist
     core
 include_external_packages = True
 
@@ -41,6 +43,7 @@ containers =
     hub
     masking
     closure_gate
+    blacklist
 
 # -----------------------------------------------------------------------------
 # 계약 2) 의존 방향 — server 는 ai 를 모른다
@@ -55,10 +58,13 @@ source_modules =
     hub
     masking
     closure_gate
+    blacklist
     core
 forbidden_modules =
     evaluation
     retrieval
+    voice_signal
+    call_guard
     langchain
     langgraph
     torch
@@ -76,6 +82,7 @@ source_modules =
     hub.app
     masking.domain
     closure_gate.domain
+    blacklist.domain
 forbidden_modules =
     fastapi
     sqlalchemy
@@ -95,6 +102,7 @@ type = forbidden
 source_modules =
     masking.domain
     closure_gate.domain
+    blacklist.domain
 forbidden_modules =
     pydantic
     fastapi

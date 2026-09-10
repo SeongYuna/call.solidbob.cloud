@@ -23,6 +23,11 @@ huggingface_hub==1.28.0
 sentencepiece==0.2.2
 accelerate==1.14.0
 
+# --- 음성 신호 (D-5 통화 온도, `_project/decisions/203`) ---
+# 자기상관·RMS 계산에만 쓴다. librosa·soundfile 을 들이지 않는 이유는
+# ai/apps/voice_signal/adapter/outbound/wav_reader.py 참고.
+numpy==2.5.2
+
 # --- 계약 DTO 검증 ---
 # evaluation 이 hub 의 pydantic DTO 를 import 한다 (의존 방향 ai → server).
 pydantic==2.13.4

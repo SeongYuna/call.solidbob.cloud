@@ -4,6 +4,17 @@
 > 생성 스크립트: [`../generate_schema_docs.py`](../generate_schema_docs.py) — 스키마를 고칠 땐 이 파일의
 > `TABLES`만 고치고 재실행하면 SQL과 ERD가 항상 같은 정의를 가리킨다.
 
+> **2026-09-09 — 22개 테이블이 됐다.** J 블록(`blacklist_request`·`blacklist_entry`·
+> `routing_log` — `_project/decisions/204`)과 **C-6·D-5 의 출력을 담을 자리**
+> (`call_guard_flag`·`voice_outlier` — `_project/decisions/205`)가 늘었다.
+> 아래 「16개」 서술은 그 이전 기록이라 고치지 않는다(절대 원칙 8).
+>
+> 같은 날 스키마 QA 로 **결함 둘을 고쳤다** — ① `transcript_segment` PK 가
+> `segment_id` 하나여서 **두 번째 통화의 자막이 첫 통화 행을 덮어썼다**(재현함).
+> `(call_id, segment_id)` 복합키로 바꿨다. ② `blacklist_entry` PK 가 `customer_ref`
+> 여서 **해제 후 재등록이 불가능**했다. 등록 「에피소드」 단위로 바꾸고 활성 등록만
+> 부분 유니크로 막는다. 경위: `_project/decisions/205`.
+
 ## 왜 5개가 아니라 16개인가
 
 기획서 [3장 시스템 아키텍처](/docs/03/)는 `call`·`transcript`·`recommendation`·`closure`·

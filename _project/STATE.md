@@ -30,25 +30,43 @@ F·G·H·I 동결 판정은 **6주차 종료 시점**이다(그 전까지는 적
 
 | 영역 | 주 담당 | 상태 |
 |---|---|---|
-| `server/` | 장민석 | 엔드포인트 15개 · 테스트 286 + integration 3 · 스포크 4종(`masking`·`closure_gate`·`retrieval`·`trigger`) — **501 은 이제 없다**(트리거 배선 09-10). `POST /hub/calls`(통화 시작, `decisions/301`) 가 전사 저장의 외래키 선행 조건. 커넥션은 `DATABASE_URL` 우선(운영 주입 방식) · ES 인덱스 없으면 503. CORS 는 `CORS_ALLOWED_ORIGINS`. **진행 중**: 로컬 서버(Neon + 로컬 ES)를 ngrok 으로 조서희에게 연다 — authtoken 대기(`w3-api-tunnel-handoff`) |
-| `ai/` | 류준 | 검색(BM25+nori) ✅ · 트리거 v1 ✅ · B-0 v1 ✅ · 평가 하네스 ✅. 분류기는 학습했으나 v1 을 못 넘어 기본값에서 뺐다. 컴플라이언스(6주차) 미착수 |
+| `server/` | 장민석 | 엔드포인트 15개 · 테스트 290 + integration 3(PR #61 재검증치) · 스포크 4종(`masking`·`closure_gate`·`retrieval`·`trigger`) — **501 은 이제 없다**(트리거 배선 09-10). `POST /hub/calls`(통화 시작, `decisions/301`) 가 전사 저장의 외래키 선행 조건. 커넥션은 `DATABASE_URL` 우선(운영 주입 방식) · ES 인덱스 없으면 503. CORS 는 `CORS_ALLOWED_ORIGINS`. 응답 전 필드 문자열화(`StrField`, §7.3 계약 정본과 어긋남 — 미결). **진행 중**: 로컬 서버(Neon + 로컬 ES)를 ngrok 으로 조서희에게 연다 — authtoken 대기(`w3-api-tunnel-handoff`) |
+| `ai/` | 류준 | 검색(BM25+nori) ✅ · 트리거 v1 ✅ · 평가 하네스 ✅ · **C-6 콜 가드 ✅**(`ai/apps/call_guard/`) · **D-5 통화 온도 ✅**(`ai/apps/voice_signal/` — `decisions/203`). **지식베이스 98조항 · 골든셋 156건**(3주차 목표 달성). 테스트 191 · 계약 3종. **실측: Recall@5 0.833 · MRR 0.659 · n96** (`run_id=2`). ⚠ **C-5 절대 규칙 ❌** — P6 인명 2건 누락, `ai/` NER 이 내 몫. A-5 는 AI Hub 505/71479 미신청으로 본체 대기(8kHz 페널티만 분리 완료). 컴플라이언스(6주차) 미착수 |
 | 인프라 · CI | 정성윤 | CI 3종 · main 보호 · **사이트 배포 ✅ `https://docs.solidbob.cloud`**(DNS 는 클라우드플레어 — `decisions/102~104`). **저장소 소유권 `SeongYuna` 로 이전 완료**(09-03, `decisions/106` — 룰셋·Pages·협업자 전부 보존). **프론트 2종 배포 ✅ 정성윤 Vercel + Git 연동** — 소개 `www.solidbob.cloud`(`apps/platform`) · 데모 `call.solidbob.cloud`(`apps/dashboard`, mock 모드). 조서희 계정에서 무중단 이관(TXT 검증). ⚠ **`main` 머지로 자동배포가 실제로 도는지는 아직 안 봤다.** **운영 AWS 는 코드까지만** — `infra/terraform/`(EC2+RDS+ES, `validate` 통과) · `infra/docker/`(Dockerfile·compose.prod·Caddyfile) 를 09-03 에 썼으나 **`apply` 안 함, 뜬 리소스 0개**(자격증명 미설정). 도커 빌드도 미검증(데몬 없음). **A(STT) 는 `services/` 디렉터리 자체가 없다 — 코드 0줄.** 배치 전사 `scripts/transcribe_batch.py` 는 결함 3건 수정했으나 **실제 API 경로 여전히 미검증** — 이 머신에 오디오도 `.venv` 도 없다 |
 | `apps/` | 조서희 | 대시보드: `/` = 대기화면 ⇄ 어시스트/요약. `ko-masking`은 권한 확인 후 스팬 클릭으로 원문 토글. `ko-grant-delay` 욕설은 별표 마스킹+배너. 랜딩: 다크 레퍼런스 + 해/달 토글. **09-09**: 프론트 계약에 `fired` 반영(`decisions/401`) — 검색 안 함/결과 없음/결과 있음 3상태 구분 + 카드 대기 중 로딩 UI. 실서버엔 로딩 신호가 없어(§7.3 미정) 라이브 모드는 아직 스피너가 안 뜬다. |
 
 ---
 
-## 실측값 (2026-08-27, 잠정)
+## 실측값 (2026-09-09)
 
 ```
-[retrieval]      recall@5 0.857 ✅ · mrr 0.702 ✅ · n 14
-[masking]        누락 0 ✅ · 과잉 0.0 · n 18            절대규칙 통과
-[closure_gate]   정확도 1.0 ✅ · n 16                   절대규칙 통과
-[domain_routing] 0.857 ❌ (목표 0.95) · n 14
-[trigger / compliance]  측정 불가 — 미구현 또는 의도적 미배선
+2026-09-09 · 골든셋 v1-150(156건) · 지식베이스 98조항 · 커밋 c9da0a3-dirty · run_id=2
+ELASTICSEARCH_URL=http://localhost:9200 .venv/bin/python scripts/run_eval.py --runs 3 --record
+
+[retrieval]    recall@5 0.833 ✅ · mrr 0.659 ✅ · n 96
+[masking]      누락 2 ❌ · 패턴 오분류 1 · 과잉 0.0 · n 28   **절대규칙 위반**
+[call_guard]   재현율 1.0 · 정밀도 1.0 · n 15              ⚠ 자기충족 — 상한이지 성능 아님
+[closure_gate] 측정 불가 — 채점 대상 0건
+[trigger / compliance / domain_routing]  측정 불가 — 미구현 또는 의도적 미배선
 ```
+
+**⚠ C-5 절대 규칙이 처음으로 ❌ 다.** 08-27 의 「누락 0 ✅」은 표본 18건 위의 값이었다.
+뚫린 둘은 **전부 P6(인명)** — `"저는 최지훈이고요"`·`"신청인 이름은 한서윤으로"` 가
+규칙 폴백의 문맥 밖이다. 고칠 곳은 `ai/` NER(류준). 08-27 수치(0.857/0.702, n14)는
+4개 도메인·20조항 기준이라 **무효다.**
+
+<details><summary>2026-08-27 값 (4개 도메인·조항 20개 — 무효)</summary>
+
+```
+[retrieval] recall@5 0.857 · mrr 0.702 · n 14      [masking] 누락 0 · n 18
+[closure_gate] 정확도 1.0 · n 16                    [domain_routing] 0.857 ❌ (B-0 폐기됨)
+```
+</details>
 
 `eval_run.run_id` 로 DB 에 남는다(커밋·골든셋 버전·표본 수 포함, §5).
-재현: `ELASTICSEARCH_URL=... .venv/bin/python scripts/run_eval.py --golden-set golden-set/v1-50.json --runs 3 --record`
+재현: 위 명령 그대로. 기본 골든셋이 `v1-150.json` 이라 `--golden-set` 을 안 줘도 된다.
+ES 는 `docker build -t callguard-es:local infra/elasticsearch/` 후 9200 으로 띄우고
+`scripts/index_knowledge_base.py --to-es --recreate` 로 98조항을 적재한다.
 
 **⚠ 기준선으로 고정하지 않았다.** 절대 원칙 5(미달 시 CI 실패)를 켜면 미구현 때문에 계속
 빨간불이다. **수치가 나온 것과 게이트를 거는 것은 다른 결정**이다 → `w2-baseline-gate`.
@@ -66,9 +84,16 @@ F·G·H·I 동결 판정은 **6주차 종료 시점**이다(그 전까지는 적
 | **A(STT) 코드 0줄** | 정성윤 | 「필수」 블록인데 착수 흔적이 없다. 3주차 실시간화 전에 범위를 정해야 한다 |
 | **배치 전사 실행 검증** | 정성윤 | 오디오가 있는 머신이 필요하다. `--dry-run` 대조 + 소량 5~10건 → `w2-stt-batch` 완료 |
 | 트리거 스포크 배선 | 류준 | 마지막 501 이 여기 걸린다 |
+| **P6·P7 NER** | **류준** | **C-5 절대 규칙이 여기서 뚫린다.** `server/` 규칙 폴백은 문맥 있는 이름만 잡는다 |
+| **AI Hub 505/71479 신청** | 류준 | A-5 본체가 여기서 막혀 있다. 승인에 시간이 걸린다 |
+| **J 서버 어댑터·라우터** | 장민석 | 도메인 규칙(`server/apps/blacklist/`)은 있고 저장·HTTP 가 없다 |
+| **F-2 규칙표·`closure` 테이블이 다산을 모른다** | 장민석 | 넣으면 CHECK 거부 + `UnknownClosureType`. 골든셋 F-2 0건의 원인 → `w4-schema-qa-followup` |
+| **`transcript_segment` UPSERT 복합키 미반영** | 장민석 | **스키마는 고쳤다. 어댑터를 안 고치면 UPSERT 가 터진다** |
+| **`call` 행 생성 경로 없음** | 장민석 | 운영에서 첫 세그먼트가 FK 위반으로 실패한다(QA 중 실제로 부딪혔다) |
+| **C-6·D-5 저장 경로 없음** | 류준 | 테이블은 만들었다. **D-5 는 오디오를 안 남겨 재계산 불가** → `w4-c6-d5-persistence` |
 | 컴플라이언스(C-1~C-4) | 류준 | `ai/apps/compliance/` 미생성. 6주차 |
 | D-1~D-3 | 류준·장민석 | `server/apps/postcall/` 미생성. 7주차 |
-| B-0 0.857 ❌ | 팀 | n=14 로는 목표 0.95 판정 자체가 불가(14/14 만점 말고 통과 없음) |
+| ~~B-0 0.857 ❌~~ | ~~팀~~ | **2026-08-28 폐기됐다**(`decisions/201`) — 다산 단일 도메인이라 라우팅할 대상이 없다 |
 
 ---
 
@@ -100,6 +125,12 @@ ai/       품질을 만들고 재는 쪽    청킹·BM25·리랭크·모델 학�
 > ⚠ **2026-08-26 이전 기록의 `ai` 브랜치는 장민석**이다. 이름이 사람을 갈아탔다.
 > 옛 기록은 그 시점의 사실이라 고치지 않는다(절대 원칙 8).
 
+`ai/` 모듈: `retrieval` · `evaluation` · **`call_guard`(C-6)** · **`voice_signal`(D-5)**.
+`server/` 스포크: `masking` · `closure_gate` · **`blacklist`(J)**.
+DB **22테이블** — 2026-09-09 스키마 QA 로 J 3종 + `call_guard_flag`·`voice_outlier` 추가,
+`transcript_segment`·`blacklist_entry` 키 결함 수정(`decisions/205`). `db/schema.sql` 은
+**생성물**이다 — 고칠 곳은 `db/generate_schema_docs.py` 의 `TABLES` 다.
+
 **합성 루트**(`.importlinter` `root_packages` 에 **없는** 파일)는 누가 고쳐도 된다 —
 `server/main.py` · `ai/provider.py` · `scripts/run_eval.py` · 양쪽 `tests/`.
 협의를 절차로 요구하지 않는다(`decisions/023`).
@@ -108,7 +139,7 @@ ai/       품질을 만들고 재는 쪽    청킹·BM25·리랭크·모델 학�
 
 ## 결정 기록
 
-공동 번호대는 **`024` 까지 찼다.** 담당자별로는 정성윤 `106`·류준 `202` 까지 썼다 —
+공동 번호대는 **`024` 까지 찼다.** 담당자별로는 정성윤 `106`·류준 `205` 까지 썼다 —
 정성윤 `1xx` · 류준 `2xx` · 장민석 `3xx` ·
 조서희 `4xx` · 공동 `024~099` (`decisions/022` ④). 하루에 **세 번** 겹친 뒤 정했다.
 

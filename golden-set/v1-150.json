@@ -1,0 +1,3193 @@
+{
+  "version": "v1-150",
+  "created": "2026-09-09",
+  "size": 156,
+  "domain": "dasan",
+  "note": "3주차 공식 골든셋. `w3-golden-set-dasan` — 다산 단일 도메인 기준 150건. 기존 13건(GS-002~GS-102)은 v1-50.json 에서 **한 글자도 고치지 않고** 이어받았고 137건을 더했다(절대 원칙 8). 지식베이스도 함께 98조항으로 늘렸다 (`w3-kb-dasan-expand`) — 20조항으로는 상위 5건이 코퍼스의 25%라 Recall@5 가 성립하지 않았고, 필요서류를 다루는 조항이 둘뿐이라 서류 케이스의 정답이 몰렸다.",
+  "fields": {
+    "source": "authored = 팀이 관찰된 문체로 쓴 발화 · aihub = AI Hub 다산 전사 원문 그대로",
+    "context_utterances": "이 발화 앞에 오간 말. 검색 질의를 만들 때 함께 넣는다",
+    "call_guard": "C-6 고객 폭언·위기 신호. type: insult|threat|sexual|distress"
+  },
+  "items": [
+    {
+      "id": "GS-002",
+      "module": "B",
+      "domain": "dasan",
+      "customer_utterance": "여기 정류장에 저상버스가 언제 오는지 실시간으로 알 수 있는 방법이 있나요",
+      "utterance_end_ms": 2500,
+      "expected_doc_ids": [
+        "DASAN-TERM-2.1"
+      ],
+      "distractor_doc_ids": [
+        "DASAN-TERM-2.2",
+        "DASAN-TERM-3.1"
+      ],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": null,
+      "notes": "대중교통 실시간 배차 안내 → 안내지침 2.1조. 교통약자 이동지원(2.2조)과 혼동하지 않는지 확인.",
+      "source": "authored"
+    },
+    {
+      "id": "GS-007",
+      "module": "C-5",
+      "domain": "dasan",
+      "speaker": "customer",
+      "customer_utterance": "처리 결과 다시 연락 주셔야 하는데 제 번호는 01012345678이에요",
+      "pii_patterns": [
+        {
+          "pattern": "P4",
+          "raw_span": "01012345678",
+          "masked_expected": true
+        }
+      ],
+      "expected_doc_ids": [],
+      "distractor_doc_ids": [],
+      "compliance_violation": null,
+      "f2_case": null,
+      "notes": "구분자 없이 붙어있는 형태 — [기능 명세 2.4절] STT 주 실패 모드(구분자 부재) 대응 검증용 핵심 케이스.",
+      "source": "authored"
+    },
+    {
+      "id": "GS-014",
+      "module": "B",
+      "domain": "dasan",
+      "customer_utterance": "어머니가 거동이 불편하신데 교통약자 이동지원은 어떻게 신청하나요",
+      "utterance_end_ms": 2600,
+      "expected_doc_ids": [
+        "DASAN-TERM-2.2"
+      ],
+      "distractor_doc_ids": [
+        "DASAN-TERM-2.1",
+        "DASAN-TERM-3.1"
+      ],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": null,
+      "notes": "교통약자 이동지원 신청 문의 → 안내지침 2.2조.",
+      "source": "authored"
+    },
+    {
+      "id": "GS-015",
+      "module": "B",
+      "domain": "dasan",
+      "customer_utterance": "이번 달 하수도 요금이 갑자기 많이 나왔는데 어떻게 계산되는 건가요",
+      "utterance_end_ms": 2300,
+      "expected_doc_ids": [
+        "DASAN-TERM-3.1"
+      ],
+      "distractor_doc_ids": [
+        "DASAN-TERM-3.2",
+        "DASAN-TERM-2.1"
+      ],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": null,
+      "notes": "하수도 사용료 산정 기준 문의 → 안내지침 3.1조.",
+      "source": "authored"
+    },
+    {
+      "id": "GS-016",
+      "module": "B",
+      "domain": "dasan",
+      "customer_utterance": "제가 직접 못 가서 그런데 가족이 대신 등본을 발급받을 수 있나요",
+      "utterance_end_ms": 2200,
+      "expected_doc_ids": [
+        "DASAN-TERM-4.1"
+      ],
+      "distractor_doc_ids": [
+        "DASAN-TERM-4.2",
+        "DASAN-TERM-1.2"
+      ],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": null,
+      "notes": "증명서 대리 발급 요건 문의 → 안내지침 4.1조.",
+      "source": "authored"
+    },
+    {
+      "id": "GS-024",
+      "module": "C-2",
+      "domain": "dasan",
+      "speaker": "agent",
+      "agent_utterance": "민원 접수하시려면 주민등록번호 뒷자리까지 전부 불러주셔야 해요",
+      "compliance_violation": {
+        "type": "C-2",
+        "phrase": "주민등록번호 뒷자리까지 전부 불러주셔야",
+        "expected_alternative_source": "DASAN-MANUAL-1.4"
+      },
+      "expected_doc_ids": [],
+      "distractor_doc_ids": [],
+      "pii_patterns": [],
+      "f2_case": null,
+      "notes": "민원 접수에 불필요한 주민등록번호 전체 요구 — 응대매뉴얼 1.2 위반.",
+      "source": "authored"
+    },
+    {
+      "id": "GS-028",
+      "module": "C-3",
+      "domain": "dasan",
+      "speaker": "agent",
+      "agent_utterance": "네 알겠습니다 대리 신청으로 처리해드릴게요",
+      "compliance_violation": {
+        "type": "C-3",
+        "phrase": "대리 신청으로 처리해드릴게요",
+        "expected_alternative_source": "DASAN-MANUAL-1.4"
+      },
+      "expected_doc_ids": [],
+      "distractor_doc_ids": [],
+      "pii_patterns": [],
+      "f2_case": null,
+      "notes": "위임장 필요 여부 안내 없이 대리 신청 처리 — 응대매뉴얼 3.1 위반.",
+      "source": "authored"
+    },
+    {
+      "id": "GS-033",
+      "module": "C-5",
+      "domain": "dasan",
+      "speaker": "customer",
+      "customer_utterance": "저희 집 주소가 서울시 강남구 테헤란로 123번지 456호예요",
+      "pii_patterns": [
+        {
+          "pattern": "P7",
+          "raw_span": "서울시 강남구 테헤란로 123번지 456호",
+          "masked_expected": true
+        }
+      ],
+      "expected_doc_ids": [],
+      "distractor_doc_ids": [],
+      "compliance_violation": null,
+      "f2_case": null,
+      "notes": "상세주소(P7, NER) — 시설 민원 접수 시 주소 발화 케이스.",
+      "source": "authored"
+    },
+    {
+      "id": "GS-037",
+      "module": "C-5",
+      "domain": "dasan",
+      "speaker": "customer",
+      "customer_utterance": "제 이름 박서연이고 번호는 010-2345-6789예요 다시 연락 주세요",
+      "pii_patterns": [
+        {
+          "pattern": "P6",
+          "raw_span": "박서연",
+          "masked_expected": true
+        },
+        {
+          "pattern": "P4",
+          "raw_span": "010-2345-6789",
+          "masked_expected": true
+        }
+      ],
+      "expected_doc_ids": [],
+      "distractor_doc_ids": [],
+      "compliance_violation": null,
+      "f2_case": null,
+      "notes": "인명(P6)+구분자 있는 휴대전화(P4) 동시 등장 — 한 발화에 복수 패턴.",
+      "source": "authored"
+    },
+    {
+      "id": "GS-051",
+      "module": "C-5",
+      "domain": "dasan",
+      "speaker": "customer",
+      "customer_utterance": "이름을 바꾸고 싶어요 어떻게 하나요",
+      "utterance_end_ms": 3100,
+      "trigger_examples": [],
+      "expected_doc_ids": [],
+      "distractor_doc_ids": [],
+      "compliance_violation": null,
+      "pii_patterns": [
+        {
+          "pattern": "P6",
+          "raw_span": "",
+          "masked_expected": false
+        }
+      ],
+      "f2_case": null,
+      "notes": "음성 케이스(P6) — 목적격 '이름을 X' 는 이름을 밝히는 말이 아니라 대상으로 하는 말이다. 2026-08-27 구현 중 '바꾸고'를 이름으로 잡던 실제 버그.",
+      "source": "authored"
+    },
+    {
+      "id": "GS-056",
+      "module": "C-5",
+      "domain": "dasan",
+      "speaker": "customer",
+      "customer_utterance": "그 김민준 씨가 어제 신고한 건 확인 부탁드려요",
+      "utterance_end_ms": 3100,
+      "trigger_examples": [],
+      "expected_doc_ids": [],
+      "distractor_doc_ids": [],
+      "compliance_violation": null,
+      "pii_patterns": [
+        {
+          "pattern": "P6",
+          "raw_span": "",
+          "masked_expected": false
+        }
+      ],
+      "f2_case": null,
+      "notes": "⚠ 규칙의 한계를 고정하는 음성 케이스(P6) — 문맥 없는 인명은 규칙으로 못 잡는다. NER 이 붙으면 이 항목을 masked_expected: true 로 뒤집는다.",
+      "source": "authored"
+    },
+    {
+      "id": "GS-101",
+      "module": "B",
+      "domain": "dasan",
+      "customer_utterance": "지금 변기에서 누수가 발생하는거같은데 어디에 문의해야할까요",
+      "utterance_end_ms": 2700,
+      "expected_doc_ids": [
+        "DASAN-TERM-3.2"
+      ],
+      "distractor_doc_ids": [
+        "DASAN-TERM-3.1"
+      ],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": null,
+      "notes": "AI Hub 다산 실제 발화(고객의도: 누수). 시설 고장·민원 접수(3.2조) ↔ 하수도 요금(3.1조) 혼동 확인. 2026-08-28 decisions/201 전환 시 추가.",
+      "source": "authored"
+    },
+    {
+      "id": "GS-102",
+      "module": "B",
+      "domain": "dasan",
+      "customer_utterance": "대리 신청시 필요한 서류가 있나요",
+      "utterance_end_ms": 1900,
+      "expected_doc_ids": [
+        "DASAN-MANUAL-3.1",
+        "DASAN-TERM-4.1"
+      ],
+      "distractor_doc_ids": [
+        "DASAN-MANUAL-1.2"
+      ],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": null,
+      "notes": "AI Hub 다산 실제 발화(고객의도: 재난지원금). **새 메인 기능(필요서류 자동 제시)의 대표 케이스.** 정답이 둘인 이유: 대리 신청 확인 절차(MANUAL-3.1)와 증명서 발급 필요서류(TERM-4.1)를 함께 띄워야 고객이 헛걸음하지 않는다 — 재현율 우선. 2026-08-28 추가.",
+      "source": "authored"
+    },
+    {
+      "id": "GS-201",
+      "module": "B",
+      "domain": "dasan",
+      "expected_doc_ids": [
+        "DASAN-TERM-1.4"
+      ],
+      "distractor_doc_ids": [
+        "DASAN-TERM-4.1",
+        "DASAN-TERM-1.2"
+      ],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": null,
+      "call_guard": null,
+      "customer_utterance": "신분증을 안 가져왔는데 등본 뗄 수 있나요",
+      "utterance_end_ms": 2400,
+      "context_utterances": [],
+      "source": "authored",
+      "notes": "신분확인 공통 기준(1.4) ↔ 증명서 발급(4.1) 혼동 확인."
+    },
+    {
+      "id": "GS-202",
+      "module": "B",
+      "domain": "dasan",
+      "expected_doc_ids": [
+        "DASAN-TERM-1.4"
+      ],
+      "distractor_doc_ids": [
+        "DASAN-TERM-4.18",
+        "DASAN-TERM-1.3"
+      ],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": null,
+      "call_guard": null,
+      "customer_utterance": "아, 혹시 신분증이 본가에 있어서요, 사본을 가져가도 되나요?",
+      "utterance_end_ms": 3000,
+      "context_utterances": [
+        "도서관 회원 가입하려고 하는데요"
+      ],
+      "source": "aihub",
+      "notes": "AI Hub 실제 발화(도서관가입문의). 사본 인정 여부는 신분확인 공통 기준(1.4)에 있다."
+    },
+    {
+      "id": "GS-203",
+      "module": "B",
+      "domain": "dasan",
+      "expected_doc_ids": [
+        "DASAN-TERM-1.5"
+      ],
+      "distractor_doc_ids": [
+        "DASAN-TERM-1.4",
+        "DASAN-TERM-4.4"
+      ],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": null,
+      "call_guard": null,
+      "customer_utterance": "외국인등록증으로도 민원 신청이 되나요",
+      "utterance_end_ms": 2500,
+      "context_utterances": [],
+      "source": "authored",
+      "notes": "외국인 민원인 응대(1.5). A-5 가 겨냥하는 이용자층의 대표 문의."
+    },
+    {
+      "id": "GS-204",
+      "module": "B",
+      "domain": "dasan",
+      "expected_doc_ids": [
+        "DASAN-TERM-1.3"
+      ],
+      "distractor_doc_ids": [
+        "DASAN-MANUAL-3.2",
+        "DASAN-TERM-1.4"
+      ],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": null,
+      "call_guard": null,
+      "customer_utterance": "필요한 서류를 한 번에 알려주실 수 있나요",
+      "utterance_end_ms": 2300,
+      "context_utterances": [],
+      "source": "authored",
+      "notes": "필요서류 안내 일반 원칙(1.3). 매뉴얼 3.2 와 짝이지만 시민 문의라 지침 쪽이 정답."
+    },
+    {
+      "id": "GS-205",
+      "module": "B",
+      "domain": "dasan",
+      "expected_doc_ids": [
+        "DASAN-TERM-1.2"
+      ],
+      "distractor_doc_ids": [
+        "DASAN-TERM-4.2",
+        "DASAN-MANUAL-1.1"
+      ],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": null,
+      "call_guard": null,
+      "customer_utterance": "이건 시에서 결정해주시는 건가요",
+      "utterance_end_ms": 2200,
+      "context_utterances": [],
+      "source": "authored",
+      "notes": "안내 범위의 한계(1.2)."
+    },
+    {
+      "id": "GS-206",
+      "module": "B",
+      "domain": "dasan",
+      "expected_doc_ids": [
+        "DASAN-TERM-2.3"
+      ],
+      "distractor_doc_ids": [
+        "DASAN-TERM-2.1",
+        "DASAN-TERM-2.11"
+      ],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": null,
+      "call_guard": null,
+      "customer_utterance": "저희 동네 지나가는 버스 첫차가 몇 시인지 알 수 있을까요",
+      "utterance_end_ms": 2800,
+      "context_utterances": [],
+      "source": "authored",
+      "notes": "시내버스 운행 시간(2.3) ↔ 노선·환승 원칙(2.1)."
+    },
+    {
+      "id": "GS-207",
+      "module": "B",
+      "domain": "dasan",
+      "expected_doc_ids": [
+        "DASAN-TERM-2.3"
+      ],
+      "distractor_doc_ids": [
+        "DASAN-TERM-2.1",
+        "DASAN-TERM-2.4"
+      ],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": null,
+      "call_guard": null,
+      "customer_utterance": "막차 시간이 정류장 도착 기준인가요 출발 기준인가요",
+      "utterance_end_ms": 2900,
+      "context_utterances": [],
+      "source": "authored",
+      "notes": "막차 기준 — 2.3 조에 명시."
+    },
+    {
+      "id": "GS-208",
+      "module": "B",
+      "domain": "dasan",
+      "expected_doc_ids": [
+        "DASAN-TERM-2.4"
+      ],
+      "distractor_doc_ids": [
+        "DASAN-TERM-2.6",
+        "DASAN-TERM-2.8"
+      ],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": null,
+      "call_guard": null,
+      "customer_utterance": "지하철 요금이 카드 종류마다 다른가요",
+      "utterance_end_ms": 2500,
+      "context_utterances": [],
+      "source": "authored",
+      "notes": "지하철 요금 체계(2.4) ↔ 우대용 카드 발급(2.6)."
+    },
+    {
+      "id": "GS-209",
+      "module": "B",
+      "domain": "dasan",
+      "expected_doc_ids": [
+        "DASAN-TERM-2.5"
+      ],
+      "distractor_doc_ids": [
+        "DASAN-TERM-2.2",
+        "DASAN-TERM-2.6"
+      ],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": null,
+      "call_guard": null,
+      "customer_utterance": "장애인콜택시 등록하려면 뭘 준비해야 하나요",
+      "utterance_end_ms": 2600,
+      "context_utterances": [],
+      "source": "authored",
+      "notes": "필요서류 — 장애인콜택시 등록(2.5)."
+    },
+    {
+      "id": "GS-210",
+      "module": "B",
+      "domain": "dasan",
+      "expected_doc_ids": [
+        "DASAN-TERM-2.5"
+      ],
+      "distractor_doc_ids": [
+        "DASAN-TERM-2.6",
+        "DASAN-TERM-2.2"
+      ],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": null,
+      "call_guard": null,
+      "customer_utterance": "복지카드는 어떻게 제출하나요?",
+      "utterance_end_ms": 2100,
+      "context_utterances": [
+        "장애인콜택시 이용 신청하려고 하는데요"
+      ],
+      "source": "aihub",
+      "notes": "AI Hub 실제 발화(장애인콜택시). 맥락 없이는 2.5·2.6 을 가를 수 없다."
+    },
+    {
+      "id": "GS-211",
+      "module": "B",
+      "domain": "dasan",
+      "expected_doc_ids": [
+        "DASAN-TERM-2.5"
+      ],
+      "distractor_doc_ids": [
+        "DASAN-TERM-2.2",
+        "DASAN-TERM-2.11"
+      ],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": null,
+      "call_guard": null,
+      "customer_utterance": "다리를 다쳐서 당분간 이동이 어려운데 콜택시 신청이 되나요",
+      "utterance_end_ms": 3100,
+      "context_utterances": [],
+      "source": "authored",
+      "notes": "일시적 이동 불편 — 진단서 추가 요건(2.5)."
+    },
+    {
+      "id": "GS-212",
+      "module": "B",
+      "domain": "dasan",
+      "expected_doc_ids": [
+        "DASAN-TERM-2.6"
+      ],
+      "distractor_doc_ids": [
+        "DASAN-TERM-2.4",
+        "DASAN-TERM-2.5"
+      ],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": null,
+      "call_guard": null,
+      "customer_utterance": "경로 우대 교통카드 만들려면 뭐가 필요한가요",
+      "utterance_end_ms": 2500,
+      "context_utterances": [],
+      "source": "authored",
+      "notes": "필요서류 — 우대용 교통카드(2.6)."
+    },
+    {
+      "id": "GS-213",
+      "module": "B",
+      "domain": "dasan",
+      "expected_doc_ids": [
+        "DASAN-TERM-2.7"
+      ],
+      "distractor_doc_ids": [
+        "DASAN-TERM-2.6",
+        "DASAN-TERM-2.4"
+      ],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": null,
+      "call_guard": null,
+      "customer_utterance": "알뜰교통카드 마일리지 신청은 어떻게 하나요",
+      "utterance_end_ms": 2600,
+      "context_utterances": [],
+      "source": "authored",
+      "notes": "광역알뜰교통카드(2.7)."
+    },
+    {
+      "id": "GS-214",
+      "module": "B",
+      "domain": "dasan",
+      "expected_doc_ids": [
+        "DASAN-TERM-2.8"
+      ],
+      "distractor_doc_ids": [
+        "DASAN-TERM-2.4",
+        "DASAN-TERM-2.6"
+      ],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": null,
+      "call_guard": null,
+      "customer_utterance": "정기권을 다 못 썼는데 남은 건 환불되나요",
+      "utterance_end_ms": 2700,
+      "context_utterances": [],
+      "source": "authored",
+      "notes": "정기권 환불(2.8) — 전액 환불 약속 금지."
+    },
+    {
+      "id": "GS-215",
+      "module": "B",
+      "domain": "dasan",
+      "expected_doc_ids": [
+        "DASAN-TERM-2.9"
+      ],
+      "distractor_doc_ids": [
+        "DASAN-TERM-2.10",
+        "DASAN-TERM-2.1"
+      ],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": null,
+      "call_guard": null,
+      "customer_utterance": "버스에 가방을 두고 내렸는데 어떻게 찾나요",
+      "utterance_end_ms": 2600,
+      "context_utterances": [],
+      "source": "authored",
+      "notes": "분실물 처리(2.9)."
+    },
+    {
+      "id": "GS-216",
+      "module": "B",
+      "domain": "dasan",
+      "expected_doc_ids": [
+        "DASAN-TERM-2.9"
+      ],
+      "distractor_doc_ids": [
+        "DASAN-MANUAL-3.4",
+        "DASAN-TERM-2.10"
+      ],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": null,
+      "call_guard": null,
+      "customer_utterance": "분실물을 가족이 대신 찾아갈 수 있나요",
+      "utterance_end_ms": 2500,
+      "context_utterances": [],
+      "source": "authored",
+      "notes": "필요서류 — 분실물 대리 수령(2.9). 매뉴얼 3.4 와 겹치지만 시민 안내는 2.9."
+    },
+    {
+      "id": "GS-217",
+      "module": "B",
+      "domain": "dasan",
+      "expected_doc_ids": [
+        "DASAN-TERM-2.10"
+      ],
+      "distractor_doc_ids": [
+        "DASAN-TERM-2.9",
+        "DASAN-TERM-2.3"
+      ],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": null,
+      "call_guard": null,
+      "customer_utterance": "기사님이 정류장에 안 서고 그냥 지나갔는데 신고하고 싶어요",
+      "utterance_end_ms": 3200,
+      "context_utterances": [],
+      "source": "authored",
+      "notes": "이용 불편 신고(2.10)."
+    },
+    {
+      "id": "GS-218",
+      "module": "B",
+      "domain": "dasan",
+      "expected_doc_ids": [
+        "DASAN-TERM-2.11"
+      ],
+      "distractor_doc_ids": [
+        "DASAN-TERM-2.1",
+        "DASAN-TERM-2.3"
+      ],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": null,
+      "call_guard": null,
+      "customer_utterance": "집에서 시청까지 어떻게 가는 게 제일 빠른가요",
+      "utterance_end_ms": 2600,
+      "context_utterances": [],
+      "source": "authored",
+      "notes": "길찾기·경로 안내(2.11)."
+    },
+    {
+      "id": "GS-219",
+      "module": "B",
+      "domain": "dasan",
+      "expected_doc_ids": [
+        "DASAN-TERM-2.11"
+      ],
+      "distractor_doc_ids": [
+        "DASAN-TERM-2.2",
+        "DASAN-TERM-2.5"
+      ],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": null,
+      "call_guard": null,
+      "customer_utterance": "어머니가 휠체어를 쓰시는데 그 경로로 갈 수 있을까요",
+      "utterance_end_ms": 3000,
+      "context_utterances": [],
+      "source": "authored",
+      "notes": "경로 안내에서 이동 여건 확인(2.11) ↔ 교통약자 지원(2.2)."
+    },
+    {
+      "id": "GS-220",
+      "module": "B",
+      "domain": "dasan",
+      "expected_doc_ids": [
+        "DASAN-TERM-2.12"
+      ],
+      "distractor_doc_ids": [
+        "DASAN-TERM-2.1",
+        "DASAN-MANUAL-2.2"
+      ],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": null,
+      "call_guard": null,
+      "customer_utterance": "고속버스 예매를 여기서 도와주실 수 있나요",
+      "utterance_end_ms": 2500,
+      "context_utterances": [],
+      "source": "authored",
+      "notes": "광역 교통 — 소관 아님(2.12)."
+    },
+    {
+      "id": "GS-221",
+      "module": "B",
+      "domain": "dasan",
+      "expected_doc_ids": [
+        "DASAN-TERM-2.12"
+      ],
+      "distractor_doc_ids": [
+        "DASAN-TERM-2.1",
+        "DASAN-TERM-2.4"
+      ],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": null,
+      "call_guard": null,
+      "customer_utterance": "시 경계를 넘어가도 환승 할인이 되나요",
+      "utterance_end_ms": 2500,
+      "context_utterances": [],
+      "source": "authored",
+      "notes": "환승 할인 적용 여부 단정 금지(2.12)."
+    },
+    {
+      "id": "GS-222",
+      "module": "B",
+      "domain": "dasan",
+      "expected_doc_ids": [
+        "DASAN-TERM-3.3"
+      ],
+      "distractor_doc_ids": [
+        "DASAN-TERM-3.1",
+        "DASAN-TERM-3.16"
+      ],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": null,
+      "call_guard": null,
+      "customer_utterance": "수도요금을 어디서 조회하나요",
+      "utterance_end_ms": 2200,
+      "context_utterances": [],
+      "source": "authored",
+      "notes": "상수도 요금 조회·납부(3.3) ↔ 하수도 사용료(3.1)."
+    },
+    {
+      "id": "GS-223",
+      "module": "B",
+      "domain": "dasan",
+      "expected_doc_ids": [
+        "DASAN-TERM-3.4"
+      ],
+      "distractor_doc_ids": [
+        "DASAN-TERM-3.13",
+        "DASAN-TERM-3.3"
+      ],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": null,
+      "call_guard": null,
+      "customer_utterance": "수도요금을 자동이체로 바꾸고 싶은데요",
+      "utterance_end_ms": 2400,
+      "context_utterances": [],
+      "source": "authored",
+      "notes": "필요서류 — 자동납부 신청(3.4)."
+    },
+    {
+      "id": "GS-224",
+      "module": "B",
+      "domain": "dasan",
+      "expected_doc_ids": [
+        "DASAN-TERM-3.4"
+      ],
+      "distractor_doc_ids": [
+        "DASAN-TERM-3.13",
+        "DASAN-TERM-3.14"
+      ],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": null,
+      "call_guard": null,
+      "customer_utterance": "자동납부를 해지하려면 어떻게 하나요",
+      "utterance_end_ms": 2400,
+      "context_utterances": [],
+      "source": "authored",
+      "notes": "자동납부 해지(3.4) ↔ 전자고지 해지(3.13) 혼동."
+    },
+    {
+      "id": "GS-225",
+      "module": "B",
+      "domain": "dasan",
+      "expected_doc_ids": [
+        "DASAN-TERM-3.5"
+      ],
+      "distractor_doc_ids": [
+        "DASAN-TERM-3.8",
+        "DASAN-TERM-3.14"
+      ],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": null,
+      "call_guard": null,
+      "customer_utterance": "이사 왔는데 수도 명의를 제 이름으로 바꾸고 싶어요",
+      "utterance_end_ms": 2900,
+      "context_utterances": [],
+      "source": "authored",
+      "notes": "필요서류 — 명의변경(3.5)."
+    },
+    {
+      "id": "GS-226",
+      "module": "B",
+      "domain": "dasan",
+      "expected_doc_ids": [
+        "DASAN-TERM-3.5"
+      ],
+      "distractor_doc_ids": [
+        "DASAN-TERM-3.4",
+        "DASAN-TERM-3.6"
+      ],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": null,
+      "call_guard": null,
+      "customer_utterance": "어떤서류가 필요한가요?",
+      "utterance_end_ms": 1800,
+      "context_utterances": [
+        "수도 사용자 명의를 바꾸려고 하는데요"
+      ],
+      "source": "aihub",
+      "notes": "AI Hub 실제 발화(상수도). **맥락 없이는 답이 없는 대표 케이스.**"
+    },
+    {
+      "id": "GS-227",
+      "module": "B",
+      "domain": "dasan",
+      "expected_doc_ids": [
+        "DASAN-TERM-3.6"
+      ],
+      "distractor_doc_ids": [
+        "DASAN-TERM-4.14",
+        "DASAN-TERM-6.8"
+      ],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": null,
+      "call_guard": null,
+      "customer_utterance": "아이가 셋인데 수도요금 감면 받을 수 있나요",
+      "utterance_end_ms": 2700,
+      "context_utterances": [],
+      "source": "authored",
+      "notes": "필요서류 — 수도요금 감면(3.6) ↔ 다자녀 지원(4.14) 혼동."
+    },
+    {
+      "id": "GS-228",
+      "module": "B",
+      "domain": "dasan",
+      "expected_doc_ids": [
+        "DASAN-TERM-3.6"
+      ],
+      "distractor_doc_ids": [
+        "DASAN-TERM-6.8",
+        "DASAN-TERM-3.3"
+      ],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": null,
+      "call_guard": null,
+      "customer_utterance": "기초생활수급자인데 수도요금 할인이 되나요",
+      "utterance_end_ms": 2700,
+      "context_utterances": [],
+      "source": "authored",
+      "notes": "감면 대상별 증명서(3.6)."
+    },
+    {
+      "id": "GS-229",
+      "module": "B",
+      "domain": "dasan",
+      "expected_doc_ids": [
+        "DASAN-TERM-3.7"
+      ],
+      "distractor_doc_ids": [
+        "DASAN-TERM-3.6",
+        "DASAN-TERM-3.15"
+      ],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": null,
+      "call_guard": null,
+      "customer_utterance": "누수 때문에 요금이 많이 나왔는데 감면이 되나요",
+      "utterance_end_ms": 2800,
+      "context_utterances": [],
+      "source": "authored",
+      "notes": "필요서류 — 누수 감면(3.7) ↔ 일반 감면(3.6)."
+    },
+    {
+      "id": "GS-230",
+      "module": "B",
+      "domain": "dasan",
+      "expected_doc_ids": [
+        "DASAN-TERM-3.7"
+      ],
+      "distractor_doc_ids": [
+        "DASAN-TERM-3.15",
+        "DASAN-TERM-3.9"
+      ],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": null,
+      "call_guard": null,
+      "customer_utterance": "누수 수리하고 나서 뭘 내면 되나요",
+      "utterance_end_ms": 2400,
+      "context_utterances": [],
+      "source": "authored",
+      "notes": "누수 감면 제출 서류(3.7)."
+    },
+    {
+      "id": "GS-231",
+      "module": "B",
+      "domain": "dasan",
+      "expected_doc_ids": [
+        "DASAN-TERM-3.8"
+      ],
+      "distractor_doc_ids": [
+        "DASAN-TERM-3.5",
+        "DASAN-TERM-3.9"
+      ],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": null,
+      "call_guard": null,
+      "customer_utterance": "한 계량기를 두 세대가 같이 쓰는데 나눌 수 있나요",
+      "utterance_end_ms": 2900,
+      "context_utterances": [],
+      "source": "authored",
+      "notes": "필요서류 — 세대분할(3.8)."
+    },
+    {
+      "id": "GS-232",
+      "module": "B",
+      "domain": "dasan",
+      "expected_doc_ids": [
+        "DASAN-TERM-3.9"
+      ],
+      "distractor_doc_ids": [
+        "DASAN-TERM-3.15",
+        "DASAN-TERM-3.2"
+      ],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": null,
+      "call_guard": null,
+      "customer_utterance": "겨울에 계량기가 얼어서 터졌는데 누가 부담하나요",
+      "utterance_end_ms": 2900,
+      "context_utterances": [],
+      "source": "authored",
+      "notes": "계량기 교체 비용 부담(3.9)."
+    },
+    {
+      "id": "GS-233",
+      "module": "B",
+      "domain": "dasan",
+      "expected_doc_ids": [
+        "DASAN-TERM-3.10"
+      ],
+      "distractor_doc_ids": [
+        "DASAN-TERM-3.9",
+        "DASAN-TERM-3.14"
+      ],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": null,
+      "call_guard": null,
+      "customer_utterance": "건물을 새로 짓는데 수도를 새로 놓으려면요",
+      "utterance_end_ms": 2700,
+      "context_utterances": [],
+      "source": "authored",
+      "notes": "필요서류 — 신규 급수공사(3.10)."
+    },
+    {
+      "id": "GS-234",
+      "module": "B",
+      "domain": "dasan",
+      "expected_doc_ids": [
+        "DASAN-TERM-3.10"
+      ],
+      "distractor_doc_ids": [
+        "DASAN-MANUAL-1.6",
+        "DASAN-TERM-3.3"
+      ],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": null,
+      "call_guard": null,
+      "customer_utterance": "공사비가 얼마나 나올까요",
+      "utterance_end_ms": 2100,
+      "context_utterances": [
+        "신규 급수공사를 신청하려고 하는데요"
+      ],
+      "source": "authored",
+      "notes": "금액 단정 금지 — 산정 기준만 안내(3.10)."
+    },
+    {
+      "id": "GS-235",
+      "module": "B",
+      "domain": "dasan",
+      "expected_doc_ids": [
+        "DASAN-TERM-3.11"
+      ],
+      "distractor_doc_ids": [
+        "DASAN-TERM-3.2",
+        "DASAN-TERM-3.12"
+      ],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": null,
+      "call_guard": null,
+      "customer_utterance": "오늘 물이 안 나오는데 언제 복구되나요",
+      "utterance_end_ms": 2400,
+      "context_utterances": [],
+      "source": "authored",
+      "notes": "단수 안내(3.11) — 복구 시각 확정 금지."
+    },
+    {
+      "id": "GS-236",
+      "module": "B",
+      "domain": "dasan",
+      "expected_doc_ids": [
+        "DASAN-TERM-3.11"
+      ],
+      "distractor_doc_ids": [
+        "DASAN-TERM-3.12",
+        "DASAN-TERM-5.4"
+      ],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": null,
+      "call_guard": null,
+      "customer_utterance": "수돗물에서 냄새가 나는데 괜찮은 건가요",
+      "utterance_end_ms": 2500,
+      "context_utterances": [],
+      "source": "authored",
+      "notes": "수질 이상(3.11) ↔ 수질검사 신청(3.12)."
+    },
+    {
+      "id": "GS-237",
+      "module": "B",
+      "domain": "dasan",
+      "expected_doc_ids": [
+        "DASAN-TERM-3.12"
+      ],
+      "distractor_doc_ids": [
+        "DASAN-TERM-3.11",
+        "DASAN-TERM-3.15"
+      ],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": null,
+      "call_guard": null,
+      "customer_utterance": "집 수돗물 수질검사를 받아볼 수 있나요",
+      "utterance_end_ms": 2500,
+      "context_utterances": [],
+      "source": "authored",
+      "notes": "수질검사 신청(3.12)."
+    },
+    {
+      "id": "GS-238",
+      "module": "B",
+      "domain": "dasan",
+      "expected_doc_ids": [
+        "DASAN-TERM-3.13"
+      ],
+      "distractor_doc_ids": [
+        "DASAN-TERM-3.4",
+        "DASAN-TERM-3.3"
+      ],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": null,
+      "call_guard": null,
+      "customer_utterance": "종이 고지서 말고 문자로 받고 싶은데요",
+      "utterance_end_ms": 2500,
+      "context_utterances": [],
+      "source": "authored",
+      "notes": "전자고지 신청(3.13)."
+    },
+    {
+      "id": "GS-239",
+      "module": "B",
+      "domain": "dasan",
+      "expected_doc_ids": [
+        "DASAN-TERM-3.14"
+      ],
+      "distractor_doc_ids": [
+        "DASAN-TERM-3.5",
+        "DASAN-TERM-3.10"
+      ],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": null,
+      "call_guard": null,
+      "customer_utterance": "건물을 철거하는데 수도를 끊으려면 뭐가 필요한가요",
+      "utterance_end_ms": 2900,
+      "context_utterances": [],
+      "source": "authored",
+      "notes": "필요서류 — 폐전 신청(3.14)."
+    },
+    {
+      "id": "GS-240",
+      "module": "B",
+      "domain": "dasan",
+      "expected_doc_ids": [
+        "DASAN-TERM-3.15"
+      ],
+      "distractor_doc_ids": [
+        "DASAN-TERM-3.2",
+        "DASAN-TERM-3.7"
+      ],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": null,
+      "call_guard": null,
+      "customer_utterance": "집 안 배관에서 물이 새는데 시에서 고쳐주시나요",
+      "utterance_end_ms": 2900,
+      "context_utterances": [],
+      "source": "authored",
+      "notes": "옥내 배관은 사용자 관리 구역(3.15) ↔ 시설 민원(3.2)."
+    },
+    {
+      "id": "GS-241",
+      "module": "B",
+      "domain": "dasan",
+      "expected_doc_ids": [
+        "DASAN-TERM-3.16"
+      ],
+      "distractor_doc_ids": [
+        "DASAN-TERM-3.1",
+        "DASAN-TERM-3.7"
+      ],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": null,
+      "call_guard": null,
+      "customer_utterance": "이번 달 요금이 너무 이상한데 다시 봐주실 수 있나요",
+      "utterance_end_ms": 2800,
+      "context_utterances": [],
+      "source": "authored",
+      "notes": "요금 이의신청(3.16)."
+    },
+    {
+      "id": "GS-242",
+      "module": "B",
+      "domain": "dasan",
+      "expected_doc_ids": [
+        "DASAN-TERM-4.1"
+      ],
+      "distractor_doc_ids": [
+        "DASAN-TERM-4.3",
+        "DASAN-TERM-4.5"
+      ],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": null,
+      "call_guard": null,
+      "customer_utterance": "제가 주민등록 등본은 어디에서 발급을 받아야하나요?",
+      "utterance_end_ms": 3000,
+      "context_utterances": [],
+      "source": "aihub",
+      "notes": "AI Hub 실제 발화(민원). 등본 발급(4.1)."
+    },
+    {
+      "id": "GS-243",
+      "module": "B",
+      "domain": "dasan",
+      "expected_doc_ids": [
+        "DASAN-TERM-4.3"
+      ],
+      "distractor_doc_ids": [
+        "DASAN-TERM-4.1",
+        "DASAN-TERM-4.5"
+      ],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": null,
+      "call_guard": null,
+      "customer_utterance": "초본은 등본이랑 뭐가 다른가요",
+      "utterance_end_ms": 2200,
+      "context_utterances": [],
+      "source": "authored",
+      "notes": "초본(4.3) ↔ 등본(4.1)."
+    },
+    {
+      "id": "GS-244",
+      "module": "B",
+      "domain": "dasan",
+      "expected_doc_ids": [
+        "DASAN-TERM-4.3"
+      ],
+      "distractor_doc_ids": [
+        "DASAN-MANUAL-3.4",
+        "DASAN-TERM-4.1"
+      ],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": null,
+      "call_guard": null,
+      "customer_utterance": "남편 초본을 제가 대신 뗄 수 있나요",
+      "utterance_end_ms": 2500,
+      "context_utterances": [],
+      "source": "authored",
+      "notes": "필요서류 — 초본 대리 발급(4.3). 세대원이어도 위임 필요."
+    },
+    {
+      "id": "GS-245",
+      "module": "B",
+      "domain": "dasan",
+      "expected_doc_ids": [
+        "DASAN-TERM-4.1"
+      ],
+      "distractor_doc_ids": [
+        "DASAN-MANUAL-3.4",
+        "DASAN-TERM-4.5"
+      ],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": null,
+      "call_guard": null,
+      "customer_utterance": "위임장 양식은 어떤걸 사용할까요?",
+      "utterance_end_ms": 2200,
+      "context_utterances": [
+        "대리로 등본을 발급받으려고 하는데요"
+      ],
+      "source": "aihub",
+      "notes": "AI Hub 실제 발화(구비서류)."
+    },
+    {
+      "id": "GS-246",
+      "module": "B",
+      "domain": "dasan",
+      "expected_doc_ids": [
+        "DASAN-TERM-4.4"
+      ],
+      "distractor_doc_ids": [
+        "DASAN-TERM-4.1",
+        "DASAN-TERM-3.5"
+      ],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": null,
+      "call_guard": null,
+      "customer_utterance": "이사하고 전입신고를 아직 못 했는데요",
+      "utterance_end_ms": 2500,
+      "context_utterances": [],
+      "source": "authored",
+      "notes": "필요서류 — 전입신고(4.4)."
+    },
+    {
+      "id": "GS-247",
+      "module": "B",
+      "domain": "dasan",
+      "expected_doc_ids": [
+        "DASAN-TERM-4.4"
+      ],
+      "distractor_doc_ids": [
+        "DASAN-TERM-4.3",
+        "DASAN-MANUAL-3.3"
+      ],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": null,
+      "call_guard": null,
+      "customer_utterance": "세대주가 아닌데 제가 전입신고 해도 되나요",
+      "utterance_end_ms": 2600,
+      "context_utterances": [],
+      "source": "authored",
+      "notes": "세대주 확인 추가 요건(4.4)."
+    },
+    {
+      "id": "GS-248",
+      "module": "B",
+      "domain": "dasan",
+      "expected_doc_ids": [
+        "DASAN-TERM-4.5"
+      ],
+      "distractor_doc_ids": [
+        "DASAN-TERM-4.3",
+        "DASAN-MANUAL-3.4"
+      ],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": null,
+      "call_guard": null,
+      "customer_utterance": "인감증명서를 어머니가 대신 떼실 수 있나요",
+      "utterance_end_ms": 2700,
+      "context_utterances": [],
+      "source": "authored",
+      "notes": "필요서류 — 인감증명 대리 발급(4.5). 요건이 가장 엄격하다."
+    },
+    {
+      "id": "GS-249",
+      "module": "B",
+      "domain": "dasan",
+      "expected_doc_ids": [
+        "DASAN-TERM-4.6"
+      ],
+      "distractor_doc_ids": [
+        "DASAN-TERM-4.13",
+        "DASAN-TERM-4.18"
+      ],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": null,
+      "call_guard": null,
+      "customer_utterance": "아이 청소년증을 만들어주려면 뭘 가져가야 하나요",
+      "utterance_end_ms": 2800,
+      "context_utterances": [],
+      "source": "authored",
+      "notes": "필요서류 — 청소년증 발급(4.6)."
+    },
+    {
+      "id": "GS-250",
+      "module": "B",
+      "domain": "dasan",
+      "expected_doc_ids": [
+        "DASAN-TERM-4.7"
+      ],
+      "distractor_doc_ids": [
+        "DASAN-TERM-4.8",
+        "DASAN-TERM-4.10"
+      ],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": null,
+      "call_guard": null,
+      "customer_utterance": "지방세 종류가 뭐가 있나요",
+      "utterance_end_ms": 2200,
+      "context_utterances": [],
+      "source": "authored",
+      "notes": "지방세 일반(4.7)."
+    },
+    {
+      "id": "GS-251",
+      "module": "B",
+      "domain": "dasan",
+      "expected_doc_ids": [
+        "DASAN-TERM-4.8"
+      ],
+      "distractor_doc_ids": [
+        "DASAN-TERM-4.7",
+        "DASAN-TERM-4.11"
+      ],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": null,
+      "call_guard": null,
+      "customer_utterance": "자동차세를 한꺼번에 미리 내면 깎아주나요",
+      "utterance_end_ms": 2600,
+      "context_utterances": [],
+      "source": "authored",
+      "notes": "자동차세 연납(4.8)."
+    },
+    {
+      "id": "GS-252",
+      "module": "B",
+      "domain": "dasan",
+      "expected_doc_ids": [
+        "DASAN-TERM-4.9"
+      ],
+      "distractor_doc_ids": [
+        "DASAN-TERM-4.8",
+        "DASAN-TERM-4.7"
+      ],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": null,
+      "call_guard": null,
+      "customer_utterance": "차를 샀는데 취득세 신고를 어떻게 하나요",
+      "utterance_end_ms": 2600,
+      "context_utterances": [],
+      "source": "authored",
+      "notes": "필요서류 — 취득세 신고(4.9)."
+    },
+    {
+      "id": "GS-253",
+      "module": "B",
+      "domain": "dasan",
+      "expected_doc_ids": [
+        "DASAN-TERM-4.9"
+      ],
+      "distractor_doc_ids": [
+        "DASAN-TERM-4.12",
+        "DASAN-TERM-4.10"
+      ],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": null,
+      "call_guard": null,
+      "customer_utterance": "생애최초로 집을 샀는데 취득세 감면이 되나요",
+      "utterance_end_ms": 2800,
+      "context_utterances": [],
+      "source": "authored",
+      "notes": "취득세 감면 자격 서류(4.9) ↔ 일반 지방세 감면(4.12)."
+    },
+    {
+      "id": "GS-254",
+      "module": "B",
+      "domain": "dasan",
+      "expected_doc_ids": [
+        "DASAN-TERM-4.10"
+      ],
+      "distractor_doc_ids": [
+        "DASAN-TERM-4.11",
+        "DASAN-TERM-4.7"
+      ],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": null,
+      "call_guard": null,
+      "customer_utterance": "집을 팔았는데 재산세가 저한테 나왔어요",
+      "utterance_end_ms": 2600,
+      "context_utterances": [],
+      "source": "authored",
+      "notes": "재산세 과세기준일(4.10)."
+    },
+    {
+      "id": "GS-255",
+      "module": "B",
+      "domain": "dasan",
+      "expected_doc_ids": [
+        "DASAN-TERM-4.11"
+      ],
+      "distractor_doc_ids": [
+        "DASAN-TERM-4.12",
+        "DASAN-TERM-4.10"
+      ],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": null,
+      "call_guard": null,
+      "customer_utterance": "세금을 더 냈는데 돌려받으려면 어떻게 하나요",
+      "utterance_end_ms": 2700,
+      "context_utterances": [],
+      "source": "authored",
+      "notes": "필요서류 — 지방세 환급(4.11)."
+    },
+    {
+      "id": "GS-256",
+      "module": "B",
+      "domain": "dasan",
+      "expected_doc_ids": [
+        "DASAN-TERM-4.12"
+      ],
+      "distractor_doc_ids": [
+        "DASAN-TERM-4.11",
+        "DASAN-TERM-4.9"
+      ],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": null,
+      "call_guard": null,
+      "customer_utterance": "서류제출은 어덯게하나요?",
+      "utterance_end_ms": 1900,
+      "context_utterances": [
+        "지방세 감면 신청을 하려고 하는데요"
+      ],
+      "source": "aihub",
+      "notes": "AI Hub 실제 발화(지방세). 오타 원문 유지 — STT 결과와 비슷한 표기다."
+    },
+    {
+      "id": "GS-257",
+      "module": "B",
+      "domain": "dasan",
+      "expected_doc_ids": [
+        "DASAN-TERM-4.13"
+      ],
+      "distractor_doc_ids": [
+        "DASAN-TERM-6.7",
+        "DASAN-TERM-4.14"
+      ],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": null,
+      "call_guard": null,
+      "customer_utterance": "아이 아동수당을 신청하려면 뭐가 필요한가요",
+      "utterance_end_ms": 2700,
+      "context_utterances": [],
+      "source": "authored",
+      "notes": "필요서류 — 아동수당(4.13) ↔ 아동돌봄 지원(6.7)."
+    },
+    {
+      "id": "GS-258",
+      "module": "B",
+      "domain": "dasan",
+      "expected_doc_ids": [
+        "DASAN-TERM-4.14"
+      ],
+      "distractor_doc_ids": [
+        "DASAN-TERM-3.6",
+        "DASAN-TERM-4.17"
+      ],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": null,
+      "call_guard": null,
+      "customer_utterance": "다자녀 가정이면 어떤 혜택이 있나요",
+      "utterance_end_ms": 2500,
+      "context_utterances": [],
+      "source": "authored",
+      "notes": "필요서류 — 다자녀 지원(4.14)."
+    },
+    {
+      "id": "GS-259",
+      "module": "B",
+      "domain": "dasan",
+      "expected_doc_ids": [
+        "DASAN-TERM-4.15"
+      ],
+      "distractor_doc_ids": [
+        "DASAN-TERM-4.14",
+        "DASAN-TERM-4.16"
+      ],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": null,
+      "call_guard": null,
+      "customer_utterance": "신혼부부 특별공급 자격이 어떻게 되나요",
+      "utterance_end_ms": 2600,
+      "context_utterances": [],
+      "source": "authored",
+      "notes": "특별공급(4.15) — 공고 기준."
+    },
+    {
+      "id": "GS-260",
+      "module": "B",
+      "domain": "dasan",
+      "expected_doc_ids": [
+        "DASAN-TERM-4.16"
+      ],
+      "distractor_doc_ids": [
+        "DASAN-TERM-4.15",
+        "DASAN-TERM-4.12"
+      ],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": null,
+      "call_guard": null,
+      "customer_utterance": "귀농하려면 서류제출해야하나요?",
+      "utterance_end_ms": 2200,
+      "context_utterances": [],
+      "source": "aihub",
+      "notes": "AI Hub 실제 발화(귀농지원사업)."
+    },
+    {
+      "id": "GS-261",
+      "module": "B",
+      "domain": "dasan",
+      "expected_doc_ids": [
+        "DASAN-TERM-4.17"
+      ],
+      "distractor_doc_ids": [
+        "DASAN-TERM-4.22",
+        "DASAN-TERM-4.14"
+      ],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": null,
+      "call_guard": null,
+      "customer_utterance": "동네 체육관을 단체로 빌리려면 어떻게 하나요",
+      "utterance_end_ms": 2700,
+      "context_utterances": [],
+      "source": "authored",
+      "notes": "필요서류 — 공공시설 대관(4.17)."
+    },
+    {
+      "id": "GS-262",
+      "module": "B",
+      "domain": "dasan",
+      "expected_doc_ids": [
+        "DASAN-TERM-4.18"
+      ],
+      "distractor_doc_ids": [
+        "DASAN-TERM-4.6",
+        "DASAN-TERM-4.17"
+      ],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": null,
+      "call_guard": null,
+      "customer_utterance": "도서관 회원증을 만들려면 뭘 가져가야 하나요",
+      "utterance_end_ms": 2600,
+      "context_utterances": [],
+      "source": "authored",
+      "notes": "필요서류 — 도서관 가입(4.18)."
+    },
+    {
+      "id": "GS-263",
+      "module": "B",
+      "domain": "dasan",
+      "expected_doc_ids": [
+        "DASAN-TERM-4.19"
+      ],
+      "distractor_doc_ids": [
+        "DASAN-TERM-4.17",
+        "DASAN-TERM-4.21"
+      ],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": null,
+      "call_guard": null,
+      "customer_utterance": "여성안심택배함은 아무나 쓸 수 있나요",
+      "utterance_end_ms": 2500,
+      "context_utterances": [],
+      "source": "authored",
+      "notes": "여성안심택배(4.19)."
+    },
+    {
+      "id": "GS-264",
+      "module": "B",
+      "domain": "dasan",
+      "expected_doc_ids": [
+        "DASAN-TERM-4.20"
+      ],
+      "distractor_doc_ids": [
+        "DASAN-TERM-4.21",
+        "DASAN-TERM-4.11"
+      ],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": null,
+      "call_guard": null,
+      "customer_utterance": "주차 과태료가 나왔는데 억울해서요 이의신청 하고 싶어요",
+      "utterance_end_ms": 3200,
+      "context_utterances": [],
+      "source": "authored",
+      "notes": "필요서류 — 과태료 이의신청(4.20)."
+    },
+    {
+      "id": "GS-265",
+      "module": "B",
+      "domain": "dasan",
+      "expected_doc_ids": [
+        "DASAN-TERM-4.21"
+      ],
+      "distractor_doc_ids": [
+        "DASAN-TERM-4.20",
+        "DASAN-TERM-2.10"
+      ],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": null,
+      "call_guard": null,
+      "customer_utterance": "우리 집 앞에 계속 불법주차를 하는 차가 있어요",
+      "utterance_end_ms": 2900,
+      "context_utterances": [],
+      "source": "authored",
+      "notes": "신고 민원 접수(4.21) ↔ 과태료 문의(4.20). **방향이 반대다**(신고자 vs 피부과자)."
+    },
+    {
+      "id": "GS-266",
+      "module": "B",
+      "domain": "dasan",
+      "expected_doc_ids": [
+        "DASAN-TERM-4.22"
+      ],
+      "distractor_doc_ids": [
+        "DASAN-TERM-4.17",
+        "DASAN-TERM-4.19"
+      ],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": null,
+      "call_guard": null,
+      "customer_utterance": "이번 주말 축제가 비 오면 취소되나요",
+      "utterance_end_ms": 2500,
+      "context_utterances": [],
+      "source": "authored",
+      "notes": "문화행사 안내(4.22)."
+    },
+    {
+      "id": "GS-267",
+      "module": "B",
+      "domain": "dasan",
+      "expected_doc_ids": [
+        "DASAN-TERM-4.2"
+      ],
+      "distractor_doc_ids": [
+        "DASAN-TERM-1.2",
+        "DASAN-MANUAL-1.6"
+      ],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": null,
+      "call_guard": null,
+      "customer_utterance": "처리 기한이 정해져 있나요",
+      "utterance_end_ms": 2100,
+      "context_utterances": [
+        "민원을 접수했는데요"
+      ],
+      "source": "authored",
+      "notes": "행정 처리 기한(4.2)."
+    },
+    {
+      "id": "GS-268",
+      "module": "B",
+      "domain": "dasan",
+      "expected_doc_ids": [
+        "DASAN-TERM-5.3"
+      ],
+      "distractor_doc_ids": [
+        "DASAN-TERM-5.1",
+        "DASAN-TERM-5.5"
+      ],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": null,
+      "call_guard": null,
+      "customer_utterance": "지금 실내에서 마스크를 꼭 써야 하나요",
+      "utterance_end_ms": 2500,
+      "context_utterances": [],
+      "source": "authored",
+      "notes": "방역수칙(5.3) — 적용 시점 명시."
+    },
+    {
+      "id": "GS-269",
+      "module": "B",
+      "domain": "dasan",
+      "expected_doc_ids": [
+        "DASAN-TERM-5.4"
+      ],
+      "distractor_doc_ids": [
+        "DASAN-TERM-5.7",
+        "DASAN-TERM-5.3"
+      ],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": null,
+      "call_guard": null,
+      "customer_utterance": "검사를 어디서 받을 수 있나요",
+      "utterance_end_ms": 2200,
+      "context_utterances": [],
+      "source": "authored",
+      "notes": "검사·진단 안내(5.4)."
+    },
+    {
+      "id": "GS-270",
+      "module": "B",
+      "domain": "dasan",
+      "expected_doc_ids": [
+        "DASAN-TERM-5.5"
+      ],
+      "distractor_doc_ids": [
+        "DASAN-TERM-5.8",
+        "DASAN-TERM-5.3"
+      ],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": null,
+      "call_guard": null,
+      "customer_utterance": "격리는 며칠까지 해야 하나요",
+      "utterance_end_ms": 2300,
+      "context_utterances": [],
+      "source": "authored",
+      "notes": "격리·해제 기준(5.5) ↔ 생활지원비(5.8)."
+    },
+    {
+      "id": "GS-271",
+      "module": "B",
+      "domain": "dasan",
+      "expected_doc_ids": [
+        "DASAN-TERM-5.6"
+      ],
+      "distractor_doc_ids": [
+        "DASAN-TERM-5.3",
+        "DASAN-TERM-5.5"
+      ],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": null,
+      "call_guard": null,
+      "customer_utterance": "확진자가 어디를 다녀갔는지 알 수 있나요",
+      "utterance_end_ms": 2600,
+      "context_utterances": [],
+      "source": "authored",
+      "notes": "동선·통계(5.6) — 개인 식별 정보 제공 금지."
+    },
+    {
+      "id": "GS-272",
+      "module": "B",
+      "domain": "dasan",
+      "expected_doc_ids": [
+        "DASAN-TERM-5.7"
+      ],
+      "distractor_doc_ids": [
+        "DASAN-TERM-5.4",
+        "DASAN-TERM-5.3"
+      ],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": null,
+      "call_guard": null,
+      "customer_utterance": "예방접종 예약은 어떻게 하나요",
+      "utterance_end_ms": 2300,
+      "context_utterances": [],
+      "source": "authored",
+      "notes": "예방접종(5.7)."
+    },
+    {
+      "id": "GS-273",
+      "module": "B",
+      "domain": "dasan",
+      "expected_doc_ids": [
+        "DASAN-TERM-5.8"
+      ],
+      "distractor_doc_ids": [
+        "DASAN-TERM-5.9",
+        "DASAN-TERM-6.2"
+      ],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": null,
+      "call_guard": null,
+      "customer_utterance": "격리했는데 생활지원비를 받을 수 있나요",
+      "utterance_end_ms": 2600,
+      "context_utterances": [],
+      "source": "authored",
+      "notes": "필요서류 — 생활지원비(5.8) ↔ 유급휴가비(5.9). **중복 지원 제한이 갈림점**."
+    },
+    {
+      "id": "GS-274",
+      "module": "B",
+      "domain": "dasan",
+      "expected_doc_ids": [
+        "DASAN-TERM-5.9"
+      ],
+      "distractor_doc_ids": [
+        "DASAN-TERM-5.8",
+        "DASAN-TERM-6.5"
+      ],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": null,
+      "call_guard": null,
+      "customer_utterance": "그러면 유급휴가비를 받으려면 따로 제출해야 하는 신청서 같은 게 있을까요?",
+      "utterance_end_ms": 4200,
+      "context_utterances": [
+        "직원이 격리돼서 유급휴가를 줬는데요"
+      ],
+      "source": "aihub",
+      "notes": "AI Hub 실제 발화(유급휴가). 사업주 신청분(5.9)."
+    },
+    {
+      "id": "GS-275",
+      "module": "B",
+      "domain": "dasan",
+      "expected_doc_ids": [
+        "DASAN-TERM-6.2"
+      ],
+      "distractor_doc_ids": [
+        "DASAN-TERM-6.1",
+        "DASAN-TERM-5.8"
+      ],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": null,
+      "call_guard": null,
+      "customer_utterance": "재난지원금을 신청하려면 뭐가 필요한가요",
+      "utterance_end_ms": 2600,
+      "context_utterances": [],
+      "source": "authored",
+      "notes": "필요서류 — 재난지원금(6.2)."
+    },
+    {
+      "id": "GS-276",
+      "module": "B",
+      "domain": "dasan",
+      "expected_doc_ids": [
+        "DASAN-TERM-6.2"
+      ],
+      "distractor_doc_ids": [
+        "DASAN-TERM-6.1",
+        "DASAN-TERM-4.1"
+      ],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": null,
+      "call_guard": null,
+      "customer_utterance": "별거시 지원금 신청할떄 필요한 서류가 있나요?",
+      "utterance_end_ms": 3100,
+      "context_utterances": [],
+      "source": "aihub",
+      "notes": "AI Hub 실제 발화(재난지원금). 오타 원문 유지. 가구 구성 확인 서류가 걸린다."
+    },
+    {
+      "id": "GS-277",
+      "module": "B",
+      "domain": "dasan",
+      "expected_doc_ids": [
+        "DASAN-TERM-6.2"
+      ],
+      "distractor_doc_ids": [
+        "DASAN-TERM-4.1",
+        "DASAN-TERM-6.1"
+      ],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": null,
+      "call_guard": null,
+      "customer_utterance": "서류는 어디서 발급받죠?",
+      "utterance_end_ms": 1800,
+      "context_utterances": [
+        "재난지원금 신청하려고 하는데요"
+      ],
+      "source": "aihub",
+      "notes": "AI Hub 실제 발화(지원금문의). **맥락 없이는 답이 없는 케이스.**"
+    },
+    {
+      "id": "GS-278",
+      "module": "B",
+      "domain": "dasan",
+      "expected_doc_ids": [
+        "DASAN-TERM-6.3"
+      ],
+      "distractor_doc_ids": [
+        "DASAN-TERM-6.4",
+        "DASAN-TERM-6.6"
+      ],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": null,
+      "call_guard": null,
+      "customer_utterance": "프리랜서인데 소득이 줄어서 지원금을 받을 수 있나요",
+      "utterance_end_ms": 3000,
+      "context_utterances": [],
+      "source": "authored",
+      "notes": "필요서류 — 긴급고용안정지원금(6.3)."
+    },
+    {
+      "id": "GS-279",
+      "module": "B",
+      "domain": "dasan",
+      "expected_doc_ids": [
+        "DASAN-TERM-6.4"
+      ],
+      "distractor_doc_ids": [
+        "DASAN-TERM-6.3",
+        "DASAN-TERM-6.1"
+      ],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": null,
+      "call_guard": null,
+      "customer_utterance": "준비해야할 서류는 어떤게 있나요?",
+      "utterance_end_ms": 2200,
+      "context_utterances": [
+        "소상공인 도로사용료 감면 신청하려고요"
+      ],
+      "source": "aihub",
+      "notes": "AI Hub 실제 발화(소상공인도로사용료감면)."
+    },
+    {
+      "id": "GS-280",
+      "module": "B",
+      "domain": "dasan",
+      "expected_doc_ids": [
+        "DASAN-TERM-6.4"
+      ],
+      "distractor_doc_ids": [
+        "DASAN-TERM-6.3",
+        "DASAN-TERM-6.5"
+      ],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": null,
+      "call_guard": null,
+      "customer_utterance": "가게 매출이 줄었는데 지원받을 방법이 있나요",
+      "utterance_end_ms": 2800,
+      "context_utterances": [],
+      "source": "authored",
+      "notes": "소상공인 지원금(6.4)."
+    },
+    {
+      "id": "GS-281",
+      "module": "B",
+      "domain": "dasan",
+      "expected_doc_ids": [
+        "DASAN-TERM-6.5"
+      ],
+      "distractor_doc_ids": [
+        "DASAN-TERM-6.3",
+        "DASAN-TERM-5.9"
+      ],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": null,
+      "call_guard": null,
+      "customer_utterance": "회사에서 무급휴직을 하라는데 지원금이 있나요",
+      "utterance_end_ms": 2900,
+      "context_utterances": [],
+      "source": "authored",
+      "notes": "필요서류 — 고용유지지원금(6.5). 사업주분·근로자분 서류가 다르다."
+    },
+    {
+      "id": "GS-282",
+      "module": "B",
+      "domain": "dasan",
+      "expected_doc_ids": [
+        "DASAN-TERM-6.6"
+      ],
+      "distractor_doc_ids": [
+        "DASAN-TERM-6.3",
+        "DASAN-TERM-6.1"
+      ],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": null,
+      "call_guard": null,
+      "customer_utterance": "제출해야할 서류가 있나요?",
+      "utterance_end_ms": 1900,
+      "context_utterances": [
+        "미취업 청년 지원금 신청하려고 하는데요"
+      ],
+      "source": "aihub",
+      "notes": "AI Hub 실제 발화(미취업청년지원금)."
+    },
+    {
+      "id": "GS-283",
+      "module": "B",
+      "domain": "dasan",
+      "expected_doc_ids": [
+        "DASAN-TERM-6.6"
+      ],
+      "distractor_doc_ids": [
+        "DASAN-TERM-6.3",
+        "DASAN-TERM-6.5"
+      ],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": null,
+      "call_guard": null,
+      "customer_utterance": "취업 준비 중인데 청년 지원금 대상이 되나요",
+      "utterance_end_ms": 2700,
+      "context_utterances": [],
+      "source": "authored",
+      "notes": "미취업 청년 지원금(6.6)."
+    },
+    {
+      "id": "GS-284",
+      "module": "B",
+      "domain": "dasan",
+      "expected_doc_ids": [
+        "DASAN-TERM-6.7"
+      ],
+      "distractor_doc_ids": [
+        "DASAN-TERM-4.13",
+        "DASAN-TERM-6.1"
+      ],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": null,
+      "call_guard": null,
+      "customer_utterance": "아이 돌봄 지원금이랑 아동수당을 같이 받을 수 있나요",
+      "utterance_end_ms": 3000,
+      "context_utterances": [],
+      "source": "authored",
+      "notes": "중복 지급 여부(6.7) ↔ 아동수당(4.13)."
+    },
+    {
+      "id": "GS-285",
+      "module": "B",
+      "domain": "dasan",
+      "expected_doc_ids": [
+        "DASAN-TERM-6.8"
+      ],
+      "distractor_doc_ids": [
+        "DASAN-TERM-3.6",
+        "DASAN-TERM-6.1"
+      ],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": null,
+      "call_guard": null,
+      "customer_utterance": "통신비 감면을 신청하려면 어떤 증명서가 필요한가요",
+      "utterance_end_ms": 2900,
+      "context_utterances": [],
+      "source": "authored",
+      "notes": "필요서류 — 통신비·공공요금 감면(6.8) ↔ 수도요금 감면(3.6)."
+    },
+    {
+      "id": "GS-286",
+      "module": "B",
+      "domain": "dasan",
+      "expected_doc_ids": [
+        "DASAN-TERM-6.9"
+      ],
+      "distractor_doc_ids": [
+        "DASAN-TERM-6.10",
+        "DASAN-TERM-4.20"
+      ],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": null,
+      "call_guard": null,
+      "customer_utterance": "지원금이 안 된다고 통보가 왔는데 다시 볼 수 없나요",
+      "utterance_end_ms": 2900,
+      "context_utterances": [],
+      "source": "authored",
+      "notes": "필요서류 — 지원금 이의신청(6.9)."
+    },
+    {
+      "id": "GS-287",
+      "module": "B",
+      "domain": "dasan",
+      "expected_doc_ids": [
+        "DASAN-TERM-6.10"
+      ],
+      "distractor_doc_ids": [
+        "DASAN-TERM-6.1",
+        "DASAN-TERM-6.9"
+      ],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": null,
+      "call_guard": null,
+      "customer_utterance": "신청한 지 한참 됐는데 언제 들어오나요",
+      "utterance_end_ms": 2500,
+      "context_utterances": [],
+      "source": "authored",
+      "notes": "지급 시기(6.10) — 날짜 약속 금지."
+    },
+    {
+      "id": "GS-288",
+      "module": "B",
+      "domain": "dasan",
+      "expected_doc_ids": [
+        "DASAN-TERM-6.11"
+      ],
+      "distractor_doc_ids": [
+        "DASAN-TERM-6.12",
+        "DASAN-TERM-6.9"
+      ],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": null,
+      "call_guard": null,
+      "customer_utterance": "받은 지원금을 다시 내라는 문자가 왔어요",
+      "utterance_end_ms": 2700,
+      "context_utterances": [],
+      "source": "authored",
+      "notes": "환수 안내(6.11) ↔ 사칭 사기(6.12). **둘을 가르는 것이 핵심**."
+    },
+    {
+      "id": "GS-289",
+      "module": "B",
+      "domain": "dasan",
+      "expected_doc_ids": [
+        "DASAN-TERM-6.12"
+      ],
+      "distractor_doc_ids": [
+        "DASAN-TERM-6.11",
+        "DASAN-TERM-6.1"
+      ],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": null,
+      "call_guard": null,
+      "customer_utterance": "지원금 신청하라면서 카드 비밀번호를 물어보는 전화를 받았어요",
+      "utterance_end_ms": 3400,
+      "context_utterances": [],
+      "source": "authored",
+      "notes": "사칭 사기 주의(6.12)."
+    },
+    {
+      "id": "GS-290",
+      "module": "B",
+      "domain": "dasan",
+      "expected_doc_ids": [
+        "DASAN-TERM-6.1"
+      ],
+      "distractor_doc_ids": [
+        "DASAN-TERM-6.10",
+        "DASAN-TERM-6.9"
+      ],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": null,
+      "call_guard": null,
+      "customer_utterance": "신청 기간이 지났는데 지금이라도 되나요",
+      "utterance_end_ms": 2500,
+      "context_utterances": [],
+      "source": "authored",
+      "notes": "지원금 공통 원칙(6.1) — 기간 경과."
+    },
+    {
+      "id": "GS-301",
+      "module": "C-1",
+      "domain": "dasan",
+      "expected_doc_ids": [],
+      "distractor_doc_ids": [],
+      "compliance_violation": {
+        "type": "C-1",
+        "phrase": "무조건 처리되니까",
+        "expected_alternative_source": "DASAN-MANUAL-1.4"
+      },
+      "pii_patterns": [],
+      "f2_case": null,
+      "call_guard": null,
+      "speaker": "agent",
+      "agent_utterance": "그건 무조건 처리되니까 걱정 안 하셔도 됩니다",
+      "source": "authored",
+      "notes": "확정적 보장(1.1 위반)."
+    },
+    {
+      "id": "GS-302",
+      "module": "C-1",
+      "domain": "dasan",
+      "expected_doc_ids": [],
+      "distractor_doc_ids": [],
+      "compliance_violation": {
+        "type": "C-1",
+        "phrase": "100% 이번 주 안에 끝납니다",
+        "expected_alternative_source": "DASAN-MANUAL-1.4"
+      },
+      "pii_patterns": [],
+      "f2_case": null,
+      "call_guard": null,
+      "speaker": "agent",
+      "agent_utterance": "접수하시면 100% 이번 주 안에 끝납니다",
+      "source": "authored",
+      "notes": "처리 기간 단정(1.1·1.6 위반)."
+    },
+    {
+      "id": "GS-303",
+      "module": "C-1",
+      "domain": "dasan",
+      "expected_doc_ids": [],
+      "distractor_doc_ids": [],
+      "compliance_violation": {
+        "type": "C-1",
+        "phrase": "확실히 되시니까",
+        "expected_alternative_source": "DASAN-MANUAL-1.4"
+      },
+      "pii_patterns": [],
+      "f2_case": null,
+      "call_guard": null,
+      "speaker": "agent",
+      "agent_utterance": "감면 대상 확실히 되시니까 그냥 신청하세요",
+      "source": "authored",
+      "notes": "심사 결과 예단(1.1 위반)."
+    },
+    {
+      "id": "GS-304",
+      "module": "C-1",
+      "domain": "dasan",
+      "expected_doc_ids": [],
+      "distractor_doc_ids": [],
+      "compliance_violation": {
+        "type": "C-1",
+        "phrase": "한 삼만원 정도 나올 거예요",
+        "expected_alternative_source": "DASAN-MANUAL-1.6"
+      },
+      "pii_patterns": [],
+      "f2_case": null,
+      "call_guard": null,
+      "speaker": "agent",
+      "agent_utterance": "요금은 한 삼만원 정도 나올 거예요",
+      "source": "authored",
+      "notes": "금액 단정(1.6 위반)."
+    },
+    {
+      "id": "GS-305",
+      "module": "C-2",
+      "domain": "dasan",
+      "expected_doc_ids": [],
+      "distractor_doc_ids": [],
+      "compliance_violation": {
+        "type": "C-2",
+        "phrase": "주민등록번호 열세 자리 다 불러주세요",
+        "expected_alternative_source": "DASAN-MANUAL-1.4"
+      },
+      "pii_patterns": [],
+      "f2_case": null,
+      "call_guard": null,
+      "speaker": "agent",
+      "agent_utterance": "본인 확인해야 하니까 주민등록번호 열세 자리 다 불러주세요",
+      "source": "authored",
+      "notes": "불필요한 개인정보 요구(1.2 위반)."
+    },
+    {
+      "id": "GS-306",
+      "module": "C-2",
+      "domain": "dasan",
+      "expected_doc_ids": [],
+      "distractor_doc_ids": [],
+      "compliance_violation": {
+        "type": "C-2",
+        "phrase": "카드 뒷자리도 같이 알려주시겠어요",
+        "expected_alternative_source": "DASAN-MANUAL-1.4"
+      },
+      "pii_patterns": [],
+      "f2_case": null,
+      "call_guard": null,
+      "speaker": "agent",
+      "agent_utterance": "계좌번호랑 카드 뒷자리도 같이 알려주시겠어요",
+      "source": "authored",
+      "notes": "접수에 불필요한 정보 요구(1.2 위반)."
+    },
+    {
+      "id": "GS-307",
+      "module": "C-2",
+      "domain": "dasan",
+      "expected_doc_ids": [],
+      "distractor_doc_ids": [],
+      "compliance_violation": {
+        "type": "C-2",
+        "phrase": "통장 비밀번호만 말씀해주시면",
+        "expected_alternative_source": "DASAN-MANUAL-1.4"
+      },
+      "pii_patterns": [],
+      "f2_case": null,
+      "call_guard": null,
+      "speaker": "agent",
+      "agent_utterance": "확인용으로 통장 비밀번호만 말씀해주시면 됩니다",
+      "source": "authored",
+      "notes": "어떤 경우에도 요구하지 않는 정보(1.2 위반)."
+    },
+    {
+      "id": "GS-308",
+      "module": "C-3",
+      "domain": "dasan",
+      "expected_doc_ids": [],
+      "distractor_doc_ids": [],
+      "compliance_violation": {
+        "type": "C-3",
+        "phrase": "제가 알기로는",
+        "expected_alternative_source": "DASAN-MANUAL-1.4"
+      },
+      "pii_patterns": [],
+      "f2_case": null,
+      "call_guard": null,
+      "speaker": "agent",
+      "agent_utterance": "제가 알기로는 그건 서류 없이도 되는 걸로 알고 있어요",
+      "source": "authored",
+      "notes": "출처 없는 안내(1.3 위반)."
+    },
+    {
+      "id": "GS-309",
+      "module": "C-3",
+      "domain": "dasan",
+      "expected_doc_ids": [],
+      "distractor_doc_ids": [],
+      "compliance_violation": {
+        "type": "C-3",
+        "phrase": "위임장 없어도 발급 가능",
+        "expected_alternative_source": "DASAN-MANUAL-3.4"
+      },
+      "pii_patterns": [],
+      "f2_case": null,
+      "call_guard": null,
+      "speaker": "agent",
+      "agent_utterance": "가족분이시면 위임장 없어도 발급 가능하실 거예요",
+      "source": "authored",
+      "notes": "대리 신청 위임 서류 누락 안내(3.4 위반)."
+    },
+    {
+      "id": "GS-310",
+      "module": "C-3",
+      "domain": "dasan",
+      "expected_doc_ids": [],
+      "distractor_doc_ids": [],
+      "compliance_violation": {
+        "type": "C-3",
+        "phrase": "어느 가게에 다녀가셨는지는 제가 따로 확인해서",
+        "expected_alternative_source": "DASAN-MANUAL-4.3"
+      },
+      "pii_patterns": [],
+      "f2_case": null,
+      "call_guard": null,
+      "speaker": "agent",
+      "agent_utterance": "확진자분이 어느 가게에 다녀가셨는지는 제가 따로 확인해서 알려드릴게요",
+      "source": "authored",
+      "notes": "공개 범위 밖 정보 제공 시도(4.3 위반)."
+    },
+    {
+      "id": "GS-311",
+      "module": "C-3",
+      "domain": "dasan",
+      "expected_doc_ids": [],
+      "distractor_doc_ids": [],
+      "compliance_violation": {
+        "type": "C-3",
+        "phrase": "그 서류만 가져오시면 될 것 같은데요",
+        "expected_alternative_source": "DASAN-MANUAL-3.2"
+      },
+      "pii_patterns": [],
+      "f2_case": null,
+      "call_guard": null,
+      "speaker": "agent",
+      "agent_utterance": "일단 그 서류만 가져오시면 될 것 같은데요",
+      "source": "authored",
+      "notes": "필요서류 일부만 안내(3.2 위반) — B 의 실패가 곧 C-3 이 되는 지점."
+    },
+    {
+      "id": "GS-312",
+      "module": "C-4",
+      "domain": "dasan",
+      "expected_doc_ids": [],
+      "distractor_doc_ids": [],
+      "compliance_violation": {
+        "type": "C-4",
+        "phrase": "별거 아니실 거예요",
+        "expected_alternative_source": "DASAN-MANUAL-4.1"
+      },
+      "pii_patterns": [],
+      "f2_case": null,
+      "call_guard": null,
+      "speaker": "agent",
+      "agent_utterance": "증상이 그 정도면 별거 아니실 거예요 걱정 마세요",
+      "source": "authored",
+      "notes": "의학적 안심 발언(4.1 위반)."
+    },
+    {
+      "id": "GS-313",
+      "module": "C-1",
+      "domain": "dasan",
+      "expected_doc_ids": [],
+      "distractor_doc_ids": [],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": null,
+      "call_guard": null,
+      "speaker": "agent",
+      "agent_utterance": "소관 부서 확인 후 다시 안내드리겠습니다",
+      "source": "authored",
+      "notes": "정상 — 권장 대체 표현(1.4)."
+    },
+    {
+      "id": "GS-314",
+      "module": "C-1",
+      "domain": "dasan",
+      "expected_doc_ids": [],
+      "distractor_doc_ids": [],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": null,
+      "call_guard": null,
+      "speaker": "agent",
+      "agent_utterance": "법정 처리기한은 안내드릴 수 있지만 완료 시점은 부서 확인이 필요합니다",
+      "source": "authored",
+      "notes": "정상 — 조건부 표현."
+    },
+    {
+      "id": "GS-315",
+      "module": "C-2",
+      "domain": "dasan",
+      "expected_doc_ids": [],
+      "distractor_doc_ids": [],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": null,
+      "call_guard": null,
+      "speaker": "agent",
+      "agent_utterance": "민원 접수를 위해 성함과 연락처를 확인하겠습니다",
+      "source": "authored",
+      "notes": "정상 — 최소 정보 요구(1.2 범위 안)."
+    },
+    {
+      "id": "GS-316",
+      "module": "C-3",
+      "domain": "dasan",
+      "expected_doc_ids": [],
+      "distractor_doc_ids": [],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": null,
+      "call_guard": null,
+      "speaker": "agent",
+      "agent_utterance": "안내지침 4조에 따라 대리 신청은 위임장과 대리인 신분증이 필요합니다",
+      "source": "authored",
+      "notes": "정상 — 근거 조항을 밝힌 안내(1.5)."
+    },
+    {
+      "id": "GS-317",
+      "module": "C-3",
+      "domain": "dasan",
+      "expected_doc_ids": [],
+      "distractor_doc_ids": [],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": null,
+      "call_guard": null,
+      "speaker": "agent",
+      "agent_utterance": "필요하신 서류는 신청서, 신분증, 주민등록등본 세 가지입니다",
+      "source": "authored",
+      "notes": "정상 — 목록을 빠짐없이 안내(3.2)."
+    },
+    {
+      "id": "GS-318",
+      "module": "C-4",
+      "domain": "dasan",
+      "expected_doc_ids": [],
+      "distractor_doc_ids": [],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": null,
+      "call_guard": null,
+      "speaker": "agent",
+      "agent_utterance": "증상 관련해서는 보건소나 의료기관 상담을 안내드리겠습니다",
+      "source": "authored",
+      "notes": "정상 — 의학 판단 대신 연결(4.1)."
+    },
+    {
+      "id": "GS-401",
+      "module": "C-5",
+      "domain": "dasan",
+      "expected_doc_ids": [],
+      "distractor_doc_ids": [],
+      "compliance_violation": null,
+      "pii_patterns": [
+        {
+          "pattern": "P1",
+          "raw_span": "900101-1234567",
+          "masked_expected": true
+        }
+      ],
+      "f2_case": null,
+      "call_guard": null,
+      "speaker": "customer",
+      "customer_utterance": "본인 확인 부탁드려요 주민등록번호는 900101-1234567 입니다",
+      "source": "authored",
+      "notes": "P1 구분자 있는 형태."
+    },
+    {
+      "id": "GS-402",
+      "module": "C-5",
+      "domain": "dasan",
+      "expected_doc_ids": [],
+      "distractor_doc_ids": [],
+      "compliance_violation": null,
+      "pii_patterns": [
+        {
+          "pattern": "P1",
+          "raw_span": "9001011234567",
+          "masked_expected": true
+        }
+      ],
+      "f2_case": null,
+      "call_guard": null,
+      "speaker": "customer",
+      "customer_utterance": "제 주민번호 9001011234567 이에요",
+      "source": "authored",
+      "notes": "P1 구분자 없는 형태 — STT 주 실패 모드."
+    },
+    {
+      "id": "GS-403",
+      "module": "C-5",
+      "domain": "dasan",
+      "expected_doc_ids": [],
+      "distractor_doc_ids": [],
+      "compliance_violation": null,
+      "pii_patterns": [
+        {
+          "pattern": "P1",
+          "raw_span": "8503152345678",
+          "masked_expected": true
+        }
+      ],
+      "f2_case": null,
+      "call_guard": null,
+      "speaker": "customer",
+      "customer_utterance": "등록번호가 하이픈 없이 8503152345678 로 되어 있어요",
+      "source": "authored",
+      "notes": "P1 13자리 — 계좌(P3) 범위와 겹친다."
+    },
+    {
+      "id": "GS-404",
+      "module": "C-5",
+      "domain": "dasan",
+      "expected_doc_ids": [],
+      "distractor_doc_ids": [],
+      "compliance_violation": null,
+      "pii_patterns": [
+        {
+          "pattern": "P2",
+          "raw_span": "1234-5678-9012-3456",
+          "masked_expected": true
+        }
+      ],
+      "f2_case": null,
+      "call_guard": null,
+      "speaker": "customer",
+      "customer_utterance": "환급받을 카드번호는 1234-5678-9012-3456 이에요",
+      "source": "authored",
+      "notes": "P2 구분자 있는 형태."
+    },
+    {
+      "id": "GS-405",
+      "module": "C-5",
+      "domain": "dasan",
+      "expected_doc_ids": [],
+      "distractor_doc_ids": [],
+      "compliance_violation": null,
+      "pii_patterns": [
+        {
+          "pattern": "P2",
+          "raw_span": "1234567890123456",
+          "masked_expected": true
+        }
+      ],
+      "f2_case": null,
+      "call_guard": null,
+      "speaker": "customer",
+      "customer_utterance": "카드 1234567890123456 으로 결제했어요",
+      "source": "authored",
+      "notes": "P2 16자리 연속."
+    },
+    {
+      "id": "GS-406",
+      "module": "C-5",
+      "domain": "dasan",
+      "expected_doc_ids": [],
+      "distractor_doc_ids": [],
+      "compliance_violation": null,
+      "pii_patterns": [
+        {
+          "pattern": "P3",
+          "raw_span": "110-123-456789",
+          "masked_expected": true
+        }
+      ],
+      "f2_case": null,
+      "call_guard": null,
+      "speaker": "customer",
+      "customer_utterance": "환급 계좌는 110-123-456789 입니다",
+      "source": "authored",
+      "notes": "P3 계좌번호."
+    },
+    {
+      "id": "GS-407",
+      "module": "C-5",
+      "domain": "dasan",
+      "expected_doc_ids": [],
+      "distractor_doc_ids": [],
+      "compliance_violation": null,
+      "pii_patterns": [
+        {
+          "pattern": "P3",
+          "raw_span": "352011234567",
+          "masked_expected": true
+        }
+      ],
+      "f2_case": null,
+      "call_guard": null,
+      "speaker": "customer",
+      "customer_utterance": "지원금은 352011234567 계좌로 넣어주세요",
+      "source": "authored",
+      "notes": "P3 구분자 없는 계좌."
+    },
+    {
+      "id": "GS-408",
+      "module": "C-5",
+      "domain": "dasan",
+      "expected_doc_ids": [],
+      "distractor_doc_ids": [],
+      "compliance_violation": null,
+      "pii_patterns": [
+        {
+          "pattern": "P4",
+          "raw_span": "010-9876-5432",
+          "masked_expected": true
+        }
+      ],
+      "f2_case": null,
+      "call_guard": null,
+      "speaker": "customer",
+      "customer_utterance": "연락처는 010-9876-5432 예요",
+      "source": "authored",
+      "notes": "P4 구분자 있는 휴대전화."
+    },
+    {
+      "id": "GS-409",
+      "module": "C-5",
+      "domain": "dasan",
+      "expected_doc_ids": [],
+      "distractor_doc_ids": [],
+      "compliance_violation": null,
+      "pii_patterns": [
+        {
+          "pattern": "P4",
+          "raw_span": "0221234567",
+          "masked_expected": true
+        }
+      ],
+      "f2_case": null,
+      "call_guard": null,
+      "speaker": "customer",
+      "customer_utterance": "집 전화 0221234567 로도 연락돼요",
+      "source": "authored",
+      "notes": "P4 지역번호 유선."
+    },
+    {
+      "id": "GS-410",
+      "module": "C-5",
+      "domain": "dasan",
+      "expected_doc_ids": [],
+      "distractor_doc_ids": [],
+      "compliance_violation": null,
+      "pii_patterns": [
+        {
+          "pattern": "P5",
+          "raw_span": "4821",
+          "masked_expected": true
+        }
+      ],
+      "f2_case": null,
+      "call_guard": null,
+      "speaker": "customer",
+      "customer_utterance": "방금 받은 인증번호 4821 맞나요",
+      "source": "authored",
+      "notes": "P5 — 문맥('인증번호')이 있을 때만 잡는다."
+    },
+    {
+      "id": "GS-411",
+      "module": "C-5",
+      "domain": "dasan",
+      "expected_doc_ids": [],
+      "distractor_doc_ids": [],
+      "compliance_violation": null,
+      "pii_patterns": [
+        {
+          "pattern": "P5",
+          "raw_span": "123456",
+          "masked_expected": true
+        }
+      ],
+      "f2_case": null,
+      "call_guard": null,
+      "speaker": "customer",
+      "customer_utterance": "승인번호는 123456 이라고 나왔어요",
+      "source": "authored",
+      "notes": "P5 승인번호 문맥."
+    },
+    {
+      "id": "GS-412",
+      "module": "C-5",
+      "domain": "dasan",
+      "expected_doc_ids": [],
+      "distractor_doc_ids": [],
+      "compliance_violation": null,
+      "pii_patterns": [
+        {
+          "pattern": "P6",
+          "raw_span": "최지훈",
+          "masked_expected": true
+        }
+      ],
+      "f2_case": null,
+      "call_guard": null,
+      "speaker": "customer",
+      "customer_utterance": "저는 최지훈이고요 등본 발급 문의드려요",
+      "source": "authored",
+      "notes": "P6 인명 — 자기소개 문맥."
+    },
+    {
+      "id": "GS-413",
+      "module": "C-5",
+      "domain": "dasan",
+      "expected_doc_ids": [],
+      "distractor_doc_ids": [],
+      "compliance_violation": null,
+      "pii_patterns": [
+        {
+          "pattern": "P6",
+          "raw_span": "한서윤",
+          "masked_expected": true
+        }
+      ],
+      "f2_case": null,
+      "call_guard": null,
+      "speaker": "customer",
+      "customer_utterance": "신청인 이름은 한서윤으로 넣어주세요",
+      "source": "authored",
+      "notes": "P6 인명 — 신청 문맥."
+    },
+    {
+      "id": "GS-414",
+      "module": "C-5",
+      "domain": "dasan",
+      "expected_doc_ids": [],
+      "distractor_doc_ids": [],
+      "compliance_violation": null,
+      "pii_patterns": [
+        {
+          "pattern": "P7",
+          "raw_span": "서울시 마포구 월드컵북로 396번지 2동 1104호",
+          "masked_expected": true
+        }
+      ],
+      "f2_case": null,
+      "call_guard": null,
+      "speaker": "customer",
+      "customer_utterance": "저희 집은 서울시 마포구 월드컵북로 396번지 2동 1104호예요",
+      "source": "authored",
+      "notes": "P7 상세주소."
+    },
+    {
+      "id": "GS-415",
+      "module": "C-5",
+      "domain": "dasan",
+      "expected_doc_ids": [],
+      "distractor_doc_ids": [],
+      "compliance_violation": null,
+      "pii_patterns": [
+        {
+          "pattern": "P7",
+          "raw_span": "성북구 정릉로 77길 12",
+          "masked_expected": true
+        }
+      ],
+      "f2_case": null,
+      "call_guard": null,
+      "speaker": "customer",
+      "customer_utterance": "성북구 정릉로 77길 12에서 물이 새요",
+      "source": "authored",
+      "notes": "P7 — 시설 민원 접수 시 주소."
+    },
+    {
+      "id": "GS-416",
+      "module": "C-5",
+      "domain": "dasan",
+      "expected_doc_ids": [],
+      "distractor_doc_ids": [],
+      "compliance_violation": null,
+      "pii_patterns": [
+        {
+          "pattern": "P6",
+          "raw_span": "오세준",
+          "masked_expected": true
+        },
+        {
+          "pattern": "P4",
+          "raw_span": "01055667788",
+          "masked_expected": true
+        }
+      ],
+      "f2_case": null,
+      "call_guard": null,
+      "speaker": "customer",
+      "customer_utterance": "제 이름은 오세준이고 번호는 01055667788 이에요",
+      "source": "authored",
+      "notes": "한 발화에 P6+P4 — 복수 패턴."
+    },
+    {
+      "id": "GS-417",
+      "module": "C-5",
+      "domain": "dasan",
+      "expected_doc_ids": [],
+      "distractor_doc_ids": [],
+      "compliance_violation": null,
+      "pii_patterns": [
+        {
+          "pattern": "P1",
+          "raw_span": "950505-2345678",
+          "masked_expected": true
+        },
+        {
+          "pattern": "P3",
+          "raw_span": "110-999-888777",
+          "masked_expected": true
+        }
+      ],
+      "f2_case": null,
+      "call_guard": null,
+      "speaker": "customer",
+      "customer_utterance": "주민번호 950505-2345678 이고 계좌는 110-999-888777 이에요",
+      "source": "authored",
+      "notes": "한 발화에 P1+P3."
+    },
+    {
+      "id": "GS-418",
+      "module": "C-5",
+      "domain": "dasan",
+      "expected_doc_ids": [],
+      "distractor_doc_ids": [],
+      "compliance_violation": null,
+      "pii_patterns": [
+        {
+          "pattern": "P5",
+          "raw_span": "",
+          "masked_expected": false
+        }
+      ],
+      "f2_case": null,
+      "call_guard": null,
+      "speaker": "customer",
+      "customer_utterance": "재난지원금 25만원을 2026년 3월에 받았어요",
+      "source": "authored",
+      "notes": "음성 케이스 — 금액·연도를 P5 로 잡으면 자막이 망가진다."
+    },
+    {
+      "id": "GS-419",
+      "module": "C-5",
+      "domain": "dasan",
+      "expected_doc_ids": [],
+      "distractor_doc_ids": [],
+      "compliance_violation": null,
+      "pii_patterns": [
+        {
+          "pattern": "P5",
+          "raw_span": "",
+          "masked_expected": false
+        }
+      ],
+      "f2_case": null,
+      "call_guard": null,
+      "speaker": "customer",
+      "customer_utterance": "1234 번지 앞에 불법주차가 있어요",
+      "source": "authored",
+      "notes": "음성 케이스 — 번지수는 인증번호가 아니다."
+    },
+    {
+      "id": "GS-420",
+      "module": "C-5",
+      "domain": "dasan",
+      "expected_doc_ids": [],
+      "distractor_doc_ids": [],
+      "compliance_violation": null,
+      "pii_patterns": [
+        {
+          "pattern": "P6",
+          "raw_span": "",
+          "masked_expected": false
+        }
+      ],
+      "f2_case": null,
+      "call_guard": null,
+      "speaker": "customer",
+      "customer_utterance": "이름을 바꾸는 절차가 어떻게 되나요",
+      "source": "authored",
+      "notes": "음성 케이스 — 목적격 '이름을'은 이름을 밝히는 말이 아니다(GS-051 과 같은 함정)."
+    },
+    {
+      "id": "GS-501",
+      "module": "C-6",
+      "domain": "dasan",
+      "expected_doc_ids": [],
+      "distractor_doc_ids": [],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": null,
+      "call_guard": {
+        "type": "insult",
+        "phrase": "씨발 놈아",
+        "source": "DASAN-MANUAL-5.1"
+      },
+      "speaker": "customer",
+      "customer_utterance": "야 이 씨발 놈아 일을 그따위로 하냐",
+      "source": "authored",
+      "notes": "명시적 욕설."
+    },
+    {
+      "id": "GS-502",
+      "module": "C-6",
+      "domain": "dasan",
+      "expected_doc_ids": [],
+      "distractor_doc_ids": [],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": null,
+      "call_guard": {
+        "type": "insult",
+        "phrase": "개새끼야",
+        "source": "DASAN-MANUAL-5.1"
+      },
+      "speaker": "customer",
+      "customer_utterance": "너 지금 장난하냐 이 개새끼야",
+      "source": "authored",
+      "notes": "명시적 욕설 + 반말."
+    },
+    {
+      "id": "GS-503",
+      "module": "C-6",
+      "domain": "dasan",
+      "expected_doc_ids": [],
+      "distractor_doc_ids": [],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": null,
+      "call_guard": {
+        "type": "insult",
+        "phrase": "머리에 뭐가 들었길래",
+        "source": "DASAN-MANUAL-5.1"
+      },
+      "speaker": "customer",
+      "customer_utterance": "머리에 뭐가 들었길래 그것도 하나 처리를 못 해",
+      "source": "authored",
+      "notes": "욕설 없는 인격 모독 — 사전 매칭만으로는 못 잡는다."
+    },
+    {
+      "id": "GS-504",
+      "module": "C-6",
+      "domain": "dasan",
+      "expected_doc_ids": [],
+      "distractor_doc_ids": [],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": null,
+      "call_guard": {
+        "type": "threat",
+        "phrase": "찾아가서 가만 안 둘",
+        "source": "DASAN-MANUAL-5.1"
+      },
+      "speaker": "customer",
+      "customer_utterance": "당신 이름 뭐야 내가 찾아가서 가만 안 둘 거야",
+      "source": "authored",
+      "notes": "신체적 위해 암시 — 5.2 조 즉시 종료 대상."
+    },
+    {
+      "id": "GS-505",
+      "module": "C-6",
+      "domain": "dasan",
+      "expected_doc_ids": [],
+      "distractor_doc_ids": [],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": null,
+      "call_guard": {
+        "type": "threat",
+        "phrase": "지금 그리로 갈 테니까",
+        "source": "DASAN-MANUAL-5.1"
+      },
+      "speaker": "customer",
+      "customer_utterance": "거기 몇 층이야 지금 그리로 갈 테니까 기다려",
+      "source": "authored",
+      "notes": "방문 협박 — 욕설이 한 마디도 없다."
+    },
+    {
+      "id": "GS-506",
+      "module": "C-6",
+      "domain": "dasan",
+      "expected_doc_ids": [],
+      "distractor_doc_ids": [],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": null,
+      "call_guard": {
+        "type": "sexual",
+        "phrase": "얼굴 한번 봅시다",
+        "source": "DASAN-MANUAL-5.1"
+      },
+      "speaker": "customer",
+      "customer_utterance": "목소리 들어보니까 아가씨인가 본데 얼굴 한번 봅시다",
+      "source": "authored",
+      "notes": "성적 표현 — 5.2 조 즉시 종료 대상."
+    },
+    {
+      "id": "GS-507",
+      "module": "C-6",
+      "domain": "dasan",
+      "expected_doc_ids": [],
+      "distractor_doc_ids": [],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": null,
+      "call_guard": {
+        "type": "distress",
+        "phrase": "죽어버리고 싶어요",
+        "source": "DASAN-MANUAL-5.1"
+      },
+      "speaker": "customer",
+      "customer_utterance": "진짜 다 필요없고 그냥 죽어버리고 싶어요",
+      "source": "authored",
+      "notes": "⚠ 위기 신호 — **폭언과 다르게 다룬다**(5.4 조: 종료하지 않고 전문 기관 연결)."
+    },
+    {
+      "id": "GS-508",
+      "module": "C-6",
+      "domain": "dasan",
+      "expected_doc_ids": [],
+      "distractor_doc_ids": [],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": null,
+      "call_guard": {
+        "type": "distress",
+        "phrase": "확 끝내버릴까",
+        "source": "DASAN-MANUAL-5.1"
+      },
+      "speaker": "customer",
+      "customer_utterance": "이렇게 사느니 그냥 확 끝내버릴까 싶네요",
+      "source": "authored",
+      "notes": "위기 신호 — 완곡한 표현. 폭언으로 오분류하면 통화를 끊게 된다."
+    },
+    {
+      "id": "GS-509",
+      "module": "C-6",
+      "domain": "dasan",
+      "expected_doc_ids": [],
+      "distractor_doc_ids": [],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": null,
+      "call_guard": null,
+      "speaker": "customer",
+      "customer_utterance": "아니 이런 식으로 하면 안 되죠 진짜 말이 안 되잖아요",
+      "source": "authored",
+      "notes": "정상 — 강한 항의이지 폭언이 아니다. **과탐지 함정.**"
+    },
+    {
+      "id": "GS-510",
+      "module": "C-6",
+      "domain": "dasan",
+      "expected_doc_ids": [],
+      "distractor_doc_ids": [],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": null,
+      "call_guard": null,
+      "speaker": "customer",
+      "customer_utterance": "아 진짜 짜증나네 몇 번을 전화해야 되는 거예요",
+      "source": "authored",
+      "notes": "정상 — 불만 표현. 정밀도 채점용."
+    },
+    {
+      "id": "GS-511",
+      "module": "C-6",
+      "domain": "dasan",
+      "expected_doc_ids": [],
+      "distractor_doc_ids": [],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": null,
+      "call_guard": null,
+      "speaker": "customer",
+      "customer_utterance": "담당자 바꿔주세요 이건 말이 안 되는 거 같은데",
+      "source": "authored",
+      "notes": "정상 — 상급자 요청."
+    },
+    {
+      "id": "GS-512",
+      "module": "C-6",
+      "domain": "dasan",
+      "expected_doc_ids": [],
+      "distractor_doc_ids": [],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": null,
+      "call_guard": null,
+      "speaker": "customer",
+      "customer_utterance": "죽겠네 진짜 하루 종일 전화만 붙잡고 있으니",
+      "source": "authored",
+      "notes": "⚠ 정상 — '죽겠네'는 관용 표현이다. **`distress` 로 잡으면 과탐지**(GS-507 과 짝)."
+    },
+    {
+      "id": "GS-513",
+      "module": "C-6",
+      "domain": "dasan",
+      "expected_doc_ids": [],
+      "distractor_doc_ids": [],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": null,
+      "call_guard": null,
+      "speaker": "customer",
+      "customer_utterance": "아까부터 계속 기다렸는데 아직도 안 되나요",
+      "source": "authored",
+      "notes": "정상 — 대기 불만."
+    },
+    {
+      "id": "GS-514",
+      "module": "C-6",
+      "domain": "dasan",
+      "expected_doc_ids": [],
+      "distractor_doc_ids": [],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": null,
+      "call_guard": null,
+      "speaker": "customer",
+      "customer_utterance": "전에 전화했을 때랑 말이 다르잖아요 누구 말을 믿어야 하나요",
+      "source": "authored",
+      "notes": "정상 — 안내 불일치 항의."
+    },
+    {
+      "id": "GS-515",
+      "module": "C-6",
+      "domain": "dasan",
+      "expected_doc_ids": [],
+      "distractor_doc_ids": [],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": null,
+      "call_guard": {
+        "type": "insult",
+        "phrase": "이 인간들아",
+        "source": "DASAN-MANUAL-5.1"
+      },
+      "speaker": "customer",
+      "customer_utterance": "됐고 그냥 시장 나오라 그래 이 인간들아",
+      "source": "authored",
+      "notes": "경계 사례 — 욕설 강도는 낮지만 인격 모독이다."
+    }
+  ]
+}
