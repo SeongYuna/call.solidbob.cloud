@@ -26,9 +26,15 @@ interface AdminState {
   callGuardLog: CallGuardLogEntry[];
   completedCallsTotal: number;
   veteranThresholdYears: number;
+  /**
+   * J-4 등록 만료 기간(개월). `decisions/205` ⑤가 "만료가 없으면 영구 표시가
+   * 된다"고 정한 값 — 원래 코드에 182일(6개월)로 박혀 있던 것을 설정으로 뺐다.
+   */
+  blacklistExpiryMonths: number;
   decideRequest: (requestId: string, approve: boolean, decidedBy: string) => void;
   releaseEntry: (entryId: string, releasedBy: string, reason: string) => void;
   setVeteranThresholdYears: (years: number) => void;
+  setBlacklistExpiryMonths: (months: number) => void;
 }
 
 export const useAdminStore = create<AdminState>((set) => ({
@@ -38,6 +44,7 @@ export const useAdminStore = create<AdminState>((set) => ({
   callGuardLog: SEED_CALL_GUARD_LOG,
   completedCallsTotal: SEED_COMPLETED_CALLS_TOTAL,
   veteranThresholdYears: 3,
+  blacklistExpiryMonths: 6,
 
   // ⚠ 상담원은 pending 까지만 만들 수 있다. 여기서도 pending 이 아닌 요청은
   // 조용히 무시한다 — 반려된 요청을 되살리려면 새 요청을 올려야 한다
@@ -65,8 +72,12 @@ export const useAdminStore = create<AdminState>((set) => ({
       const already = state.entries.some(
         (e) => e.customer_ref === target.customer_ref && e.released_at === null,
       );
-      // 만료 기본값 6개월(`decisions/205` ⑤) — 재서 고른 값이 아니라 기본값이다.
-      const expires = new Date(Date.now() + 182 * 24 * 60 * 60 * 1000).toISOString();
+      // 만료 기간은 설정값을 쓴다(`decisions/205` ⑤) — 재서 고른 값이 아니라
+      // 기본값이라 화면에서 조정 가능해야 한다.
+      const expiryDays = Math.round(state.blacklistExpiryMonths * 30);
+      const expires = new Date(
+        Date.now() + expiryDays * 24 * 60 * 60 * 1000,
+      ).toISOString();
       return {
         requests,
         entries: already
@@ -109,5 +120,9 @@ export const useAdminStore = create<AdminState>((set) => ({
 
   setVeteranThresholdYears: (years) => {
     set({ veteranThresholdYears: years });
+  },
+
+  setBlacklistExpiryMonths: (months) => {
+    set({ blacklistExpiryMonths: months });
   },
 }));

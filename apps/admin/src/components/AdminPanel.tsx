@@ -2,6 +2,7 @@ import { useState, type ReactElement } from "react";
 import { AuditLogTab } from "./admin/AuditLogTab";
 import { EntriesTab } from "./admin/EntriesTab";
 import { KnowledgeGapTab } from "./admin/KnowledgeGapTab";
+import { NotificationBell } from "./admin/NotificationBell";
 import { QaReviewTab } from "./admin/QaReviewTab";
 import { RequestsTab } from "./admin/RequestsTab";
 import { SettingsTab } from "./admin/SettingsTab";
@@ -56,10 +57,13 @@ export function AdminPanel({
   const completedCallsTotal = useAdminStore((s) => s.completedCallsTotal);
   const veteranThresholdYears = useAdminStore((s) => s.veteranThresholdYears);
   const setVeteranThresholdYears = useAdminStore((s) => s.setVeteranThresholdYears);
+  const blacklistExpiryMonths = useAdminStore((s) => s.blacklistExpiryMonths);
+  const setBlacklistExpiryMonths = useAdminStore((s) => s.setBlacklistExpiryMonths);
   const [tab, setTab] = useState<Tab>("wallboard");
   const admin = getMockAdminAccount().name;
 
-  const pendingCount = requests.filter((r) => r.status === "pending").length;
+  const pendingRequests = requests.filter((r) => r.status === "pending");
+  const pendingCount = pendingRequests.length;
   const activeEntryCount = entries.filter((e) => e.released_at === null).length;
 
   return (
@@ -69,6 +73,12 @@ export function AdminPanel({
           <h2>관리자 화면</h2>
         </div>
         <div className="wrapup-actions">
+          <NotificationBell
+            pendingRequests={pendingRequests}
+            onOpenRequest={() => {
+              setTab("requests");
+            }}
+          />
           <button type="button" className="btn-outline" onClick={onExit}>
             상담 화면으로
           </button>
@@ -135,6 +145,8 @@ export function AdminPanel({
             <SettingsTab
               veteranThresholdYears={veteranThresholdYears}
               onChangeVeteranThresholdYears={setVeteranThresholdYears}
+              blacklistExpiryMonths={blacklistExpiryMonths}
+              onChangeBlacklistExpiryMonths={setBlacklistExpiryMonths}
             />
           ) : null}
         </div>

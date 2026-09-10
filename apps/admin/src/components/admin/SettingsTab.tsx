@@ -12,9 +12,13 @@ import type { ReactElement } from "react";
 export function SettingsTab({
   veteranThresholdYears,
   onChangeVeteranThresholdYears,
+  blacklistExpiryMonths,
+  onChangeBlacklistExpiryMonths,
 }: {
   veteranThresholdYears: number;
   onChangeVeteranThresholdYears: (years: number) => void;
+  blacklistExpiryMonths: number;
+  onChangeBlacklistExpiryMonths: (months: number) => void;
 }): ReactElement {
   return (
     <section aria-label="설정">
@@ -40,6 +44,32 @@ export function SettingsTab({
         <p className="admin-help">
           이 화면에서 바꿔도 실제 배정 로직(서버)에는 아직 연결돼 있지 않습니다
           — 값이 어떻게 보일지 먼저 확인하는 화면입니다.
+        </p>
+      </div>
+
+      <div className="wrapup-card admin-settings-card">
+        <div className="wrapup-card-head">
+          <h3>J-4 블랙리스트 등록 만료 기간</h3>
+        </div>
+        <label className="admin-settings-field">
+          <span>승인 후 (개월) 뒤 자동 만료</span>
+          <input
+            type="number"
+            min={1}
+            max={24}
+            value={blacklistExpiryMonths}
+            onChange={(event) => {
+              const next = Number(event.target.value);
+              if (Number.isFinite(next) && next >= 1) {
+                onChangeBlacklistExpiryMonths(next);
+              }
+            }}
+          />
+        </label>
+        <p className="admin-help">
+          만료가 없으면 영구 표시가 됩니다(`decisions/205` ⑤). 이 값은 실제로
+          <strong> 지금부터 승인하는 요청에 바로 적용</strong>됩니다 — 이미
+          등록된 항목의 만료일은 안 바뀝니다.
         </p>
       </div>
     </section>

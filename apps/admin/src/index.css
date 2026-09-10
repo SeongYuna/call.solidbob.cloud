@@ -2952,8 +2952,87 @@ button {
   font-variant-numeric: tabular-nums;
 }
 
+/* 알림 벨 — 실시간 푸시가 아니다. 이 페이지가 가진 목록을 셀 뿐이다. */
+.notif-bell { position: relative; }
+.notif-bell-btn {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  background: var(--paper);
+  color: var(--text);
+  cursor: pointer;
+}
+.notif-bell-btn:hover,
+.notif-bell-btn:focus-visible {
+  outline: none;
+  border-color: var(--text);
+}
+.notif-bell-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  border-radius: var(--radius-pill);
+  background: #d64545;
+  color: #fff;
+  font-size: 10.5px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.notif-bell-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 30;
+  width: 280px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--paper);
+  box-shadow: 0 8px 24px rgba(20, 20, 18, 0.14);
+}
+.notif-bell-title {
+  margin: 0 0 8px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--muted);
+}
+.notif-bell-empty { margin: 0; }
+.notif-bell-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+.notif-bell-item {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  width: 100%;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.notif-bell-item:hover,
+.notif-bell-item:focus-visible {
+  background: color-mix(in srgb, var(--text) 6%, transparent);
+  outline: none;
+}
+
 /* 설정 */
 .admin-settings-card { display: grid; gap: 12px; max-width: 480px; }
+.admin-settings-card + .admin-settings-card { margin-top: 16px; }
 .admin-settings-field {
   display: grid;
   gap: 6px;
