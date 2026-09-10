@@ -3,6 +3,7 @@ import type { CallWrapUp, SentimentSummary } from "../types/contract";
 import { getHistoryPlayback } from "../lib/api/coreClient";
 import { DEFAULT_LOCAL_RESOURCES } from "../mock/localResources";
 import { cardId, useCallStore } from "../store/callStore";
+import { BlackConsumerAction } from "./BlackConsumerAction";
 import { FollowUpChecklist } from "./FollowUpChecklist";
 import { LocalResourceCard } from "./LocalResourceCard";
 
@@ -178,6 +179,8 @@ export function CallSummaryPanel({
           </p>
         ) : null}
       </section>
+
+      {showLiveExtras ? <BlackConsumerAction callId={call.callId} /> : null}
 
       <FollowUpChecklist title="후속 조치" items={call.followUps} />
 

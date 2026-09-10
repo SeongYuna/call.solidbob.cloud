@@ -18,6 +18,10 @@ import { getScenarioById } from "../mock/scenarios";
 import type { GatewayMode } from "../lib/ws";
 import { sliceByCodepoints } from "../lib/text/codepoints";
 import type { TargetLanguage } from "../lib/language/languageMeta";
+import {
+  reportBlackConsumer,
+  type BlackConsumerFlag,
+} from "../lib/customerRisk/blackConsumerFlag";
 
 export interface Utterance {
   segment_id: string;
@@ -116,6 +120,8 @@ export interface CallState {
   callGuard: Record<string, CallGuardFlag>;
   /** A-5 ⓑ. 키만. 점수는 없다. */
   accentHints: Record<string, true>;
+  /** C-6 확장. 상담원이 통화 종료 시 수동으로 분류한 결과 — 자동 탐지가 아니다. */
+  blackConsumerFlag: BlackConsumerFlag | null;
   applyTranscript: (event: TranscriptEvent) => void;
   applyRecommendation: (
     cards: RecommendationCard[],
@@ -142,6 +148,7 @@ export interface CallState {
   applyAgentTts: (transcriptSegmentId: string, event: AgentTtsStatus) => void;
   applyCallGuard: (transcriptSegmentId: string, event: CallGuardFlag) => void;
   applyAccentHint: (transcriptSegmentId: string) => void;
+  flagBlackConsumer: (callId: string) => void;
   setTargetLanguage: (lang: TargetLanguage | null) => void;
   resetCall: () => void;
   enterAssist: () => void;
@@ -179,6 +186,7 @@ const emptyCall = {
   agentTts: {} as Record<string, AgentTtsStatus>,
   callGuard: {} as Record<string, CallGuardFlag>,
   accentHints: {} as Record<string, true>,
+  blackConsumerFlag: null as BlackConsumerFlag | null,
 };
 
 /**
@@ -481,6 +489,12 @@ export const useCallStore = create<CallState>((set) => ({
         [transcriptSegmentId]: true,
       },
     }));
+  },
+
+  flagBlackConsumer: (callId) => {
+    const flag: BlackConsumerFlag = { call_id: callId, flagged_at: Date.now() };
+    reportBlackConsumer(flag);
+    set({ blackConsumerFlag: flag });
   },
 
   setTargetLanguage: (lang) => {
