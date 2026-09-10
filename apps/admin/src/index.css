@@ -2780,15 +2780,74 @@ button {
 }
 .blacklist-actions { display: flex; gap: 8px; justify-content: flex-end; }
 
-/* 관리자 화면 */
-.admin-tabs { display: flex; gap: 6px; padding: 0 24px 12px; }
-.admin-tab {
-  padding: 6px 14px; border-radius: 999px; cursor: pointer; font: inherit;
-  border: 1px solid var(--border, rgba(127, 127, 127, 0.35));
-  background: transparent; color: inherit;
+/* 관리자 화면 — 상담원 대기화면(.standby)과 같은 톤을 쓴다: 따뜻한 배경,
+   여백, 카드 그림자. 예전엔 .wrapup-*(통화 요약 오버레이용, 720px 폭 제한)를
+   빌려 썼는데 상시 화면엔 안 맞았다(2026-09-10, 스크린샷 피드백). */
+.admin-page {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  background: var(--standby-bg);
 }
-.admin-tab.is-active { background: var(--surface-muted, rgba(127, 127, 127, 0.16)); }
-.admin-count { margin-left: 6px; opacity: 0.7; font-variant-numeric: tabular-nums; }
+
+.admin-page-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  flex-shrink: 0;
+  padding: 24px 32px 16px;
+}
+
+.admin-tabs-row {
+  flex-shrink: 0;
+  padding: 0 32px 16px;
+  border-bottom: 1px solid var(--line);
+}
+
+.admin-scroll {
+  min-height: 0;
+  overflow: auto;
+  padding: 24px 32px 32px;
+}
+
+.admin-content {
+  max-width: 1120px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.admin-tabs { display: flex; gap: 6px; flex-wrap: wrap; }
+.admin-tab {
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 16px;
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  border: 1px solid var(--line);
+  background: var(--paper);
+  color: var(--muted);
+}
+.admin-tab:hover { color: var(--text); }
+.admin-tab.is-active {
+  background: var(--text);
+  border-color: var(--text);
+  color: var(--bg);
+}
+.admin-count {
+  margin-left: 6px;
+  padding: 0 6px;
+  border-radius: var(--radius-pill);
+  background: color-mix(in srgb, currentColor 16%, transparent);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
 .admin-empty, .admin-help { opacity: 0.75; font-size: 0.9rem; }
 .admin-section { margin: 24px 0 8px; font-size: 0.95rem; }
 .admin-request { display: grid; gap: 12px; margin-bottom: 16px; }
@@ -2804,8 +2863,9 @@ button {
 }
 .admin-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
 .admin-list li {
-  display: flex; align-items: center; gap: 12px; padding: 10px 12px;
-  border-radius: 8px; background: var(--surface-muted, rgba(127, 127, 127, 0.08));
+  display: flex; align-items: center; gap: 12px; padding: 12px 14px;
+  border-radius: 12px; background: var(--paper);
+  box-shadow: 0 1px 2px rgba(20, 20, 18, 0.04), 0 4px 14px rgba(20, 20, 18, 0.05);
 }
 .admin-list li .admin-meta { flex: 1; }
 .admin-list.is-muted { opacity: 0.6; }
@@ -2814,35 +2874,75 @@ button {
   border: 1px solid var(--border, rgba(127, 127, 127, 0.35));
 }
 .admin-badge.is-approved { border-color: var(--accent, #3b82f6); }
-.admin-release { padding: 4px 10px; font-size: 0.82rem; }
+.admin-release { padding: 4px 10px; font-size: 0.82rem; white-space: nowrap; }
 
-/* 현황판 */
+/* 승인 카드 안의 건별 등록 기간 입력, 등록 목록의 연장·단축 입력 —
+   전역 기본값을 건마다 다르게 조정할 수 있게 한다(2026-09-10). */
+.admin-inline-field {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 4px 0 0;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+.admin-inline-field input,
+.admin-entry-extend-input {
+  width: 64px;
+  padding: 6px 8px;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+}
+.admin-entry-row { flex-wrap: wrap; justify-content: space-between; }
+.admin-entry-row-main { display: flex; align-items: center; gap: 12px; flex: 1; min-width: 140px; }
+.admin-entry-row-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+
+/* 현황판 — .standby-kpi 카드와 같은 무게감(큰 숫자 + 배지)을 쓴다. */
 .wallboard-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   gap: 16px;
-  margin-top: 16px;
 }
 .wallboard-tile {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  padding: 16px;
-  border-radius: 12px;
-  background: var(--surface-muted, rgba(127, 127, 127, 0.1));
-}
-.wallboard-tile.is-watch {
-  box-shadow: inset 0 0 0 1.5px var(--accent-warn, #d98324);
-}
-.wallboard-tile-num {
-  font-size: 28px;
-  font-weight: 800;
-  letter-spacing: -0.02em;
-  font-variant-numeric: tabular-nums;
+  gap: 8px;
+  padding: 18px 20px;
+  border-radius: var(--radius-card);
+  background: var(--paper);
+  box-shadow:
+    0 1px 2px rgba(20, 20, 18, 0.04),
+    0 10px 28px rgba(20, 20, 18, 0.06);
 }
 .wallboard-tile-label {
-  font-size: 12px;
+  margin: 0;
   color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+}
+.wallboard-tile-num {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: var(--radius-badge);
+  background: var(--ok-bg);
+  color: var(--ok-fg);
+  font-size: 26px;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1.3;
+  font-variant-numeric: tabular-nums;
+  width: fit-content;
+}
+.wallboard-tile.is-watch .wallboard-tile-num {
+  background: transparent;
+  color: #e8930c;
+  padding: 0;
+}
+[data-theme="dark"] .wallboard-tile.is-watch .wallboard-tile-num {
+  color: #f5b860;
 }
 
 /* 지식베이스 갭 랭킹 */
@@ -2876,8 +2976,87 @@ button {
   font-variant-numeric: tabular-nums;
 }
 
+/* 알림 벨 — 실시간 푸시가 아니다. 이 페이지가 가진 목록을 셀 뿐이다. */
+.notif-bell { position: relative; }
+.notif-bell-btn {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  background: var(--paper);
+  color: var(--text);
+  cursor: pointer;
+}
+.notif-bell-btn:hover,
+.notif-bell-btn:focus-visible {
+  outline: none;
+  border-color: var(--text);
+}
+.notif-bell-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  border-radius: var(--radius-pill);
+  background: #d64545;
+  color: #fff;
+  font-size: 10.5px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.notif-bell-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 30;
+  width: 280px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--paper);
+  box-shadow: 0 8px 24px rgba(20, 20, 18, 0.14);
+}
+.notif-bell-title {
+  margin: 0 0 8px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--muted);
+}
+.notif-bell-empty { margin: 0; }
+.notif-bell-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+.notif-bell-item {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  width: 100%;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.notif-bell-item:hover,
+.notif-bell-item:focus-visible {
+  background: color-mix(in srgb, var(--text) 6%, transparent);
+  outline: none;
+}
+
 /* 설정 */
-.admin-settings-card { display: grid; gap: 12px; }
+.admin-settings-card { display: grid; gap: 12px; max-width: 480px; }
+.admin-settings-card + .admin-settings-card { margin-top: 16px; }
 .admin-settings-field {
   display: grid;
   gap: 6px;

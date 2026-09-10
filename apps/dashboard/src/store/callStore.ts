@@ -21,6 +21,10 @@ import { getScenarioById } from "../mock/scenarios";
 import type { GatewayMode } from "../lib/ws";
 import { sliceByCodepoints } from "../lib/text/codepoints";
 import type { TargetLanguage } from "../lib/language/languageMeta";
+import {
+  reportBlackConsumer,
+  type BlackConsumerFlag,
+} from "../lib/customerRisk/blackConsumerFlag";
 
 export interface Utterance {
   segment_id: string;
@@ -54,11 +58,12 @@ export type CallPhase = "live" | "wrapup";
 /** 왼쪽 자막이 실시간인지, 상담기록인지. 실시간 발화 배열은 건드리지 않는다. */
 export type TranscriptViewMode = "live" | "history";
 
-/** 로그인 직후 대기인지, 통화 어시스트인지. */
-// 2026-09-09 `admin` 이 늘었다 — J-3 관리자 대시보드(`_project/decisions/204`).
-// 상담원 화면과 같은 앱에 두는 이유: 데모에서 두 역할을 오가며 보여줘야 하고,
-// 라우터가 없는 구조라 shell 하나로 전환하는 것이 기존 패턴과 같다.
-export type AgentShell = "standby" | "assist" | "admin";
+/**
+ * 로그인 직후 대기인지, 통화 어시스트인지.
+ * 2026-09-10 — 관리자 화면(J-3)은 `/admin` 별도 경로로 분리했다. 상담원
+ * 대시보드와 같은 shell 을 쓰지 않는다 — 버튼으로 오가지 않는다.
+ */
+export type AgentShell = "standby" | "assist";
 
 /** 통화 후 요약에서 돌아갈 자리. */
 export type SummaryReturn = "standby" | "assist";
@@ -122,6 +127,8 @@ export interface CallState {
   callGuard: Record<string, CallGuardFlag>;
   /** A-5 ⓑ. 키만. 점수는 없다. */
   accentHints: Record<string, true>;
+  /** C-6 확장. 상담원이 통화 종료 시 수동으로 분류한 결과 — 자동 탐지가 아니다. */
+  blackConsumerFlag: BlackConsumerFlag | null;
   /** J — 블랙리스트 전환 요청. 상담원이 올리고 관리자가 결정한다. */
   blacklistRequests: BlacklistRequestItem[];
   /** J-4 — 승인되어 적용 중인 등록. 배정(J-5)이 보는 것은 이쪽이다. */
@@ -152,6 +159,7 @@ export interface CallState {
   applyAgentTts: (transcriptSegmentId: string, event: AgentTtsStatus) => void;
   applyCallGuard: (transcriptSegmentId: string, event: CallGuardFlag) => void;
   applyAccentHint: (transcriptSegmentId: string) => void;
+  flagBlackConsumer: (callId: string) => void;
   setTargetLanguage: (lang: TargetLanguage | null) => void;
   resetCall: () => void;
   enterAssist: () => void;
@@ -179,7 +187,6 @@ export interface CallState {
   ) => void;
   /** J-4 — 해제. 행을 지우지 않고 `released_at` 을 채운다(절대 원칙 8). */
   releaseBlacklistEntry: (entryId: string, releasedBy: string, reason: string) => void;
-  enterAdmin: () => void;
 }
 
 const emptyCall = {
@@ -208,6 +215,7 @@ const emptyCall = {
   agentTts: {} as Record<string, AgentTtsStatus>,
   callGuard: {} as Record<string, CallGuardFlag>,
   accentHints: {} as Record<string, true>,
+  blackConsumerFlag: null as BlackConsumerFlag | null,
 };
 
 /**
@@ -516,6 +524,12 @@ export const useCallStore = create<CallState>((set) => ({
     }));
   },
 
+  flagBlackConsumer: (callId) => {
+    const flag: BlackConsumerFlag = { call_id: callId, flagged_at: Date.now() };
+    reportBlackConsumer(flag);
+    set({ blackConsumerFlag: flag });
+  },
+
   setTargetLanguage: (lang) => {
     set({ targetLanguage: lang });
   },
@@ -578,6 +592,7 @@ export const useCallStore = create<CallState>((set) => ({
   //    검토한 사람이 아무도 없게 된다. 서버 쪽에서도 도메인 규칙이 같은 것을 막는다
   //    (`server/apps/blacklist/domain/services/transitions.py`).
   submitBlacklistRequest: (input) => {
+    const now = new Date().toISOString();
     set((state) => ({
       blacklistRequests: [
         {
@@ -590,9 +605,10 @@ export const useCallStore = create<CallState>((set) => ({
           context_excerpt: input.contextExcerpt,
           evidence: input.evidence,
           status: "pending",
-          requested_at: new Date().toISOString(),
+          requested_at: now,
           decided_by: null,
           decided_at: null,
+          evidence_snapshot_at: now,
         },
         ...state.blacklistRequests,
       ],
@@ -637,7 +653,6 @@ export const useCallStore = create<CallState>((set) => ({
               {
                 entry_id: `ent-${Date.now()}`,
                 customer_ref: target.customer_ref,
-                display_hint: target.display_hint,
                 request_id: target.request_id,
                 approved_at: decidedAt,
                 expires_at: expires,
@@ -673,9 +688,6 @@ export const useCallStore = create<CallState>((set) => ({
     }));
   },
 
-  enterAdmin: () => {
-    set({ shell: "admin", viewMode: "live" });
-  },
 }));
 
 /**
