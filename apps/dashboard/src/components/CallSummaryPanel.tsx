@@ -2,8 +2,9 @@ import { useEffect, useMemo, useState, type ReactElement, type ReactNode } from 
 import type { CallWrapUp, SentimentSummary } from "../types/contract";
 import { getHistoryPlayback } from "../lib/api/coreClient";
 import { DEFAULT_LOCAL_RESOURCES } from "../mock/localResources";
-import { cardId, useCallStore } from "../store/callStore";
+import { cardId, useCallStore, type Utterance } from "../store/callStore";
 import { BlackConsumerAction } from "./BlackConsumerAction";
+import { BlacklistRequestButton } from "./BlacklistRequestButton";
 import { FollowUpChecklist } from "./FollowUpChecklist";
 import { LocalResourceCard } from "./LocalResourceCard";
 
@@ -143,6 +144,7 @@ export function CallSummaryPanel({
 }: CallSummaryPanelProps): ReactElement {
   const mode = useCallStore((state) => state.mode);
   const utterances = useCallStore((state) => state.utterances);
+  const callId = useCallStore((state) => state.callId);
   const viewMode = useCallStore((state) => state.viewMode);
   const manualSearches = useCallStore((state) => state.manualSearches);
   const cards = useCallStore((state) => state.cards);
@@ -267,8 +269,66 @@ export function CallSummaryPanel({
       {call.sentiment !== undefined ? (
         <MoodSection sentiment={call.sentiment} isMock={mode === "mock"} />
       ) : null}
+
+      {/* J-1 — 실시간 통화에서만 띄운다. 상담기록 조회 화면에서는 이미 지난 통화라
+          전환 요청의 대상이 아니다(`_project/decisions/204`). */}
+      {showLiveExtras && callId !== null ? (
+        <section className="wrapup-card">
+          <div className="wrapup-card-head">
+            <h3>콜 라우팅 보호</h3>
+          </div>
+          <BlacklistRequestButton
+            callId={callId}
+            customerRef={customerRef(callId)}
+            displayHint={displayHint(callId)}
+            callDurationS={callDurationS(utterances)}
+            contextExcerpt={maskedExcerpt(utterances)}
+          />
+        </section>
+      ) : null}
     </CallSummaryShell>
   );
+}
+
+/**
+ * 데모용 고객 식별자. **다산 데이터에 고객 ID 가 없다** — `_logs/2026-08-28-05-ryujun`
+ * 가 F-3(반복 문의 연결)을 폐기하며 적은 것과 같은 문제다. `decisions/204` 가 정한 대로
+ * **전화번호를 식별자로 가정**한다.
+ *
+ * ⚠ **평문 전화번호를 그대로 쓰지 않는다**(`_project/decisions/205` ③). 전화번호는
+ * C-5 의 P4 이고, 자막에서 지운 값을 옆 테이블에 평문으로 두면 마스킹을 앞단에 둔
+ * 의미가 사라진다. 실서버에서는 **HMAC-SHA256(번호, 서버 비밀키)**이고, 여기 mock 은
+ * 그 자리를 흉내만 낸다 — **브라우저에서 해시를 만들지 않는다**(키가 클라이언트에
+ * 있으면 해시가 아무것도 보호하지 못한다).
+ */
+function customerRef(callId: string): string {
+  return `mockref_${callId.slice(-8)}`;
+}
+
+/** 화면 표시 전용. 조회·배정은 `customerRef` 로만 한다. */
+function displayHint(callId: string): string {
+  return `****${callId.slice(-4).padStart(4, "0")}`;
+}
+
+/** 마지막 발화의 종료 시각을 통화 길이로 본다. 실제 통화 시간은 게이트웨이가 준다. */
+function callDurationS(utterances: Utterance[]): number {
+  const last = utterances[utterances.length - 1];
+  return last ? Math.round(last.utterance_end_ms / 1000) : 0;
+}
+
+/**
+ * 관리자에게 보낼 대화 맥락.
+ *
+ * ⚠ **마스킹된 자막(`text`)을 쓴다. `plain_text`(원문)를 쓰지 않는다** —
+ * `DASAN-MANUAL-5.5`·C-5. 원문을 실으면 마스킹을 앞단에 둔 의미가 사라진다.
+ * 고객 발화만 담는다 — 판단 대상이 고객이기 때문이다.
+ */
+function maskedExcerpt(utterances: Utterance[]): string {
+  return utterances
+    .filter((u) => u.speaker === "customer")
+    .slice(-6)
+    .map((u) => u.text)
+    .join("\n");
 }
 
 function CallSummaryShell({

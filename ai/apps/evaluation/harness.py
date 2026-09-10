@@ -19,6 +19,7 @@ from pathlib import Path
 from typing import Awaitable, TypeVar
 
 from hub.app.dtos.transcript_dto import TranscriptEvent
+from hub.app.ports.output.call_guard_port import CallGuardPort
 from hub.app.ports.output.closure_gate_port import ClosureGatePort
 from hub.app.ports.output.compliance_port import CompliancePort
 from hub.app.ports.output.domain_routing_port import DomainRoutingPort
@@ -27,6 +28,7 @@ from hub.app.ports.output.retrieval_port import RetrievalPort
 from hub.app.ports.output.trigger_port import TriggerPort
 
 from .golden_set import GoldenItem, load_golden_set
+from .metrics import call_guard as call_guard_metrics
 from .metrics import closure_gate as closure_gate_metrics
 from .metrics import compliance as compliance_metrics
 from .metrics import domain_routing as domain_routing_metrics
@@ -52,6 +54,7 @@ class Ports:
     compliance: CompliancePort | None = None
     masking: MaskingPort | None = None
     closure_gate: ClosureGatePort | None = None
+    call_guard: CallGuardPort | None = None
 
 
 NOT_IMPLEMENTED = "측정 불가 — 모듈 미구현"
@@ -65,6 +68,25 @@ NOT_IMPLEMENTED = "측정 불가 — 모듈 미구현"
 # (절대 원칙 10). 장민석이 2026-08-27 에 `test_골든셋에_C5_케이스가_실려있다` 로 pytest
 # 쪽에 세운 「빈 채로 초록불」 가드를, 2026-08-28 에 하네스 리포트 쪽에도 세웠다.
 NO_SAMPLES = "측정 불가 — 골든셋에 채점 대상이 없다"
+
+
+def retrieval_query(item: GoldenItem) -> str:
+    """검색에 넣을 질의. **앞선 맥락이 있으면 함께 넣는다.**
+
+    2026-09-09 골든셋 확장에서 필요해졌다. AI Hub 다산 실제 전사를 보면 서류 문의의
+    상당수가 `"필요한 서류가 있나요?"` · `"어떤서류가 필요한가요?"` 처럼 **그 문장만으로는
+    무엇을 묻는지 알 수 없는 중간 턴**이다. 발화만 질의로 쓰면 검색이 실패하는 것이
+    당연해지고, 그러면 우리가 재는 것은 검색 성능이 아니라 「발화가 자족적인가」가 된다.
+
+    ⚠ **맥락을 넣는 것이 점수를 올리려는 조치가 아니다.** `decisions/201` 이 B 를 「대화
+    맥락으로 절차를 판정」이라고 정의한 그대로이고, 실제 시스템도 통화 앞부분을 갖고 있다.
+    맥락 없는 항목은 이 함수가 발화 하나만 돌려주므로 동작이 달라지지 않는다.
+
+    이어붙이는 순서는 **맥락 → 현재 발화**다. BM25 는 순서를 보지 않지만 dense·리랭커가
+    붙으면 보게 되고, 사람이 읽는 순서와 같아야 디버깅할 때 헷갈리지 않는다.
+    """
+    parts = [*item.context_utterances, item.customer_utterance or ""]
+    return " ".join(p for p in parts if p).strip()
 
 
 def _event_from_item(item: GoldenItem) -> TranscriptEvent:
@@ -114,7 +136,7 @@ def run_eval(items: list[GoldenItem], ports: Ports) -> dict:
     else:
         pairs = []
         for it in b_items:
-            docs = _run(ports.retrieval.retrieve(it.customer_utterance or "", top_k=5))
+            docs = _run(ports.retrieval.retrieve(retrieval_query(it), top_k=5))
             pairs.append((it.expected_doc_ids, [d.doc_id for d in docs]))
         report["retrieval"] = retrieval_metrics.aggregate_recall_mrr(pairs)
 
@@ -154,6 +176,33 @@ def run_eval(items: list[GoldenItem], ports: Ports) -> dict:
         ]
         report["compliance"] = compliance_metrics.score_binary_predictions(expected, predicted)
 
+    # C-6: 콜 가드 — **고객** 폭언·위기 신호. C-1~C-4 와 화자가 반대라 항목도 따로 고른다.
+    # 정상 발화(위반 아님)도 채점 대상이다 — 재현율만 보면 "전부 폭언"이라고 답하는
+    # 구현이 만점을 받는다(절대 원칙 10).
+    c6_items = [it for it in items if it.module == "C-6"]
+    if ports.call_guard is None:
+        report["call_guard"] = NOT_IMPLEMENTED
+    elif not c6_items:
+        report["call_guard"] = NO_SAMPLES
+    else:
+        predictions = []
+        for it in c6_items:
+            flags = _run(ports.call_guard.detect(it.customer_utterance or ""))
+            # 여러 건이 잡히면 첫 번째를 대표로 본다. 갈래가 섞여 잡히면 위기(distress)를
+            # 우선한다 — 5.4 조가 그쪽 대응을 다르게 정하므로, 놓치는 쪽이 더 위험하다.
+            predicted = None
+            if flags:
+                distress = next((f for f in flags if f.category == "distress"), None)
+                predicted = (distress or flags[0]).category
+            predictions.append(
+                call_guard_metrics.CallGuardPrediction(
+                    item_id=it.id,
+                    expected_type=it.call_guard.type if it.call_guard else None,
+                    predicted_type=predicted,
+                )
+            )
+        report["call_guard"] = call_guard_metrics.score_call_guard(predictions)
+
     # C-5: 마스킹 (절대 규칙)
     if ports.masking is None:
         report["masking"] = NOT_IMPLEMENTED
@@ -162,15 +211,26 @@ def run_eval(items: list[GoldenItem], ports: Ports) -> dict:
         for it in items:
             if not it.pii_patterns:
                 continue
-            _, spans = ports.masking.mask(it.customer_utterance or "")
+            masked_text, spans = ports.masking.mask(it.customer_utterance or "")
             predicted_patterns = {s.type for s in spans}
             for pii in it.pii_patterns:
+                pattern_matched = pii.pattern in predicted_patterns
+                # 「가려졌는가」는 **원문 조각이 결과에 남아 있는지**로 본다. 패턴 이름이
+                # 달라도 값이 사라졌으면 노출은 없었다 — 절대 규칙이 지키려는 것은 그쪽이다.
+                # `raw_span` 이 비어 있는 항목(음성 케이스·문맥 한계 케이스)은 가릴 글자를
+                # 특정하지 않은 것이므로 예전처럼 패턴 등장 여부로 본다.
+                was_masked = (
+                    pii.raw_span not in masked_text
+                    if pii.raw_span
+                    else pattern_matched
+                )
                 cases.append(
                     masking_metrics.MaskingCase(
                         item_id=it.id,
                         pattern=pii.pattern,
                         should_be_masked=pii.masked_expected,
-                        was_masked=pii.pattern in predicted_patterns,
+                        was_masked=was_masked,
+                        pattern_matched=pattern_matched,
                     )
                 )
         # 마스킹도 같다 — 표본이 0건이면 「누락 0건 통과」가 아니라 「잴 것이 없다」다.
@@ -212,7 +272,7 @@ def main() -> None:  # pragma: no cover — 수동 실행용
 
     items = load_golden_set()
     report = run_eval(items, Ports())  # 전부 미구현 상태로 골격만 확인
-    print_report(report, golden_set_path=Path(__file__).resolve().parents[3] / "golden-set" / "v1-10.json")
+    print_report(report, golden_set_path=Path(__file__).resolve().parents[3] / "golden-set" / "v1-150.json")
 
 
 if __name__ == "__main__":  # pragma: no cover
