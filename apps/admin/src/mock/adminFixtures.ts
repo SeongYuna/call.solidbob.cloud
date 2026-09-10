@@ -18,8 +18,9 @@ export const SEED_REQUESTS: BlacklistRequestItem[] = [
     display_hint: "****3841",
     requested_by: "조서희",
     reason: "상담 도중 반복적인 욕설과 위협이 있었습니다.",
-    context_excerpt:
-      "고객: 이거 안 해주면 [P4] 알아서 해\n고객: 계속 이따위로 할 거야",
+    // ⚠ P1~P7 코드는 화면에 내지 않는다(`.claude/rules/dashboard.md` §2) —
+    // 마스킹된 자막이라도 패턴 코드를 그대로 노출하지 않는다.
+    context_excerpt: "고객: 이거 안 해주면 알아서 해\n고객: 계속 이따위로 할 거야",
     evidence: {
       call_duration_s: 612,
       insult_count: 4,

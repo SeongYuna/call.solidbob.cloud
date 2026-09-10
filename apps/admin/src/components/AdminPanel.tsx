@@ -63,43 +63,42 @@ export function AdminPanel({
   const activeEntryCount = entries.filter((e) => e.released_at === null).length;
 
   return (
-    <main className="wrapup admin-panel">
-      <div className="wrapup-topbar">
-        <header className="wrapup-inner wrapup-head">
-          <div>
-            <p className="wrapup-eyebrow">관리자</p>
-            <h2>관리자 화면</h2>
-          </div>
-          <div className="wrapup-actions">
-            <button type="button" className="btn-outline" onClick={onExit}>
-              상담 화면으로
-            </button>
-          </div>
-        </header>
-        <nav className="admin-tabs" aria-label="관리자 화면 전환">
-          {TABS.map(({ id, label }) => (
-            <button
-              key={id}
-              type="button"
-              className={tab === id ? "admin-tab is-active" : "admin-tab"}
-              onClick={() => {
-                setTab(id);
-              }}
-            >
-              {label}
-              {id === "requests" && pendingCount > 0 ? (
-                <span className="admin-count">{pendingCount}</span>
-              ) : null}
-              {id === "entries" && activeEntryCount > 0 ? (
-                <span className="admin-count">{activeEntryCount}</span>
-              ) : null}
-            </button>
-          ))}
-        </nav>
-      </div>
+    <main className="admin-page">
+      <header className="admin-page-header">
+        <div>
+          <p className="wrapup-eyebrow">관리자</p>
+          <h2>관리자 화면</h2>
+        </div>
+        <div className="wrapup-actions">
+          <button type="button" className="btn-outline" onClick={onExit}>
+            상담 화면으로
+          </button>
+        </div>
+      </header>
 
-      <div className="wrapup-scroll">
-        <div className="wrapup-inner">
+      <nav className="admin-tabs-row admin-tabs" aria-label="관리자 화면 전환">
+        {TABS.map(({ id, label }) => (
+          <button
+            key={id}
+            type="button"
+            className={tab === id ? "admin-tab is-active" : "admin-tab"}
+            onClick={() => {
+              setTab(id);
+            }}
+          >
+            {label}
+            {id === "requests" && pendingCount > 0 ? (
+              <span className="admin-count">{pendingCount}</span>
+            ) : null}
+            {id === "entries" && activeEntryCount > 0 ? (
+              <span className="admin-count">{activeEntryCount}</span>
+            ) : null}
+          </button>
+        ))}
+      </nav>
+
+      <div className="admin-scroll">
+        <div className="admin-content">
           {tab === "wallboard" ? (
             <WallboardTab
               completedCallsTotal={completedCallsTotal}
