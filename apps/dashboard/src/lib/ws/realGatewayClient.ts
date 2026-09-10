@@ -266,8 +266,9 @@ function parseCard(body: Record<string, unknown>): RecommendationCard | null {
   }
   const card: RecommendationCard = { title, summary, source, similarity_score };
   // 계약에 없는 필드라 없어도 통과시킨다 — 없으면 auto 로 본다.
-  if (body.source_type === "manual" || body.source_type === "auto") {
-    card.source_type = body.source_type;
+  const sourceType = readStringValue(body.source_type);
+  if (sourceType === "manual" || sourceType === "auto") {
+    card.source_type = sourceType;
   }
   return card;
 }
@@ -304,7 +305,7 @@ function parseClosure(body: Record<string, unknown>): ClosureEvent | null {
   if (domain !== undefined) {
     event.domain = domain;
   }
-  if (body.is_example === true) {
+  if (readStringValue(body.is_example) === "true") {
     event.is_example = true;
   }
   return event;
@@ -345,12 +346,17 @@ function parseSpan(value: unknown): [number, number] | null {
   if (!Array.isArray(value) || value.length !== 2) {
     return null;
   }
-  const start = value[0];
-  const end = value[1];
-  if (typeof start !== "number" || typeof end !== "number") {
+  const start = readStringValue(value[0]);
+  const end = readStringValue(value[1]);
+  if (start === null || end === null) {
     return null;
   }
-  return [start, end];
+  const startNum = Number(start);
+  const endNum = Number(end);
+  if (!Number.isFinite(startNum) || !Number.isFinite(endNum)) {
+    return null;
+  }
+  return [startNum, endNum];
 }
 
 function parseStringList(value: unknown): string[] | null {
@@ -359,10 +365,11 @@ function parseStringList(value: unknown): string[] | null {
   }
   const items: string[] = [];
   for (const item of value) {
-    if (typeof item !== "string") {
+    const str = readStringValue(item);
+    if (str === null) {
       return null;
     }
-    items.push(item);
+    items.push(str);
   }
   return items;
 }
@@ -373,81 +380,110 @@ function parseEvidence(value: unknown): Record<string, boolean> | null {
   }
   const evidence: Record<string, boolean> = {};
   for (const [key, flag] of Object.entries(value)) {
-    if (typeof flag !== "boolean") {
+    const raw = readStringValue(flag);
+    if (raw === "true") {
+      evidence[key] = true;
+    } else if (raw === "false") {
+      evidence[key] = false;
+    } else {
       return null;
     }
-    evidence[key] = flag;
   }
   return evidence;
 }
 
 function readSpeaker(value: unknown): Speaker | null {
-  if (value === "customer" || value === "agent") {
-    return value;
+  const str = readStringValue(value);
+  if (str === "customer" || str === "agent") {
+    return str;
   }
   return null;
 }
 
 function readClosureType(value: unknown): ClosureType | string | null {
-  if (typeof value !== "string" || value.length === 0) {
+  const str = readStringValue(value);
+  if (str === null || str.length === 0) {
     return null;
   }
   // 금융·쇼핑 ClosureType — 4도메인 시절 코드, decisions/201로 다산 단일화되며
   // 신규 시나리오에는 쓰지 않는다. 파서는 그대로 받는다.
-  if (
-    value === "상품해지" ||
-    value === "보상" ||
-    value === "반품" ||
-    value === "교환"
-  ) {
-    return value;
-  }
-  // 다산 RequiredDocsType — 서비스명 문자열.
-  return value;
+  // 다산 RequiredDocsType 도 서비스명 문자열이라 검증 없이 그대로 통과시킨다.
+  return str;
 }
 
 function readVerdict(value: unknown): ClosureVerdict | null {
-  if (value === "approved" || value === "blocked") {
-    return value;
+  const str = readStringValue(value);
+  if (str === "approved" || str === "blocked") {
+    return str;
   }
   return null;
 }
 
 function readMaskType(value: unknown): MaskType | null {
+  const str = readStringValue(value);
   if (
-    value === "P1" ||
-    value === "P2" ||
-    value === "P3" ||
-    value === "P4" ||
-    value === "P5" ||
-    value === "P6" ||
-    value === "P7"
+    str === "P1" ||
+    str === "P2" ||
+    str === "P3" ||
+    str === "P4" ||
+    str === "P5" ||
+    str === "P6" ||
+    str === "P7"
   ) {
-    return value;
+    return str;
   }
   return null;
 }
 
 function readDomain(value: unknown): DemoDomain | undefined {
-  if (value === "dasan") {
-    return value;
+  const str = readStringValue(value);
+  if (str === "dasan") {
+    return str;
   }
   return undefined;
 }
 
+/**
+ * 2026-09-10 — 백엔드가 모든 응답 필드를 문자열로 보내기로 했다(장민석 확인,
+ * ngrok 실측). 그 밖의 타입이 오면 계약 위반이므로 조용히 넘기지 않고 즉시
+ * 알린다. 실제 값(number·boolean)으로의 변환은 이 함수를 통과한 뒤 각
+ * read*() 가 한다 — 나머지 앱 코드는 지금처럼 number·boolean 을 그대로 쓴다.
+ */
+function readStringValue(value: unknown): string | null {
+  // undefined(필드 없음)·null(명시적 없음, 예: RecommendResponse.domain) 은
+  // "타입이 틀렸다"가 아니라 "값이 없다"이므로 alert 대상이 아니다.
+  if (value === undefined || value === null) {
+    return null;
+  }
+  if (typeof value !== "string") {
+    alert("데이터 타입이 틀립니다");
+    return null;
+  }
+  return value;
+}
+
 function readString(body: Record<string, unknown>, key: string): string | null {
-  const value = body[key];
-  return typeof value === "string" ? value : null;
+  return readStringValue(body[key]);
 }
 
 function readNumber(body: Record<string, unknown>, key: string): number | null {
-  const value = body[key];
-  return typeof value === "number" && Number.isFinite(value) ? value : null;
+  const raw = readStringValue(body[key]);
+  if (raw === null) {
+    return null;
+  }
+  const num = Number(raw);
+  return Number.isFinite(num) ? num : null;
 }
 
 function readBoolean(body: Record<string, unknown>, key: string): boolean | null {
-  const value = body[key];
-  return typeof value === "boolean" ? value : null;
+  const raw = readStringValue(body[key]);
+  if (raw === "true") {
+    return true;
+  }
+  if (raw === "false") {
+    return false;
+  }
+  return null;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
