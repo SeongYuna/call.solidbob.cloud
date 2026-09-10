@@ -2,7 +2,21 @@ import { useState, type ReactElement } from "react";
 import { abuseTotal, hasDistress } from "../lib/blacklist/collectEvidence";
 import { getMockAgentAccount } from "../mock/agentAuth";
 import { useCallStore } from "../store/callStore";
-import type { BlacklistRequestItem } from "../types/contract";
+import type { BlacklistEntryItem, BlacklistRequestItem } from "../types/contract";
+
+/**
+ * DB `blacklist_entry`엔 `display_hint`가 없다(ERD 대조로 발견, 2026-09-10) —
+ * 요청(`blacklist_request`)에만 있어 `request_id`로 찾아 붙인다.
+ */
+function entryDisplayHint(
+  entry: BlacklistEntryItem,
+  requests: BlacklistRequestItem[],
+): string {
+  return (
+    requests.find((r) => r.request_id === entry.request_id)?.display_hint ??
+    "****"
+  );
+}
 
 type Tab = "requests" | "entries";
 
@@ -126,7 +140,9 @@ export function AdminBlacklistPanel({
                     <li key={entry.entry_id}>
                       {/* ⚠ 전체 식별자(HMAC)를 화면에 내지 않는다 — 표시는 힌트만
                           (`_project/decisions/205` ③). */}
-                      <span className="admin-ref">{entry.display_hint}</span>
+                      <span className="admin-ref">
+                        {entryDisplayHint(entry, requests)}
+                      </span>
                       <span className="admin-meta">
                         {new Date(entry.expires_at).toLocaleDateString("ko-KR")} 만료
                       </span>
@@ -152,7 +168,9 @@ export function AdminBlacklistPanel({
                   <ul className="admin-list is-muted">
                     {released.map((entry) => (
                       <li key={entry.entry_id}>
-                        <span className="admin-ref">{entry.display_hint}</span>
+                        <span className="admin-ref">
+                          {entryDisplayHint(entry, requests)}
+                        </span>
                         <span className="admin-meta">
                           {entry.released_by} · {entry.release_reason ?? "사유 없음"}
                         </span>

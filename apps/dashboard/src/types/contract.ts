@@ -303,6 +303,8 @@ export interface BlacklistRequestItem {
   requested_at: string;
   decided_by: string | null;
   decided_at: string | null;
+  /** 위 건수를 집계한 시각. DB `blacklist_request.evidence_snapshot_at`(2026-09-09 스키마). */
+  evidence_snapshot_at: string;
 }
 
 /**
@@ -312,7 +314,11 @@ export interface BlacklistRequestItem {
 export interface BlacklistEntryItem {
   entry_id: string;
   customer_ref: string;
-  display_hint: string;
+  /**
+   * ⚠ **DB `blacklist_entry` 테이블엔 이 컬럼이 없다**(2026-09-09 스키마 — ERD 대조로 발견).
+   * 표시용 힌트는 등록이 아니라 요청(`BlacklistRequestItem.display_hint`)에만 있다 —
+   * `request_id`로 원 요청을 찾아 붙인다.
+   */
   request_id: string;
   approved_at: string;
   /** 만료가 없으면 영구 표시가 된다(`decisions/205` ⑤). */

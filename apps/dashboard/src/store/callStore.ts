@@ -592,6 +592,7 @@ export const useCallStore = create<CallState>((set) => ({
   //    검토한 사람이 아무도 없게 된다. 서버 쪽에서도 도메인 규칙이 같은 것을 막는다
   //    (`server/apps/blacklist/domain/services/transitions.py`).
   submitBlacklistRequest: (input) => {
+    const now = new Date().toISOString();
     set((state) => ({
       blacklistRequests: [
         {
@@ -604,9 +605,10 @@ export const useCallStore = create<CallState>((set) => ({
           context_excerpt: input.contextExcerpt,
           evidence: input.evidence,
           status: "pending",
-          requested_at: new Date().toISOString(),
+          requested_at: now,
           decided_by: null,
           decided_at: null,
+          evidence_snapshot_at: now,
         },
         ...state.blacklistRequests,
       ],
@@ -651,7 +653,6 @@ export const useCallStore = create<CallState>((set) => ({
               {
                 entry_id: `ent-${Date.now()}`,
                 customer_ref: target.customer_ref,
-                display_hint: target.display_hint,
                 request_id: target.request_id,
                 approved_at: decidedAt,
                 expires_at: expires,
