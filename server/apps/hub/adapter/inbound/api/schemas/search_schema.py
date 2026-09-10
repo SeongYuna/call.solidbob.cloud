@@ -6,6 +6,8 @@ from __future__ import annotations
 
 from pydantic import BaseModel, Field
 
+from ._types import StrField
+
 from hub.app.dtos.search_dto import DEFAULT_TOP_K, MAX_TOP_K
 
 
@@ -18,7 +20,7 @@ class RetrievedDocSchema(BaseModel):
     doc_id: str = Field(description="knowledge-base 조항 ID. 항상 존재한다 — 출처 없는 결과는 내지 않는다 (B-6)")
     title: str
     snippet: str
-    score: float
+    score: StrField
 
 
 class SearchResponse(BaseModel):

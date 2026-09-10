@@ -8,9 +8,11 @@ from typing import Literal
 
 from pydantic import BaseModel, Field
 
+from ._types import StrField
+
 
 class KnowledgeGapItemSchema(BaseModel):
-    gap_id: int
+    gap_id: StrField
     module: Literal["B", "C", "F"] = Field(
         description="B 검색 실패 · C 놓친 위반 · F 통과했으나 사후 문제 (2.5절)"
     )
@@ -18,23 +20,23 @@ class KnowledgeGapItemSchema(BaseModel):
     status: Literal["open", "resolved"]
     created_at: datetime
     call_id: str | None = None
-    segment_id: int | None = None
-    closure_id: int | None = None
+    segment_id: str | None = None  # 7.3절 계약: 응답에서는 문자열 (DB 는 BIGINT, 경계에서만 변환 — 2026-09-10 조서희 요청)
+    closure_id: StrField | None = None
     domain: str | None = Field(default=None, description="통화에서 따라온다. 통화가 없는 신고는 null")
 
 
 class KnowledgeGapPageResponse(BaseModel):
     gaps: list[KnowledgeGapItemSchema]
-    total: int = Field(description="필터를 적용한 전체 건수. 이 페이지의 건수가 아니다")
-    limit: int
-    offset: int
+    total: StrField = Field(description="필터를 적용한 전체 건수. 이 페이지의 건수가 아니다")
+    limit: StrField
+    offset: StrField
 
 
 class GapCountSchema(BaseModel):
     key: str
-    open: int
-    resolved: int
-    total: int
+    open: StrField
+    resolved: StrField
+    total: StrField
 
 
 class KnowledgeGapSummaryResponse(BaseModel):
@@ -44,7 +46,7 @@ class KnowledgeGapSummaryResponse(BaseModel):
     by_domain: list[GapCountSchema] = Field(
         description="통화가 연결된 신고만 세어진다 — by_module 총합과 다를 수 있다"
     )
-    total: int = Field(description="모듈 축 기준 총계")
+    total: StrField = Field(description="모듈 축 기준 총계")
 
 
 class GapResolutionRequest(BaseModel):
@@ -54,5 +56,5 @@ class GapResolutionRequest(BaseModel):
 
 
 class GapResolutionResponse(BaseModel):
-    gap_id: int
+    gap_id: StrField
     status: Literal["open", "resolved"]

@@ -6,7 +6,7 @@
 
 이 파일은 앱을 조립만 한다. 라우터는 각 앱의 adapter/inbound/api/v1/ 에, 파이프라인 배선은 hub 에 둔다
 (docs/architecture.md). 스포크 구현체는 여기서 `app.dependency_overrides[<hub 프로바이더>] = <스포크 프로바이더>`
-로 꽂는다 — 허브는 스포크를 import 하지 않고(계약 5), 이 파일만 양쪽을 안다. 스포크는 아직 0개다.
+로 꽂는다 — 허브는 스포크를 import 하지 않고(계약 5), 이 파일만 양쪽을 안다.
 """
 
 from __future__ import annotations
@@ -23,6 +23,7 @@ from fastapi import FastAPI, Request  # noqa: E402
 from fastapi.middleware.cors import CORSMiddleware  # noqa: E402
 
 from core.config import Settings, load_settings  # noqa: E402
+from hub.adapter.inbound.api.v1.call_start_router import call_start_router  # noqa: E402
 from hub.adapter.inbound.api.v1.card_feedback_router import card_feedback_router  # noqa: E402
 from hub.adapter.inbound.api.v1.closure_router import closure_router  # noqa: E402
 from hub.adapter.inbound.api.v1.compliance_router import compliance_router  # noqa: E402
@@ -82,8 +83,59 @@ def _wire_retrieval(app: FastAPI, settings: Settings) -> str | None:
         else Elasticsearch(settings.elasticsearch_url)
     )
     port = EsBm25Retriever(client, index=SINGLE_INDEX)
-    app.dependency_overrides[get_retrieval_port] = lambda: port
+    # 기동 전에 이미 꽂힌 것(테스트 스텁 등)은 덮지 않는다 — lifespan 은 빈 자리만 채운다.
+    app.dependency_overrides.setdefault(get_retrieval_port, lambda: port)
     return "retrieval"
+
+
+def _wire_trigger(app: FastAPI) -> str | None:
+    """`ai/` 의 트리거 판정(B-1)을 꽂는다. 꽂았으면 이름을, 못 꽂았으면 None.
+
+    검색과 달리 외부 자원이 없어 설정 조건이 없다. `ai/provider.py` 의 팩토리를 그대로 쓴다 —
+    구현 선택(지금은 `IsFinalTrigger` v1)은 `ai/` 몫이고 여기는 꽂기만 한다.
+
+    ⚠ 발동 시각(`trigger_at_ms`)은 **모형값**이다 — 이벤트 도착 시각이 계약에 없어
+    "발화 종료 + 346ms(V4 실측)" 로 채운다. 발동 여부 판정은 진짜다. 평가 하네스는 이 포트를
+    일부러 꽂지 않는다(절대 원칙 10). `ai/apps/retrieval/adapter/outbound/is_final_trigger.py` 참고.
+    """
+    sys.path.insert(0, str(AI_APPS))
+    sys.path.insert(0, str(AI_APPS.parent))  # `ai/provider.py` 를 `provider` 로 import
+    try:
+        from provider import build_trigger_provider  # noqa: PLC0415
+    except ModuleNotFoundError:
+        return None  # ai/ 를 함께 배포하지 않았다 — 501 로 남는다
+
+    from hub.dependencies.trigger_provider import get_trigger_port  # noqa: PLC0415
+
+    app.dependency_overrides.setdefault(get_trigger_port, build_trigger_provider())
+    return "trigger"
+
+
+def _install_missing_index_handler(app: FastAPI) -> None:
+    """ES 인덱스가 없을 때 500 대신 **503 + 이유**를 돌려준다.
+
+    운영 ES 에 지식베이스가 적재되지 않은 채로 검색 스포크가 꽂히면 `/hub/search`·
+    `/hub/recommendations` 가 `index_not_found_exception` 으로 500 이 났다(2026-09-08~09 실측).
+    500 은 "코드가 틀렸다"로 읽히지만 실제로는 "적재가 안 됐다"이고, 고치는 사람이 다르다.
+    기동 시 ping 으로 미리 막지 않는 이유는 `_wire_retrieval` 주석과 같다 — ES 가 잠깐
+    내려갔다고 마스킹까지 멈추면 안 된다.
+    """
+    try:
+        from elasticsearch import NotFoundError  # noqa: PLC0415
+    except ModuleNotFoundError:
+        return
+
+    from fastapi.responses import JSONResponse  # noqa: PLC0415
+
+    async def _handler(_: Request, exc: NotFoundError) -> JSONResponse:
+        return JSONResponse(
+            status_code=503,
+            content={"detail": "검색 인덱스가 없다 — 지식베이스를 적재해야 한다 "
+                               "(scripts/index_knowledge_base.py --to-es). "
+                               f"ES: {getattr(exc, 'message', str(exc))}"},
+        )
+
+    app.add_exception_handler(NotFoundError, _handler)
 
 
 @asynccontextmanager
@@ -93,9 +145,9 @@ async def lifespan(app: FastAPI):
 
     SPOKES.clear()
     SPOKES.extend(_BUILTIN_SPOKES)
-    wired = _wire_retrieval(app, settings)
-    if wired:
-        SPOKES.append(wired)
+    for wired in (_wire_retrieval(app, settings), _wire_trigger(app)):
+        if wired:
+            SPOKES.append(wired)
     yield
 
 
@@ -114,7 +166,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+_install_missing_index_handler(app)
 
+app.include_router(call_start_router)
 app.include_router(card_feedback_router)
 app.include_router(closure_router)
 app.include_router(compliance_router)
