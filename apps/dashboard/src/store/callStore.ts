@@ -58,11 +58,12 @@ export type CallPhase = "live" | "wrapup";
 /** 왼쪽 자막이 실시간인지, 상담기록인지. 실시간 발화 배열은 건드리지 않는다. */
 export type TranscriptViewMode = "live" | "history";
 
-/** 로그인 직후 대기인지, 통화 어시스트인지. */
-// 2026-09-09 `admin` 이 늘었다 — J-3 관리자 대시보드(`_project/decisions/204`).
-// 상담원 화면과 같은 앱에 두는 이유: 데모에서 두 역할을 오가며 보여줘야 하고,
-// 라우터가 없는 구조라 shell 하나로 전환하는 것이 기존 패턴과 같다.
-export type AgentShell = "standby" | "assist" | "admin";
+/**
+ * 로그인 직후 대기인지, 통화 어시스트인지.
+ * 2026-09-10 — 관리자 화면(J-3)은 `/admin` 별도 경로로 분리했다. 상담원
+ * 대시보드와 같은 shell 을 쓰지 않는다 — 버튼으로 오가지 않는다.
+ */
+export type AgentShell = "standby" | "assist";
 
 /** 통화 후 요약에서 돌아갈 자리. */
 export type SummaryReturn = "standby" | "assist";
@@ -186,7 +187,6 @@ export interface CallState {
   ) => void;
   /** J-4 — 해제. 행을 지우지 않고 `released_at` 을 채운다(절대 원칙 8). */
   releaseBlacklistEntry: (entryId: string, releasedBy: string, reason: string) => void;
-  enterAdmin: () => void;
 }
 
 const emptyCall = {
@@ -688,9 +688,6 @@ export const useCallStore = create<CallState>((set) => ({
     }));
   },
 
-  enterAdmin: () => {
-    set({ shell: "admin", viewMode: "live" });
-  },
 }));
 
 /**
