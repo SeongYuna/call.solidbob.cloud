@@ -7,6 +7,8 @@ from typing import Literal
 
 from pydantic import BaseModel, Field
 
+from ._types import StrField
+
 from .recommendation_schema import SourceSchema
 
 
@@ -20,7 +22,7 @@ class ClosureCheckRequest(BaseModel):
 class ClosureVerdictResponse(BaseModel):
     call_id: str
     closure_type: str
-    evidence: dict[str, bool]
+    evidence: dict[str, StrField]
     verdict: Literal["approved", "blocked"]
     missing: list[str] = Field(description="evidence 중 false 인 키만")
     reason: str | None = None

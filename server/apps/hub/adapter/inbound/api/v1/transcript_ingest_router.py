@@ -34,7 +34,7 @@ async def ingest_transcript(
     )
     return TranscriptEventSchema(
         call_id=event.call_id,
-        segment_id=event.segment_id,
+        segment_id=str(event.segment_id),
         speaker=event.speaker,
         text=event.text,
         masked=[MaskedSpanSchema(type=s.type, span=s.span) for s in event.masked],

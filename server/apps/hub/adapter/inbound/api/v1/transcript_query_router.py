@@ -33,7 +33,7 @@ async def list_transcript(
         call_id=page.call_id,
         segments=[
             TranscriptSegmentSchema(
-                segment_id=s.segment_id,
+                segment_id=str(s.segment_id),
                 speaker=s.speaker,
                 text=s.text,
                 masked=[MaskedSpanSchema(type=m.type, span=m.span) for m in s.masked],

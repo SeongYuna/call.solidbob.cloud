@@ -35,7 +35,9 @@ def test_health_when_nothing_configured(monkeypatch):
         body = client.get("/health").json()
     assert body["postgres_configured"] is False and body["elasticsearch_configured"] is False
     # 규칙 기반 스포크는 외부 자원이 없어도 붙는다. 검색은 ES 가 없으면 안 붙고 501 로 남는다.
-    assert body["spokes"] == ["masking", "closure_gate"]
+    # 트리거(B-1)는 외부 자원이 없어 `ai/` 만 있으면 붙는다 — 그래서 앞 둘만 고정한다.
+    assert body["spokes"][:2] == ["masking", "closure_gate"]
+    assert "retrieval" not in body["spokes"]
 
 
 @pytest.mark.skipif(not AI_RETRIEVAL_AVAILABLE, reason="elasticsearch 패키지 없음 — 검색 스포크가 안 꽂힌다")

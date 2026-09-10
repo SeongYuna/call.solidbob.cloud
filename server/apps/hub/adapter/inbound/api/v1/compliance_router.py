@@ -39,7 +39,7 @@ async def check_compliance(
 
     return ComplianceCheckResponse(
         call_id=result.call_id,
-        segment_id=result.segment_id,
+        segment_id=str(result.segment_id),
         findings=[
             ComplianceFindingSchema(
                 rule_code=f.rule_code,

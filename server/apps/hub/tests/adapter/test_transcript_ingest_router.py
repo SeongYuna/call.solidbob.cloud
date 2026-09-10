@@ -39,8 +39,8 @@ def test_returns_masked_contract_when_masking_registered():
     assert r.status_code == 200
     body = r.json()
     assert "01012345678" not in body["text"]
-    assert body["masked"] == [{"type": "P4", "span": [6, 17]}]
-    assert body["segment_id"] == 1 and body["utterance_end_ms"] == 2600
+    assert body["masked"] == [{"type": "P4", "span": ["6", "17"]}]
+    assert body["segment_id"] == "1" and body["utterance_end_ms"] == "2600"  # 응답은 전부 문자열 (2026-09-10)
 
 
 def test_myself_is_served():

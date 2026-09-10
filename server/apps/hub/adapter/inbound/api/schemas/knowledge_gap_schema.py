@@ -5,6 +5,8 @@ from typing import Literal
 
 from pydantic import BaseModel, Field
 
+from ._types import StrField
+
 
 class KnowledgeGapRequest(BaseModel):
     module: Literal["B", "C", "F"] = Field(
@@ -17,5 +19,5 @@ class KnowledgeGapRequest(BaseModel):
 
 
 class KnowledgeGapResponse(BaseModel):
-    gap_id: int
+    gap_id: StrField
     module: Literal["B", "C", "F"]

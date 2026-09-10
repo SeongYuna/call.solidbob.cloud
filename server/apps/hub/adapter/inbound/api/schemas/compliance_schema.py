@@ -22,7 +22,7 @@ class ComplianceFindingSchema(BaseModel):
 
 class ComplianceCheckResponse(BaseModel):
     call_id: str
-    segment_id: int
+    segment_id: str  # 7.3절 계약: 응답에서는 문자열 (DB 는 BIGINT, 경계에서만 변환 — 2026-09-10 조서희 요청)
     findings: list[ComplianceFindingSchema] = Field(
         description="빈 배열은 '잡힌 것이 없음'이지 '안전함'이 아니다 (부록 A-1)"
     )

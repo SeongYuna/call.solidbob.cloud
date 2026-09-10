@@ -6,6 +6,7 @@ frozen dataclass 를 쓴다: 값 객체이고, pydantic 스키마는 HTTP 표면
 판정·규칙은 여기 두지 않는다 — DTO 는 나르기만 한다. F-2 판정은 closure_gate 스포크의 domain 이 한다.
 """
 
+from .call_start_dto import CallDomain, CallStartCommand, CallStarted
 from .call_summary_dto import CallSummaryDraft, FollowUpAction
 from .closure_dto import ClosureCheckCommand
 from .closure_verdict_dto import ClosureType, ClosureVerdict, Verdict
@@ -23,6 +24,9 @@ from .transcript_ingest_dto import TranscriptIngestCommand
 from .trigger_decision_dto import TriggerDecision
 
 __all__ = [
+    "CallDomain",
+    "CallStartCommand",
+    "CallStarted",
     "CallSummaryDraft",
     "Card",
     "ClosureCheckCommand",
