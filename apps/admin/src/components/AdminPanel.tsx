@@ -52,6 +52,7 @@ export function AdminPanel({
   const entries = useAdminStore((s) => s.entries);
   const decide = useAdminStore((s) => s.decideRequest);
   const release = useAdminStore((s) => s.releaseEntry);
+  const extend = useAdminStore((s) => s.extendEntry);
   const knowledgeGapLog = useAdminStore((s) => s.knowledgeGapLog);
   const callGuardLog = useAdminStore((s) => s.callGuardLog);
   const completedCallsTotal = useAdminStore((s) => s.completedCallsTotal);
@@ -119,8 +120,9 @@ export function AdminPanel({
           {tab === "requests" ? (
             <RequestsTab
               requests={requests}
-              onApprove={(requestId) => {
-                decide(requestId, true, admin);
+              defaultExpiryMonths={blacklistExpiryMonths}
+              onApprove={(requestId, expiryMonths) => {
+                decide(requestId, true, admin, expiryMonths);
               }}
               onReject={(requestId) => {
                 decide(requestId, false, admin);
@@ -131,8 +133,12 @@ export function AdminPanel({
             <EntriesTab
               entries={entries}
               requests={requests}
+              defaultExpiryMonths={blacklistExpiryMonths}
               onRelease={(entryId) => {
                 release(entryId, admin, "관리자 해제");
+              }}
+              onExtend={(entryId, months) => {
+                extend(entryId, months);
               }}
             />
           ) : null}

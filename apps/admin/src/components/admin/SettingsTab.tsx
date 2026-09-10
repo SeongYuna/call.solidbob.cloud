@@ -49,7 +49,7 @@ export function SettingsTab({
 
       <div className="wrapup-card admin-settings-card">
         <div className="wrapup-card-head">
-          <h3>J-4 블랙리스트 등록 만료 기간</h3>
+          <h3>J-4 블랙리스트 등록 만료 기간 — 기본값</h3>
         </div>
         <label className="admin-settings-field">
           <span>승인 후 (개월) 뒤 자동 만료</span>
@@ -67,9 +67,11 @@ export function SettingsTab({
           />
         </label>
         <p className="admin-help">
-          만료가 없으면 영구 표시가 됩니다(`decisions/205` ⑤). 이 값은 실제로
-          <strong> 지금부터 승인하는 요청에 바로 적용</strong>됩니다 — 이미
-          등록된 항목의 만료일은 안 바뀝니다.
+          만료가 없으면 영구 표시가 됩니다(`decisions/205` ⑤). 이건 **기본값**일
+          뿐입니다 — 사안마다 심각도가 다르므로, 실제 기간은 <strong>승인
+          카드에서 건마다 조정</strong>하거나 <strong>블랙리스트 탭에서 등록 후
+          연장·단축</strong>합니다. 여기서 바꾼 값은 앞으로 새 승인 카드에
+          미리 채워지는 값만 바뀝니다.
         </p>
       </div>
     </section>

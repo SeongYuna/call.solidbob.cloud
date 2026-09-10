@@ -1,4 +1,4 @@
-import type { ReactElement } from "react";
+import { useState, type ReactElement } from "react";
 import { abuseTotal, hasDistress } from "../../lib/blacklist/collectEvidence";
 import type { BlacklistRequestItem } from "../../types/blacklist";
 
@@ -11,11 +11,14 @@ import type { BlacklistRequestItem } from "../../types/blacklist";
  */
 export function RequestsTab({
   requests,
+  defaultExpiryMonths,
   onApprove,
   onReject,
 }: {
   requests: BlacklistRequestItem[];
-  onApprove: (requestId: string) => void;
+  /** 설정 탭의 기본값 — 승인 카드에 미리 채워지지만 건마다 바꿀 수 있다. */
+  defaultExpiryMonths: number;
+  onApprove: (requestId: string, expiryMonths: number) => void;
   onReject: (requestId: string) => void;
 }): ReactElement {
   const pending = requests.filter((r) => r.status === "pending");
@@ -30,8 +33,9 @@ export function RequestsTab({
           <RequestCard
             key={request.request_id}
             request={request}
-            onApprove={() => {
-              onApprove(request.request_id);
+            defaultExpiryMonths={defaultExpiryMonths}
+            onApprove={(months) => {
+              onApprove(request.request_id, months);
             }}
             onReject={() => {
               onReject(request.request_id);
@@ -68,16 +72,21 @@ export function RequestsTab({
 
 function RequestCard({
   request,
+  defaultExpiryMonths,
   onApprove,
   onReject,
 }: {
   request: BlacklistRequestItem;
-  onApprove: () => void;
+  defaultExpiryMonths: number;
+  onApprove: (expiryMonths: number) => void;
   onReject: () => void;
 }): ReactElement {
   const abuse = abuseTotal(request.evidence);
   const distress = hasDistress(request.evidence);
   const minutes = Math.round(request.evidence.call_duration_s / 60);
+  // 건마다 심각도가 다르다 — 기본값으로 미리 채우되 승인 전에 바꿀 수 있다
+  // (2026-09-10, "고객 각각으로는 안 되나" 피드백).
+  const [expiryMonths, setExpiryMonths] = useState(defaultExpiryMonths);
 
   return (
     <article className="wrapup-card admin-request">
@@ -118,11 +127,33 @@ function RequestCard({
       {/* ⚠ 마스킹된 자막이다. 원문이 아니다 — DASAN-MANUAL-5.5 · C-5. */}
       <p className="admin-excerpt">{request.context_excerpt}</p>
 
+      <label className="admin-inline-field">
+        <span>승인 시 등록 기간 (개월)</span>
+        <input
+          type="number"
+          min={1}
+          max={24}
+          value={expiryMonths}
+          onChange={(event) => {
+            const next = Number(event.target.value);
+            if (Number.isFinite(next) && next >= 1) {
+              setExpiryMonths(next);
+            }
+          }}
+        />
+      </label>
+
       <div className="blacklist-actions">
         <button type="button" className="btn-outline" onClick={onReject}>
           반려
         </button>
-        <button type="button" className="btn-replay" onClick={onApprove}>
+        <button
+          type="button"
+          className="btn-replay"
+          onClick={() => {
+            onApprove(expiryMonths);
+          }}
+        >
           승인
         </button>
       </div>

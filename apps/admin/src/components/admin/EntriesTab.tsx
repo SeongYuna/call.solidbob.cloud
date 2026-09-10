@@ -1,4 +1,4 @@
-import type { ReactElement } from "react";
+import { useState, type ReactElement } from "react";
 import type { BlacklistEntryItem, BlacklistRequestItem } from "../../types/blacklist";
 
 /**
@@ -20,11 +20,15 @@ function entryDisplayHint(
 export function EntriesTab({
   entries,
   requests,
+  defaultExpiryMonths,
   onRelease,
+  onExtend,
 }: {
   entries: BlacklistEntryItem[];
   requests: BlacklistRequestItem[];
+  defaultExpiryMonths: number;
   onRelease: (entryId: string) => void;
+  onExtend: (entryId: string, months: number) => void;
 }): ReactElement {
   const active = entries.filter((e) => e.released_at === null);
   const released = entries.filter((e) => e.released_at !== null);
@@ -40,25 +44,18 @@ export function EntriesTab({
       ) : (
         <ul className="admin-list">
           {active.map((entry) => (
-            <li key={entry.entry_id}>
-              {/* ⚠ 전체 식별자(HMAC)를 화면에 내지 않는다 — 표시는 힌트만
-                  (`_project/decisions/205` ③). */}
-              <span className="admin-ref">
-                {entryDisplayHint(entry, requests)}
-              </span>
-              <span className="admin-meta">
-                {new Date(entry.expires_at).toLocaleDateString("ko-KR")} 만료
-              </span>
-              <button
-                type="button"
-                className="btn-outline admin-release"
-                onClick={() => {
-                  onRelease(entry.entry_id);
-                }}
-              >
-                해제
-              </button>
-            </li>
+            <EntryRow
+              key={entry.entry_id}
+              entry={entry}
+              displayHint={entryDisplayHint(entry, requests)}
+              defaultExpiryMonths={defaultExpiryMonths}
+              onRelease={() => {
+                onRelease(entry.entry_id);
+              }}
+              onExtend={(months) => {
+                onExtend(entry.entry_id, months);
+              }}
+            />
           ))}
         </ul>
       )}
@@ -83,5 +80,64 @@ export function EntriesTab({
         </>
       ) : null}
     </section>
+  );
+}
+
+function EntryRow({
+  entry,
+  displayHint,
+  defaultExpiryMonths,
+  onRelease,
+  onExtend,
+}: {
+  entry: BlacklistEntryItem;
+  displayHint: string;
+  defaultExpiryMonths: number;
+  onRelease: () => void;
+  onExtend: (months: number) => void;
+}): ReactElement {
+  // 등록 하나하나 심각도가 다르다 — 연장·단축 기간을 건마다 따로 잡는다
+  // (2026-09-10, "고객 각각으로는 안 되나" 피드백).
+  const [months, setMonths] = useState(defaultExpiryMonths);
+
+  return (
+    <li className="admin-entry-row">
+      <div className="admin-entry-row-main">
+        {/* ⚠ 전체 식별자(HMAC)를 화면에 내지 않는다 — 표시는 힌트만
+            (`_project/decisions/205` ③). */}
+        <span className="admin-ref">{displayHint}</span>
+        <span className="admin-meta">
+          {new Date(entry.expires_at).toLocaleDateString("ko-KR")} 만료
+        </span>
+      </div>
+      <div className="admin-entry-row-actions">
+        <input
+          type="number"
+          min={1}
+          max={24}
+          className="admin-entry-extend-input"
+          aria-label="연장·단축할 기간 (개월)"
+          value={months}
+          onChange={(event) => {
+            const next = Number(event.target.value);
+            if (Number.isFinite(next) && next >= 1) {
+              setMonths(next);
+            }
+          }}
+        />
+        <button
+          type="button"
+          className="btn-outline admin-release"
+          onClick={() => {
+            onExtend(months);
+          }}
+        >
+          지금부터 {months}개월로 재설정
+        </button>
+        <button type="button" className="btn-outline admin-release" onClick={onRelease}>
+          해제
+        </button>
+      </div>
+    </li>
   );
 }

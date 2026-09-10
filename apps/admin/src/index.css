@@ -2874,7 +2874,31 @@ button {
   border: 1px solid var(--border, rgba(127, 127, 127, 0.35));
 }
 .admin-badge.is-approved { border-color: var(--accent, #3b82f6); }
-.admin-release { padding: 4px 10px; font-size: 0.82rem; }
+.admin-release { padding: 4px 10px; font-size: 0.82rem; white-space: nowrap; }
+
+/* 승인 카드 안의 건별 등록 기간 입력, 등록 목록의 연장·단축 입력 —
+   전역 기본값을 건마다 다르게 조정할 수 있게 한다(2026-09-10). */
+.admin-inline-field {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 4px 0 0;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+.admin-inline-field input,
+.admin-entry-extend-input {
+  width: 64px;
+  padding: 6px 8px;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+}
+.admin-entry-row { flex-wrap: wrap; justify-content: space-between; }
+.admin-entry-row-main { display: flex; align-items: center; gap: 12px; flex: 1; min-width: 140px; }
+.admin-entry-row-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 
 /* 현황판 — .standby-kpi 카드와 같은 무게감(큰 숫자 + 배지)을 쓴다. */
 .wallboard-grid {
