@@ -50,15 +50,26 @@ infra/ (Docker, AWS, PostgreSQL, Elasticsearch)
 [Elasticsearch] nori(BM25) + dense_vector + RRF
 ```
 
-| 담당자 | 역할 | 소유 디렉토리 | 근거 |
+| 담당자 | 역할 | 주 담당 디렉터리 | 근거 |
 |---|---|---|---|
 | **정성윤** | AWS·인프라 | `services/gateway/`, `infra/`, CI 운영 | [팀 분업](/docs/07/) |
 | **류준** | 백엔드·AI 중 **AI** | `ai/` — 데이터셋 모델 학습·청킹·BM25·리랭크·임베딩·LangChain/LangGraph·평가 하네스 | `_project/decisions/012` |
 | **장민석** | 백엔드·AI 중 **서버** | `server/` — 파이프라인 구축·클린 아키텍처·계약(포트·DTO)·요청 경로 배선 | `_project/decisions/012` |
 | **조서희** | 프론트엔드 | `apps/dashboard/`(상담원: 자막 · 이용약관·충족요건), 결과 시각화(matplotlib) | [팀 분업](/docs/07/), `_project/decisions/014` |
 
-> **브랜치 이름 = 담당 디렉터리 이름** (2026-08-26 개명, `_project/decisions/015`) —
-> 류준은 브랜치 `ai` 에서 `ai/` 를, 장민석은 브랜치 `server` 에서 `server/` 를 고친다.
+> ⚠ **«주 담당» 은 잠금이 아니다 (2026-09-10, `_project/decisions/302`).** 위 표의 세 번째 열은
+> **주로 누가 보는가**를 가리키는 표기이지 편집 권한이 아니다 —
+> **`ai/`·`server/`·`infra/`(+ `services/gateway/`·`db/`·`golden-set/`) 는 정성윤·류준·장민석
+> 누구나 고친다.** 기능 하나가 세 디렉터리에 걸치는데 담당이 갈려 **호출부만 있고 구현체가 없는
+> 구멍**이 계속 남았기 때문이다. **전담이 남는 곳은 조서희의 프론트엔드(`apps/`) 하나뿐이다.**
+>
+> 잠금 대신 남는 것은 기계 검사와 사고 절차다 — `.importlinter` 계층 계약 ·
+> `infra_runbook_guard.py`(배포에 닿는 파일은 담당자든 아니든 런북을 먼저 읽는다) ·
+> 손대기 전 `grep` 으로 영향 범위 확인(`decisions/023`).
+
+> **브랜치 이름은 담당 디렉터리 이름에서 왔다** (2026-08-26 개명, `_project/decisions/015`) —
+> 류준은 브랜치 `ai`, 장민석은 브랜치 `server` 에서 일한다. **이름이 곧 작업 범위는 아니다** —
+> 한 브랜치에서 위 셋을 전부 고치고 한 PR 로 넣는다(`decisions/302`).
 > 브랜치는 넷을 유지한다(`_project/decisions/011`). 개명해도 main 룰셋은 그대로다 —
 > 필수 통과 검사 이름은 `test.yml` 의 **job 이름**(`server`·`ai`·`jekyll`)이지 브랜치 이름이
 > 아니다. 브랜치 이름이 걸린 곳은 `test.yml` 의 push 트리거 목록 하나뿐이다.
