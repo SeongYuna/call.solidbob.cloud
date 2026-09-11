@@ -216,3 +216,42 @@ test("STT 오류는 채널을 닫고 이유를 알린다", async () => {
   assert.match(reasons[0] ?? "", /STT 오류/);
   assert.equal(channel.pushAudio(silence(0.1)), false);
 });
+
+// ── 글자 채널 (/dev, decisions/109) ──
+
+test("글자 채널 — 구글을 부르지 않고, 통화 기록에 엔진을 web-speech 로 적는다", async () => {
+  const { registry, hub, stt, broadcaster } = setup();
+  const result = await registry.open({ callId: "test-t", speaker: "customer", sampleRate: 16000, channelCount: 1, source: "text" });
+  assert.equal(result.ok, true);
+  const channel = (result as { ok: true; channel: Channel }).channel;
+  assert.equal(stt.streams.length, 0, "글자 채널이 STT 스트림을 열었다");
+  assert.equal(hub.calls[0]?.stt_engine, "web-speech");
+
+  assert.equal(channel.pushText("전입신고 서류", false), true);
+  assert.equal(channel.pushText("전입신고 서류 뭐 필요해요 010-1234-5678", true), true);
+  assert.equal(channel.pushAudio(silence(0.1)), false, "글자 채널은 오디오를 받지 않는다");
+  await channel.close();
+
+  assert.deepEqual(hub.ingested.map((r) => [r.segment_id, r.is_final]), [[1, false], [1, true]]);
+  const published = JSON.stringify(broadcaster.messages);
+  assert.ok(!published.includes("1234"), "SEC-1 — 글자 채널도 서버 마스킹을 거친 것만 흘린다");
+  assert.equal(hub.recommended[0]?.text, "전입신고 서류 뭐 필요해요 ***-****-****");
+});
+
+test("글자 채널은 STT 캡과 무관하다 — 캡이 비어 있어도 열린다", async () => {
+  const { registry, budget } = setup({ caps: { perDay: 0, perMonth: 0 } });
+  const result = await registry.open({ callId: "test-t2", speaker: "agent", sampleRate: 16000, channelCount: 1, source: "text" });
+  assert.equal(result.ok, true);
+  const channel = (result as { ok: true; channel: Channel }).channel;
+  channel.pushText("네", true);
+  await channel.close();
+  assert.equal(budget.snapshot().usedTodaySeconds, 0);
+});
+
+test("글자 채널은 구글 키가 없어도 열린다", async () => {
+  const { registry, stt } = setup();
+  stt.unavailableReason = "키 없음";
+  const result = await registry.open({ callId: "test-t3", speaker: "agent", sampleRate: 16000, channelCount: 1, source: "text" });
+  assert.equal(result.ok, true);
+  await (result as { ok: true; channel: Channel }).channel.close();
+});

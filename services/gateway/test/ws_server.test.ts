@@ -328,3 +328,108 @@ test("대기 중인 연결에 ping 을 보낸다 — 프록시가 조용한 연�
     await gw.close();
   }
 });
+
+// ── /dev 글자 입력 (decisions/109) ──
+
+function openWith(url: string, opts: { headers?: Record<string, string>; protocols?: string[] } = {}): Promise<WebSocket> {
+  return new Promise((resolve, reject) => {
+    const ws = new WebSocket(url, opts.protocols ?? [], { headers: opts.headers ?? {} });
+    ws.once("open", () => resolve(ws));
+    ws.once("unexpected-response", (_req, res) => reject(new Error(`HTTP ${res.statusCode}`)));
+    ws.once("error", reject);
+  });
+}
+
+test("GET /dev · /gateway/dev — 페이지를 CSP·틀 금지·캐시 금지 헤더로 준다 (토큰 없이도 페이지는 열린다)", async () => {
+  const gw = await startGateway({ trustLoopback: false, tokens: { ingest: INGEST, view: VIEW } });
+  try {
+    for (const path of ["/dev", "/gateway/dev"]) {
+      const res = await fetch(`http://${gw.base}${path}`);
+      assert.equal(res.status, 200);
+      const csp = res.headers.get("content-security-policy") ?? "";
+      assert.match(csp, /script-src 'sha256-/);
+      assert.doesNotMatch(csp, /script-src[^;]*unsafe-inline/, "스크립트를 unsafe-inline 으로 열었다");
+      assert.match(csp, /frame-ancestors 'none'/);
+      assert.equal(res.headers.get("cache-control"), "no-store");
+      const html = await res.text();
+      assert.match(html, /\/dev\/text/);
+      assert.ok(!html.includes(INGEST) && !html.includes(VIEW), "페이지에 토큰이 들어갔다");
+    }
+  } finally {
+    await gw.close();
+  }
+});
+
+test("/dev/text — 글자가 서버 마스킹을 거쳐 대시보드로 간다", async () => {
+  const gw = await startGateway();
+  try {
+    const dashboard = await connect(`ws://${gw.base}/dashboard`); // 조서희 님 대시보드 경로 별칭
+    const received: Array<{ type: string; payload: Record<string, unknown> }> = [];
+    dashboard.on("message", (d) => received.push(JSON.parse(d.toString())));
+    await waitFor(() => gw.dashboards.size === 1);
+
+    const dev = await connect(`ws://${gw.base}/dev/text?call_id=test-web-1&speaker=customer`);
+    dev.send(JSON.stringify({ text: "제 번호는", is_final: false }));
+    dev.send(JSON.stringify({ text: "제 번호는 010-1234-5678 이에요", is_final: true }));
+    await waitFor(() => received.filter((m) => m.type === "transcript").length >= 2 && received.some((m) => m.type === "recommendation"));
+
+    assert.equal(gw.hub.calls[0]?.stt_engine, "web-speech");
+    assert.ok(!JSON.stringify(received).includes("1234"), "원문이 대시보드로 갔다");
+    const final = received.find((m) => m.type === "transcript" && m.payload["is_final"] === "true");
+    assert.equal(final?.payload["text"], "제 번호는 ***-****-**** 이에요");
+    assert.ok(received.every((m) => allLeavesStringOrNull(m.payload)));
+
+    const closed = nextClose(dev);
+    dev.send(JSON.stringify({ type: "end" }));
+    assert.equal((await closed).code, 1000);
+    dashboard.close();
+  } finally {
+    await gw.close();
+  }
+});
+
+test("/dev/text 는 과금 문 토큰만 받는다 — 서브프로토콜로 내면 열리고 callguard 만 되돌린다", async () => {
+  const gw = await startGateway({ trustLoopback: false, tokens: { ingest: INGEST, view: VIEW } });
+  const url = `ws://${gw.base}/dev/text?call_id=test-web-2&speaker=agent`;
+  try {
+    const ws = await openWith(url, { protocols: ["callguard", `bearer.${INGEST}`] });
+    assert.equal(ws.protocol, "callguard", "토큰 항목을 되돌려 줬다");
+    ws.close();
+    await assert.rejects(openWith(url), /HTTP 401/);
+    await assert.rejects(openWith(url, { protocols: ["callguard", `bearer.${VIEW}`] }), /HTTP 401/, "뷰 토큰으로 전사를 쓸 수 있다");
+    await assert.rejects(openWith(`${url}&token=${INGEST}`), /HTTP 401/, "비밀을 URL 로 받았다");
+  } finally {
+    await gw.close();
+  }
+});
+
+test("루프백이어도 프록시 헤더가 붙으면 토큰을 요구한다 — ngrok 으로 열어도 문이 안 열린다", async () => {
+  const gw = await startGateway({ tokens: { ingest: INGEST, view: VIEW } }); // 루프백 신뢰는 켜 둔다(기본)
+  try {
+    assert.equal(await upgradeStatus(`ws://${gw.base}/ws`), "open", "직접 온 루프백은 받는다");
+    assert.equal(await upgradeStatus(`ws://${gw.base}/ws`, { "x-forwarded-for": "203.0.113.9" }), 401);
+    assert.equal(
+      await upgradeStatus(`ws://${gw.base}/dev/text?call_id=test-n&speaker=agent`, { "x-forwarded-for": "203.0.113.9" }),
+      401,
+    );
+  } finally {
+    await gw.close();
+  }
+});
+
+test("/dev/text — 오디오·형식 틀린 메시지는 1008 로 닫는다", async () => {
+  const gw = await startGateway();
+  try {
+    const a = await connect(`ws://${gw.base}/dev/text?call_id=test-web-3&speaker=agent`);
+    const ca = nextClose(a);
+    a.send(silence(0.1));
+    assert.equal((await ca).code, 1008);
+
+    const b = await connect(`ws://${gw.base}/dev/text?call_id=test-web-4&speaker=agent`);
+    const cb = nextClose(b);
+    b.send(JSON.stringify({ text: "x".repeat(2001), is_final: true }));
+    assert.equal((await cb).code, 1008);
+  } finally {
+    await gw.close();
+  }
+});

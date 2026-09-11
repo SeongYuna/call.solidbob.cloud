@@ -1449,6 +1449,17 @@ curl --http1.1 -s -o /dev/null -w '%{http_code}\n' -H 'Connection: Upgrade' -H '
 - **토큰은 사람이 만들지 않는다.** 배포가 없을 때만 인스턴스 안에서 만든다(`secret.example.yaml` ③). 꺼내는 법·교체법도 거기 있다.
   `/ingest` 토큰(진짜 비밀)은 오디오 생산자에게만, `/ws` 토큰은 대시보드에 준다 — **둘을 같은 값으로 두지 않는다**
 - 12번이 `true` 넷이 아니면 게이트웨이는 떠 있어도 **전부 거절한다**(fail-closed). 릴리스 스모크 테스트가 이것을 본다
+- `/gateway/dev` 는 브라우저 음성 인식으로 테스트하는 개발용 페이지다(`decisions/109`). **페이지는 토큰 없이 열리지만**
+  (비밀이 없다) 그 페이지가 붙는 `/gateway/dev/text` 는 `/ingest` 와 같은 토큰을 요구한다 — 14번으로 확인한다:
+  ```bash
+  # 14. 개발용 페이지 — 기대: 200, 그리고 글자 입력 문은 401
+  curl -s -o /dev/null -w '%{http_code}\n' $B/gateway/dev
+  curl --http1.1 -s -o /dev/null -w '%{http_code}\n' -H 'Connection: Upgrade' -H 'Upgrade: websocket' \
+    -H 'Sec-WebSocket-Version: 13' -H 'Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==' "$B/gateway/dev/text?call_id=test-x&speaker=agent"
+  ```
+- ⚠ **새 이미지 저장소는 Docker Hub 에서 공개로 바꾼다.** k3s 는 인증 없이 받는다. 2026-09-11 첫 게이트웨이 배포가
+  비공개 저장소(익명 pull 401) 때문에 ImagePullBackOff 로 멈췄고, 10분이 지나 Deployment 가 «진행 기한 초과» 로 표시돼
+  **공개로 바꾼 뒤 첫 재실행도 `rollout status` 가 바로 실패했다** — 파드가 뜬 뒤 한 번 더 돌려야 초록이 된다
 - 13번이 101 이면 문이 열려 있다 — `gateway-tokens` 가 비었거나 루프백 판정이 뚫린 것이다. 거기서 멈춘다.
   **404 는 «잠김»이 아니라 «업그레이드가 안 됐다»** 는 뜻이다 — `--http1.1` 을 빠뜨렸거나(HTTP/2) 경로가 틀렸다. 다시 친다.
   `Sec-WebSocket-Key` 는 16바이트여야 한다(위 값은 RFC 6455 예시) — 아니면 문이 열려 있어도 400 이다
