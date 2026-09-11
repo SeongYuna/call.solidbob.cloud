@@ -263,7 +263,8 @@ Google STT → 로컬 server 마스킹 → 대시보드 WS 까지 관통했다. 
 
 ### frontend 브랜치를 main 에 합칠 때 — 조서희 님께 (2026-09-11, `decisions/109`)
 
-- [ ] **`services/gateway` 가 두 벌이다 — main 쪽을 쓰고 frontend 쪽 것은 버린다.** 같은 날 조서희 님(`decisions/402`, 브라우저 음성 인식 dev 경로)과
+- [x] **`services/gateway` 가 두 벌이다 — main 쪽을 쓰고 frontend 쪽 것은 버린다.** → **2026-09-11 정성윤이 직접 합쳤다**(사용자 결정, 머지 `ce7f525`).
+  아래 ①~③ 그대로 했고 ④ 는 해당 없음. frontend 브랜치 자체는 고치지 않았다 — 조서희 님은 main 을 받으면 이 정리가 그대로 들어온다. 원래 적은 것 — 같은 날 조서희 님(`decisions/402`, 브라우저 음성 인식 dev 경로)과
   정성윤(정식 A-1, 운영 배포)이 서로 모르고 같은 디렉터리에 게이트웨이를 만들었다. 합치면 `README.md`·`package.json`·`package-lock.json` 이
   충돌한다. **402 의 쓸모는 main 게이트웨이로 옮겼다**(`decisions/109`) — 운영 `https://server.solidbob.cloud/gateway/dev` 가 같은 테스트 페이지이고
   (ngrok 필요 없음), `/dashboard` 경로도 그대로 받는다. 합칠 때 할 일:
