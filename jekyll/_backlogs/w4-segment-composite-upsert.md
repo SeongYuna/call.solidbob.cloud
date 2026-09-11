@@ -2,7 +2,7 @@
 title: "전사 저장 복합키 반영 + 이미지 0.1.2 — 운영에서 통화 시작·전사 저장 살리기"
 assignee: "정성윤"
 role: "infra"
-status: "in-progress"
+status: "done"
 sprint: 4
 priority: 2
 date: 2026-09-11
@@ -51,6 +51,7 @@ paths:
 - [x] **운영 DB 가 새 스키마인 상태에서** 머지 — RDS 전환 뒤 PR #64 머지(`3514e18`), `release.yml` plan·image·deploy 성공
 - [x] 운영 확인(2026-09-11): `/openapi.json` 에 `POST /hub/calls` · 통화 시작(`created "true"`, 재알림 `"false"`) →
   전사 **200**(`제 번호는 *********** 입니다`, P4) → 조회 `total 1` · 시작 안 한 통화 **409**
-- [ ] `/health` `spokes` 에 `trigger` — **`0.1.2` 에서 빠졌다.** `server.Dockerfile` 이 `ai/apps/` 만 복사하고 `ai/provider.py`
+- [x] `/health` `spokes` 에 `trigger` — **`0.1.3` 에서 4종 확인**(PR #65 `820d405`, release 스모크가 4종 전부를 요구해 통과).
+  `/hub/recommendations` 는 설계대로 **503**(`index_not_found` — 운영 ES 지식베이스 미적재). 아래는 `0.1.2` 때 기록 — **`0.1.2` 에서 빠졌다.** `server.Dockerfile` 이 `ai/apps/` 만 복사하고 `ai/provider.py`
   를 안 담아 `main.py` 가 트리거를 조용히 못 꽂았다(이미지 배치를 흉내 내 재현). `COPY ai/provider.py` + `0.1.3` +
   재발 방지 테스트(`server/tests/test_image_layout.py`)를 준비했다 — 배포 대기
