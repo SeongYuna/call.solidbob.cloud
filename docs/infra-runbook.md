@@ -6,6 +6,21 @@
 > **예산**: $400 중 약 $200 소진 예상
 > **AWS 밖 전제**: Cloudflare 에 `solidbob.cloud` 존 존재, GitHub 저장소 존재
 
+> ⚠ **실물과 다른 곳이 있다 (2026-09-11).** 이 런북은 09-04 원안이다. 09-08 실제 배포는
+> 네임스페이스 `callguard` · Deployment `callguard-server` · 시크릿 `server-env` ·
+> Traefik Ingress + cert-manager(Caddy 없음) · Amazon Linux 2023 · **인스턴스에 저장소 클론 없음**
+> (배포는 `.github/workflows/release.yml` 이 SSM 으로 한다)이다.
+> **DB 가 걸린 곳 — 6 · 12-2 · 17 · 19장과, 같은 이름이 나오는 0장 자원표 · 3-2 · 22장 · 문제 해결 표 —
+> 은 실물 기준으로 고쳤다**(`_project/decisions/108`).
+>
+> **이름 정정 (2026-09-11, 같은 날 두 번째).** `callguard` 는 **k8s 오브젝트**(네임스페이스·Deployment)의 이름이고,
+> **AWS 자원은 원안 `assist-*` 가 실물이다** — EC2 보안 그룹 `assist-web`(콘솔 확인). 첫 정정이 둘을 섞었다.
+> RDS 만 섞여 있다: **식별자 `callguard-pg` · 마스터 사용자 `callguard` · 초기 DB `assist`**
+> (`aws rds describe-db-instances` 로 확인). RDS 에 붙은 DB 보안 그룹도 원안 이름 **`assist-db`** 이고
+> 5432 인바운드 소스가 운영 EC2 에 붙은 **`assist-web`** 이다(3-2 의 대조 명령으로 두 ID 일치 확인, 2026-09-11).
+> 나머지 장 — 특히 13(클론) · 16-2(Caddy) — 은 원안 그대로다. 클러스터 구성의 정본은
+> `infra/k8s/base/` 다(라이브 클러스터와 `kubectl diff` 차이 0, 2026-09-08).
+
 ---
 
 ## 작업 순서 한눈에
@@ -84,7 +99,7 @@
 | 4 | IAM 역할 | `assist-ec2-role` | S3 + SSM |
 | 5 | S3 버킷 | `assist-<계정ID>-apne2` | 데이터셋·모델·골든셋 |
 | 6 | VPC 엔드포인트 | `assist-s3-gw` | **Gateway** 유형, 무료 |
-| 7 | RDS | `assist-pg` | PostgreSQL 17, db.t4g.micro, 20GiB |
+| 7 | RDS | `callguard-pg` | PostgreSQL 17, db.t4g.micro, 20GiB |
 | 8 | EC2 | `assist-gpu-01` | **g4dn.xlarge**, Ubuntu DLAMI |
 | 9 | EBS 루트 | (EC2 에 포함) | **gp3 150 GiB**, 암호화 O |
 | 10 | 인스턴스 스토어 | (내장, 무료) | 125GB NVMe |
@@ -258,6 +273,20 @@ EC2 → 왼쪽 **보안 그룹** → **보안 그룹 생성**
 
 ### 3-2. `assist-db` — RDS 용
 
+> **2026-09-11 정정** — 한때 `callguard-db` 로 고쳤다가 되돌렸다. AWS 자원은 원안 `assist-*` 가 실물이다(머리말).
+> RDS 에 붙은 보안 그룹은 **`assist-db`** 이고 5432 인바운드 규칙 1개가 보안 그룹을 소스로 한다(2026-09-11 확인).
+> **그 소스가 EC2 에 실제로 붙은 `assist-web` 인지**는 아래로 대조한다 — 두 줄의 ID 가 같아야 한다.
+> (2026-09-11 대조 결과: 같다. 운영 EC2 에 붙은 보안 그룹은 `assist-web` 하나다.)
+>
+> ```bash
+> # ① assist-db 의 5432 소스
+> aws ec2 describe-security-groups --filters Name=group-name,Values=assist-db \
+>   --query 'SecurityGroups[].IpPermissions[?FromPort==`5432`][].UserIdGroupPairs[].GroupId' --output text
+> # ② 운영 EC2 에 붙은 보안 그룹 (이름·ID)
+> aws ec2 describe-instances --filters Name=instance-state-name,Values=running \
+>   --query 'Reservations[].Instances[].SecurityGroups[].[GroupName,GroupId]' --output text
+> ```
+
 **보안 그룹 생성** 을 다시 누릅니다.
 
 | 항목 | 값 |
@@ -270,9 +299,13 @@ EC2 → 왼쪽 **보안 그룹** → **보안 그룹 생성**
 
 | 유형 | 포트 | 소스 |
 |---|---|---|
-| PostgreSQL | 5432 | **사용자 지정 → `assist-web` 선택** |
+| PostgreSQL | 5432 | **사용자 지정 → `assist-web`** |
 
 소스에 IP 가 아니라 **보안 그룹을 지정**하는 것이 핵심입니다. 이러면 EC2 를 새로 만들거나 IP 가 바뀌어도 규칙을 고칠 필요가 없습니다.
+
+> **운영 EC2 에 붙은 보안 그룹은 `assist-web` 이다**(2026-09-11 콘솔 확인). 한때 이 자리에 «운영 인스턴스는
+> 원안대로 만들어지지 않았다» 고 적었는데 틀렸다 — 보안 그룹은 원안 그대로다.
+> k3s 파드가 나가는 트래픽은 노드 IP 로 바뀌어(SNAT) EC2 네트워크 인터페이스로 나가므로, 보안 그룹을 소스로 한 규칙이 파드에도 그대로 맞는다.
 
 ---
 
@@ -392,6 +425,10 @@ s3://assist-<계정ID>-apne2/
 ## 6. RDS PostgreSQL
 
 > **생성에 약 10분 걸립니다.** 여기까지 설정을 넣고 **생성 버튼을 누른 뒤, 기다리지 말고 7장(EC2)으로 진행**하십시오.
+>
+> **2026-09-11 실물 기준으로 고쳤다** — 이름은 원안의 `assist-*` 가 아니라 운영 클러스터에 맞춘 `callguard-*` 다
+> (`decisions/108`). 09-08 배포 때 RDS 를 만들지 않고 운영 시크릿에 Neon 을 임시로 넣었고, 운영 DB 연결은
+> 그 뒤 **한 번도 성공하지 않았다**(파드 로그로 확인). 이 장부터 12-2 → 17 → 19 순서로 간다.
 
 콘솔 → 상단 검색 `RDS` → 왼쪽 **데이터베이스** → **데이터베이스 생성**
 
@@ -409,12 +446,14 @@ s3://assist-<계정ID>-apne2/
 
 | 항목 | 값 |
 |---|---|
-| DB 인스턴스 식별자 | **`assist-pg`** |
-| 마스터 사용자 이름 | **`assist`** |
+| DB 인스턴스 식별자 | **`callguard-pg`** |
+| 마스터 사용자 이름 | **`callguard`** |
 | 자격 증명 관리 | **자체 관리** |
-| 마스터 암호 | 직접 정한다 — **`/ @ " '` 와 공백을 넣지 않는다** |
+| 마스터 암호 | 직접 정한다 — **영문 대소문자와 숫자만, 16자 이상** |
 
-> **암호에 특수문자를 피하는 이유**: 연결 문자열 `postgresql://user:암호@host:5432/db` 에서 `@` 나 `/` 가 구분자와 충돌해 파싱이 깨집니다.
+> **암호에 특수문자를 피하는 이유**: 연결 문자열 `postgresql://user:암호@host:5432/db?sslmode=require` 에서
+> `@ / : ? # %` 가 구분자·인코딩과 충돌해 파싱이 깨집니다. 12-2 는 이 암호를 JSON 안에 넣으므로 `" \` 도 깨집니다.
+> 영문·숫자만 쓰면 어느 쪽도 걱정할 필요가 없습니다.
 >
 > ⚠ **암호를 지금 안전한 곳에 적어 두십시오.** 나중에 확인할 방법이 없고, 12장에서 씁니다.
 
@@ -439,7 +478,7 @@ s3://assist-<계정ID>-apne2/
 | VPC | **기본 VPC** (3장 보안 그룹과 같은 것) |
 | DB 서브넷 그룹 | 기본값 |
 | **퍼블릭 액세스** | **아니요** ← 전사 데이터가 들어감 (SEC-1) |
-| VPC 보안 그룹 | **기존 항목 선택** → **`assist-db`** |
+| VPC 보안 그룹 | **기존 항목 선택** → **`assist-db`** (3-2) |
 | | 기본으로 붙어 있는 **`default` 는 X 로 지운다** |
 | 가용 영역 | 기본 설정 없음 |
 
@@ -449,8 +488,9 @@ s3://assist-<계정ID>-apne2/
 
 | 항목 | 값 |
 |---|---|
-| **초기 데이터베이스 이름** | **`assist`** ← **비워 두면 DB 가 안 만들어집니다** |
+| **초기 데이터베이스 이름** | **`assist`** ← **비워 두면 DB 가 안 만들어집니다**. 실물 값(2026-09-11 확인) — 식별자·사용자(`callguard`)와 다르다 |
 | 자동 백업 | **활성화**, 보존 기간 **7일** |
+| 삭제 방지 | **활성화** — 전사 데이터는 지우면 복구 경로가 없다 |
 | 백업 창 | 한국 새벽이면 UTC **18:00** 시작 |
 | 암호화 | 활성화 (기본) |
 | 성능 개선 도우미 | 비활성화 (무료 티어 넘으면 요금) |
@@ -463,11 +503,26 @@ s3://assist-<계정ID>-apne2/
 
 **데이터베이스 생성** → 약 10분. **기다리지 말고 7장으로 넘어가십시오.**
 
-완료되면 `assist-pg` 클릭 → **엔드포인트** 를 적어 둡니다.
+완료되면 `callguard-pg` 클릭 → **엔드포인트** 를 적어 둡니다.
 
 ```
-assist-pg.xxxxxxxx.ap-northeast-2.rds.amazonaws.com
+callguard-pg.xxxxxxxx.ap-northeast-2.rds.amazonaws.com
 ```
+
+### 6-7. 연결 문자열 — SSL 이 강제된다
+
+**RDS PostgreSQL 15 이상은 기본 파라미터 그룹에서 `rds.force_ssl = 1` 입니다.** 암호화하지 않은 연결은
+`no pg_hba.conf entry ... no encryption` 으로 거절됩니다. 그래서 연결 문자열에 `sslmode=require` 를 붙입니다.
+
+```
+postgresql://callguard:<암호>@<엔드포인트>:5432/assist?sslmode=require
+```
+
+이 값은 저장소 어디에도 적지 않고 12-2 의 시크릿에만 넣습니다(SEC-2).
+**사용자는 `callguard`, DB 는 `assist` 다** — 경로를 `/callguard` 로 쓰면 `database "callguard" does not exist` 로 붙지 않는다.
+
+> ⚠ **RDS 는 「중지」해도 7일 뒤 AWS 가 자동으로 다시 켭니다.** EC2 자동 중지(21-1)는 RDS 를 멈추지 않으므로
+> RDS 는 상시 과금입니다. 오래 쉬게 할 거면 스냅샷을 뜬 뒤 삭제합니다(삭제 방지를 먼저 끈다).
 
 ---
 
@@ -802,14 +857,61 @@ kubectl create namespace assist
 kubectl config set-context --current --namespace=assist
 ```
 
-### 12-2. 시크릿 — RDS 접속 정보
+### 12-2. 시크릿 — `server-env` (RDS 접속 정보)
 
-6장의 암호와 엔드포인트를 넣습니다. **저장소에 커밋하지 마십시오(SEC-2).**
+> **2026-09-11 실물 기준으로 고쳤다.** 원안은 `db-credentials` 에 `DATABASE_URL` 하나였으나, 실제 서버는
+> `.env` 전체(16키)를 **`server-env` 하나로** 받는다(`infra/k8s/base/server.yaml` 의 `envFrom`).
+> 키 목록·처음 만드는 명령은 `infra/k8s/base/secret.example.yaml` 에 있다. **저장소에 값을 커밋하지 않는다(SEC-2).**
+
+**RDS 로 바꾸는 절차** — 운영 인스턴스 SSM 세션에서 한다. 암호는 `read -s` 로 받아 **명령줄·셸 이력에 남기지 않는다.**
+
+> **SSM 웹 터미널에서 겪은 것 (2026-09-11 실제 수행).** ① 기본 셸이 `sh` 라 먼저 `bash` 를 친다. ② 여러 줄을 한 번에
+> 붙이면 `sh` 가 붙여넣기 표시를 명령으로 읽어(`$'\E[200~': command not found`) **`K=` 줄이 사라진다** — 그러면 `$K get pods`
+> 가 `get: command not found` 다. **한 줄씩 붙여 넣고** `echo "$K"` 로 확인한다. ③ 암호 입력은 아래 반복문으로 한다 —
+> 길이가 0 이 아닌지 보고, patch 뒤 `… -o jsonpath='{.data.POSTGRES_PASSWORD}' | base64 -d | wc -c` 가 같은 숫자인지 본다.
 
 ```bash
-kubectl create secret generic db-credentials -n assist \
-  --from-literal=DATABASE_URL='postgresql://assist:<암호>@<RDS엔드포인트>:5432/assist'
+K="sudo k3s kubectl -n callguard"
+
+# ① 지금 시크릿을 떠 둔다 — 되돌리는 법이다(decisions/108). 확인이 끝나면 지운다
+(umask 077; $K get secret server-env -o yaml > ~/server-env.backup.yaml)
+
+# ② 값이 아니라 키 이름만 본다
+$K get secret server-env -o go-template='{{range $k, $v := .data}}{{$k}}{{"\n"}}{{end}}'
+
+# ③ DATABASE_URL 과 POSTGRES_* 를 「둘 다」 RDS 로 — 사용자 callguard · DB assist (6-5, 실물)
+EP=callguard-pg.xxxxxxxx.ap-northeast-2.rds.amazonaws.com   # 6-6 의 엔드포인트
+# 빈 값이면 다시 묻는다 — 웹 터미널(SSM)에 붙여 넣으면 줄바꿈이 딸려 와 read 가 빈 Enter 를 먼저 받는다
+# (2026-09-11 실제로 암호가 빈 값으로 들어가 `fe_sendauth: no password supplied` 가 났다). 한 줄씩 붙여 넣는다
+# 윈도 클립보드(CRLF)로 붙이면 끝에 \r 이 남아 patch JSON 이 깨진다 — 지운다(a5 세션 확인)
+PGPW=; until [ -n "$PGPW" ]; do read -rsp 'RDS password: ' PGPW; echo; PGPW=${PGPW%$'\r'}; done; echo "length ${#PGPW}"
+$K patch secret server-env --type merge -p "$(printf '{"stringData":{
+  "DATABASE_URL":"postgresql://callguard:%s@%s:5432/assist?sslmode=require",
+  "POSTGRES_HOST":"%s","POSTGRES_PORT":"5432","POSTGRES_DB_NAME":"assist",
+  "POSTGRES_USER":"callguard","POSTGRES_PASSWORD":"%s"}}' "$PGPW" "$EP" "$EP" "$PGPW")"
+unset PGPW
+
+# ④ 서버가 읽지 않는 AWS 정적 키를 뺀다(decisions/108 ③). 키가 이미 없으면 이 명령만 실패한다
+$K patch secret server-env --type json \
+  -p '[{"op":"remove","path":"/data/AWS_ACCESS_KEY_ID"},{"op":"remove","path":"/data/AWS_SECRET_ACCESS_KEY"}]'
+
+# ⑤ 시크릿은 파드가 뜰 때만 읽힌다 — 재시작한다
+$K rollout restart deploy/callguard-server
+$K rollout status deploy/callguard-server
 ```
+
+**왜 두 벌을 같은 값으로 넣나.** 운영 이미지 `0.1.1` 은 `POSTGRES_*` 만 읽고, `0.1.2` 부터는 `DATABASE_URL` 을
+먼저 읽는다(`server/apps/hub/adapter/outbound/postgres/connection.py`). 09-08~09-11 사고가 정확히
+「두 규칙이 서로 다른 값을 보고 있었다」였다 — `POSTGRES_HOST` 는 비어 있고 `DATABASE_URL` 은 Neon 이었다.
+두 값을 같게 두면 어느 이미지가 떠 있어도 같은 DB 에 붙는다. `POSTGRES_*` 쪽에는 `sslmode` 가 없지만
+libpq 기본값 `prefer` 가 SSL 을 먼저 시도하므로 6-7 의 SSL 강제에 걸리지 않는다.
+
+**검증 범위(2026-09-11)**: ③ 의 JSON 이 올바르고 연결 문자열이 호스트·사용자·DB·`sslmode=require` 로
+파싱되는 것까지 로컬에서 확인했다. `kubectl patch` 자체는 그 머신에 kubectl 이 없어 돌려 보지 못했다 —
+처음 쓸 때 ② 로 키가 바뀌었는지 본다.
+
+**되돌리기**: `$K apply -f ~/server-env.backup.yaml && $K rollout restart deploy/callguard-server`.
+17 · 19장 확인이 끝나면 백업을 지운다 — `shred -u ~/server-env.backup.yaml`.
 
 > ⚠ **이 값은 인스턴스가 사라지면 같이 사라집니다.** 암호와 엔드포인트를 별도로 안전한 곳에 보관하시거나, SSM Parameter Store 에 넣어 두십시오.
 
@@ -1134,28 +1236,61 @@ EOF
 
 RDS 는 퍼블릭 액세스가 없으므로 **클러스터 안에서** 넣습니다.
 
+> **2026-09-11 실물 기준으로 고쳤다.** 원안은 `postgres:17` 파드에 암호를 `--env` 로 넘기고
+> `/opt/assist/repo` 의 파일을 읽었는데, 운영 인스턴스에는 **저장소 클론이 없다**(2026-09-09 확인).
+> 그래서 **서버 파드 안에서, 서버가 쓰는 그 `DATABASE_URL` 로** 붙는다. 암호를 다시 입력할 일이 없고,
+> **서버가 실제로 보는 값으로 확인한다** — 09-08~09-11 운영 DB 사고를 사흘간 가린 것이 「설정은 있다」는
+> `/health` 값이었다(`decisions/108`). **12-2 를 먼저 끝낸다.**
+>
+> 아래 명령은 전부 2026-09-11 로컬 PostgreSQL 에 `kubectl exec` 만 빼고 그대로 돌려 확인했다.
+
 ### 17-1. 연결 확인
 
 ```bash
-kubectl run psql --rm -it --restart=Never -n assist \
-  --image=postgres:17 --env="PGPASSWORD=<암호>" \
-  -- psql -h <RDS엔드포인트> -U assist -d assist -c '\l'
+K="sudo k3s kubectl -n callguard"
+$K exec deploy/callguard-server -- python -c "
+import os, psycopg
+c = psycopg.connect(os.environ['DATABASE_URL'], connect_timeout=5)
+print(c.execute('select current_database(), current_user').fetchone(), 'ssl', c.pgconn.ssl_in_use)"
 ```
+
+기대 출력: `('assist', 'callguard') ssl True` — DB `assist` · 사용자 `callguard`(6-5 실물)
+
+| 증상 | 원인 |
+|---|---|
+| `KeyError: 'DATABASE_URL'` | 12-2 ③ 을 안 했거나 ⑤ 재시작을 안 했다 |
+| 5초 뒤 타임아웃 | RDS 보안 그룹(`assist-db`)의 5432 인바운드 소스가 `assist-web` 이 아니다(3-2) · VPC 가 다르다 |
+| `database "callguard" does not exist` | 연결 문자열의 DB 를 `/callguard` 로 썼다 — 실물은 **`/assist`** 다(6-7) |
+| `database "assist" does not exist` | 6-5 에서 초기 데이터베이스 이름을 비웠다 |
+| `password authentication failed` | 암호가 틀렸다 — 12-2 ③ 을 다시 한다 |
+| `fe_sendauth: no password supplied` | 암호가 **빈 값**으로 들어갔다(2026-09-11 실제로 났다) — 12-2 ③ 반복문으로 다시 넣고 ⑤ 재시작. RDS 까지는 닿은 것이다 |
+| `no pg_hba.conf entry ... no encryption` | `sslmode=require` 가 빠졌다(6-7) |
 
 ### 17-2. 스키마 적용
 
 ```bash
-kubectl run psql-apply --rm -i --restart=Never -n assist \
-  --image=postgres:17 --env="PGPASSWORD=<암호>" \
-  -- psql -h <RDS엔드포인트> -U assist -d assist \
-  < /opt/assist/repo/db/schema.sql
+# 인스턴스에 클론이 없으므로 main 의 파일을 받는다(저장소 공개)
+curl -fsSL https://raw.githubusercontent.com/SeongYuna/call.solidbob.cloud/main/db/schema.sql -o /tmp/schema.sql
+head -1 /tmp/schema.sql   # "-- CallGuard PostgreSQL 스키마" 로 시작해야 한다
 
-kubectl run psql --rm -it --restart=Never -n assist \
-  --image=postgres:17 --env="PGPASSWORD=<암호>" \
-  -- psql -h <RDS엔드포인트> -U assist -d assist -c '\dt'
+# 한 트랜잭션으로 넣는다 — 중간에 실패하면 아무것도 남지 않는다
+$K exec -i deploy/callguard-server -- python -c "
+import os, sys, psycopg
+c = psycopg.connect(os.environ['DATABASE_URL'])
+c.execute(sys.stdin.read()); c.commit(); print('적용 완료')" < /tmp/schema.sql
+
+# 테이블 수 — 2026-09-11 기준 22
+$K exec deploy/callguard-server -- python -c "
+import os, psycopg
+c = psycopg.connect(os.environ['DATABASE_URL'])
+print(c.execute(\"select count(*) from pg_tables where schemaname='public'\").fetchone()[0], '테이블')"
 ```
 
-테이블 목록이 보이면 성공입니다.
+**`schema.sql` 에는 `IF NOT EXISTS` 가 없다.** 이미 적용된 DB 에 다시 넣으면 첫 문장에서
+`DuplicateTable: relation "customer" already exists` 로 멈추고 **아무것도 바뀌지 않는다**(2026-09-11 확인).
+스키마를 바꾸려면 마이그레이션이 필요한데 아직 없다.
+
+적용한 스키마의 커밋을 진행 기록에 남긴다 — 로컬에서 `git log -1 --format=%h origin/main -- db/schema.sql`.
 
 ---
 
@@ -1182,43 +1317,82 @@ kubectl logs -n assist deploy/caddy | tail -20   # certificate obtained
 
 ## 19. 검증 체크리스트
 
+> **2026-09-11 실물 기준으로 고쳤다** — 네임스페이스 `callguard` · ES 는 StatefulSet(`elasticsearch-0`) ·
+> DB 확인은 17장처럼 서버 파드 안에서. **10 · 11번(DB 읽기·쓰기)을 새로 넣었다** — 09-08 배포는 9번까지
+> 통과했는데 운영 DB 연결은 한 번도 되지 않았다. `/health` 의 `postgres_configured` 는 **설정이 있다는 뜻일 뿐**
+> 연결된다는 뜻이 아니다(`decisions/108`).
+
+운영 인스턴스 SSM 세션에서:
+
 ```bash
+K="sudo k3s kubectl -n callguard"
+
 # 1. 노드
-kubectl get nodes
+sudo k3s kubectl get nodes
 
 # 2. 파드 — 전부 Running / READY 1/1
-kubectl get pods -n assist
+$K get pods
 
-# 3. GPU 점유 — ollama 와 server 둘 다 보여야 함
+# 3. GPU 점유 — GPU 인스턴스이고 GPU 파드를 올렸을 때만. 지금 infra/k8s/base/ 에는 GPU 파드가 없다
 nvidia-smi
 
 # 4. ES + nori
-kubectl exec -n assist deploy/elasticsearch -- curl -s "localhost:9200/_cat/plugins?v"
+$K exec elasticsearch-0 -- curl -s "localhost:9200/_cat/plugins?v"
 
-# 5. EXAONE 로드
-kubectl exec -n assist deploy/ollama -- curl -s http://localhost:11434/api/tags
+# 5. EXAONE 로드 — ollama 는 아직 infra/k8s/base/ 에 없다. 올린 뒤 확인한다
+$K exec deploy/ollama -- curl -s http://localhost:11434/api/tags
 
-# 6. RDS
-kubectl run psql --rm -it --restart=Never -n assist --image=postgres:17 \
-  --env="PGPASSWORD=<암호>" -- psql -h <RDS엔드포인트> -U assist -d assist -c '\dt'
+# 6. RDS — 서버 파드가 보는 값으로. 기대: "22 테이블 · ssl True"
+$K exec deploy/callguard-server -- python -c "
+import os, psycopg
+c = psycopg.connect(os.environ['DATABASE_URL'], connect_timeout=5)
+print(c.execute(\"select count(*) from pg_tables where schemaname='public'\").fetchone()[0], '테이블 · ssl', c.pgconn.ssl_in_use)"
 
-# 7. S3 (IAM 역할이 붙어 있는지)
+# 7. S3 (IAM 역할이 붙어 있는지) — 원안 자원. 버킷이 없으면 건너뛴다
 aws s3 ls s3://assist-<계정ID>-apne2/
 
-# 8. 인스턴스 스토어
+# 8. 인스턴스 스토어 — g4dn 원안 항목. 없으면 건너뛴다
 df -h /mnt/scratch
+```
+
+어디서든(밖에서):
+
+```bash
+B=https://server.solidbob.cloud
 
 # 9. 외부 HTTPS
-curl -s https://server.solidbob.cloud/health
+curl -s $B/health
+
+# 10. DB 읽기 — 기대: 200
+curl -s -o /dev/null -w '%{http_code}\n' $B/hub/knowledge-gaps
+
+# 11. DB 쓰기 — 통화 → 전사(마스킹 후 저장) → 조회. 이미지 0.1.2 이상에서만(아래 ⚠)
+C=test-deploy-$(date +%Y%m%d%H%M)
+curl -fsS -X POST $B/hub/calls -H 'content-type: application/json' -d "{\"call_id\":\"$C\"}"
+curl -fsS -X POST $B/hub/transcripts -H 'content-type: application/json' \
+  -d "{\"call_id\":\"$C\",\"segment_id\":1,\"speaker\":\"customer\",\"text\":\"제 번호는 01012345678 입니다\",\"is_final\":true}"
+curl -fsS $B/hub/calls/$C/transcript
 ```
 
-9번의 기대 출력:
+9번의 기대 출력 (`0.1.2` 기준 — `0.1.1` 은 `trigger` 가 없는 3종):
 
 ```json
-{"status":"ok","spokes":["masking","closure_gate","retrieval"]}
+{"status":"ok","postgres_configured":true,"elasticsearch_configured":true,"spokes":["masking","closure_gate","retrieval","trigger"]}
 ```
 
-**`spokes` 에 `retrieval` 이 있어야 검색이 꽂힌 것입니다.** 없으면 ES 가 안 떴거나 `ELASTICSEARCH_URL` 이 안 잡힌 것이며, **조용히 501 로 남는 것이 설계된 동작**이라 서버 자체는 정상으로 뜹니다 (`decisions/024`).
+**`spokes` 에 `retrieval` 이 있어야 검색이 꽂힌 것입니다.** 없으면 ES 가 안 떴거나 `ELASTICSEARCH_URL` 이 안 잡힌 것이며, **조용히 501 로 남는 것이 설계된 동작**이라 서버 자체는 정상으로 뜹니다 (`decisions/024`). 순서는 상관없습니다.
+
+11번의 마지막 응답에서 볼 것 — `"text":"제 번호는 *********** 입니다"` · `"masked":[{"type":"P4",...}]` · `"total":"1"`.
+**원래 번호가 보이면 SEC-1 위반이다 — 거기서 멈춘다.** 통화 생성 응답의 `"created":"true"` 는 처음 한 번만이고,
+같은 `call_id` 로 다시 치면 `"false"` 다(멱등).
+
+> ⚠ **11번은 `0.1.2` 이상에서만 통과한다.** `0.1.1` 의 전사 저장 코드는 발화를 `segment_id` 하나로 구분해서,
+> 현재 `schema.sql`(PK `(call_id, segment_id)`)에서 `ON CONFLICT` 가 거부된다 — 500. RDS 문제가 아니라 어댑터 문제다.
+>
+> ⚠ **11번이 남긴 `test-` 행은 운영 DB 에 그대로 남는다.** 지우는 API 는 없다 — 필요하면 17장처럼 서버 파드에서
+> `masking_event` → `transcript_segment` → `call` 순서로 지운다(외래키).
+>
+> 10 · 11번 명령은 2026-09-11 로컬 서버(현재 작업 트리 코드 + 현재 `schema.sql`)에서 그대로 쳐서 기대 출력을 확인했다.
 
 ---
 
@@ -1326,7 +1500,7 @@ mpstat 1 60 > /mnt/scratch/cpu-during-measurement.log
 nvidia-smi --query-gpu=utilization.gpu,memory.used --format=csv -l 1 > /mnt/scratch/gpu.log
 ```
 
-**RDS db.t4g.micro 도 버스터블입니다.** 평가 하네스가 DB 를 계속 두드리면 크레딧이 마르고, 그 지연이 레이턴시 측정에 섞여 들어옵니다. CloudWatch → RDS → `assist-pg` → **`CPUCreditBalance`** 를 함께 기록하십시오.
+**RDS db.t4g.micro 도 버스터블입니다.** 평가 하네스가 DB 를 계속 두드리면 크레딧이 마르고, 그 지연이 레이턴시 측정에 섞여 들어옵니다. CloudWatch → RDS → `callguard-pg` → **`CPUCreditBalance`** 를 함께 기록하십시오.
 
 ---
 
@@ -1346,7 +1520,7 @@ nvidia-smi --query-gpu=utilization.gpu,memory.used --format=csv -l 1 > /mnt/scra
 | ES 가 OOM 으로 죽는다 | `ES_JAVA_OPTS` 를 `-Xms1g -Xmx1g` 로 낮추거나 `limits.memory` 상향 |
 | Ollama 가 CPU 로 돈다 | `nvidia-smi` 에 프로세스가 없다 → `runtimeClassName: nvidia` 누락 |
 | 첫 토큰이 3초 넘게 걸린다 | ① `"think": false` 누락 ② `OLLAMA_KEEP_ALIVE=-1` 누락으로 콜드 스타트 |
-| RDS 연결 실패 | ① `assist-db` 소스가 `assist-web` 인지 ② **초기 데이터베이스 이름**을 비웠는지(그러면 DB 자체가 없다) ③ 같은 VPC 인지 |
+| RDS 연결 실패 | ① RDS 보안 그룹(`assist-db`) 5432 소스가 `assist-web` 인지 ② **초기 데이터베이스 이름**을 비웠는지(그러면 DB 자체가 없다) · 연결 문자열 DB 가 실물 `assist` 인지 ③ 같은 VPC 인지 ④ `sslmode=require` 가 빠졌는지 — 증상별로는 17-1 의 표 |
 | 인증서 발급 실패 | Cloudflare **주황 구름**이 켜져 있다 |
 | kubectl 이 로컬에서 안 된다 | 6443 이 내 IP 로 열려 있는지. 공인 IP 가 바뀌었을 수 있다 |
 | `/mnt/scratch` 가 비어 있다 | **정상.** 인스턴스 스토어는 중지하면 사라진다 |

@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 
 from hub.adapter.inbound.api.schemas.transcript_ingest_schema import (
     MaskedSpanSchema,
@@ -12,26 +12,39 @@ from hub.adapter.inbound.api.schemas.transcript_ingest_schema import (
 )
 from hub.app.dtos.transcript_ingest_dto import TranscriptIngestCommand
 from hub.app.ports.input.transcript_ingest_use_case import TranscriptIngestUseCase
+from hub.app.ports.output.transcript_ingest_record_port import CallNotStartedError
 from hub.dependencies.transcript_ingest_provider import get_transcript_ingest_use_case
 
 transcript_ingest_router = APIRouter(prefix="/hub", tags=["hub"])
 
 
-@transcript_ingest_router.post("/transcripts", response_model=TranscriptEventSchema)
+@transcript_ingest_router.post(
+    "/transcripts",
+    response_model=TranscriptEventSchema,
+    responses={409: {"description": "통화가 시작되지 않았다 — `POST /hub/calls` 를 먼저 보낸다"}},
+)
 async def ingest_transcript(
     body: TranscriptIngestRequest,
     use_case: TranscriptIngestUseCase = Depends(get_transcript_ingest_use_case),
 ) -> TranscriptEventSchema:
-    event = await use_case.ingest(
-        TranscriptIngestCommand(
-            call_id=body.call_id,
-            segment_id=body.segment_id,
-            speaker=body.speaker,
-            raw_text=body.text,
-            is_final=body.is_final,
-            utterance_end_ms=body.utterance_end_ms,
+    try:
+        event = await use_case.ingest(
+            TranscriptIngestCommand(
+                call_id=body.call_id,
+                segment_id=body.segment_id,
+                speaker=body.speaker,
+                raw_text=body.text,
+                is_final=body.is_final,
+                utterance_end_ms=body.utterance_end_ms,
+            )
         )
-    )
+    except CallNotStartedError as exc:
+        # 원문(body.text)은 싣지 않는다 — 409 본문도 응답이다 (SEC-1)
+        raise HTTPException(
+            status_code=409,
+            detail=f"통화 '{exc.call_id}' 가 시작되지 않았다 — POST /hub/calls 를 전사보다 먼저 보낸다 "
+                   "(decisions/301)",
+        ) from exc
     return TranscriptEventSchema(
         call_id=event.call_id,
         segment_id=str(event.segment_id),
