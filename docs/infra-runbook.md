@@ -1140,6 +1140,39 @@ kubectl exec -n assist deploy/elasticsearch -- curl -s "localhost:9200/_cat/plug
 # analysis-nori 가 보여야 함
 ```
 
+### 15-1. 지식베이스 적재 — 운영 실물 (2026-09-11 실행)
+
+**적재 전에는 검색·추천이 503 이다**(「검색 인덱스가 없다」, `index_not_found`). ES 는 StatefulSet + 볼륨이라
+**한 번 넣으면 파드 재시작·인스턴스 자동 중지(21-1) 뒤에도 남는다.** `knowledge-base/` 를 고쳤을 때만 다시 넣는다.
+
+서버 이미지에는 `knowledge-base/`·`scripts/` 가 없다(`.dockerignore`·`server.Dockerfile`). 그래서 GitHub `main` 에서 받아
+**서버 파드 안에서** 두 가지만 풀고, 이미지에 있는 `ai/apps`(운영 중인 검색 코드와 같은 판)와 파드의 `ELASTICSEARCH_URL`
+로 적재한다. 인스턴스에 `tar` 가 없어도 된다 — 파드(Debian)가 푼다. 운영 인스턴스 SSM 세션에서, **한 줄씩**:
+
+```bash
+# ⚠ `$K` 대신 전체 명령을 쓴다 — 새 세션에서 K 가 비면 `$K exec …` 가 bash 내장 exec 로 바뀐다(2026-09-11 겪었다)
+sudo k3s kubectl -n callguard exec elasticsearch-0 -- curl -s "localhost:9200/_cat/plugins?v"     # analysis-nori
+
+curl -fsSL https://codeload.github.com/SeongYuna/call.solidbob.cloud/tar.gz/main | sudo k3s kubectl -n callguard exec -i deploy/callguard-server -- tar -xz -C /app --strip-components=1 --wildcards '*/scripts/index_knowledge_base.py' '*/knowledge-base/*'
+
+sudo k3s kubectl -n callguard exec deploy/callguard-server -- python /app/scripts/index_knowledge_base.py --to-es --recreate
+
+sudo k3s kubectl -n callguard exec elasticsearch-0 -- curl -s "localhost:9200/_cat/indices?v"      # docs.count
+```
+
+2026-09-11 실제 출력: `청크 98개 (조항 98개)` → `생성된 인덱스: callguard-kb-single` · `callguard-kb-single: 98건` ·
+`_cat/indices` `green open callguard-kb-single … docs.count 98`. 파드에 푼 파일은 파드 재시작 때 사라진다(ES 데이터는 남는다).
+
+밖에서 확인(19장과 같은 `B`):
+
+```bash
+curl -s -X POST $B/hub/search -H 'content-type: application/json' -d '{"utterance":"주민등록등본 발급 대리 신청 서류","top_k":3}'
+```
+
+기대: 200 과 `doc_id` 가 붙은 조항 3개(2026-09-11: `DASAN-TERM-4.1 증명서 발급` · `4.3 주민등록초본` · `2.6`).
+⚠ **적재가 됐다는 것이지 검색 품질이 좋다는 뜻이 아니다** — 「여권 재발급 서류」는 지식베이스에 **해당 조항이 없어**
+엉뚱한 조항(`DASAN-MANUAL-4.1`)이 1위였다. 품질은 평가 하네스(`scripts/run_eval.py`)로 잰다.
+
 ---
 
 ## 16. server + Caddy
