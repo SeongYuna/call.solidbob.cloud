@@ -2,7 +2,7 @@
 title: "게이트웨이 하나로 — /dev 브라우저 음성 경로를 정식 게이트웨이로 옮긴다"
 assignee: "정성윤"
 role: "infra"
-status: "in-progress"
+status: "done"
 sprint: 4
 priority: 2
 date: 2026-09-11
@@ -38,6 +38,6 @@ depends_on:
 
 ## 완료 조건
 
-- [ ] `/dev`·`/dev/text` + 테스트, 게이트웨이 태그 `0.1.1` 로 배포
-- [ ] 운영 `/gateway/dev` 확인
-- [ ] `decisions/109`, 미결(frontend 합칠 때 할 일)
+- [x] `/dev`·`/dev/text` + 테스트(79), 게이트웨이 태그 `0.1.1` 로 배포 — PR #69
+- [x] 운영 `/gateway/dev` 200 · CSP 해시 일치 · 토큰 없는 `/gateway/dev/text` 401 (2026-09-11)
+- [x] `decisions/109`, 미결(frontend 합칠 때 할 일)
