@@ -1424,6 +1424,34 @@ curl -fsS $B/hub/calls/$C/transcript
 >
 > ⚠ **11번이 남긴 `test-` 행은 운영 DB 에 그대로 남는다.** 지우는 API 는 없다 — 필요하면 17장처럼 서버 파드에서
 > `masking_event` → `transcript_segment` → `call` 순서로 지운다(외래키).
+
+### 19-1. 게이트웨이 (2026-09-11 추가)
+
+게이트웨이(`services/gateway`)는 **같은 노드에 따로 뜬다** — Deployment `callguard-gateway`, 밖에서는 Ingress
+`/gateway` 경로(`infra/k8s/base/gateway.yaml` · `ingress.yaml`). 0장 사양표가 이미 «Node 게이트웨이» 를 넣고 계산했다.
+이미지는 `release.yml` 이 server 와 따로 굽는다(`kustomization.yaml` 의 `callguard-gateway` newTag).
+
+```bash
+# 12. 게이트웨이 설정 — 기대: status ok, 아래 넷이 전부 true
+curl -s $B/gateway/health
+#   stt_credentials_configured  구글 키 파일(gcp-stt-credentials 시크릿, /var/run/gcp 에 마운트)
+#   stt_caps_configured         COST-1 2차 캡 — gateway.yaml 에 값으로 적었다(600초/일 · 3600초/월)
+#   ingest_token_configured · view_token_configured   gateway-tokens 시크릿
+
+# 13. 문 두 개가 잠겨 있는가 — 토큰 없이 밖에서 치면 둘 다 401 이어야 한다
+#     --http1.1 필수: 운영은 HTTP/2 로 협상하는데 HTTP/2 는 Upgrade 를 못 싣는다 → 잠겼든 열렸든 404 가 나온다
+curl --http1.1 -s -o /dev/null -w '%{http_code}\n' -H 'Connection: Upgrade' -H 'Upgrade: websocket' \
+  -H 'Sec-WebSocket-Version: 13' -H 'Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==' $B/gateway/ws
+curl --http1.1 -s -o /dev/null -w '%{http_code}\n' -H 'Connection: Upgrade' -H 'Upgrade: websocket' \
+  -H 'Sec-WebSocket-Version: 13' -H 'Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==' "$B/gateway/ingest?call_id=test-x&speaker=agent"
+```
+
+- **토큰은 사람이 만들지 않는다.** 배포가 없을 때만 인스턴스 안에서 만든다(`secret.example.yaml` ③). 꺼내는 법·교체법도 거기 있다.
+  `/ingest` 토큰(진짜 비밀)은 오디오 생산자에게만, `/ws` 토큰은 대시보드에 준다 — **둘을 같은 값으로 두지 않는다**
+- 12번이 `true` 넷이 아니면 게이트웨이는 떠 있어도 **전부 거절한다**(fail-closed). 릴리스 스모크 테스트가 이것을 본다
+- 13번이 101 이면 문이 열려 있다 — `gateway-tokens` 가 비었거나 루프백 판정이 뚫린 것이다. 거기서 멈춘다.
+  **404 는 «잠김»이 아니라 «업그레이드가 안 됐다»** 는 뜻이다 — `--http1.1` 을 빠뜨렸거나(HTTP/2) 경로가 틀렸다. 다시 친다.
+  `Sec-WebSocket-Key` 는 16바이트여야 한다(위 값은 RFC 6455 예시) — 아니면 문이 열려 있어도 400 이다
 >
 > 10 · 11번 명령은 2026-09-11 로컬 서버(현재 작업 트리 코드 + 현재 `schema.sql`)에서 그대로 쳐서 기대 출력을 확인했다.
 
