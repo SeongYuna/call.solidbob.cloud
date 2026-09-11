@@ -57,7 +57,54 @@ export interface GatewayClient {
   wrapUp(callId: string): Promise<CallWrapUp>;
 }
 
+const GATEWAY_URL_STORAGE_KEY = "callguard:gatewayUrlOverride";
+
+/**
+ * 빌드타임 환경변수(VITE_GATEWAY_WS_URL)는 Vercel 프로젝트 설정 접근 권한이
+ * 있어야 바꿀 수 있다. 배포 담당자 협조 없이도 개발자 본인이 배포된
+ * 대시보드를 라이브 모드로 테스트할 수 있게, ?gateway=<wss URL> 쿼리로
+ * 방문하면 localStorage 에 저장해 다음 방문부터도 유지되는 런타임 탈출구를
+ * 둔다. ?gateway=clear 로 지우면 원래 설정(mock 또는 빌드타임 환경변수)으로
+ * 돌아간다(2026-09-11).
+ */
+function syncGatewayOverrideFromQuery(): void {
+  if (typeof window === "undefined") {
+    return;
+  }
+  const raw = new URLSearchParams(window.location.search).get("gateway");
+  if (raw === null || raw.trim().length === 0) {
+    return;
+  }
+  const value = raw.trim();
+  try {
+    if (value === "clear") {
+      window.localStorage.removeItem(GATEWAY_URL_STORAGE_KEY);
+    } else if (value.startsWith("ws://") || value.startsWith("wss://")) {
+      window.localStorage.setItem(GATEWAY_URL_STORAGE_KEY, value);
+    }
+  } catch {
+    // localStorage 를 못 쓰는 환경(프라이빗 모드 등)이면 이번 방문에서만 쿼리값이 적용된다.
+  }
+}
+
+function readGatewayOverride(): string | null {
+  if (typeof window === "undefined") {
+    return null;
+  }
+  try {
+    const stored = window.localStorage.getItem(GATEWAY_URL_STORAGE_KEY);
+    return stored !== null && stored.length > 0 ? stored : null;
+  } catch {
+    return null;
+  }
+}
+
 export function gatewayUrl(): string {
+  syncGatewayOverrideFromQuery();
+  const override = readGatewayOverride();
+  if (override !== null) {
+    return override;
+  }
   return (import.meta.env.VITE_GATEWAY_WS_URL ?? "").trim();
 }
 
