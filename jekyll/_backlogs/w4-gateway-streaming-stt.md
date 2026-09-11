@@ -2,7 +2,7 @@
 title: "게이트웨이 — 오디오 중계 + Google STT 스트리밍 + 서버 전달"
 assignee: "정성윤"
 role: "infra"
-status: "in-progress"
+status: "done"
 sprint: 4
 priority: 1
 date: 2026-09-11
@@ -56,5 +56,8 @@ paths:
   (fail-closed), 과금 문 비밀은 헤더로만. 테스트 65개 · 비루프백 주소로 실측(2026-09-11).
   **a5 세션이 따로 실측해 전 조합이 일치했다** — 토큰 미설정 바깥 8조합 401 · 설정 후 문마다 맞는 토큰만 101 · 로그에 토큰 0건.
   ⚠ 뷰 토큰은 브라우저가 내므로 비밀이 아니다 — **사람별 인증은 남았다**(서버와 같은 미결)
-- [ ] 배포(이미지·k8s·Ingress 경로·`release.yml`) — [미결](/open-items/) 「게이트웨이 배포」. 런북 0장이 같은 노드로 계산해 뒀다
+- [x] 배포(이미지·k8s·Ingress 경로·`release.yml`) — PR #68, 2026-09-11. 운영 `/gateway/health` 설정 넷 전부 true ·
+  토큰 없는 `/gateway/ws`·`/gateway/ingest` 401(런북 19-1 12·13번). ⚠ 첫 시도는 Docker Hub 새 저장소가 **비공개**로 만들어져
+  ImagePullBackOff — 공개로 바꾸고 재실행 두 번 만에 초록(두 번째는 Deployment 가 이미 «진행 기한 초과» 로 표시돼 있어서)
 - [ ] `.env.example` 에 `GATEWAY_PORT`·`CORE_API_URL`·`GATEWAY_INGEST_TOKEN`·`GATEWAY_VIEW_TOKEN` — 보호 훅 때문에 사람이 넣는다
+  (이 티켓 밖으로 옮긴다 — [미결](/open-items/) 「`.env.example` 키 넷」. 적용할 파일은 준비돼 있다)

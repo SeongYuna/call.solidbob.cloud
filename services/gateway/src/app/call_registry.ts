@@ -5,6 +5,11 @@
  * **채널 = 화자 하나.** V1 실측이 전부 모노라 화자 분리는 채널로 한다(데모의 물리 2채널, A-2).
  * 한 통화에 `agent`·`customer` 채널이 하나씩 붙을 수 있고, 발화 번호는 통화 안에서 하나로 센다.
  *
+ * 채널의 입력은 둘이다(`ChannelSpec.source`).
+ * - `audio` — PCM 을 받아 구글 STT 로 전사한다. COST-1 캡을 쓴다
+ * - `text`  — 브라우저가 이미 글자로 바꿔 보낸다(`/dev`, Web Speech API — `decisions/109`, 402 에서 옮김).
+ *             구글을 부르지 않으므로 캡을 쓰지 않는다. 통화 기록에는 엔진을 사실대로 `web-speech` 로 적는다
+ *
  * SEC-1 — 원문(`RawTranscript`)은 `hub.ingestTranscript` 에만 들어간다. 대시보드로 가는 것은
  * **서버가 마스킹해 돌려준 응답**뿐이고, 서버가 실패하면 그 결과는 아무 데도 가지 않는다.
  * 로그에는 번호·상태 코드만 남긴다.
@@ -31,7 +36,12 @@ export interface ChannelSpec {
   sampleRate: number;
   /** 이 통화에 붙을 채널 수(1 = 모노, 2 = 물리 분리). `call.channel_count` 로 간다. */
   channelCount: number;
+  /** 기본 `audio`. `text` 는 브라우저 음성 인식 결과(글자)를 받는다. */
+  source?: "audio" | "text";
 }
+
+/** 글자 입력 채널이 `call.stt_engine` 에 적는 이름 — 구글 STT 가 아니라는 것을 기록에 남긴다. */
+export const TEXT_ENGINE_NAME = "web-speech";
 
 export type OpenResult =
   | { ok: true; channel: Channel }
@@ -74,13 +84,15 @@ export class CallRegistry {
       return { ok: false, kind: "busy", reason: `이 통화의 ${spec.speaker} 채널이 이미 열려 있다` };
     }
 
-    if (this.deps.stt.unavailableReason !== null) {
-      return { ok: false, kind: "unavailable", reason: this.deps.stt.unavailableReason };
-    }
-
-    const decision = await this.deps.budget.decideOpen();
-    if (!decision.ok) {
-      return { ok: false, kind: "budget", reason: decision.reason };
+    // 글자 입력은 구글을 부르지 않는다 — 키도 캡도 보지 않는다.
+    if ((spec.source ?? "audio") === "audio") {
+      if (this.deps.stt.unavailableReason !== null) {
+        return { ok: false, kind: "unavailable", reason: this.deps.stt.unavailableReason };
+      }
+      const decision = await this.deps.budget.decideOpen();
+      if (!decision.ok) {
+        return { ok: false, kind: "budget", reason: decision.reason };
+      }
     }
 
     const call = this.callFor(spec);
@@ -115,8 +127,9 @@ export class CallRegistry {
       started: Promise.resolve(false),
     };
     this.calls.set(spec.callId, call);
+    const engine = (spec.source ?? "audio") === "text" ? TEXT_ENGINE_NAME : this.deps.stt.name;
     call.started = this.deps.hub
-      .startCall({ call_id: spec.callId, stt_engine: this.deps.stt.name, channel_count: spec.channelCount })
+      .startCall({ call_id: spec.callId, stt_engine: engine, channel_count: spec.channelCount })
       .then(
         () => true,
         (error: unknown) => {
@@ -146,6 +159,8 @@ export class Channel {
   private readonly spec: ChannelSpec;
   private readonly deps: RegistryDeps;
   private readonly channelStartMs: number;
+  private readonly openedAtMs: number;
+  private readonly isText: boolean;
   private readonly segment: OpenSegment;
   private readonly queue: CoalescingQueue<QueuedResult>;
   private readonly stt: SttStream;
@@ -163,17 +178,22 @@ export class Channel {
     this.spec = spec;
     this.deps = deps;
     this.onDetach = onDetach;
-    this.channelStartMs = deps.nowMs() - call.startedAtMs;
+    this.openedAtMs = deps.nowMs();
+    this.channelStartMs = this.openedAtMs - call.startedAtMs;
+    this.isText = spec.source === "text";
     this.segment = new OpenSegment(call.counter);
     this.queue = new CoalescingQueue((item) => this.forward(item));
     this.sttEnded = new Promise((resolve) => {
       this.resolveSttEnded = resolve;
     });
-    this.stt = deps.stt.open(spec.sampleRate, {
-      onResult: (result) => this.onResult(result),
-      onFatal: (message) => this.stop(`STT 오류 — ${message}`),
-      onEnd: () => this.resolveSttEnded(),
-    });
+    this.stt = this.isText
+      ? // 글자 채널은 열 STT 가 없다. 끝낼 때 기다릴 것도 없다.
+        { write: () => {}, end: () => this.resolveSttEnded() }
+      : deps.stt.open(spec.sampleRate, {
+          onResult: (result) => this.onResult(result),
+          onFatal: (message) => this.stop(`STT 오류 — ${message}`),
+          onEnd: () => this.resolveSttEnded(),
+        });
   }
 
   /** 채널이 스스로 닫힐 때(캡 도달·STT 오류) 이유를 받는다. 소켓을 닫는 데 쓴다. */
@@ -183,7 +203,7 @@ export class Channel {
 
   /** false 면 이 오디오를 보내지 않았고 채널이 닫혔다. */
   pushAudio(pcm: Buffer): boolean {
-    if (this.closed) {
+    if (this.closed || this.isText) {
       return false;
     }
     if (!this.deps.budget.consume(pcm16Seconds(pcm.byteLength, this.spec.sampleRate))) {
@@ -191,6 +211,18 @@ export class Channel {
       return false;
     }
     this.stt.write(pcm);
+    return true;
+  }
+
+  /**
+   * 글자 채널 — 브라우저가 인식한 결과 하나. 오디오 채널의 STT 결과와 **같은 길**로 간다(서버 마스킹 →
+   * 대시보드). 발화 종료 시각은 브라우저가 아니라 이 서버가 받은 시각으로 센다 — 믿을 수 있는 쪽을 쓴다.
+   */
+  pushText(text: string, isFinal: boolean): boolean {
+    if (this.closed || !this.isText) {
+      return false;
+    }
+    this.onResult({ text, isFinal, audioEndMs: this.deps.nowMs() - this.openedAtMs });
     return true;
   }
 

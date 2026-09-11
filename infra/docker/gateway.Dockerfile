@@ -8,6 +8,9 @@
 #     -t seongyuna/callguard-gateway:0.1.0 --push .
 #
 # 컨텍스트는 저장소 루트다(server 이미지와 같은 규칙 — `.dockerignore` 하나를 같이 쓴다).
+# ⚠ **Docker Hub 저장소는 공개여야 한다.** k3s 는 인증 없이 받는다(imagePullSecret 없음). 첫 푸시가 저장소를
+#   **비공개로** 만들어, 2026-09-11 첫 배포가 ImagePullBackOff 로 멈췄다(익명 pull 401). 새 이미지 저장소를 만들면
+#   Docker Hub → 저장소 → Settings → Make public 을 먼저 한다.
 # ⚠ `--platform linux/amd64` · `latest` 금지 — server.Dockerfile 머리말과 같은 이유다.
 
 # 로컬에서 테스트한 버전과 같게 고정한다. .ts 를 빌드 없이 그대로 돌리는 타입 제거 실행이 22.18+ 부터다.

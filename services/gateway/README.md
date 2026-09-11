@@ -37,6 +37,7 @@ node scripts/stream_wav.ts <파일.wav> --speaker customer --watch
 | 대시보드 | `wss://server.solidbob.cloud/gateway/ws?token=<뷰 토큰>` (`VITE_GATEWAY_WS_URL`) |
 | 오디오 생산자 | `wss://server.solidbob.cloud/gateway/ingest?call_id=…&speaker=…` + `Authorization: Bearer <과금 토큰>` |
 | 상태 | `https://server.solidbob.cloud/gateway/health` |
+| 개발용 테스트 통화 | `https://server.solidbob.cloud/gateway/dev` — 폰 크롬으로 열고 과금 문 토큰을 붙여 넣는다 |
 
 - **배포는 `main` 머지다.** `release.yml` 이 `infra/k8s/base/kustomization.yaml` 의 `callguard-gateway` newTag 로 굽는다.
   `src/`·`package*.json`·`infra/docker/gateway.Dockerfile` 을 고치면 **newTag 를 올려야** 한다 — 안 올리면 릴리스가 실패한다
@@ -102,6 +103,19 @@ node scripts/stream_wav.ts <파일.wav> --speaker customer --watch
 {"type": "transcript",     "payload": { /* POST /hub/transcripts 응답 그대로 — 값은 전부 문자열 */ }}
 {"type": "recommendation", "payload": { /* POST /hub/recommendations 응답 그대로 */ }}
 ```
+
+### `GET /dev` · `WS /dev/text?call_id=&speaker=` — 개발용 테스트 통화 (`decisions/109`)
+
+조서희 님이 frontend 브랜치에서 만든 경로(`decisions/402`)를 옮겨 왔다. **GCP 키·구글 STT·ngrok 없이** 폰으로 바로 테스트한다.
+
+- 브라우저 내장 음성 인식(Web Speech API)이 그 자리에서 글자로 바꿔 `{"text", "is_final"}` 로 보낸다.
+  같은 파이프라인(서버 마스킹 → 대시보드)을 탄다. 통화 기록 엔진은 `web-speech` — 구글 STT 가 아니므로 COST-1 캡과 무관하다
+- **품질 측정용이 아니다** — 브라우저 엔진의 인식 품질이다(절대 원칙 2·10). 배선 확인용이다
+- DB 에 전사를 쓰므로 **과금 문 토큰**(`GATEWAY_INGEST_TOKEN`)을 요구한다. 브라우저는 서브프로토콜 `bearer.<토큰>` 으로 낸다
+  — URL 에 싣지 않는다. 뷰 토큰으로는 안 열린다. 이 머신(루프백)에서 열면 토큰이 필요 없다
+- ngrok 같은 터널로 열면 요청이 루프백으로 들어오지만 **프록시 헤더가 붙어 있어 «이 머신» 으로 치지 않는다** — 토큰이 필요하다
+- 페이지는 CSP(스크립트는 해시로만)·틀 금지·캐시 금지로 나간다. 비밀이 없다
+- 대시보드 경로 `/dashboard` 도 `/ws` 와 같다(조서희 님 게이트웨이가 쓰던 경로)
 
 ### `GET /health`
 

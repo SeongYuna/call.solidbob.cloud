@@ -58,6 +58,38 @@ function sameSecret(a: string, b: string): boolean {
   return timingSafeEqual(left, right);
 }
 
+/**
+ * 요청이 프록시를 거쳐 왔는가. **소켓이 루프백이어도 프록시 헤더가 있으면 믿지 않는다** —
+ * ngrok 같은 터널은 인터넷에서 온 요청을 로컬에서 다시 열어 루프백으로 넘긴다. 이걸 안 보면
+ * `ngrok http 8080` 한 줄로 문이 통째로 열린다(2026-09-11, `decisions/109`).
+ * 헤더로 신뢰를 **주지는** 않는다 — 빼앗기만 한다. 헤더를 꾸며 붙인 쪽은 스스로 문을 닫을 뿐이다.
+ */
+export function forwardedByProxy(headers: Record<string, string | string[] | undefined>): boolean {
+  return ["x-forwarded-for", "forwarded", "x-real-ip"].some((name) => headers[name] !== undefined);
+}
+
+/**
+ * 브라우저 WebSocket 은 헤더를 못 붙인다 — 대신 서브프로토콜 목록은 보낼 수 있다
+ * (`new WebSocket(url, ["callguard", "bearer.<토큰>"])`). URL 에 싣지 않으므로 접근 로그에 남지 않는다.
+ * 서버는 `callguard` 만 되돌려 준다(`SUBPROTOCOL`) — 토큰을 응답에 싣지 않는다.
+ */
+export function bearerFromSubprotocols(header: string | string[] | undefined): string | null {
+  const joined = Array.isArray(header) ? header.join(",") : header;
+  if (joined === undefined) {
+    return null;
+  }
+  for (const item of joined.split(",")) {
+    const value = item.trim();
+    if (value.startsWith("bearer.") && value.length > "bearer.".length) {
+      return value.slice("bearer.".length);
+    }
+  }
+  return null;
+}
+
+/** 서브프로토콜로 토큰을 낸 브라우저에게 되돌려 줄 이름. 이게 없으면 크롬이 핸드셰이크를 끊는다. */
+export const SUBPROTOCOL = "callguard";
+
 /** `Authorization: Bearer <토큰>` 에서 토큰만. 없거나 다른 방식이면 null. */
 export function bearerToken(header: string | undefined): string | null {
   if (header === undefined) {

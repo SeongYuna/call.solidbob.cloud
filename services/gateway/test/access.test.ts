@@ -1,7 +1,7 @@
 // Requirement: SEC-1, COST-1
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { bearerToken, decideAccess, isLoopback } from "../src/domain/access.ts";
+import { bearerFromSubprotocols, bearerToken, decideAccess, forwardedByProxy, isLoopback } from "../src/domain/access.ts";
 
 test("루프백은 IPv4·IPv6·IPv4 매핑 셋 다 알아본다", () => {
   assert.equal(isLoopback("127.0.0.1"), true);
@@ -36,4 +36,19 @@ test("Bearer 헤더에서 토큰만 뽑는다", () => {
   assert.equal(bearerToken("Basic abc"), null);
   assert.equal(bearerToken(undefined), null);
   assert.equal(bearerToken("Bearer "), null);
+});
+
+test("프록시 헤더가 있으면 «이 머신» 으로 치지 않는다 — ngrok 같은 터널", () => {
+  assert.equal(forwardedByProxy({ "x-forwarded-for": "203.0.113.9" }), true);
+  assert.equal(forwardedByProxy({ forwarded: "for=203.0.113.9" }), true);
+  assert.equal(forwardedByProxy({ "x-real-ip": "203.0.113.9" }), true);
+  assert.equal(forwardedByProxy({ host: "localhost:8080" }), false);
+});
+
+test("서브프로토콜에서 bearer.<토큰> 만 뽑는다", () => {
+  assert.equal(bearerFromSubprotocols("callguard, bearer.abc123"), "abc123");
+  assert.equal(bearerFromSubprotocols(["callguard", "bearer.x"]), "x");
+  assert.equal(bearerFromSubprotocols("callguard"), null);
+  assert.equal(bearerFromSubprotocols("bearer."), null);
+  assert.equal(bearerFromSubprotocols(undefined), null);
 });
