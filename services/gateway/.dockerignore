@@ -1,0 +1,4 @@
+node_modules
+.env
+.stt-usage.json
+README.md

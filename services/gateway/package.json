@@ -1,0 +1,14 @@
+{
+  "name": "callguard-gateway",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "start": "node src/server.js"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "express": "^4.21.1",
+    "ws": "^8.18.0"
+  }
+}

@@ -76,6 +76,10 @@ build/
 out/
 coverage/
 
+# Vercel CLI 프로젝트 링크(개인 계정 projectId/orgId) — 사람마다 다르고 비공개 계정
+# 정보라 공유하지 않는다. apps/dashboard/.vercel 도 동일한 이유로 무시된다.
+.vercel
+
 # --- 에디터/IDE — 개인 설정이라 브랜치마다 달라 충돌만 일으킨다 ------------------
 .vscode/
 .idea/
