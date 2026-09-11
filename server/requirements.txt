@@ -17,6 +17,7 @@
 fastapi==0.141.1
 uvicorn==0.52.4
 pydantic==2.13.4
+python-dotenv==1.2.3   # uvicorn --env-file (CLAUDE.md 실행 명령) 이 요구한다. 운영(k8s env)은 안 쓴다
 
 # --- PostgreSQL (SEC-1 저장 경로) — 포트가 async 라 async 드라이버를 쓴다.
 #     adapter/outbound/postgres/ 에서만 import 한다 (.importlinter 계약 3).

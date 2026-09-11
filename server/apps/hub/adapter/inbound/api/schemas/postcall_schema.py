@@ -7,6 +7,8 @@ from typing import Literal
 
 from pydantic import BaseModel, Field
 
+from ._types import StrField
+
 
 class TranscriptSegmentInput(BaseModel):
     """마스킹 완료본만 (SEC-1). 원문 필드가 없다."""
@@ -32,4 +34,4 @@ class CallSummaryResponse(BaseModel):
     summary_text: str = Field(description="D-1 상담 요약 — 초안")
     inquiry_type: str | None = Field(default=None, description="D-2 분류 **제안**. 확정 아님 — 상담원이 바꾼다")
     follow_up_actions: list[FollowUpActionSchema] = Field(description="D-3 후속조치 초안")
-    confirmed: bool = Field(description="상담원 확정 여부. 생성 직후에는 항상 false")
+    confirmed: StrField = Field(description="상담원 확정 여부. 생성 직후에는 항상 false")

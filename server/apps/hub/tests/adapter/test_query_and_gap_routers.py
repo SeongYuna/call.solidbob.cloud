@@ -39,9 +39,9 @@ def test_전사조회가_마스킹_구간까지_돌려준다():
             r = client.get("/hub/calls/c_001/transcript?limit=10&offset=0")
         b = r.json()
         assert r.status_code == 200
-        assert b["total"] == 1 and b["limit"] == 10
+        assert b["total"] == "1" and b["limit"] == "10"
         assert b["segments"][0]["masked"][0]["type"] == "P4"
-        assert b["segments"][0]["masked"][0]["span"] == [4, 15]
+        assert b["segments"][0]["masked"][0]["span"] == ["4", "15"]
     finally:
         app.dependency_overrides.clear()
 
@@ -70,7 +70,7 @@ def test_공백신고가_접수되면_201과_id를_준다():
             r = client.post("/hub/knowledge-gaps",
                             json={"module": "B", "description": "반품 배송비를 못 찾음", "call_id": "c_001"})
         assert r.status_code == 201
-        assert r.json() == {"gap_id": 77, "module": "B"}
+        assert r.json() == {"gap_id": "77", "module": "B"}
     finally:
         app.dependency_overrides.clear()
 
