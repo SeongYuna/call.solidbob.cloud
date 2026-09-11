@@ -24,6 +24,6 @@ resources:
 
 images:
   - name: seongyuna/callguard-server
-    newTag: "0.1.2"
+    newTag: "0.1.3"
   - name: seongyuna/callguard-es
     newTag: "9.5.1"

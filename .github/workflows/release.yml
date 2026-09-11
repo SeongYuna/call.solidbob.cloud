@@ -265,17 +265,27 @@ jobs:
       - name: 스모크 테스트
         if: steps.state.outputs.state == 'running'
         run: |
-          # `spokes` 에 retrieval 이 있어야 검색이 꽂힌 것이다. 서버는 떠도 검색만
-          # 조용히 501 로 남을 수 있다(_project/decisions/024).
+          # 스포크는 못 꽂히면 **오류 없이** 501 로 남는다(_project/decisions/024) — 서버는 떠 있어도
+          # 기능이 조용히 빠진다. 그래서 `spokes` 에 기대한 것이 **전부** 있는지 본다.
+          # 전에는 retrieval 하나만 봐서, 2026-09-11 `0.1.2` 가 trigger 없이(ai/provider.py 누락) 초록으로 나갔다.
+          # 스포크를 새로 꽂으면 여기에도 더한다.
+          EXPECTED="masking closure_gate retrieval trigger"
           for i in $(seq 1 12); do
             BODY=$(curl -fsS -m 10 "$HEALTH_URL" || true)
             echo "$BODY"
-            if echo "$BODY" | grep -q '"retrieval"'; then
-              echo "✅ /health 정상 — spokes 에 retrieval 있음"; exit 0
+            MISSING=$(printf '%s' "$BODY" | python3 -c '
+          import json, sys
+          try:
+              spokes = set(json.load(sys.stdin).get("spokes", []))
+          except ValueError:
+              spokes = set()
+          print(" ".join(s for s in sys.argv[1:] if s not in spokes))' $EXPECTED)
+            if [ -n "$BODY" ] && [ -z "$MISSING" ]; then
+              echo "✅ /health 정상 — spokes 에 $EXPECTED 전부 있음"; exit 0
             fi
             sleep 5
           done
-          echo "::error::/health 가 retrieval 을 보고하지 않습니다."
+          echo "::error::/health 의 spokes 에 빠진 것: ${MISSING:-응답 없음}"
           exit 1
 
       - name: 실패하면 되돌린다
