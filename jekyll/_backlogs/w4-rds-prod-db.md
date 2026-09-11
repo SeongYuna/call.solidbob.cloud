@@ -2,7 +2,7 @@
 title: "운영 DB 를 RDS 로 — Neon 임시 연결 걷어내기"
 assignee: "정성윤"
 role: "infra"
-status: "in-progress"
+status: "done"
 sprint: 4
 priority: 1
 date: 2026-09-11
@@ -39,7 +39,7 @@ RDS 는 설계에만 있고 만들어진 적이 없다. RDS 를 만들어 운영
   빈 Enter 를 `read` 가 먼저 받았다. 빈 입력이면 다시 묻는 반복문으로 바꿔 넣었다(런북 12-2 에 반영할 것)
 - [x] 운영 `GET /hub/knowledge-gaps` **200** (`{"gaps":[],"total":0,…}`, 2026-09-11) — 운영이 DB 에서 읽은 첫 응답.
   파드 로그의 `psycopg` 오류 여부는 보지 않았다
-- [ ] 백업 `~/server-env.backup.yaml` 삭제(`shred -u`) — `0.1.2` 배포 확인 뒤
+- [x] 백업 `~/server-env.backup.yaml` 삭제(`shred -u`) — `0.1.3` 배포 확인 뒤 2026-09-11 삭제, `ls -la ~` 로 확인
 - [x] 런북 6·12-2·17·19장을 실물(`callguard` 이름, `server-env`)에 맞춰 수정 — 2026-09-11. `secret.example.yaml` 도 함께
   (`DATABASE_URL`·`POSTGRES_*` 둘 다 · `sslmode=require` · AWS 키 제외)
 
