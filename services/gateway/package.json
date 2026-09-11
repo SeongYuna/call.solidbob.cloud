@@ -1,0 +1,24 @@
+{
+  "name": "callguard-gateway",
+  "private": true,
+  "description": "A-1~A-4 게이트웨이 — 오디오 중계 + Google STT 스트리밍 + server 전달",
+  "type": "module",
+  "engines": {
+    "node": ">=22.18"
+  },
+  "scripts": {
+    "start": "node --env-file-if-exists=../../.env src/main.ts",
+    "typecheck": "tsc --noEmit",
+    "test": "node --test --test-reporter=spec \"test/**/*.test.ts\"",
+    "stream-wav": "node scripts/stream_wav.ts"
+  },
+  "dependencies": {
+    "@google-cloud/speech": "8.1.0",
+    "ws": "8.21.3"
+  },
+  "devDependencies": {
+    "@types/node": "24.13.4",
+    "@types/ws": "8.18.1",
+    "typescript": "~5.9.3"
+  }
+}

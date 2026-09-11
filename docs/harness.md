@@ -84,7 +84,7 @@ lint-imports 가 "모듈 없음"으로 실패한다. 지금은 `server`: `hub`·
 | 구조 계약 (server) | `cd server && PYTHONPATH=apps lint-imports --config .importlinter` | **동작** — 계약 3종 통과 |
 | 구조 계약 (ai) | `cd ai && PYTHONPATH=apps:../server/apps lint-imports --config .importlinter` | **동작** — 계약 3종 통과 |
 | FastAPI 코어 실행 | `cd server && uvicorn main:app --reload --env-file ../.env` → `GET /health`·`GET /hub/myself`·`POST /hub/transcripts` | 동작 — 스포크 0개라 `/hub/transcripts`는 501 |
-| Node 게이트웨이 | — | 없음 — 미스캐폴딩 (`services/` 디렉터리 자체가 아직 없다) |
+| Node 게이트웨이 | `cd services/gateway && npm run typecheck && npm test` | **동작** (2026-09-11) — 65개 통과(접속 제어 포함), 구글·서버 없이 가짜 포트로 돈다. CI `gateway` job(아직 필수 통과 검사 아님). 실제 구글 STT 관통은 `node scripts/stream_wav.ts <wav> --watch` 로 손으로 본다 — [README](../services/gateway/README.md) |
 | React 대시보드 타입 체크 | `cd apps/dashboard && pnpm run typecheck` | 스캐폴딩됨 — 다만 `node_modules` 미설치라 **로컬에서 아직 안 돌려봄**. CI 에도 이 job 은 없다 |
 | 지킬 사이트 빌드 · 내부 링크 | `cd jekyll && bundle exec jekyll build` → `python3 scripts/check_site_links.py jekyll/_site` | **동작** — 56페이지, 깨진 링크 0 |
 

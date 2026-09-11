@@ -167,3 +167,39 @@ jobs:
         # 급할 때 아무 줄이나 적고 통과시키는 회피가 생겨 기록의 질이 오히려 나빠진다.
         # 로컬에서 강하게 보려면: python3 scripts/check_progress_log.py --strict
         run: python3 scripts/check_progress_log.py --days 7
+
+  gateway:
+    # A-1~A-4 게이트웨이 (services/gateway, Node.js). 구글·서버 없이 가짜 포트로 돈다.
+    # ⚠ 이 job 은 아직 main 룰셋의 필수 통과 검사가 아니다(2026-09-11 추가). 필수로 걸려면
+    #   룰셋에 `gateway` 를 더한다 — 저장소 admin(정성윤) 몫. 이름을 바꾸면 그때 룰셋도 같이 고친다.
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: services/gateway
+    steps:
+      - name: 체크아웃
+        uses: actions/checkout@v4
+
+      - name: 노드 설치
+        # 24 — .ts 를 빌드 없이 그대로 돌린다(타입 제거 실행). package.json engines 는 >=22.18.
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: services/gateway/package-lock.json
+
+      - name: 의존성 설치
+        run: npm ci
+
+      - name: 타입 체크
+        # `npx tsc` 가 아니라 스크립트로 — 로컬 typescript 를 못 찾으면 무관한 패키지를 받아 초록이 된다(harness.md §2).
+        run: npm run typecheck
+
+      - name: 테스트
+        # 0건 수집으로 초록이 되지 않게 통과 개수를 본다. `shell:` 을 안 쓴 step 은 pipefail 없이
+        # 돌아서 `| tee` 가 실패를 삼킨다 — 첫 줄에서 켜고, 실패 개수도 따로 본다(두 겹).
+        run: |
+          set -o pipefail
+          npm test 2>&1 | tee gateway-test.log
+          grep -qE "^ℹ pass [1-9]" gateway-test.log || { echo "::error::게이트웨이 테스트가 하나도 돌지 않았다"; exit 1; }
+          if grep -qE "^ℹ fail [1-9]" gateway-test.log; then echo "::error::게이트웨이 테스트 실패"; exit 1; fi
