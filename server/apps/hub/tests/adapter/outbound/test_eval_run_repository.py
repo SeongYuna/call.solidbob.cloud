@@ -118,33 +118,15 @@ def test_판정하지_않고_그대로_옮긴다():
 # ── 실제 PostgreSQL (기본 실행에서 제외) ────────────────────────────────────
 #    cd infra && docker compose up -d
 #    cd ../server && ../.venv/bin/python -m pytest -m integration
-
-import os  # noqa: E402
-import pathlib  # noqa: E402
-
-
-def _settings():
-    env_path = pathlib.Path(__file__).resolve().parents[6] / ".env"
-    if env_path.exists():
-        for line in env_path.read_text(encoding="utf-8").splitlines():
-            if "=" in line and not line.startswith("#"):
-                k, _, v = line.partition("=")
-                os.environ.setdefault(k.strip(), v.strip())
-    from core.config import load_settings
-
-    return load_settings()
+#    DB 는 `integration_settings` 픽스처(server/conftest.py)가 준다.
 
 
 @pytest.mark.integration
-def test_실제_DB에_기록되고_컬럼_길이에_들어간다():
+def test_실제_DB에_기록되고_컬럼_길이에_들어간다(integration_settings):
     """가짜 커서는 VARCHAR(10) 초과를 통과시킨다 — 실제로 그것 때문에 한 번 깨졌다."""
     from hub.adapter.outbound.postgres.connection import build_connection_factory
 
-    settings = _settings()
-    if not settings.postgres_configured:
-        pytest.skip("PostgreSQL 설정 없음 — infra/README.md 참고")
-
-    connect = build_connection_factory(settings)
+    connect = build_connection_factory(integration_settings)
     repo = PostgresEvalRunRepository(connect)
 
     async def scenario():

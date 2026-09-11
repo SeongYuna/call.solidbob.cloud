@@ -43,6 +43,27 @@ def test_returns_masked_contract_when_masking_registered():
     assert body["segment_id"] == "1" and body["utterance_end_ms"] == "2600"  # 응답은 전부 문자열 (2026-09-10)
 
 
+def test_통화_시작_전_전사는_409로_순서를_알려준다():
+    """decisions/301 — 전에는 외래키 위반이 500 으로 나가 "서버 코드가 틀렸다"로 읽혔다(2026-09-11).
+    호출 순서 문제이므로 409 + 무엇을 먼저 보내야 하는지를 준다. 원문은 오류 본문에도 없어야 한다(SEC-1)."""
+    from hub.app.ports.output import CallNotStartedError, TranscriptIngestRecordPort
+    from hub.dependencies.transcript_record_provider import get_transcript_record_port
+
+    class _NoCall(TranscriptIngestRecordPort):
+        async def record(self, event):
+            raise CallNotStartedError(event.call_id)
+
+    app.dependency_overrides[get_transcript_record_port] = lambda: _NoCall()
+    try:
+        with TestClient(app) as client:
+            r = client.post("/hub/transcripts", json=BODY)
+    finally:
+        app.dependency_overrides.clear()
+    assert r.status_code == 409
+    assert "POST /hub/calls" in r.json()["detail"]
+    assert "01012345678" not in r.text
+
+
 def test_myself_is_served():
     with TestClient(app) as client:
         body = client.get("/hub/myself").json()

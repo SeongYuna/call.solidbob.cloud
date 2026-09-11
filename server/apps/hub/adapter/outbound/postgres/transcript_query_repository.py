@@ -24,10 +24,12 @@ LIMIT %s OFFSET %s
 
 _COUNT = 'SELECT COUNT(*) FROM "transcript_segment" WHERE "call_id" = %s'
 
+# `segment_id` 는 통화 안에서의 순번이다(`decisions/205`) — `call_id` 로 거르지 않으면
+# 다른 통화의 같은 순번 발화에 붙은 마스킹 구간이 섞여 나온다.
 _SPANS = """
 SELECT "segment_id", "pattern", "span_start", "span_end"
 FROM "masking_event"
-WHERE "segment_id" IN ({placeholders})
+WHERE "call_id" = %s AND "segment_id" IN ({placeholders})
 ORDER BY "segment_id", "span_start"
 """
 
@@ -48,7 +50,7 @@ class PostgresTranscriptQueryRepository(TranscriptQueryPort):
                 ids = [r[0] for r in rows]
                 await cur.execute(
                     _SPANS.format(placeholders=", ".join(["%s"] * len(ids))),
-                    tuple(ids),
+                    (call_id, *ids),
                 )
                 span_rows = await cur.fetchall()
 

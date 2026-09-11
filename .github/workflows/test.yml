@@ -10,7 +10,10 @@ name: CI — 하네스 테스트 · 구조 계약 · 사이트 빌드
 #  - 기준선 미달 시 실패(기획서 6.2절)는 아직 넣지 않는다. 측정값이 없어서
 #    무조건 실패하거나 가짜 기준선을 넣게 된다 — 절대 원칙 2번 위반.
 #    2주차 잠정 베이스라인이 나온 뒤 별도로 붙인다.
-#  - 실제 DB·ES·외부 API 가 필요한 테스트는 각 pytest.ini 의 `-m "not integration"` 로 빠진다
+#  - 실제 DB·ES·외부 API 가 필요한 테스트는 각 pytest.ini 의 `-m "not integration"` 로 빠진다.
+#    **예외: `server` 의 PostgreSQL integration 테스트는 여기서 돈다(2026-09-11).** 매번 새로 띄운
+#    postgres:17 에 현재 db/schema.sql 을 넣고 돌린다 — 스키마가 바뀌었는데 어댑터가 안 따라가면
+#    여기서 빨간불이 된다. 이게 없어서 09-09~09-11 전사 저장이 새 스키마에서 전부 실패하는데도 초록이었다.
 #  - 진행 기록 확인은 경고만 낸다(exit 0). 기록 누락으로 코드 머지를 막지 않는다
 #  - 구조 계약(import-linter 5종, docs/harness.md §1)은 테스트와 별개 step — 계층 위반은 테스트가 못 잡는다
 
@@ -41,6 +44,25 @@ jobs:
     defaults:
       run:
         working-directory: server
+    services:
+      # integration 테스트 전용 일회용 DB. job 이 끝나면 사라진다. 인증 없이(trust) 띄워 저장소에
+      # 암호를 두지 않는다 — 러너 안에서만 열리는 컨테이너라 밖에서 닿지 않는다(SEC-2).
+      # 버전은 운영 RDS(런북 6-1)와 같은 17.
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_HOST_AUTH_METHOD: trust
+          POSTGRES_DB: callguard_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      # server/conftest.py 의 integration_settings 가 이 값만 쓴다(.env 를 보지 않는다)
+      CALLGUARD_TEST_DATABASE_URL: postgresql://postgres@localhost:5432/callguard_test
     steps:
       - name: 체크아웃
         uses: actions/checkout@v4
@@ -51,11 +73,34 @@ jobs:
           python-version: '3.13'
 
       - name: 테스트 의존성 설치
-        # 버전은 server/requirements.txt 의 고정값과 같게 유지한다.
-        run: pip install pytest==9.1.1 fastapi==0.141.1 httpx==0.28.1 import-linter==2.13
+        # 버전은 server/requirements.txt 의 고정값과 같게 유지한다. psycopg 는 integration 테스트용.
+        run: pip install pytest==9.1.1 fastapi==0.141.1 httpx==0.28.1 import-linter==2.13 "psycopg[binary]==3.2.10"
 
       - name: 테스트 실행
         run: pytest
+
+      - name: 스키마 적용 (db/schema.sql → 새 DB)
+        # 운영(런북 17장)과 같은 파일을 같은 방식(한 번에 실행)으로 넣는다. 생성물이라 고칠 곳은
+        # db/generate_schema_docs.py 다. 한 문장이라도 실패하면 이 step 이 실패한다.
+        run: |
+          python - <<'PY'
+          import os, pathlib, psycopg
+          sql = pathlib.Path("../db/schema.sql").read_text(encoding="utf-8")
+          with psycopg.connect(os.environ["CALLGUARD_TEST_DATABASE_URL"]) as conn:
+              conn.execute(sql)
+              n = conn.execute("select count(*) from pg_tables where schemaname='public'").fetchone()[0]
+          print(f"적용 완료 — {n} 테이블")
+          PY
+
+      - name: PostgreSQL integration 테스트
+        # 기본 실행(`-m "not integration"`)과 따로 돈다. 0건 수집으로 초록이 되지 않게 개수를 본다.
+        # ⚠ `shell:` 을 안 쓴 run 은 `bash -e` 이고 pipefail 이 **꺼져 있다** — 그대로 두면 `| tee` 가
+        #   pytest 의 실패를 삼켜 빨간불이 초록이 된다(2026-09-11 a5 세션이 재현). 그래서 맨 앞에서 켠다.
+        run: |
+          set -o pipefail
+          pytest -m integration -rs | tee integration.log
+          grep -qE "[0-9]+ passed" integration.log || { echo "::error::integration 테스트가 하나도 돌지 않았다"; exit 1; }
+          if grep -q "SKIPPED" integration.log; then echo "::error::integration 테스트가 스킵됐다 — DB 설정을 확인한다"; exit 1; fi
 
       - name: 구조 계약 검사 (import-linter)
         run: PYTHONPATH=apps lint-imports --config .importlinter
