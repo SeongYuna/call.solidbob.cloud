@@ -225,7 +225,7 @@ rev.5의 C-6은 **자동 탐지**(고객 욕설·폭언, 재현율 우선 분류
 `services/gateway` 가 생겼다([w4-gateway-streaming-stt](/backlog/w4-gateway-streaming-stt/)) — 실제 AI Hub 음성 →
 Google STT → 로컬 server 마스킹 → 대시보드 WS 까지 관통했다. 거기서 나온 것들이다.
 
-- [ ] **`.env.example` 에 게이트웨이 키 넷을 사람이 넣어야 한다 (신규, 2026-09-11)** — `GATEWAY_PORT`(기본 8080) ·
+- [x] **`.env.example` 에 게이트웨이 키 넷을 사람이 넣어야 한다 (신규, 2026-09-11 · 같은 날 넣었다)** — 사용자가 `!` 로 직접 붙였다(값 없이 키 이름·설명만, 보호 훅은 우회하지 않았다). 원래 적힌 내용 — `GATEWAY_PORT`(기본 8080) ·
   `CORE_API_URL`(기본 `http://localhost:8000`, 운영은 `http://callguard-server`) · `GATEWAY_INGEST_TOKEN` · `GATEWAY_VIEW_TOKEN`
   (둘 다 없으면 루프백만 받는다). 자격증명 보호 훅이 이 파일을
   **파일 이름으로** 막아 Claude 가 넣지 않았다(우회하지 않았다). 값 없이 키 이름만 넣으면 된다(SEC-2).
@@ -276,6 +276,41 @@ Google STT → 로컬 server 마스킹 → 대시보드 WS 까지 관통했다. 
   ④ `w3-gateway-dev-testcall` 티켓은 그대로 `done` 이다 — 옮겨 온 쪽은 [w4-gateway-dev-browser-stt](/backlog/w4-gateway-dev-browser-stt/)
 - [ ] **뷰 토큰을 대시보드에 어떻게 줄지 (신규, 2026-09-11)** — `?gateway=` 로 넣으면 localStorage 에 남고, Vercel env 로 넣으면 공개 번들에 들어간다.
   둘 다 **비밀이 아니다**(무작위 스캔만 막는다). 사람별 인증이 생기기 전까지는 그 한계를 알고 쓴다. 뷰 토큰 값은 인스턴스에서 꺼낸다(`secret.example.yaml` ③)
+  → 아래 「공개 데모를 라이브로 바꿀지」에 선택지를 정리했다.
+
+### 공개 데모(`call.solidbob.cloud`)를 라이브로 바꿀지 — 조서희 님과 정할 것 (2026-09-11)
+
+게이트웨이가 운영에 떴다(`/gateway/health` — 키·캡·토큰 둘 전부 true). 대시보드를 실제 게이트웨이에 붙이려면 Vercel 에
+`VITE_GATEWAY_WS_URL=wss://server.solidbob.cloud/gateway/ws?token=<뷰 토큰>` 을 넣고 재배포하면 된다 — **그런데 정성윤은
+이 설정을 일부러 멈췄다.** 기술 문제가 아니라 팀이 정할 일이라서다: 대시보드는 조서희 님 전담이고(`decisions/302`),
+`decisions/109` 도 «프론트는 건드리지 않는다» 고 적었다.
+
+**먼저 알아 둘 사실** (2026-09-11 코드·운영 확인)
+
+- 대시보드의 실시간 자막·추천은 **전부 게이트웨이 WebSocket** 으로 온다. 필요한 빌드 변수는 `VITE_GATEWAY_WS_URL` 하나다.
+  `VITE_CORE_API_URL` 은 지금 헤더 `REST` 배지만 켠다(`AppHeader.tsx`) — 통화 기록(`coreClient.ts`)은 아직 mock 이다.
+  그래서 **운영 서버의 CORS(`call.solidbob.cloud` → 지금 400)도 지금은 필요 없다.** 통화 기록이 서버 REST 로 바뀔 때 넣는다
+- 지금 배포된 번들에는 서버·게이트웨이 주소가 없다 → **가짜 시나리오(mock)** 를 재생한다. 누가 열어도 자막·카드가 흐른다
+- 라이브로 바꾸면 **오디오를 보내는 쪽(생산자)이 있어야** 화면에 뭔가 뜬다. 지금 생산자는 개발용 `/gateway/dev`(ingest 토큰 필요) 하나다
+- 게이트웨이 허용 origin 은 `https://call.solidbob.cloud` · 로컬 Vite 뿐이다 — Vercel **Preview**(`*.vercel.app`)는 붙지 못한다
+
+| | 방법 | 좋은 점 | 나쁜 점 |
+|---|---|---|---|
+| **A** | **공개 데모는 mock 그대로** · 라이브는 개발자가 `?gateway=<주소>` 로 자기 브라우저에서만 | 바꿀 것 없음. 공개 데모가 늘 돈다. 자막이 밖에 노출되지 않는다 | 방문자는 실제 동작을 못 본다. 뷰 토큰을 쓸 사람에게 따로 건넨다 |
+| **B** | **Vercel Production 에 `VITE_GATEWAY_WS_URL`** (뷰 토큰 포함) → 재배포 | 주소만 열면 라이브. 시연 준비가 간단하다 | ① 생산자가 없으면 **빈 화면** ② 번들이 공개라 **주소를 아는 누구나 모든 통화의 (마스킹된) 자막을 본다** ③ EC2 가 꺼지면(자동 중지를 걸면) 멈춘다 ④ 토큰을 바꾸면 재배포 |
+| **C** | 기본은 mock, 화면에서 「라이브 연결」을 골라 **토큰을 사람이 입력** | 공개 데모도 살고 라이브도 쉽다. 토큰이 번들에 안 들어간다 | **프론트 코드 작업**이 필요하다(조서희 님). 지금의 `?gateway=` 를 화면으로 올린 것에 가깝다 |
+
+**권고: 지금은 A.** 공개 데모를 망가뜨리지 않고 노출도 없으며, 라이브 확인은 `?gateway=` 로 충분하다. **B 로 가는 조건** —
+① 시연 때 오디오를 누가 어떻게 보낼지 정해졌다(`/gateway/dev` 등) ② 「주소를 아는 사람은 자막을 본다」를 팀이 받아들였다
+(상담원 로그인은 서버에도 아직 없다 — 「서버에 인증이 없다」). 발표 시연만 라이브가 필요하면 **그날만 B 로 바꿨다가 되돌리는** 방법도 있다.
+
+**B 를 고르면 할 일** (정성윤 — Vercel 계정):
+뷰 토큰 꺼내기(`sudo k3s kubectl -n callguard get secret gateway-tokens -o jsonpath='{.data.GATEWAY_VIEW_TOKEN}' | base64 -d`, 32자 — 48자인
+`INGEST` 는 **절대 넣지 않는다**) → `call.solidbob.cloud` 가 붙은 Vercel 프로젝트(Root Directory `apps/dashboard`) → Settings →
+Environment Variables → **Production 만** → Deployments → Redeploy(`VITE_` 는 빌드 때 박힌다) → 확인: 번들에 `gateway/ws` 가 들어갔는지 ·
+대시보드를 연 동안 `/gateway/health` 의 `dashboards` 가 1 이 되는지.
+
+- [ ] **A / B / C 중 무엇으로 할지** — 조서희 님(대시보드) · 정성윤(Vercel). 정하면 위 「뷰 토큰을 대시보드에 어떻게 줄지」와 함께 닫는다
 
 ### 배포하면 ES 가 매번 «configured» 로 나온다 (신규, 2026-09-11)
 
