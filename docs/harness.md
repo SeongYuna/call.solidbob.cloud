@@ -79,6 +79,7 @@ lint-imports 가 "모듈 없음"으로 실패한다. 지금은 `server`: `hub`·
 | 영역 | 명령 | 상태 (2026-08-26) |
 |---|---|---|
 | 허브 계약·앱 기동 테스트 | `cd server && pytest` (`server/pytest.ini`: `integration` 마커는 기본 제외) | **동작** — 11개 통과 (테스트는 앱 안 `apps/hub/tests/`, 루트 `tests/`는 main.py 전용) |
+| 저장 어댑터 ↔ 스키마 (실제 PostgreSQL) | `cd server && CALLGUARD_TEST_DATABASE_URL=… pytest -m integration` — DB 에 현재 `db/schema.sql` 을 먼저 넣는다 | **동작 (2026-09-11 추가)** — 4개 통과. CI `server` job 이 `postgres:17` 서비스로 매번 새 DB 에서 돈다. 이게 없어서 09-09~09-11 스키마·어댑터 어긋남이 초록이었다 |
 | **평가 하네스**·검색 | `cd ai && pytest` | **동작** — 53개 통과 (`apps/evaluation/tests/`·`apps/retrieval/tests/`) |
 | 구조 계약 (server) | `cd server && PYTHONPATH=apps lint-imports --config .importlinter` | **동작** — 계약 3종 통과 |
 | 구조 계약 (ai) | `cd ai && PYTHONPATH=apps:../server/apps lint-imports --config .importlinter` | **동작** — 계약 3종 통과 |

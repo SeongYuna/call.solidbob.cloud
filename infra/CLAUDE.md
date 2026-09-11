@@ -38,7 +38,8 @@
    나머지는 영원히 `Pending` 이다. **RuntimeClass 만** 쓴다(11장).
 4. **Ollama(11434) · Elasticsearch(9200)를 인터넷에 열지 않는다.** 둘 다 인증이 없다 — ClusterIP 로만 접근한다.
    k3s API(6443)와 SSH(22)는 **내 IP 로만** 연다.
-5. **자격증명을 커밋하지 않는다**(SEC-2, 루트 §8). RDS 암호·엔드포인트는 k8s 시크릿 `db-credentials` 로만 들어가고,
+5. **자격증명을 커밋하지 않는다**(SEC-2, 루트 §8). RDS 암호·엔드포인트는 k8s 시크릿 `server-env` 로만 들어가고
+   (`DATABASE_URL`·`POSTGRES_*` 둘 다 같은 값 — 런북 12-2, `decisions/108`),
    EC2 는 액세스 키가 아니라 IAM 역할(`assist-ec2-role`)로 S3 에 접근한다.
 6. **19장을 통과하면 즉시 AMI 를 만든다**(20장). 재세팅에 반나절이 든다.
 
@@ -48,10 +49,13 @@
 
 | | 로컬 (`docker-compose.yml`) | 운영 (런북) |
 |---|---|---|
-| DB | 컨테이너 PostgreSQL 17, `db/schema.sql` 자동 적용 | RDS `assist-pg`, 스키마는 **17장에서 수동 적용** |
+| DB | 컨테이너 PostgreSQL 17, `db/schema.sql` 자동 적용 | RDS `callguard-pg`(SSL 강제), 스키마는 **17장 — 서버 파드 안에서 수동 적용** |
 | ES | 힙 512m, `127.0.0.1` 바인딩 | 힙 2g, ClusterIP(외부 비공개) |
-| 이미지 | `docker compose build` | `docker save … \| k3s ctr images import` + `imagePullPolicy: Never` (13-1) |
-| 설정 | 루트 `.env` | k8s 시크릿 + 파드 `env` (12-2 · 16-1) |
+| 이미지 | `docker compose build` | Docker Hub `seongyuna/callguard-server:<newTag>` — `release.yml` 이 `infra/k8s/base/kustomization.yaml` 의 `newTag` 로 굽고 SSM 으로 적용한다 |
+| 설정 | 루트 `.env` | k8s 시크릿 `server-env`(`.env` 키 전체, `envFrom`) — 12-2 · `k8s/base/secret.example.yaml` |
+
+> **런북 13장(클론)·16장(Caddy)은 09-04 원안이다** — 운영은 저장소 클론이 없고 Traefik Ingress + cert-manager 다.
+> 클러스터 구성의 정본은 `k8s/base/` 이고, 런북 머리말이 어긋난 장을 적어 둔다(2026-09-11).
 
 **운영 배포 산출물의 경로를 런북이 전제한다** — `infra/docker/server.Dockerfile` · `infra/docker/Caddyfile` ·
 `infra/elasticsearch/`. 옮기면 런북 13·16장을 함께 고친다.
