@@ -235,7 +235,10 @@ Google STT → 로컬 server 마스킹 → 대시보드 WS 까지 관통했다. 
   녹음은 전부 모노라, 재생하면 한 화자로 찍힌다. 구글 화자 태그(diarization)는 final 에만 붙고 **누가 상담원인지는
   알려 주지 않는다** — 첫 화자를 상담원으로 치는 식의 추측을 넣으면 C-1~C-4(상담원)·C-6(고객) 방향이 뒤집힐 수 있어
   넣지 않았다. **정할 것**: 데모를 물리 2채널(브라우저 2대)로만 할지, 모노 녹음 재생용으로 diarization + 규칙을 둘지
-- [ ] **게이트웨이 배포 — 위 「A-1 게이트웨이를 같은 EC2 에 올릴지」(2026-09-03)의 답이 런북에 이미 있다 (신규, 2026-09-11)** —
+- [x] **게이트웨이 배포 — 위 「A-1 게이트웨이를 같은 EC2 에 올릴지」(2026-09-03)의 답이 런북에 이미 있다 (신규, 2026-09-11 · 같은 날 배포)** —
+  **→ 2026-09-11 운영에 올렸다**(PR #68 — 같은 노드, Ingress `/gateway`, `infra/k8s/base/gateway.yaml`). ①~⑥ 전부 반영 — ⑤ 장부는 hostPath,
+  ⑥ 토큰은 배포가 인스턴스 안에서 만든다. 첫 배포는 Docker Hub 새 저장소가 비공개로 만들어져 멈췄다(아래 원문은 그대로 둔다).
+  원래 적은 것 —
   런북 0장 사양표가 **FastAPI server · Node 게이트웨이 · Caddy ≈ 1.0GB** 를 같은 노드에 넣고 계산했다. 남은 것은
   ① 이미지(`infra/docker/gateway.Dockerfile`) ② k8s Deployment·Service(시크릿 `server-env` · `gcp-stt-credentials`
   재사용) ③ Ingress 경로 — 밖에 여는 주소는 `server.solidbob.cloud` 하나이므로 `/gateway` 같은 경로로 붙인다
@@ -257,3 +260,25 @@ Google STT → 로컬 server 마스킹 → 대시보드 WS 까지 관통했다. 
 - [ ] **ES 에 못 붙을 때 `/hub/recommendations` 가 500 이다 (신규, 2026-09-11)** — 09-10 에 인덱스가 없을 때(`index_not_found`)는
   503 + 「적재해야 한다」로 돌려주게 했는데, **ES 자체에 연결을 못 하면**(로컬 ES 없음) 여전히 500 이다. 게이트웨이는
   둘 다 상태 코드만 로그에 남기므로 동작은 같지만, 운영에서 원인을 가르려면 503 쪽이 낫다 — `server/` (누구나)
+
+### frontend 브랜치를 main 에 합칠 때 — 조서희 님께 (2026-09-11, `decisions/109`)
+
+- [ ] **`services/gateway` 가 두 벌이다 — main 쪽을 쓰고 frontend 쪽 것은 버린다.** 같은 날 조서희 님(`decisions/402`, 브라우저 음성 인식 dev 경로)과
+  정성윤(정식 A-1, 운영 배포)이 서로 모르고 같은 디렉터리에 게이트웨이를 만들었다. 합치면 `README.md`·`package.json`·`package-lock.json` 이
+  충돌한다. **402 의 쓸모는 main 게이트웨이로 옮겼다**(`decisions/109`) — 운영 `https://server.solidbob.cloud/gateway/dev` 가 같은 테스트 페이지이고
+  (ngrok 필요 없음), `/dashboard` 경로도 그대로 받는다. 합칠 때 할 일:
+  ① `services/gateway/` 는 main 쪽을 고른다(`git checkout origin/main -- services/gateway`) — frontend 의 `server.js`·`devPage.js`·`hubClient.js`·
+  `dashboardHub.js`·`Dockerfile`·`.dockerignore`·`.gitignore` 는 버린다(남으면 게이트웨이 이미지에 섞이고 릴리스 태그 검사가 막는다)
+  ② **`apps/dashboard/src/lib/ws/types.ts` 의 `?gateway=` 덮어쓰기는 그대로 넣는다** — 정식 게이트웨이와 맞물린다. 운영 주소는
+  `?gateway=` + `encodeURIComponent("wss://server.solidbob.cloud/gateway/ws?token=<뷰 토큰>")` (토큰 안에 `&` 는 없지만 인코딩해 두는 편이 안전하다)
+  ③ `decisions/402` 머리에 «일부 대체됨 — 109» 를 적는다(게이트웨이 신설 부분). 대시보드 덮어쓰기 결정은 402 그대로 유효하다
+  ④ `w3-gateway-dev-testcall` 티켓은 그대로 `done` 이다 — 옮겨 온 쪽은 [w4-gateway-dev-browser-stt](/backlog/w4-gateway-dev-browser-stt/)
+- [ ] **뷰 토큰을 대시보드에 어떻게 줄지 (신규, 2026-09-11)** — `?gateway=` 로 넣으면 localStorage 에 남고, Vercel env 로 넣으면 공개 번들에 들어간다.
+  둘 다 **비밀이 아니다**(무작위 스캔만 막는다). 사람별 인증이 생기기 전까지는 그 한계를 알고 쓴다. 뷰 토큰 값은 인스턴스에서 꺼낸다(`secret.example.yaml` ③)
+
+### 배포하면 ES 가 매번 «configured» 로 나온다 (신규, 2026-09-11)
+
+- [ ] **`statefulset.apps/elasticsearch configured` 가 모든 릴리스에 찍힌다** — `elasticsearch.yaml` 을 안 바꿔도 그렇다(릴리스 34580004558·34580734409·
+  34584307027 확인). 누가 클러스터를 손댄 흔적이 아니라 **적용할 때마다 생기는 차이**다(bc 세션 확인). 해는 없지만(검색 200, 인덱스 그대로)
+  **진짜 변경이 생겨도 이 줄에 묻힌다.** 추정: `volumeClaimTemplates` 에 서버가 기본값을 채우는 필드. 확인은 인스턴스에서
+  `kubectl kustomize infra/k8s/base/ | sudo k3s kubectl diff -f -` — 나온 필드를 매니페스트에 적어 두면 사라진다
