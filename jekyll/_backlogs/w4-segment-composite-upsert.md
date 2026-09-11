@@ -47,6 +47,10 @@ paths:
 - [x] 수정 전 코드가 같은 DB 에서 실패함을 확인 — `InvalidColumnReference: no unique or exclusion constraint matching the ON CONFLICT`
 - [x] `server` 315 passed · 계약 4종 KEPT / `ai` 191 passed · 계약 3종 KEPT
 - [x] 재발 방지 — CI `server` job 이 `postgres:17` + 현재 `schema.sql` 로 integration 테스트를 돈다(로컬 재현: 수정 전 어댑터 2 failed)
-- [ ] 위 CI 가 첫 PR 에서 실제로 초록인지 확인
-- [ ] **운영 DB 가 새 스키마인 상태에서** 머지 — [w4-rds-prod-db](/backlog/w4-rds-prod-db/) 의 시크릿 교체가 먼저다
-- [ ] 운영 확인: `/openapi.json` 에 `POST /hub/calls` · `/health` `spokes` 에 `trigger` · 통화 시작 → 전사 200 → 조회에 남음
+- [x] 위 CI 가 첫 PR 에서 실제로 초록인지 확인 — PR #64 `server` job: 스키마 22 테이블 · **integration 4 passed**
+- [x] **운영 DB 가 새 스키마인 상태에서** 머지 — RDS 전환 뒤 PR #64 머지(`3514e18`), `release.yml` plan·image·deploy 성공
+- [x] 운영 확인(2026-09-11): `/openapi.json` 에 `POST /hub/calls` · 통화 시작(`created "true"`, 재알림 `"false"`) →
+  전사 **200**(`제 번호는 *********** 입니다`, P4) → 조회 `total 1` · 시작 안 한 통화 **409**
+- [ ] `/health` `spokes` 에 `trigger` — **`0.1.2` 에서 빠졌다.** `server.Dockerfile` 이 `ai/apps/` 만 복사하고 `ai/provider.py`
+  를 안 담아 `main.py` 가 트리거를 조용히 못 꽂았다(이미지 배치를 흉내 내 재현). `COPY ai/provider.py` + `0.1.3` +
+  재발 방지 테스트(`server/tests/test_image_layout.py`)를 준비했다 — 배포 대기
