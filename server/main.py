@@ -112,6 +112,26 @@ def _wire_trigger(app: FastAPI) -> str | None:
     return "trigger"
 
 
+def _wire_call_guard(app: FastAPI) -> str | None:
+    """`ai/` 의 C-6 콜 가드를 전사 수신 경로에 꽂는다. 꽂았으면 이름을, 못 꽂았으면 None.
+
+    트리거처럼 외부 자원이 없어 설정 조건이 없다. **못 꽂아도 501 이 아니다** — 콜 가드는
+    전사 수신에 얹혀 돌기 때문에, 501 을 올리면 자막·마스킹까지 멈춘다. 빠진 것은 `/health` 의
+    `spokes` 로 보인다(`hub/dependencies/call_guard_provider.py`).
+    """
+    sys.path.insert(0, str(AI_APPS))
+    sys.path.insert(0, str(AI_APPS.parent))
+    try:
+        from provider import build_call_guard_provider  # noqa: PLC0415
+    except ModuleNotFoundError:
+        return None
+
+    from hub.dependencies.call_guard_provider import get_call_guard_port  # noqa: PLC0415
+
+    app.dependency_overrides.setdefault(get_call_guard_port, build_call_guard_provider())
+    return "call_guard"
+
+
 def _install_missing_index_handler(app: FastAPI) -> None:
     """ES 인덱스가 없거나 ES 에 연결하지 못할 때 500 대신 **503 + 이유**를 돌려준다.
 
@@ -162,7 +182,7 @@ async def lifespan(app: FastAPI):
 
     SPOKES.clear()
     SPOKES.extend(_BUILTIN_SPOKES)
-    for wired in (_wire_retrieval(app, settings), _wire_trigger(app)):
+    for wired in (_wire_retrieval(app, settings), _wire_trigger(app), _wire_call_guard(app)):
         if wired:
             SPOKES.append(wired)
     yield

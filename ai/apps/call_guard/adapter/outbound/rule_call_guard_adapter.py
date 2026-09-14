@@ -27,6 +27,8 @@ class RuleCallGuardAdapter(CallGuardPort):
                 category=d.category,
                 phrase=d.phrase,
                 source_doc_id=d.source_doc_id,
+                span_start=d.start,
+                span_end=d.end,
             )
             for d in detect(customer_utterance)
         ]

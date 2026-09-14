@@ -8,8 +8,11 @@ dependencies/ 에서 결합한다. **이 포트들이 유일한 계약이다** �
 - TriggerPort · RetrievalPort · DomainRoutingPort · GenerationPort · CompliancePort · ClosureGatePort ← evaluation.harness
   (파이프라인 슬라이스가 생기면 그 인터랙터도 호출자가 된다)
 - *RecordPort ← 각 슬라이스 인터랙터
+- CallGuardPort · CallGuardRecordPort ← hub.app.use_cases.transcript_ingest_interactor (C-6 은 마스킹 뒤에 돈다)
 """
 
+from .call_guard_port import CallGuardPort
+from .call_guard_record_port import CallGuardRecordPort
 from .call_start_record_port import CallStartRecordPort
 from .card_feedback_port import CardFeedbackPort
 from .closure_gate_port import ClosureGatePort
@@ -24,8 +27,11 @@ from .retrieval_port import RetrievalPort
 from .transcript_ingest_record_port import CallNotStartedError, TranscriptIngestRecordPort
 from .transcript_query_port import TranscriptQueryPort
 from .trigger_port import TriggerPort
+from .voice_outlier_record_port import VoiceOutlierRecordPort
 
 __all__ = [
+    "CallGuardPort",
+    "CallGuardRecordPort",
     "CallNotStartedError",
     "CallStartRecordPort",
     "CardFeedbackPort",
@@ -41,4 +47,5 @@ __all__ = [
     "TranscriptIngestRecordPort",
     "TranscriptQueryPort",
     "TriggerPort",
+    "VoiceOutlierRecordPort",
 ]
