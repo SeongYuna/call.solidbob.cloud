@@ -49,6 +49,30 @@ export const SEED_ENTRIES: BlacklistEntryItem[] = [
     release_reason: null,
     note: "폭언 반복 확인 후 승인",
   },
+  // 재등록 예시 — 같은 customer_ref로 예전에 등록됐다 해제된 뒤 다시 등록됐다.
+  // EntriesTab의 "기존(재범)" 필터가 이 customer_ref를 잡는지 보여주는 mock 데이터다.
+  {
+    entry_id: "ent-seed-2-first",
+    customer_ref: "hmac_seed_3",
+    request_id: "req-seed-2a",
+    approved_at: "2026-07-01T10:00:00+09:00",
+    expires_at: "2026-08-01T10:00:00+09:00",
+    released_at: "2026-08-01T10:00:00+09:00",
+    released_by: "정성윤",
+    release_reason: "만료 후 자동 해제",
+    note: "1차 등록",
+  },
+  {
+    entry_id: "ent-seed-2-second",
+    customer_ref: "hmac_seed_3",
+    request_id: "req-seed-2b",
+    approved_at: "2026-09-08T11:30:00+09:00",
+    expires_at: "2027-03-08T11:30:00+09:00",
+    released_at: null,
+    released_by: null,
+    release_reason: null,
+    note: "해제 뒤 재범으로 재등록",
+  },
 ];
 
 export const SEED_KNOWLEDGE_GAP_LOG: KnowledgeGapEntry[] = [

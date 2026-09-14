@@ -2900,6 +2900,24 @@ button {
 .admin-entry-row-main { display: flex; align-items: center; gap: 12px; flex: 1; min-width: 140px; }
 .admin-entry-row-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 
+/* 신규·기존(재범) 필터 — .admin-tabs 재사용, 위쪽 여백만 살짝 준다 */
+.admin-subfilter { margin-bottom: 4px; }
+
+.admin-repeat-badge {
+  flex-shrink: 0;
+  padding: 2px 8px;
+  border-radius: var(--radius-pill);
+  background: var(--hover);
+  color: var(--muted);
+  font-size: 0.75rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.admin-repeat-badge.is-repeat {
+  background: var(--warn-bg);
+  color: var(--warn-fg);
+}
+
 /* 현황판 — .standby-kpi 카드와 같은 무게감(큰 숫자 + 배지)을 쓴다. */
 .wallboard-grid {
   display: grid;
