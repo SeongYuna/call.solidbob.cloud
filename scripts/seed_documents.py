@@ -5,7 +5,7 @@
 `document` 는 조항의 **참조 무결성용 메타데이터**다(본문은 Elasticsearch). 그런데 이 테이블을 채우는
 경로가 **없었다** — ES 적재(`index_knowledge_base.py --to-es`)만 있고 DB 적재는 없어서,
 `call_guard_flag.source_doc_id`(`DASAN-MANUAL-5.x`)·`recommendation_card.source_doc_id` 의 외래키가
-설 수 없었다. 운영에서 콜 가드 기록이 FK 위반으로 실패한다.
+설 수 없었다 — 조항이 없으면 근거가 NULL 로 저장된다.
 
 같은 입력이면 같은 결과다 — UPSERT 라 여러 번 돌려도 된다. 지식베이스에서 **빠진 조항은 지우지
 않는다**: 그 조항을 가리키는 옛 카드·콜 가드 기록이 FK 로 묶여 있고, 지우면 「어떤 근거로 떴었는지」가

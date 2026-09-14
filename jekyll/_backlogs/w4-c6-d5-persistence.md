@@ -10,7 +10,6 @@ requirement:
   - "C-6"
   - "D-5"
 paths:
-  - "server/apps/hub/adapter/outbound/postgres/call_guard_flag_repository.py"
   - "server/apps/hub/adapter/outbound/postgres/voice_outlier_repository.py"
   - "ai/apps/voice_signal/adapter/outbound/voice_outlier_recorder.py"
   - "scripts/seed_documents.py"
@@ -34,6 +33,16 @@ paths:
 
 `compliance_flag` 로 대체할 수 없다 — `rule_code` 가 `compliance_rule`(C-1~C-4)에
 FK 로 묶여 있고, 무엇보다 **화자가 반대라** 섞으면 D-4 재학습 데이터가 오염된다.
+
+## ⚠ 2026-09-14 정정 — C-6 배선은 걷어냈다
+
+같은 날 장민석 님이 `server` 브랜치에서 **C-6 을 다른 방식으로 배선했다**(`w4-call-guard-wiring`(server 브랜치) —
+게이트웨이가 `POST /hub/call-guard-checks` 를 부르고 결과를 대시보드로도 보낸다). 둘 다 들어가면 **같은 발화를 두 번 탐지·저장**한다.
+사용자 결정으로 **민석 님 방식을 남기고** 이 티켓의 전사 수신 경로 배선·`call_guard_flag` 리포지토리·기록 포트를 걷어냈다.
+결과를 대시보드로 보낼 수 있는 쪽이 그쪽이다. 아래 완료 조건 중 C-6 두 줄은 **그 티켓에서 끝난다.**
+
+남은 이 티켓의 몫: D-5 저장 경로 · `robust_z` 비노출 테스트 · `document` 적재 스크립트 · 탐지기 `strip()` 오프셋 버그 수정.
+민석 님 저장소는 조항이 `document` 에 없으면 근거를 NULL 로 넣는다 — 적재 스크립트를 돌리면 근거가 이어진다.
 
 ## 완료 조건
 

@@ -27,11 +27,6 @@ class CallGuardFlag:
     category: str  # "insult" | "threat" | "sexual" | "distress"
     phrase: str  # 걸린 표현 — **마스킹된 자막에서 잘라낸다**(MANUAL-5.5)
     source_doc_id: str | None = None  # 근거 조항 (DASAN-MANUAL-5.x)
-    # 걸린 구간 — **탐지기에 넘긴 문자열**(= 마스킹된 자막) 기준 코드포인트 오프셋(7.3절).
-    # 저장(`call_guard_flag.span_start/end`, NOT NULL)에 필요하다. 평가 하네스처럼 구간이
-    # 필요 없는 소비자가 있어 선택값으로 열었다 — 없으면 저장 쪽이 거부한다.
-    span_start: int | None = None
-    span_end: int | None = None
 
     def __post_init__(self) -> None:
         allowed = ABUSE_CATEGORIES + (DISTRESS_CATEGORY,)
@@ -39,10 +34,6 @@ class CallGuardFlag:
             raise ValueError(
                 f"'{self.category}' 는 콜 가드 갈래가 아닙니다 (가능: {', '.join(allowed)})"
             )
-        if (self.span_start is None) != (self.span_end is None):
-            raise ValueError("span_start 와 span_end 는 함께 주거나 함께 비워야 합니다")
-        if self.span_start is not None and not 0 <= self.span_start < self.span_end:
-            raise ValueError(f"잘못된 구간입니다: ({self.span_start}, {self.span_end})")
 
     @property
     def is_distress(self) -> bool:
