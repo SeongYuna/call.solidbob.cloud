@@ -7,11 +7,12 @@
 
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException, status
 
 from hub.adapter.inbound.api.schemas.call_start_schema import CallStartedSchema, CallStartRequest
 from hub.app.dtos.call_start_dto import CallStartCommand
 from hub.app.ports.input.call_start_use_case import CallStartUseCase
+from hub.app.ports.output.customer_ref_port import InvalidPhoneNumber
 from hub.dependencies.call_start_provider import get_call_start_use_case
 
 call_start_router = APIRouter(prefix="/hub", tags=["hub"])
@@ -22,15 +23,20 @@ async def start_call(
     body: CallStartRequest,
     use_case: CallStartUseCase = Depends(get_call_start_use_case),
 ) -> CallStartedSchema:
-    call = await use_case.start(
-        CallStartCommand(
-            call_id=body.call_id,
-            domain=body.domain,
-            stt_engine=body.stt_engine,
-            channel_count=body.channel_count,
-            started_at=body.started_at,
+    try:
+        call = await use_case.start(
+            CallStartCommand(
+                call_id=body.call_id,
+                domain=body.domain,
+                stt_engine=body.stt_engine,
+                channel_count=body.channel_count,
+                started_at=body.started_at,
+                caller_phone=body.caller_phone,
+            )
         )
-    )
+    except InvalidPhoneNumber as exc:
+        # pydantic 422 와 달리 입력값을 되돌려 주지 않는다 — 번호가 응답·로그에 남지 않게
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=str(exc)) from exc
     return CallStartedSchema(
         call_id=call.call_id,
         domain=call.domain,
@@ -39,4 +45,5 @@ async def start_call(
         started_at=call.started_at,
         status=call.status,
         created=call.created,
+        customer_linked=call.customer_id is not None,
     )

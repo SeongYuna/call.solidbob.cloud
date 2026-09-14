@@ -54,11 +54,11 @@ def test_골든셋에_F2_케이스가_실려있다():
 
 @pytest.mark.parametrize("case_id, case", CASES)
 def test_골든셋_판정이_정확히_일치한다(case_id, case):
-    v = RuleClosureGateAdapter().evaluate(case_id, case["closure_type"], case["evidence"])
+    v = RuleClosureGateAdapter().evaluate(case_id, case["procedure"], case["evidence"])
 
     assert v.verdict == case["expected_verdict"], (
         f"{case_id}: 판정이 다르다 — F-2 절대 규칙\n"
-        f"  처리유형: {case['closure_type']}  근거: {case['evidence']}\n"
+        f"  절차: {case['procedure']}  근거: {case['evidence']}\n"
         f"  기대 {case['expected_verdict']} / 실제 {v.verdict}"
     )
     assert list(v.missing) == case["expected_missing"], (
@@ -72,11 +72,10 @@ def test_골든셋_판정이_정확히_일치한다(case_id, case):
 
 
 @pytest.mark.parametrize("case_id, case", CASES)
-def test_차단된_건은_미충족_필드를_반드시_알려준다(case_id, case):
-    """`blocked` 인데 `missing` 이 비면 상담원이 무엇을 채워야 할지 알 수 없다 —
-    차단만 하고 이유를 숨기면 게이트가 아니라 장애물이다."""
-    v = RuleClosureGateAdapter().evaluate(case_id, case["closure_type"], case["evidence"])
-    if v.verdict == "blocked":
+def test_누락_판정은_빠진_서류를_반드시_알려준다(case_id, case):
+    """`incomplete` 인데 `missing` 이 비면 상담원이 무엇을 더 안내할지 알 수 없다."""
+    v = RuleClosureGateAdapter().evaluate(case_id, case["procedure"], case["evidence"])
+    if v.verdict == "incomplete":
         assert v.missing, f"{case_id}: 차단인데 미충족 목록이 비었다"
     else:
         assert not v.missing, f"{case_id}: 통과인데 미충족 목록이 있다"

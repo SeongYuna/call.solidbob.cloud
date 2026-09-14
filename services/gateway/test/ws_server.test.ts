@@ -452,3 +452,20 @@ test("/ingest?speaker=auto — 화자 분리 채널을 연다. /dev/text 는 aut
     await gw.close();
   }
 });
+
+test("/ingest — 발신 번호는 X-Caller-Phone 헤더로만 통화 시작에 간다 (쿼리로는 받지 않는다)", async () => {
+  const gw = await startGateway();
+  try {
+    const a = await connect(`ws://${gw.base}/ingest?call_id=test-phone-1&speaker=customer`, { "x-caller-phone": "010-1234-5678" });
+    await waitFor(() => gw.hub.calls.length === 1);
+    assert.equal(gw.hub.calls[0]!.caller_phone, "010-1234-5678");
+    a.close();
+    const b = await connect(`ws://${gw.base}/ingest?call_id=test-phone-2&speaker=customer&caller_phone=01012345678`);
+    await waitFor(() => gw.hub.calls.length === 2);
+    assert.equal("caller_phone" in gw.hub.calls[1]!, false);
+    b.close();
+    assert.ok(gw.log.warnings.every((w) => !w.includes("1234")));
+  } finally {
+    await gw.close();
+  }
+});

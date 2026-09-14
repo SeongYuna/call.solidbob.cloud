@@ -13,61 +13,36 @@ from hub.app.ports.output import ClosureGatePort
 from hub.dependencies.closure_provider import get_closure_gate_port
 from main import app
 
-BODY = {"call_id": "c_001", "closure_type": "상품해지",
-        "evidence": {"중도해지수수료_안내": True, "약정혜택소멸_안내": False}, "reason": "고지 완료"}
+BODY = {"call_id": "c_001", "procedure": "DASAN-TERM-4.4",
+        "evidence": {"신고서": True}, "reason": "안내 완료"}
 
 
 class _Stub(ClosureGatePort):
-    def evaluate(self, call_id, closure_type, evidence, reason=None):
+    def evaluate(self, call_id, procedure, evidence, reason=None):
         missing = tuple(k for k, v in evidence.items() if not v)
-        return ClosureVerdict(call_id=call_id, closure_type=closure_type, evidence=dict(evidence),
-                              verdict="blocked" if missing else "approved", missing=missing, reason=reason)
+        return ClosureVerdict(call_id=call_id, procedure=procedure, evidence=dict(evidence),
+                              verdict="incomplete" if missing else "complete", missing=missing, reason=reason)
 
 
-def test_기본_배선으로_실제_게이트가_판정한다():
-    """스텁 없이 — `main.py` 가 조립한 그대로. 미충족 근거는 `approved` 가 될 수 없다."""
+def test_기본_배선으로_실제_규칙이_판정한다():
+    """스텁 없이 — `main.py` 가 조립한 그대로. 빠진 서류는 `complete` 가 될 수 없다."""
     with TestClient(app) as client:
         r = client.post("/hub/closure-checks", json=BODY)
     assert r.status_code == 200
     body = r.json()
-    assert body["verdict"] == "blocked"
-    assert "approved" not in r.text
-    # 규칙표에 있는 세 필드 중 요청이 채우지 못한 둘. 키가 빠진 것도 미충족이다.
-    assert body["missing"] == ["약정혜택소멸_안내", "고객확인_기록"]
-    assert body["source"]["doc_id"] == "FIN-POLICY-CLOSE-1"
+    assert body["verdict"] == "incomplete"
+    assert body["missing"] == ["신고인 신분증"]  # 키가 빠진 것도 누락이다
+    assert body["evidence"] == {"신고서": "true", "신고인 신분증": "false"}
+    assert body["source"]["doc_id"] == "DASAN-TERM-4.4" and body["detected"] == "false"
+    assert body["conditional"]
 
 
-def test_규칙표에_없는_처리유형은_판정하지_않고_422다():
-    """`approved` 는 절대 규칙 위반이고 `blocked` 도 거짓말이다 — 판정할 규칙이 없는 것이지
-    근거가 빠진 것이 아니다. F-2 미적용 도메인(다산·질병관리본부)은 이 경로를 부르지 않는다."""
+def test_규칙표에_없는_절차는_판정하지_않고_422다():
+    """판정할 규칙이 없는 것이지 서류가 빠진 것이 아니다 — complete 도 incomplete 도 거짓말이다."""
     with TestClient(app) as client:
-        r = client.post("/hub/closure-checks", json={**BODY, "closure_type": "민원접수"})
+        r = client.post("/hub/closure-checks", json={**BODY, "procedure": "DASAN-TERM-2.6"})
     assert r.status_code == 422
-    assert "approved" not in r.text
-
-
-def test_미충족이면_blocked와_missing을_돌려준다():
-    app.dependency_overrides[get_closure_gate_port] = lambda: _Stub()
-    try:
-        with TestClient(app) as client:
-            r = client.post("/hub/closure-checks", json=BODY)
-        b = r.json()
-        assert b["verdict"] == "blocked"
-        assert b["missing"] == ["약정혜택소멸_안내"]
-    finally:
-        app.dependency_overrides.clear()
-
-
-def test_전부_충족이면_approved다():
-    app.dependency_overrides[get_closure_gate_port] = lambda: _Stub()
-    try:
-        with TestClient(app) as client:
-            r = client.post("/hub/closure-checks",
-                            json={**BODY, "evidence": {"중도해지수수료_안내": True}})
-        b = r.json()
-        assert b["verdict"] == "approved" and b["missing"] == []
-    finally:
-        app.dependency_overrides.clear()
+    assert "complete" not in r.text
 
 
 def test_빈_근거는_422다():
@@ -78,3 +53,15 @@ def test_빈_근거는_422다():
         assert r.status_code == 422
     finally:
         app.dependency_overrides.clear()
+
+
+def test_자동_판정_경로는_상담원_발화로_누락을_찾는다():
+    body = {"call_id": "c_002", "procedure": "DASAN-TERM-4.4", "agent_utterances": ["신고서 작성해 주세요"]}
+    with TestClient(app) as client:
+        r = client.post("/hub/required-docs-checks", json=body)
+        empty = client.post("/hub/required-docs-checks", json={**body, "agent_utterances": []})
+        unknown = client.post("/hub/required-docs-checks", json={**body, "procedure": "DASAN-TERM-4.9"})
+    assert r.status_code == 200
+    assert r.json()["missing"] == ["신고인 신분증"] and r.json()["detected"] == "true"
+    assert empty.json()["missing"] == ["신고서", "신고인 신분증"]
+    assert unknown.status_code == 422

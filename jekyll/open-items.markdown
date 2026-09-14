@@ -279,6 +279,33 @@ Google STT → 로컬 server 마스킹 → 대시보드 WS 까지 관통했다. 
   `node scripts/stream_wav.ts <모노.wav> --speaker auto --watch` 로 확인한다. 볼 것: ① `ko-KR` 기본 모델이 스트리밍 화자 분리를
   받는가(거절이면 채널이 `1011` 로 닫힌다) ② 라벨이 `speakerLabel`·`speakerTag` 중 무엇으로 오는가 ③ 상담원이 실제로 첫 라벨인가.
   결과는 `decisions/303` 「검증하지 못한 것」 에 적는다
+- [ ] **조서희 님께 — 대시보드가 받아야 할 서버·게이트웨이 계약 (신규, 2026-09-14)** — 백엔드를 먼저 만들었고 프론트 연결이 남았다.
+  계약 정본은 `_project/plan.md` 7.3절 끝 「허브 HTTP 표면」.
+  ① **게이트웨이 WS 메시지 셋** — `recommendation_pending` · `call_guard` · `closure`. 셋 다 게이트웨이에서 전송을 꺼 두었다
+  (`services/gateway/src/main.ts` `announcePending`·`announceCallGuard`·`announceClosure`). 받는 코드가 들어가면 켠다.
+  ⚠ `call_guard.category` 는 `insult·threat·sexual·distress` 다(mock `폭언·욕설·위협` 과 다름). ⚠ `closure` 는 새 형식이다 —
+  `procedure`·`procedure_title`·`verdict: complete/incomplete`·`conditional`·`detected`, `closure_type`·`reason`(필수)·`approved/blocked` 는 없다
+  ② **REST** — 수동 검색 `POST /hub/search`(응답이 조항 목록이라 카드로 바꾸는 것은 화면 몫) · 상담기록 `GET /hub/calls` ·
+  자막 `GET /hub/calls/{id}/transcript` · 블랙리스트 요청 `POST /hub/blacklist-requests` · 카드 피드백·「못 찾았다」 신고(이미 있음)
+  ③ **관리자(`apps/admin`, 로그인 필요)** — `GET /hub/blacklist-requests` · `POST /hub/blacklist-requests/{id}/decision`(만료 일수 필수) ·
+  `GET /hub/blacklist-entries` · `POST /hub/blacklist-entries/{id}/release` · `GET /hub/call-guard-flags` · `GET /hub/knowledge-gaps`(이미 있음)
+- [ ] **`CUSTOMER_REF_HMAC_KEY` 를 `.env.example` 과 운영 `server-env` 에 넣어야 한다 (신규, 2026-09-14)** — 보호 훅이 `.env.example`
+  편집을 막아 사람이 넣는다(키 이름만). 운영 시크릿에는 값을 넣고 **보관한다** — 잃으면 기존 고객 식별자·블랙리스트 등록을 다시 찾을 수 없다.
+  없으면 통화는 열리고 고객 연결만 꺼진다(`decisions/304`). `secret.example.yaml` 에는 적었다
+- [ ] **`admin_account.agent_id` 를 채워야 블랙리스트 승인·해제가 된다 (신규, 2026-09-14)** — 비어 있으면 409. 회원가입 화면이 없어 운영자가 SQL 로 넣는다
+- [ ] **운영·Neon DB 에 2026-09-14 스키마를 넣어야 한다 (신규, 2026-09-14)** — `customer_id` 64자 · `admin_account.agent_id` · `closure` 재정의 +
+  `closure_item`. 이미지 `0.1.5` 를 올리기 전에 넣는다(런북 17·19장). Neon 은 그 전 스키마 차이(`transcript_segment` 복합키)도 남아 있다
+- [ ] **`document` 테이블을 채우는 경로가 없다 (신규, 2026-09-14)** — 조항 본문은 ES 에만 적재된다. 그런데 `call_guard_flag`·`recommendation_card` 등이
+  `document` 를 외래키로 참조해 **근거 조항을 넣으면 23503** 이었다(E2E 로 재현 — 콜 가드 저장이 통째로 실패). 콜 가드는 조항이 있을 때만 잇도록 고쳤고,
+  새 `closure.source_doc_id` 는 FK 를 걸지 않았다. **정할 것**: `index_knowledge_base.py` 가 `document` 도 채울지, FK 를 걷을지
+- [ ] **F-2 자동 판정·규칙표를 측정할 골든셋 케이스가 0건이다 — 류준 님께 (신규, 2026-09-14)** — `decisions/305` 로 필요서류 조항 25개가 규칙이 됐고
+  `F2Case.procedure`(조항 ID)·`expected_verdict: complete/incomplete` 로 케이스를 넣을 수 있다. 키워드 판정은 부정 문맥을 몰라 **누락을 못 잡는 쪽**으로
+  틀린다 — 측정 전까지 「F-2 누락 0건」 을 인용하지 않는다. 조건 분기 조항 10개(`EXCLUDED`)도 조건 판정 규칙이 생기면 넣는다
+- [ ] **`DASAN-POLICY-1`(「F-2 미적용」)이 `decisions/305` 와 어긋난다 (신규, 2026-09-14)** — 지식베이스 문서라 고치지 않았다. 검색 인덱스에 들어가는 문서라 류준 님과 함께 고친다
+- [ ] **블랙리스트 남은 것 (신규, 2026-09-14)** — ① 상담원 인증이 없어 요청은 `agent` 에 있는 아무 ID 로나 부를 수 있다 ② `display_hint` 를 채우는 경로가 없다(늘 null)
+  ③ 반려 요청 사유·자막을 일정 기간 뒤 비우는 작업이 없다(`decisions/205`) ④ J-5 배정(`find_entry`)은 인입 경로에 아직 안 붙었다
+- [ ] **재상담 고객 이력 요약(메모)이 없다 (신규, 2026-09-14)** — `GET /hub/calls?customer_id=` 로 같은 고객의 지난 통화·문의 유형은 나온다. 프론트 mock 의 「메모」 는
+  대응 컬럼이 없다(`summary_text` 는 D-1 요약이고 채우는 경로도 501)
 - [ ] **main 의 관리자 로그인 머지(`cb959a9`)가 서버 이미지 태그를 안 올렸다 (신규, 2026-09-14)** — `server/` 가 바뀌었는데
   `kustomization.yaml` 이 `0.1.3` 그대로 main 에 들어갔다. `release.yml` 은 «코드 변경 + 태그 그대로» 면 실패한다 —
   그 머지의 릴리스가 실제로 실패했는지는 안 봤다. 이번 `server` 브랜치 PR 이 `0.1.4` 로 올리므로 같이 풀린다

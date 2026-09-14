@@ -9,7 +9,13 @@ import { CaptureBroadcaster, FakeHub, FakeStt, MemoryLedger, newLog, silence, ti
 const RAW_PII = "주민번호 900101-1234567 입니다";
 
 function setup(
-  opts: { ledger?: Record<string, number>; caps?: { perDay: number; perMonth: number }; announcePending?: boolean } = {},
+  opts: {
+    ledger?: Record<string, number>;
+    caps?: { perDay: number; perMonth: number };
+    announcePending?: boolean;
+    announceCallGuard?: boolean;
+    announceClosure?: boolean;
+  } = {},
 ) {
   const hub = new FakeHub();
   const stt = new FakeStt();
@@ -32,6 +38,8 @@ function setup(
     nowMs: () => now,
     drainTimeoutMs: 500,
     announcePending: opts.announcePending,
+    announceCallGuard: opts.announceCallGuard,
+    announceClosure: opts.announceClosure,
   });
   return {
     hub,
@@ -337,4 +345,97 @@ test("speaker=auto 는 글자 채널에서 거절한다 — 가를 소리가 없
   const result = await registry.open({ callId: "test-1", speaker: "auto", sampleRate: 16000, channelCount: 1, source: "text" });
   assert.equal(result.ok, false);
   assert.equal(hub.calls.length, 0);
+});
+
+test("C-6 — 고객 final 만, 마스킹된 본문으로 콜 가드를 검사한다. 상담원·interim 은 부르지 않는다", async () => {
+  const { registry, hub, stt } = setup();
+  const agent = await openOk(registry, "test-1", "agent", 2);
+  const customer = await openOk(registry, "test-1", "customer", 2);
+  stt.streams[0]!.emit("병신이라뇨 고객님", true, 500); // 상담원 — 검사 대상 아님
+  stt.streams[1]!.emit("이 병신", false, 900); // interim — 검사 대상 아님
+  stt.streams[1]!.emit("이 병신 같은 010-1234-5678", true, 1200);
+  await agent.close();
+  await customer.close();
+  assert.equal(hub.guarded.length, 1);
+  assert.equal(hub.guarded[0]!.customer_utterance, "이 병신 같은 ***-****-****"); // 원문 번호가 없다 (SEC-1)
+  assert.equal(hub.guarded[0]!.segment_id, 2);
+});
+
+test("C-6 — 잡힌 신호를 기본으로는 대시보드에 보내지 않는다 (검사는 한다)", async () => {
+  const { registry, hub, stt, broadcaster } = setup();
+  const customer = await openOk(registry, "test-1", "customer");
+  stt.last().emit("이 병신 같은", true, 900);
+  await customer.close();
+  assert.equal(hub.guarded.length, 1);
+  assert.equal(broadcaster.ofType("call_guard").length, 0);
+});
+
+test("C-6 — 켜면 잡힌 신호만 call_guard 로 보낸다. 잡힌 것이 없거나 서버가 실패하면 보내지 않는다", async () => {
+  const { registry, hub, stt, broadcaster, log } = setup({ announceCallGuard: true });
+  const customer = await openOk(registry, "test-1", "customer");
+  stt.last().emit("이 병신 같은", true, 900);
+  stt.last().emit("여권 재발급 서류요", true, 2000);
+  await tick(10);
+  hub.failGuard = 501;
+  stt.last().emit("또 병신", true, 3000);
+  await customer.close();
+  const sent = broadcaster.ofType("call_guard");
+  assert.equal(sent.length, 1);
+  assert.deepEqual(sent[0]!.payload.flags, [
+    { category: "insult", phrase: "병신", span: ["2", "4"], source_doc_id: "DASAN-MANUAL-5.1" },
+  ]);
+  assert.ok(log.warnings.some((w) => w.includes("콜 가드 검사 실패") && w.includes("501")));
+});
+
+test("발신 번호는 통화를 처음 여는 채널 것만 통화 시작에 싣고, 로그에 남기지 않는다 (decisions/304)", async () => {
+  const { registry, hub, log } = setup();
+  await registry.open({ callId: "test-1", speaker: "agent", sampleRate: 16000, channelCount: 2, callerPhone: "010-1234-5678" });
+  await registry.open({ callId: "test-1", speaker: "customer", sampleRate: 16000, channelCount: 2, callerPhone: "010-9999-9999" });
+  await registry.open({ callId: "test-2", speaker: "agent", sampleRate: 16000, channelCount: 1 });
+  assert.equal(hub.calls[0]!.caller_phone, "010-1234-5678");
+  assert.equal(hub.calls.length, 2);
+  assert.equal("caller_phone" in hub.calls[1]!, false);
+  assert.ok(log.warnings.every((w) => !w.includes("1234")));
+});
+
+test("F-2 — 추천 1순위 조항을 절차로 잡고, 상담원 확정 발화가 쌓일 때마다 마스킹본으로 다시 판정한다 (기본은 화면에 안 보낸다)", async () => {
+  const { registry, hub, stt, broadcaster } = setup();
+  hub.topDocId = "DASAN-TERM-4.3";
+  const agent = await openOk(registry, "test-1", "agent", 2);
+  const customer = await openOk(registry, "test-1", "customer", 2);
+  stt.streams[1]!.emit("초본 떼려면 뭐 필요해요", true, 1000);
+  await tick(20);
+  stt.streams[0]!.emit("신분증 지참하시고 010-1234-5678 로", true, 2000);
+  await agent.close();
+  await customer.close();
+
+  assert.deepEqual(hub.docsChecked.map((r) => [r.procedure, r.agent_utterances]), [
+    ["DASAN-TERM-4.3", []],
+    ["DASAN-TERM-4.3", ["신분증 지참하시고 ***-****-**** 로"]], // 마스킹본만 (SEC-1)
+  ]);
+  assert.equal(broadcaster.ofType("closure").length, 0);
+});
+
+test("F-2 — 켜면 판정을 순서대로 closure 로 보내고, 규칙 없는 조항(422)은 다시 묻지 않는다", async () => {
+  const { registry, hub, stt, broadcaster, log } = setup({ announceClosure: true });
+  hub.topDocId = "DASAN-TERM-4.3";
+  const agent = await openOk(registry, "test-1", "agent", 2);
+  const customer = await openOk(registry, "test-1", "customer", 2);
+  stt.streams[1]!.emit("초본 서류요", true, 1000);
+  await tick(20);
+  stt.streams[0]!.emit("신분증 가져오세요", true, 2000);
+  await tick(20);
+  hub.topDocId = "DASAN-TERM-2.6";
+  hub.notProcedures.add("DASAN-TERM-2.6");
+  stt.streams[1]!.emit("교통카드도요", true, 3000);
+  await tick(20);
+  stt.streams[0]!.emit("네 알겠습니다", true, 4000);
+  await agent.close();
+  await customer.close();
+
+  const verdicts = broadcaster.ofType("closure").map((m) => [m.payload.procedure, m.payload["verdict"]]);
+  assert.deepEqual(verdicts.slice(0, 2), [["DASAN-TERM-4.3", "incomplete"], ["DASAN-TERM-4.3", "complete"]]);
+  assert.ok(verdicts.every(([procedure]) => procedure === "DASAN-TERM-4.3"));
+  assert.equal(hub.docsChecked.filter((r) => r.procedure === "DASAN-TERM-2.6").length, 0);
+  assert.ok(log.warnings.every((w) => !w.includes("필요서류 판정 실패")));
 });

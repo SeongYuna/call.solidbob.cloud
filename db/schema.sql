@@ -3,12 +3,12 @@
 
 -- 고객 — F-3(반복 문의 연결)이 참조하는 안정적 식별자. 2026-08-26 도메인 4종 확정 이전엔 통신 전용 `subscriber`(+`plan`/체납·분실신고 플래그)였으나, 그 필드들은 폐기된 명의변경 처리유형(TERM-5.3, 지금은 존재하지 않는 문서 ID)에만 쓰였고 4개 도메인(금융보험·다산콜센터·쇼핑·질병관리본부) 중 어디에도 대응하는 개념이 없어 제거했다 (`_project/decisions/006-db-스키마-도메인-정리.md`)
 CREATE TABLE "customer" (
-    "customer_id" VARCHAR(40) NOT NULL,
+    "customer_id" VARCHAR(64) NOT NULL,
     "first_seen_at" TIMESTAMPTZ NOT NULL,
     "status" VARCHAR(20) NOT NULL,
     PRIMARY KEY ("customer_id")
 );
-COMMENT ON COLUMN "customer"."customer_id" IS '해시/난수 — 실명 저장 안 함, 도메인 공통';
+COMMENT ON COLUMN "customer"."customer_id" IS '**전화번호의 HMAC-SHA256(hex 64자)** — `blacklist_request.customer_ref` 와 같은 체계다. 평문 번호·실명을 저장하지 않는다. 통화 시작(`POST /hub/calls` 의 caller_phone)에서 만든다 (`decisions/304`, 2026-09-14 VARCHAR(40)→(64) — 40 자로는 HMAC 이 안 들어갔다)';
 
 -- 상담원 마스터 — 부록B H-4/H-5 리스크(감시 도구화)는 UI·집계 노출 문제이지 call.agent_id 존재 자체의 문제가 아니므로 최소 식별자만 둔다
 CREATE TABLE "agent" (
@@ -27,7 +27,7 @@ COMMENT ON COLUMN "agent"."hired_on" IS 'J-5 베테랑 판정(기본 3년 이상
 CREATE TABLE "call" (
     "call_id" VARCHAR(40) NOT NULL,
     "domain" VARCHAR(30) NOT NULL,
-    "customer_id" VARCHAR(40) NULL,
+    "customer_id" VARCHAR(64) NULL,
     "agent_id" VARCHAR(20) NULL,
     "started_at" TIMESTAMPTZ NOT NULL,
     "ended_at" TIMESTAMPTZ NULL,
@@ -43,6 +43,7 @@ CREATE TABLE "call" (
     FOREIGN KEY ("agent_id") REFERENCES "agent"("agent_id")
 );
 COMMENT ON COLUMN "call"."domain" IS '4개 데모 도메인 — 검색·F-2 라우팅 기준([1.4절](/docs/01/))';
+COMMENT ON COLUMN "call"."customer_id" IS '게이트웨이가 발신 번호를 넘긴 통화만 채워진다(`decisions/304`). 재상담 이력·블랙리스트 요청의 연결 고리';
 COMMENT ON COLUMN "call"."channel_count" IS 'V1 확인: 전부 1(모노)';
 COMMENT ON COLUMN "call"."summary_confirmed_at" IS 'D-1~D-3 — **NULL 이면 초안이다**(`decisions/205` ⑧). `CallSummaryDraft.confirmed` 를 담을 자리가 없어서, 모델이 만든 초안과 상담원이 확정한 것을 DB 가 구분하지 못했다 — 부록 A-1 이 금지한 「모델이 정한 것을 확정한 것처럼」이 저장 계층에서 일어난다';
 COMMENT ON COLUMN "call"."summary_text" IS 'D-1, 통화 후 생성';
@@ -161,43 +162,36 @@ CREATE TABLE "card_feedback" (
     FOREIGN KEY ("card_id") REFERENCES "recommendation_card"("card_id")
 );
 
--- F-2 종결 판정 — evidence 필드를 역정규화(POLICY 문서 참고)해 하나의 넓은 표로 관리. F-2는 종결형 처리가 있는 금융보험·쇼핑에만 적용된다([1.4절](/docs/01/)) — 다산콜센터·질병관리본부는 안내형 업무라 이 테이블에 행이 생기지 않는다
+-- F-2 필요서류 체크리스트 판정(헤더) — 2026-09-14 `decisions/305` 로 다산 절차에 맞춰 다시 만들었다. 전에는 금융보험·쇼핑 처리유형 4종 + 전용 BOOLEAN 10개였고, 다산 절차를 넣으면 CHECK 에 걸려 INSERT 가 거부됐다(`w4-schema-qa-followup` ③). 69종 서비스 × N종 서류를 컬럼으로 펼 수 없어 **헤더 + 항목(closure_item)** 2단이다. 테이블 이름을 유지한 이유: `knowledge_gap.closure_id` 가 참조한다
 CREATE TABLE "closure" (
     "closure_id" BIGINT GENERATED ALWAYS AS IDENTITY NOT NULL,
     "call_id" VARCHAR(40) NOT NULL,
-    "closure_type" VARCHAR(30) NOT NULL,
+    "procedure" VARCHAR(30) NOT NULL,
     "reason" VARCHAR(100) NULL,
-    "중도해지수수료_안내" BOOLEAN NULL,
-    "약정혜택소멸_안내" BOOLEAN NULL,
-    "고객확인_기록" BOOLEAN NULL,
-    "사고경위_확인" BOOLEAN NULL,
-    "귀책여부_확인" BOOLEAN NULL,
-    "환불금액_안내" BOOLEAN NULL,
-    "환불기간_안내" BOOLEAN NULL,
-    "상품상태_확인" BOOLEAN NULL,
-    "교환가능_확인" BOOLEAN NULL,
-    "재고_확인" BOOLEAN NULL,
+    "detected" BOOLEAN NOT NULL,
     "verdict" VARCHAR(30) NOT NULL,
     "source_doc_id" VARCHAR(30) NULL,
     "decided_at" TIMESTAMPTZ NOT NULL,
     PRIMARY KEY ("closure_id"),
-    CHECK ("closure_type" IN ('상품해지','보상','반품','교환')),
-    CHECK ("verdict" IN ('approved','blocked')),
-    FOREIGN KEY ("call_id") REFERENCES "call"("call_id"),
-    FOREIGN KEY ("source_doc_id") REFERENCES "document"("document_id")
+    CHECK ("verdict" IN ('complete','incomplete')),
+    FOREIGN KEY ("call_id") REFERENCES "call"("call_id")
 );
 COMMENT ON COLUMN "closure"."closure_id" IS 'append-only: UPDATE 없이 INSERT만 (F-4)';
-COMMENT ON COLUMN "closure"."closure_type" IS '상품해지·보상=금융보험, 반품·교환=쇼핑';
-COMMENT ON COLUMN "closure"."중도해지수수료_안내" IS '상품해지 전용(금융보험) — FIN-POLICY-CLOSE-1';
-COMMENT ON COLUMN "closure"."약정혜택소멸_안내" IS '상품해지 전용(금융보험) — FIN-POLICY-CLOSE-1';
-COMMENT ON COLUMN "closure"."고객확인_기록" IS '상품해지 전용(금융보험) — FIN-POLICY-CLOSE-1';
-COMMENT ON COLUMN "closure"."사고경위_확인" IS '보상 전용(금융보험) — FIN-POLICY-COMPENSATE-1';
-COMMENT ON COLUMN "closure"."귀책여부_확인" IS '보상 전용(금융보험) — FIN-POLICY-COMPENSATE-1';
-COMMENT ON COLUMN "closure"."환불금액_안내" IS '반품 전용(쇼핑) — SHOP-POLICY-RETURN-1';
-COMMENT ON COLUMN "closure"."환불기간_안내" IS '반품 전용(쇼핑) — SHOP-POLICY-RETURN-1';
-COMMENT ON COLUMN "closure"."상품상태_확인" IS '반품 전용(쇼핑) — SHOP-POLICY-RETURN-1';
-COMMENT ON COLUMN "closure"."교환가능_확인" IS '교환 전용(쇼핑) — SHOP-POLICY-EXCHANGE-1';
-COMMENT ON COLUMN "closure"."재고_확인" IS '교환 전용(쇼핑) — SHOP-POLICY-EXCHANGE-1';
+COMMENT ON COLUMN "closure"."procedure" IS '절차 = 필요서류 조항 ID(예: DASAN-TERM-4.4). 규칙표 `closure_gate/domain/value_objects/closure_rule.py` 의 키';
+COMMENT ON COLUMN "closure"."detected" IS 'true 면 서류 안내 여부를 **상담원 발화의 키워드로 자동 판정**했다(한계: 부정 문맥을 모른다). false 면 호출자가 체크리스트로 직접 넣었다';
+COMMENT ON COLUMN "closure"."verdict" IS 'rev.5 — 차단(blocked)이 아니라 경고(incomplete)다. 다산에는 막을 종결 행위가 없다';
+COMMENT ON COLUMN "closure"."source_doc_id" IS '판정 근거 조항. `document` 를 외래키로 잡지 않는다 — 그 테이블을 채우는 경로가 없다(2026-09-14 확인)';
+
+-- F-2 체크리스트 항목 — 판정 1건의 서류별 안내 여부. 「해당 없음」은 행이 없는 것이라 NULL 의 이중 의미가 없다
+CREATE TABLE "closure_item" (
+    "closure_id" BIGINT NOT NULL,
+    "rank" SMALLINT NOT NULL,
+    "document_name" VARCHAR(60) NOT NULL,
+    "informed" BOOLEAN NOT NULL,
+    PRIMARY KEY ("closure_id", "rank"),
+    FOREIGN KEY ("closure_id") REFERENCES "closure"("closure_id")
+);
+COMMENT ON COLUMN "closure_item"."rank" IS '규칙표의 서류 순서 — missing 출력 순서와 같다';
 
 -- D-3 후속조치 항목 — 통화 1건에 여러 개 가능해 분리 (1NF)
 CREATE TABLE "follow_up_action" (
@@ -386,12 +380,15 @@ CREATE TABLE "admin_account" (
     "id" BIGINT GENERATED ALWAYS AS IDENTITY NOT NULL,
     "email" VARCHAR(255) NOT NULL,
     "name" VARCHAR(100) NULL,
+    "agent_id" VARCHAR(20) NULL,
     "created_at" TIMESTAMPTZ NOT NULL,
     PRIMARY KEY ("id"),
-    UNIQUE ("email")
+    UNIQUE ("email"),
+    FOREIGN KEY ("agent_id") REFERENCES "agent"("agent_id")
 );
 COMMENT ON COLUMN "admin_account"."email" IS '구글 계정 이메일. 대소문자는 저장 전에 소문자로 맞춘다';
 COMMENT ON COLUMN "admin_account"."name" IS '구글 프로필 이름 — 화면 표시용, 판단에 쓰지 않는다';
+COMMENT ON COLUMN "admin_account"."agent_id" IS '이 관리자가 J-4 승인·해제를 기록할 때 쓰는 상담원 마스터 ID(`decisions/304`). `blacklist_request.decided_by`·`blacklist_entry.released_by` 가 agent 를 참조해서다. NULL 이면 로그인은 되지만 블랙리스트 결정은 못 한다(409) — 누구로 기록할지 지어내지 않는다';
 
 -- 관리자 세션의 refresh token. **원문을 저장하지 않는다** — SHA-256 해시만 둔다(SEC-1과 같은 원칙: 탈취되는 값을 저장하지 않는다). 만료(10분, 테스트 값)는 애플리케이션이 계산해서 넣는다. 회전(rotation) 방식이라 refresh 할 때마다 기존 행을 revoked_at 으로 무효화하고 새 행을 만든다 — 지우지 않는다 (절대 원칙 8, 탈취 흔적 추적용)
 CREATE TABLE "admin_refresh_token" (
