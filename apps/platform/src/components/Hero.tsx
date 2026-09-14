@@ -1,6 +1,14 @@
-import type { ReactElement } from "react";
+import { useEffect, useState, type ReactElement } from "react";
+import { LiveCallModal } from "./LiveCallModal";
+import { captureLiveCallTokenFromUrl } from "../lib/liveCallToken";
 
 export function Hero(): ReactElement {
+  const [callOpen, setCallOpen] = useState(false);
+
+  useEffect(() => {
+    captureLiveCallTokenFromUrl();
+  }, []);
+
   return (
     <section
       id="hero"
@@ -52,53 +60,60 @@ export function Hero(): ReactElement {
             통화 중 실시간
           </p>
         </div>
-        <HeroCallCard />
+        <IncomingCallCard
+          onAnswer={() => {
+            setCallOpen(true);
+          }}
+        />
       </div>
+      {callOpen ? (
+        <LiveCallModal
+          onClose={() => {
+            setCallOpen(false);
+          }}
+        />
+      ) : null}
     </section>
   );
 }
 
-function HeroCallCard(): ReactElement {
+/**
+ * 예전엔 "고객 전화가 온다"는 걸 흉내 낸 트리거였다. 2026-09-14 사용자 지시로
+ * 방향을 뒤집었다 — 방문자가 상담원에게 직접 전화를 거는 흐름이다. 누르면
+ * 실제 마이크·게이트웨이 배선이 붙은 팝업(LiveCallModal)이 뜬다. 팝업 자체는
+ * 팀 전용 토큰이 있어야 실제로 연결된다 — 일반 방문자는 눌러도 안내만 본다.
+ * 정사각형 박스 — aspect-square + 세로 flex 분배로 내용을 맞춘다(사용자 지시).
+ * 글자 양에 맞춰 크기를 고정한다(270px) — 300px 는 폰트를 그대로 두니 속이 비어
+ * 보였고, 240px 로 줄이며 폰트까지 같이 줄이니 이번엔 사이트 본문(16px) 대비
+ * 상자 글자가 지나치게 작아 보였다(2026-09-14 사용자 지적 2건). 폰트는 원래
+ * 크기 근처로 복원하고 박스만 그 사이 크기로 맞춘다.
+ */
+function IncomingCallCard({ onAnswer }: { onAnswer: () => void }): ReactElement {
   return (
-    <article className="rounded-[22px] border border-line bg-card p-5 shadow-[0_24px_60px_rgba(0,0,0,0.28)]">
-      <div className="mb-5 flex items-center justify-between gap-3">
-        <p className="m-0 flex items-center gap-2 text-[13px] font-semibold">
-          <span
-            className="anim-rec h-2 w-2 rounded-full bg-live"
-            aria-hidden="true"
-          />
-          02-120 · 통화 중 00:42
+    <article className="mx-auto flex aspect-square w-[270px] flex-col justify-between rounded-[20px] border border-line bg-card p-5 shadow-[0_24px_60px_rgba(0,0,0,0.28)]">
+      <div>
+        <div className="mb-3.5 flex items-center justify-between gap-2">
+          <p className="m-0 flex items-center gap-1.5 text-[12.5px] font-semibold">
+            <span className="anim-rec h-2 w-2 rounded-full bg-live" aria-hidden="true" />
+            02-120 · 연결 대기
+          </p>
+          <p className="m-0 text-[12px] font-semibold text-amber">상담원 호출</p>
+        </div>
+        <p className="m-0 text-[14.5px] font-semibold leading-snug">
+          지금 상담원에게 바로 전화를 걸어보세요.
         </p>
-        <p className="m-0 text-[12.5px] font-semibold text-amber">실시간</p>
-      </div>
-      <p className="m-0 text-[11.5px] font-semibold tracking-wide text-muted">
-        라이브 트랜스크립트
-      </p>
-      <p className="mt-2 m-0 text-[14.5px] font-semibold leading-relaxed">
-        “저희 지역 도서관 연장 이용 가능한지 확인하고 싶은데요.”
-      </p>
-      <p className="mt-2 m-0 text-[14px] leading-relaxed text-muted">
-        “네, 도서를 지참하시면 즉시 연장 처리됩니다. ...”
-      </p>
-      <hr className="my-4 border-0 border-t border-line" />
-      <div className="flex items-center justify-between gap-3">
-        <p className="m-0 text-[11.5px] font-semibold tracking-wide text-muted">
-          추천 · 민원 유형
+        <p className="mt-2 m-0 text-[13.5px] leading-snug text-muted">
+          연결되면 상담원 화면에 실시간으로 뜨는 라이브 트랜스크립트·서류
+          추천을 직접 확인할 수 있습니다.
         </p>
-        <span className="rounded-md border border-line px-2 py-0.5 text-[11px] text-muted">
-          도서관_연장
-        </span>
       </div>
-      <p className="mt-2 m-0 text-[14px] leading-relaxed">
-        필요서류: 신분증 · 필요근거: 도서관 자율관리 3조
-      </p>
-      <hr className="my-4 border-0 border-t border-line" />
-      <p className="m-0 text-[11.5px] font-semibold tracking-wide text-live">
-        통번역 · EN / 日本語
-      </p>
-      <p className="mt-2 m-0 text-[14px] leading-relaxed text-amber">
-        “Library extensions are available on-site with your ID.”
-      </p>
+      <button
+        type="button"
+        onClick={onAnswer}
+        className="w-full rounded-full bg-amber-fill px-4 py-2.5 text-[14px] font-semibold text-[#1a1408]"
+      >
+        상담원에게 전화 걸기
+      </button>
     </article>
   );
 }

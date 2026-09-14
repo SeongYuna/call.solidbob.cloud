@@ -15,20 +15,8 @@
   --breakpoint-mid: 900px;
 }
 
-:root,
-[data-theme="dark"] {
-  --page: #0f1420;
-  --fg: #f4f6fb;
-  --muted: #9aa3b5;
-  --card: #161c2b;
-  --line: rgba(255, 255, 255, 0.1);
-  --amber: #e8b67d;
-  --amber-fill: #f0a44c;
-  --live: #2dd4bf;
-  --mask: rgba(96, 165, 250, 0.22);
-}
-
-[data-theme="light"] {
+/* 2026-09-14 — 다크 모드·토글 제거, 라이트 하나만 남긴다(사용자 지시). */
+:root {
   --page: #f6f4ee;
   --fg: #16181f;
   --muted: #5f6470;

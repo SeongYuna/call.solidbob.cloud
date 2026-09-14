@@ -2935,6 +2935,137 @@ button {
   outline: none;
 }
 
+/* --- "고객과 전화하기" 상담원 마이크 박스 (2026-09-14, AgentCallBox) — 대기화면을
+   지나면 화면 우하단에 고정된다. 팀 전용 테스트, 음성은 녹음·전송하지 않는다. --- */
+.agent-call-box {
+  position: fixed;
+  right: 20px;
+  bottom: 20px;
+  z-index: 40;
+  width: min(320px, calc(100vw - 40px));
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px;
+  border-radius: var(--radius-card);
+  background: var(--shell);
+  border: 1px solid var(--line);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.18);
+}
+
+.agent-call-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.agent-call-title {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.agent-call-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--dim);
+}
+
+.agent-call-dot.live {
+  background: var(--accent);
+  animation: rec-blink 1.4s ease-in-out infinite;
+}
+
+.agent-call-clock {
+  margin: 0;
+  font-family: var(--mono);
+  font-size: 12.5px;
+  color: var(--muted);
+}
+
+.agent-call-body {
+  min-height: 64px;
+  max-height: 180px;
+  overflow-y: auto;
+  padding: 10px;
+  border-radius: 12px;
+  background: var(--paper);
+  border: 1px solid var(--line);
+}
+
+.agent-call-hint {
+  margin: 0;
+  font-size: 12.5px;
+  line-height: 1.6;
+  color: var(--muted);
+}
+
+.agent-call-turns {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--text);
+}
+
+.agent-call-turns .interim {
+  color: var(--muted);
+}
+
+.agent-call-note {
+  margin: 0;
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--dim);
+}
+
+.agent-call-toggle {
+  padding: 9px 16px;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: var(--keyword);
+  color: #1a1408;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.agent-call-toggle:hover,
+.agent-call-toggle:focus-visible {
+  opacity: 0.9;
+  outline: none;
+}
+
+@keyframes rec-blink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.28;
+  }
+}
+
+@media (max-width: 640px) {
+  .agent-call-box {
+    right: 12px;
+    bottom: 12px;
+    left: 12px;
+    width: auto;
+  }
+}
+
 /* --- 재상담 고객 이력 요약 (2026-09-14) — 필요서류 카드 위, 통화 시작 시 자동으로 뜬다 --- */
 .customer-history-summary {
   flex-shrink: 0;

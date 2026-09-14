@@ -1,4 +1,5 @@
 import { useState, type ReactElement } from "react";
+import { AgentCallBox } from "./components/AgentCallBox";
 import { AgentStandbyScreen } from "./components/AgentStandbyScreen";
 import { AppHeader } from "./components/AppHeader";
 import { CallSummaryHost } from "./components/CallSummaryPanel";
@@ -81,14 +82,17 @@ export function App(): ReactElement {
             }}
           />
         ) : (
-          <main className="panels">
-            <TranscriptPanel onManualSearch={manualSearch} />
-            <TermsPanel
-              onReplay={replay}
-              onEndCall={endCall}
-              onLeaveToStandby={leaveToStandby}
-            />
-          </main>
+          <>
+            <main className="panels">
+              <TranscriptPanel onManualSearch={manualSearch} />
+              <TermsPanel
+                onReplay={replay}
+                onEndCall={endCall}
+                onLeaveToStandby={leaveToStandby}
+              />
+            </main>
+            <AgentCallBox />
+          </>
         )}
       </div>
     </div>
