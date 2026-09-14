@@ -33,6 +33,7 @@ async def recommend(
                 text=body.text,
                 is_final=body.is_final,
                 utterance_end_ms=body.utterance_end_ms,
+                received_at_ms=body.received_at_ms,
             ),
             top_k=body.top_k,
         )

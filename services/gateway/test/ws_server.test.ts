@@ -433,3 +433,22 @@ test("/dev/text — 오디오·형식 틀린 메시지는 1008 로 닫는다", a
     await gw.close();
   }
 });
+
+test("/ingest?speaker=auto — 화자 분리 채널을 연다. /dev/text 는 auto 를 1008 로 닫는다", async () => {
+  const gw = await startGateway();
+  try {
+    const producer = await connect(`ws://${gw.base}/ingest?call_id=test-auto-1&speaker=auto&sample_rate=16000`);
+    producer.send(silence(0.1));
+    await waitFor(() => gw.stt.streams.length === 1);
+    assert.equal(gw.stt.last().options.diarize, true);
+    assert.equal(gw.hub.calls[0]!.channel_count, 1);
+    producer.close();
+
+    const text = await connect(`ws://${gw.base}/dev/text?call_id=test-auto-2&speaker=auto`);
+    const closed = await nextClose(text);
+    assert.equal(closed.code, 1008);
+    assert.match(closed.reason, /speaker/);
+  } finally {
+    await gw.close();
+  }
+});

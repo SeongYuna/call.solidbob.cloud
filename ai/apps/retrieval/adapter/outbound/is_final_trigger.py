@@ -9,17 +9,17 @@
 
 ## `at_ms` 를 무엇으로 채우는가 — 읽고 넘어갈 것
 
-`TranscriptEvent` 에는 **이벤트가 언제 도착했는지가 없다.** `utterance_end_ms`(발화가 끝난
-시각)만 있다. 그래서 발동 시각을 실제로 알 방법이 없고, 지금은 "발화 종료 + STT 최종 결과
-지연(V4 실측 346ms)"으로 **모형화**한다.
+우선순위는 셋이다.
 
-그 결과 이 구현으로 낸 지연 분포는 **상수 하나로 수렴한다**(p50 = p95 = 346). 숫자가 나오지만
-측정이 아니다 — 그래서 `scripts/run_eval.py` 는 트리거 포트를 **꽂지 않고** 하네스가
-"측정 불가"로 보고하게 둔다(절대 원칙 10). 서버 경로에는 꽂는다 — 거기서는 발동 여부(fire)
-자체가 파이프라인을 흐르게 하는 데 필요하고, 그건 진짜 판정이기 때문이다.
+1. `now_ms` 시계를 주입했으면 그 값
+2. **`TranscriptEvent.received_at_ms`** — 게이트웨이가 STT final 을 받은 시각(통화 기준 ms).
+   실시간 경로(`services/gateway`)가 채운다(2026-09-14, `w4-trigger-arrival-time`). 이게 **측정값**이다
+3. 둘 다 없으면 "발화 종료 + STT 최종 결과 지연(V4 실측 346ms)"으로 **모형화**한다
 
-**고칠 방법**: 게이트웨이가 도착 시각을 실어 보내고 포트가 그걸 받게 한다. 계약 변경이라
-`server/` 와 합의가 필요하다 — [미결 항목](/open-items/) 참고.
+골든셋·배치에는 도착 시각이 없어 3번으로 떨어지고, 그 지연 분포는 **상수 하나로 수렴한다**
+(p50 = p95 = 346). 숫자가 나오지만 측정이 아니다 — 그래서 `scripts/run_eval.py` 는 트리거 포트를
+**꽂지 않고** 하네스가 "측정 불가"로 보고하게 둔다(절대 원칙 10). 서버 경로에는 꽂는다 — 거기서는
+발동 여부(fire) 자체가 파이프라인을 흐르게 하는 데 필요하고, 그건 진짜 판정이기 때문이다.
 """
 
 from __future__ import annotations
@@ -36,8 +36,7 @@ from retrieval.domain.services.trigger import STT_FINAL_LAG_MS, fire_at_ms, shou
 class IsFinalTrigger(TriggerPort):
     """고객의 `is_final` 전사가 도착하면 발동한다.
 
-    `now_ms` 를 주면 그 값을 발동 시각으로 쓴다 — 실시간 경로가 붙었을 때의 통로다.
-    주지 않으면 `utterance_end_ms + lag_ms` 로 모형화한다(위 주석).
+    발동 시각은 `now_ms` 시계 → 이벤트의 `received_at_ms` → `utterance_end_ms + lag_ms` 모형 순으로 정한다(위 주석).
     """
 
     def __init__(
@@ -55,9 +54,12 @@ class IsFinalTrigger(TriggerPort):
         if not should_fire(is_final=event.is_final, speaker=event.speaker, text=event.text):
             return TriggerDecision(fire=False)
 
-        at_ms = self._now_ms() if self._now_ms else fire_at_ms(
-            event.utterance_end_ms, lag_ms=self._lag_ms
-        )
+        if self._now_ms:
+            at_ms = self._now_ms()
+        elif event.received_at_ms is not None:
+            at_ms = event.received_at_ms
+        else:
+            at_ms = fire_at_ms(event.utterance_end_ms, lag_ms=self._lag_ms)
         if at_ms is None:
             # 발동은 맞는데 시각을 모른다. 지어내지 않는다 — 하네스는 이걸 "발동 안 함"으로
             # 세지만, 그게 "0ms 에 발동했다"고 거짓말하는 것보다 낫다(절대 원칙 10).

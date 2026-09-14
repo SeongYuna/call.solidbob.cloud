@@ -27,7 +27,7 @@ node scripts/stream_wav.ts <파일.wav> --speaker customer --watch
 ```
 
 실시간 속도로 흘려 넣고, `--watch` 가 **대시보드가 받는 것**을 찍는다. 스테레오면 0번 채널을 `agent`,
-1번을 `customer` 로 갈라 연결 둘로 보낸다. 기본 30초까지만 보낸다(`--max-seconds`) — 쓴 만큼 과금된다.
+1번을 `customer` 로 갈라 연결 둘로 보낸다. 모노에 두 사람이 섞인 녹음은 `--speaker auto` — 아래 「화자 분리」. 기본 30초까지만 보낸다(`--max-seconds`) — 쓴 만큼 과금된다.
 자체 녹음은 쓰지 않는다(절대 원칙 7).
 
 ## 운영 (2026-09-11)
@@ -85,13 +85,24 @@ node scripts/stream_wav.ts <파일.wav> --speaker customer --watch
 | 파라미터 | 값 |
 |---|---|
 | `call_id` | 영문·숫자·`_.:-` 1~40자. 테스트는 `test-` 로 시작한다 |
-| `speaker` | `agent` · `customer` — **연결 하나 = 화자 하나**(채널 분리, A-2) |
+| `speaker` | `agent` · `customer` — **연결 하나 = 화자 하나**(채널 분리, A-2). `auto` — 모노 녹음 화자 분리(아래) |
 | `sample_rate` | 8000 · 16000 · 22050 · 24000 · 44100 · 48000. 기본 16000 |
 | `channels` | 이 통화에 붙을 채널 수 1·2. `call.channel_count` 로 간다 |
 
 - 바이너리 프레임 = **PCM 16비트 리틀엔디언 모노**. 100ms 안팎으로 잘라 보낸다
 - 끝낼 때 텍스트 `{"type":"end"}` → 남은 결과를 다 보낸 뒤 `1000` 으로 닫힌다. 그냥 끊어도 된다
 - 거절·중단은 close 코드와 이유로 알린다 — `1008` 잘못된 요청·같은 화자 중복, `1013` STT 한도(COST-1), `1011` 서버·STT 문제
+
+#### 화자 분리 — `speaker=auto` (`decisions/303`)
+
+모노 한 줄에 두 사람이 섞인 녹음(AI Hub)용이다. **기본값이 아니다.**
+
+- 구글 화자 분리(2명) + 단어 시각을 켠다 — V4 측정 설정과 달라지므로 이 채널 지연을 V4 수치로 인용하지 않는다
+- final 을 **라벨이 바뀌는 곳마다 잘라** 보낸다. **먼저 말한 화자 = `agent`**, 나머지 = `customer` — 120 은 상담원이
+  먼저 인사한다. **추측이다** — 고객이 먼저 말하면 C-1~C-4·C-6·트리거 방향이 뒤집힌다
+- interim 은 보내지 않는다(라벨이 final 에만 붙는다) — 자막이 발화가 끝나야 뜬다
+- 통화 기록 엔진 이름이 `google-stt+diarize` 다. 이 채널은 그 통화의 두 화자를 다 차지한다
+- ⚠ **실제 구글 응답으로 확인하지 않았다**(2026-09-14, 키·음성 없음). `ko-KR` 이 거절하면 `1011` 로 닫힌다
 
 브라우저 마이크(①)는 `apps/call` 몫이다 — `getUserMedia` → PCM16 변환 → 이 계약으로 붙는다.
 
@@ -103,6 +114,12 @@ node scripts/stream_wav.ts <파일.wav> --speaker customer --watch
 {"type": "transcript",     "payload": { /* POST /hub/transcripts 응답 그대로 — 값은 전부 문자열 */ }}
 {"type": "recommendation", "payload": { /* POST /hub/recommendations 응답 그대로 */ }}
 ```
+
+- **추천 요청에는 `received_at_ms` 를 싣는다** — STT final 을 받은 시각(통화 기준 ms). 서버 트리거가 발동 시각으로 쓴다
+  (없으면 «발화 종료 + 346ms» 모형). 줄에 넣기 전에 재므로 서버 대기 시간은 섞이지 않는다
+- **「검색 중」** `{"type": "recommendation_pending", "payload": {"call_id", "segment_id"}}` 을 추천 요청 직전에 보낼 수 있다
+  (`plan.md` 7.3절). ⚠ **꺼 두었다**(`main.ts` `announcePending: false`) — `apps/call` 파서가 모르는 `type` 에 오류
+  배너를 띄운다. 수신 코드가 들어가면 켠다
 
 ### `GET /dev` · `WS /dev/text?call_id=&speaker=` — 개발용 테스트 통화 (`decisions/109`)
 

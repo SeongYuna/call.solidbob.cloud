@@ -79,3 +79,19 @@ def test_판정에_부수효과가_없다():
     t = IsFinalTrigger()
     e = event()
     assert t.decide(e) == t.decide(e) == t.decide(e)
+
+
+def test_게이트웨이_도착_시각이_있으면_모형값_대신_그_값을_쓴다():
+    """실시간 경로(`services/gateway`)는 STT final 을 받은 시각을 싣는다 — 그게 측정값이다."""
+    d = IsFinalTrigger().decide(event(received_at_ms=3620))
+    assert d.at_ms == 3620
+
+
+def test_주입한_시계가_도착_시각보다_우선한다():
+    assert IsFinalTrigger(now_ms=lambda: 4200).decide(event(received_at_ms=3620)).at_ms == 4200
+
+
+def test_도착_시각은_발동하지_않을_때_시각을_만들지_않는다():
+    d = IsFinalTrigger().decide(event(speaker="agent", received_at_ms=3620))
+    assert d.fire is False
+    assert d.at_ms is None

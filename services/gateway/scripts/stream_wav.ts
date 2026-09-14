@@ -5,7 +5,8 @@
  *   node scripts/stream_wav.ts <파일.wav> [--speaker customer] [--call-id test-...] \
  *       [--url ws://localhost:8080] [--max-seconds 30] [--speed 1] [--watch]
  *
- * - 모노 → 연결 하나(`--speaker`). 스테레오 → **채널을 갈라 연결 둘**(0번 agent · 1번 customer,
+ * - 모노 → 연결 하나(`--speaker`). `--speaker auto` 는 모노에 두 사람이 섞인 녹음 — 게이트웨이가 구글 화자 분리로
+ *   가르고 **먼저 말한 사람을 상담원**으로 친다(추측이다, `decisions/303`). 스테레오 → **채널을 갈라 연결 둘**(0번 agent · 1번 customer,
  *   `channels=2`). 데모의 물리 2채널이 이 모양이다(A-2).
  * - `--max-seconds` 가 기본 30초다. 구글 스트리밍은 쓴 만큼 과금되고 일 캡이 600초다(COST-1).
  * - `--watch` 는 `/ws?call_id=` 를 함께 열어 **대시보드가 받는 것**(마스킹된 결과)을 찍는다.
@@ -21,7 +22,7 @@ import { WebSocket } from "ws";
 
 interface Args {
   file: string;
-  speaker: "agent" | "customer";
+  speaker: "agent" | "customer" | "auto";
   callId: string;
   url: string;
   maxSeconds: number;
@@ -50,7 +51,7 @@ function parseArgs(argv: string[]): Args {
   for (let i = 0; i < argv.length; i += 1) {
     const flag = argv[i];
     const value = argv[i + 1] ?? "";
-    if (flag === "--speaker" && (value === "agent" || value === "customer")) {
+    if (flag === "--speaker" && (value === "agent" || value === "customer" || value === "auto")) {
       args.speaker = value;
       i += 1;
     } else if (flag === "--call-id") {
@@ -131,7 +132,7 @@ function open(url: string, token = ""): Promise<WebSocket> {
   });
 }
 
-async function streamChannel(args: Args, wav: Wav, speaker: "agent" | "customer", pcm: Buffer, channelCount: number): Promise<void> {
+async function streamChannel(args: Args, wav: Wav, speaker: Args["speaker"], pcm: Buffer, channelCount: number): Promise<void> {
   const query = new URLSearchParams({
     call_id: args.callId,
     speaker,
@@ -191,6 +192,9 @@ async function main(): Promise<void> {
     `${args.file}: ${wav.channels}ch ${wav.sampleRate}Hz ${(wav.pcm.length / (wav.sampleRate * 2 * wav.channels)).toFixed(1)}초 → call_id=${args.callId}`,
   );
   const watcher = args.watch ? await watch(args) : null;
+  if (wav.channels === 2 && args.speaker === "auto") {
+    throw new Error("--speaker auto 는 모노 녹음용이다 — 스테레오는 채널이 이미 화자다");
+  }
   if (wav.channels === 2) {
     await Promise.all([
       streamChannel(args, wav, "agent", channelOf(wav, 0), 2),
