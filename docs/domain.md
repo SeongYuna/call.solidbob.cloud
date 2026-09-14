@@ -32,9 +32,9 @@
 | 컴플라이언스 위반 | 상담원 발화가 응대매뉴얼 1장을 어긴 것. 유형 C-1~C-4, 4개 도메인 공통 | `ComplianceFinding(rule_code, phrase, alternative_source)`, `compliance_flag.rule_code` |
 | 대체 표현 | 위반 표현 대신 권장하는 문구. 출처는 각 도메인 응대매뉴얼 1.4 | `alternative_source: Source("<DOM>-MANUAL-1.4", …)` |
 | PII 패턴 | 마스킹 대상 개인정보 유형 P1~P7. 도메인 무관 | `MaskedSpan(type, span)`, `masking_event.pattern` |
-| 처리유형 | 종결하려는 업무의 종류. **도메인별로 다르다** (§4.3) | `closure_type: str` — 값은 해당 도메인 `*-POLICY-*` 가 정의 |
-| 근거 필드 | 처리유형별 필수 확인 항목. 내부처리규정이 정의 | `evidence: {필드명: bool}` — 필드명은 한글 그대로 |
-| 판정 | F-2 게이트 결과. 규칙이 내고 LLM은 설명만 | `verdict: "approved" \| "blocked"`, `missing[]` |
+| 절차 | 필요서류를 안내해야 하는 민원 절차. **ID 는 필요서류 조항 ID**(2026-09-14 `decisions/305` — 옛 「처리유형」 `closure_type`) | `procedure: str` — `DASAN-TERM-x.y`, 규칙표 `closure_rule.py` |
+| 근거 필드 | 절차별 필수 서류를 안내했는가. 조항 본문이 정의 | `evidence: {서류 이름: bool}` |
+| 판정 | F-2 필요서류 체크리스트 결과. 규칙이 내고 LLM은 설명만. 차단이 아니라 경고(rev.5) | `verdict: "complete" \| "incomplete"`, `missing[]`, `conditional[]`, `detected` |
 | 공백 리포트 | 검색 실패·놓친 위반·사후 문제를 같은 루프로 모은 것(D-4). F-2 미적용 도메인의 대체 검증 수단 | `knowledge_gap.module: "B" \| "C" \| "F"` |
 
 용어 사용 제약(부록 A-1): "안전합니다", "위험도 N%", "완벽히 차단", "불변 감사 로그"는 도메인 용어가 아니다. 코드·UI·문서 어디에도 쓰지 않는다.
@@ -145,7 +145,7 @@ HNSW recall 이 무너진다) ② 단일 인덱스가 샤드 2개 이상 필요(
 |---|---|---|
 | `TranscriptEvent` | `call_id`, `segment_id`, `speaker`, `text`(마스킹 후), `masked[]`, `is_final`, `utterance_end_ms` | 게이트웨이 → `hub.transcript_ingest` → `masking` → 대시보드·DB |
 | `RecommendationCards` | `call_id`, `trigger_at_ms`, `cards[]{title, summary, source{doc_id, title}, score}`, `internal_latency_ms`, `e2e_latency_ms` | `retrieval`→`generation` → 허브 → 대시보드 |
-| `ClosureVerdict` | `call_id`, `closure_type`, `reason`, `evidence{…}`, `verdict`, `missing[]`, `source{doc_id, title}` | 대시보드 → 허브 → `closure_gate` → 대시보드·DB |
+| `ClosureVerdict` | `call_id`, `procedure`, `procedure_title`, `evidence{서류: bool}`, `verdict`, `missing[]`, `conditional[]`, `reason`, `source{doc_id, title}`, `detected` | 대시보드(체크리스트) 또는 게이트웨이(자동 판정) → 허브 → `closure_gate` → 대시보드·DB(`closure`+`closure_item`) |
 
 ---
 

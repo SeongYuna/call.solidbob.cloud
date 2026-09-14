@@ -20,6 +20,7 @@ def _settings(**over) -> Settings:
         s3_bucket=None, aws_region=None, upload_token=None, upload_max_bytes=0,
         google_oauth_client_id=None, admin_jwt_secret=None,
         admin_access_token_ttl_seconds=300, admin_refresh_token_ttl_seconds=600, redis_url=None,
+        customer_ref_hmac_key=None,
     )
     return Settings(**{**base, **over})
 

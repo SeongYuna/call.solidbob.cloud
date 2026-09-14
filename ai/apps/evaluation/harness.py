@@ -251,7 +251,7 @@ def run_eval(items: list[GoldenItem], ports: Ports) -> dict:
         for it in f2_items:
             case = it.f2_case
             verdict = ports.closure_gate.evaluate(
-                call_id=it.id, closure_type=case.closure_type, evidence=case.evidence
+                call_id=it.id, procedure=case.procedure, evidence=case.evidence
             )
             predictions.append(
                 closure_gate_metrics.F2Prediction(

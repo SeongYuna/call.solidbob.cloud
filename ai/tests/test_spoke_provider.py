@@ -98,3 +98,15 @@ def test_빈_URL_은_거부한다():
     """설정이 비었는데 조용히 뜨면 런타임에 이유 없는 연결 실패로 나타난다."""
     with pytest.raises(ValueError):
         build_es_client("")
+
+
+def test_콜_가드_프로바이더는_포트를_만족하고_위치를_채운다():
+    """저장 경로(`call_guard_flag.span_*` NOT NULL)가 span 을 요구한다 — 어댑터가 채워야 한다."""
+    from hub.app.ports.output.call_guard_port import CallGuardPort
+    from provider import build_call_guard_provider
+
+    port = build_call_guard_provider()()
+    assert isinstance(port, CallGuardPort)
+    flags = asyncio.run(port.detect("이런 병신 같은"))
+    assert flags, "사전에 있는 욕설을 못 잡았다"
+    assert all(f.span is not None and "이런 병신 같은"[f.span[0]:f.span[1]] == f.phrase for f in flags)

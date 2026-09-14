@@ -43,3 +43,28 @@ def test_시작_시각을_주면_그대로_쓴다():
 def test_이미_있던_통화면_created가_False다():
     call = asyncio.run(CallStartInteractor(_SpyRecord(created=False)).start(_cmd()))
     assert call.created is False and call.call_id == "test-c001"
+
+
+class _Ref:
+    def __init__(self, value="r" * 64):
+        self.value = value
+        self.phones = []
+
+    def ref(self, phone):
+        self.phones.append(phone)
+        return self.value
+
+
+def test_발신_번호를_식별자로_바꿔_싣고_번호는_싣지_않는다():
+    record, ref = _SpyRecord(), _Ref()
+    call = asyncio.run(CallStartInteractor(record, customer_ref=ref).start(_cmd(caller_phone="010-1234-5678")))
+    assert ref.phones == ["010-1234-5678"]
+    assert call.customer_id == "r" * 64
+    assert "010" not in repr(record.calls[0])
+
+
+def test_번호가_없거나_키가_없으면_고객을_잇지_않는다():
+    assert asyncio.run(CallStartInteractor(_SpyRecord(), customer_ref=_Ref()).start(_cmd())).customer_id is None
+    no_key = _Ref(value=None)
+    assert asyncio.run(CallStartInteractor(_SpyRecord(), customer_ref=no_key).start(
+        _cmd(caller_phone="01012345678"))).customer_id is None

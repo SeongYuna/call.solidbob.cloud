@@ -76,7 +76,10 @@ TABLES: list[Table] = [
         "(`_project/decisions/006-db-스키마-도메인-정리.md`)",
         cluster="고객",
         columns=[
-            Column("customer_id", "VARCHAR(40)", "PK", nullable=False, note="해시/난수 — 실명 저장 안 함, 도메인 공통"),
+            Column("customer_id", "VARCHAR(64)", "PK", nullable=False,
+                   note="**전화번호의 HMAC-SHA256(hex 64자)** — `blacklist_request.customer_ref` 와 같은 체계다. "
+                        "평문 번호·실명을 저장하지 않는다. 통화 시작(`POST /hub/calls` 의 caller_phone)에서 만든다 "
+                        "(`decisions/304`, 2026-09-14 VARCHAR(40)→(64) — 40 자로는 HMAC 이 안 들어갔다)"),
             Column("first_seen_at", "DATETIME", nullable=False),
             Column("status", "VARCHAR(20)", nullable=False),
         ],
@@ -105,7 +108,8 @@ TABLES: list[Table] = [
             Column("call_id", "VARCHAR(40)", "PK", nullable=False),
             Column("domain", "ENUM('finance','dasan','shopping','health')", nullable=False,
                    note="4개 데모 도메인 — 검색·F-2 라우팅 기준([1.4절](/docs/01/))"),
-            Column("customer_id", "VARCHAR(40)", "FK", "customer.customer_id"),
+            Column("customer_id", "VARCHAR(64)", "FK", "customer.customer_id",
+                   note="게이트웨이가 발신 번호를 넘긴 통화만 채워진다(`decisions/304`). 재상담 이력·블랙리스트 요청의 연결 고리"),
             Column("agent_id", "VARCHAR(20)", "FK", "agent.agent_id"),
             Column("started_at", "DATETIME", nullable=False),
             Column("ended_at", "DATETIME"),
@@ -236,29 +240,36 @@ TABLES: list[Table] = [
         ],
     ),
     Table(
-        "closure", "F-2 종결 판정 — evidence 필드를 역정규화(POLICY 문서 참고)해 하나의 넓은 표로 관리. "
-        "F-2는 종결형 처리가 있는 금융보험·쇼핑에만 적용된다([1.4절](/docs/01/)) — "
-        "다산콜센터·질병관리본부는 안내형 업무라 이 테이블에 행이 생기지 않는다",
+        "closure", "F-2 필요서류 체크리스트 판정(헤더) — 2026-09-14 `decisions/305` 로 다산 절차에 맞춰 다시 만들었다. "
+        "전에는 금융보험·쇼핑 처리유형 4종 + 전용 BOOLEAN 10개였고, 다산 절차를 넣으면 CHECK 에 걸려 INSERT 가 거부됐다"
+        "(`w4-schema-qa-followup` ③). 69종 서비스 × N종 서류를 컬럼으로 펼 수 없어 **헤더 + 항목(closure_item)** 2단이다. "
+        "테이블 이름을 유지한 이유: `knowledge_gap.closure_id` 가 참조한다",
         cluster="종결",
         columns=[
             Column("closure_id", "BIGINT", "PK", nullable=False, auto_increment=True, note="append-only: UPDATE 없이 INSERT만 (F-4)"),
             Column("call_id", "VARCHAR(40)", "FK", "call.call_id", nullable=False, identifying=True),
-            Column("closure_type", "ENUM('상품해지','보상','반품','교환')", nullable=False,
-                   note="상품해지·보상=금융보험, 반품·교환=쇼핑"),
+            Column("procedure", "VARCHAR(30)", nullable=False,
+                   note="절차 = 필요서류 조항 ID(예: DASAN-TERM-4.4). 규칙표 `closure_gate/domain/value_objects/closure_rule.py` 의 키"),
             Column("reason", "VARCHAR(100)"),
-            Column("중도해지수수료_안내", "BOOLEAN", note="상품해지 전용(금융보험) — FIN-POLICY-CLOSE-1"),
-            Column("약정혜택소멸_안내", "BOOLEAN", note="상품해지 전용(금융보험) — FIN-POLICY-CLOSE-1"),
-            Column("고객확인_기록", "BOOLEAN", note="상품해지 전용(금융보험) — FIN-POLICY-CLOSE-1"),
-            Column("사고경위_확인", "BOOLEAN", note="보상 전용(금융보험) — FIN-POLICY-COMPENSATE-1"),
-            Column("귀책여부_확인", "BOOLEAN", note="보상 전용(금융보험) — FIN-POLICY-COMPENSATE-1"),
-            Column("환불금액_안내", "BOOLEAN", note="반품 전용(쇼핑) — SHOP-POLICY-RETURN-1"),
-            Column("환불기간_안내", "BOOLEAN", note="반품 전용(쇼핑) — SHOP-POLICY-RETURN-1"),
-            Column("상품상태_확인", "BOOLEAN", note="반품 전용(쇼핑) — SHOP-POLICY-RETURN-1"),
-            Column("교환가능_확인", "BOOLEAN", note="교환 전용(쇼핑) — SHOP-POLICY-EXCHANGE-1"),
-            Column("재고_확인", "BOOLEAN", note="교환 전용(쇼핑) — SHOP-POLICY-EXCHANGE-1"),
-            Column("verdict", "ENUM('approved','blocked')", nullable=False),
-            Column("source_doc_id", "VARCHAR(30)", "FK", "document.document_id"),
+            Column("detected", "BOOLEAN", nullable=False,
+                   note="true 면 서류 안내 여부를 **상담원 발화의 키워드로 자동 판정**했다(한계: 부정 문맥을 모른다). "
+                        "false 면 호출자가 체크리스트로 직접 넣었다"),
+            Column("verdict", "ENUM('complete','incomplete')", nullable=False,
+                   note="rev.5 — 차단(blocked)이 아니라 경고(incomplete)다. 다산에는 막을 종결 행위가 없다"),
+            Column("source_doc_id", "VARCHAR(30)",
+                   note="판정 근거 조항. `document` 를 외래키로 잡지 않는다 — 그 테이블을 채우는 경로가 없다(2026-09-14 확인)"),
             Column("decided_at", "DATETIME", nullable=False),
+        ],
+    ),
+    Table(
+        "closure_item", "F-2 체크리스트 항목 — 판정 1건의 서류별 안내 여부. 「해당 없음」은 행이 없는 것이라 NULL 의 이중 의미가 없다",
+        cluster="종결",
+        primary_key=("closure_id", "rank"),
+        columns=[
+            Column("closure_id", "BIGINT", "FK", "closure.closure_id", nullable=False, identifying=True),
+            Column("rank", "SMALLINT", nullable=False, note="규칙표의 서류 순서 — missing 출력 순서와 같다"),
+            Column("document_name", "VARCHAR(60)", nullable=False),
+            Column("informed", "BOOLEAN", nullable=False),
         ],
     ),
     Table(
@@ -482,6 +493,10 @@ TABLES: list[Table] = [
             Column("id", "BIGINT", "PK", nullable=False, auto_increment=True),
             Column("email", "VARCHAR(255)", nullable=False, note="구글 계정 이메일. 대소문자는 저장 전에 소문자로 맞춘다"),
             Column("name", "VARCHAR(100)", note="구글 프로필 이름 — 화면 표시용, 판단에 쓰지 않는다"),
+            Column("agent_id", "VARCHAR(20)", "FK", "agent.agent_id",
+                   note="이 관리자가 J-4 승인·해제를 기록할 때 쓰는 상담원 마스터 ID(`decisions/304`). "
+                        "`blacklist_request.decided_by`·`blacklist_entry.released_by` 가 agent 를 참조해서다. "
+                        "NULL 이면 로그인은 되지만 블랙리스트 결정은 못 한다(409) — 누구로 기록할지 지어내지 않는다"),
             Column("created_at", "DATETIME", nullable=False),
         ],
     ),

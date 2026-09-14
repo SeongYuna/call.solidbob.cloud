@@ -3,6 +3,10 @@
 import {
   HubError,
   type Broadcaster,
+  type CallGuardCheckRequest,
+  type CallGuardPayload,
+  type ClosurePayload,
+  type RequiredDocsCheckRequest,
   type CallStartRequest,
   type GatewayMessage,
   type HubPort,
@@ -79,6 +83,15 @@ export class FakeHub implements HubPort {
   readonly calls: CallStartRequest[] = [];
   readonly ingested: RawTranscript[] = [];
   readonly recommended: RecommendRequest[] = [];
+  readonly guarded: CallGuardCheckRequest[] = [];
+  /** 콜 가드가 잡을 표현 — 본문에 들어 있으면 flags 에 싣는다. */
+  guardPhrase = "병신";
+  failGuard: number | null = null;
+  /** 추천 응답 1순위 카드의 근거 조항 — 주면 cards 에 한 장 싣는다. */
+  topDocId: string | null = null;
+  readonly docsChecked: RequiredDocsCheckRequest[] = [];
+  /** 규칙이 없는 조항 — 서버처럼 422 를 낸다. */
+  readonly notProcedures = new Set<string>();
   failIngest: number | null = null;
   failStart: number | null = null;
   ingestDelayMs = 0;
@@ -118,10 +131,41 @@ export class FakeHub implements HubPort {
           domain: null,
           call_id: request.call_id,
           trigger_at_ms: String(request.utterance_end_ms),
-          cards: [],
+          cards: this.topDocId === null ? [] : [{ title: "t", summary: "s", source: { doc_id: this.topDocId, title: "t" }, similarity_score: "0.9" }],
           internal_latency_ms: "1",
         }
       : { fired: "false", domain: null, call_id: null, trigger_at_ms: null, cards: null, internal_latency_ms: null };
+  }
+
+  async checkRequiredDocs(request: RequiredDocsCheckRequest): Promise<ClosurePayload> {
+    if (this.notProcedures.has(request.procedure)) {
+      throw new HubError("unknown procedure", 422);
+    }
+    this.docsChecked.push({ ...request, agent_utterances: [...request.agent_utterances] });
+    const informed = request.agent_utterances.join(" ").includes("신분증");
+    return {
+      call_id: request.call_id,
+      procedure: request.procedure,
+      verdict: informed ? "complete" : "incomplete",
+      missing: informed ? [] : ["신분증"],
+      detected: "true",
+    };
+  }
+
+  async checkCallGuard(request: CallGuardCheckRequest): Promise<CallGuardPayload> {
+    if (this.failGuard !== null) {
+      throw new HubError("guard", this.failGuard);
+    }
+    this.guarded.push(request);
+    const at = request.customer_utterance.indexOf(this.guardPhrase);
+    return {
+      call_id: request.call_id,
+      segment_id: String(request.segment_id),
+      flags:
+        at < 0
+          ? []
+          : [{ category: "insult", phrase: this.guardPhrase, span: [String(at), String(at + this.guardPhrase.length)], source_doc_id: "DASAN-MANUAL-5.1" }],
+    };
   }
 }
 

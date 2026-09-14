@@ -77,6 +77,11 @@ class Settings:
     # ElastiCache 를 쓰지 않는다(infra/CLAUDE.md §1-2) — 로컬 `docker run redis` 하나면 된다.
     redis_url: str | None
 
+    # --- 고객 식별(2026-09-14, `decisions/304`) — 발신 번호를 HMAC-SHA256 으로 바꾸는 서버 비밀키 ---
+    # 없으면 통화는 그대로 열리고 고객 연결만 하지 않는다(평문 번호를 대신 저장하지 않는다).
+    # ⚠ 키를 바꾸거나 잃으면 기존 customer_id·블랙리스트 등록을 다시 찾을 수 없다(`decisions/205` ③)
+    customer_ref_hmac_key: str | None
+
     @property
     def postgres_configured(self) -> bool:
         return bool(self.database_url) or all(
@@ -116,4 +121,5 @@ def load_settings() -> Settings:
         admin_access_token_ttl_seconds=_env_int("ADMIN_ACCESS_TOKEN_TTL_SECONDS", 300) or 300,
         admin_refresh_token_ttl_seconds=_env_int("ADMIN_REFRESH_TOKEN_TTL_SECONDS", 600) or 600,
         redis_url=_env("REDIS_URL"),
+        customer_ref_hmac_key=_env("CUSTOMER_REF_HMAC_KEY"),
     )

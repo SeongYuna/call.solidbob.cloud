@@ -9,8 +9,8 @@ from admin_auth.app.dtos.admin_identity_dto import AdminAccount
 from admin_auth.app.ports.output.admin_account_port import AdminAccountPort
 from hub.adapter.outbound.postgres.connection import ConnectionFactory
 
-_SELECT_BY_EMAIL = 'SELECT "id", "email", "name" FROM "admin_account" WHERE "email" = %s'
-_SELECT_BY_ID = 'SELECT "id", "email", "name" FROM "admin_account" WHERE "id" = %s'
+_SELECT_BY_EMAIL = 'SELECT "id", "email", "name", "agent_id" FROM "admin_account" WHERE "email" = %s'
+_SELECT_BY_ID = 'SELECT "id", "email", "name", "agent_id" FROM "admin_account" WHERE "id" = %s'
 
 
 class PostgresAdminAccountRepository(AdminAccountPort):
@@ -30,5 +30,5 @@ class PostgresAdminAccountRepository(AdminAccountPort):
                 row = await cur.fetchone()
         if row is None:
             return None
-        account_id, email, name = row
-        return AdminAccount(id=account_id, email=email, name=name)
+        account_id, email, name, agent_id = row
+        return AdminAccount(id=account_id, email=email, name=name, agent_id=agent_id)

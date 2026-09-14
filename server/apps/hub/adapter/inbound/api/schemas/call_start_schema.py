@@ -19,6 +19,10 @@ class CallStartRequest(BaseModel):
                             description="전사 엔진. 가짜 게이트웨이면 'mock' 처럼 사실대로 적는다")
     channel_count: int = Field(default=1, ge=1, le=2, description="V1 실측: 전부 1(모노)")
     started_at: datetime | None = Field(default=None, description="없으면 서버가 받은 시각")
+    caller_phone: str | None = Field(
+        default=None, max_length=32,
+        description="발신 번호(선택). 서버가 곧바로 HMAC 으로 바꿔 고객을 잇고 **평문은 저장·응답하지 않는다**(decisions/304)",
+    )
 
 
 class CallStartedSchema(BaseModel):
@@ -29,3 +33,6 @@ class CallStartedSchema(BaseModel):
     started_at: datetime
     status: str
     created: StrField = Field(description="false 면 이미 있던 통화 — 그대로 두었다")
+    customer_linked: StrField = Field(
+        description="고객 식별자를 붙였는가. 번호가 없거나 서버에 HMAC 키가 없으면 false. 식별자 값은 싣지 않는다"
+    )

@@ -1429,11 +1429,16 @@ curl -fsS -X POST $B/hub/transcripts -H 'content-type: application/json' \
 curl -fsS $B/hub/calls/$C/transcript
 ```
 
-9번의 기대 출력 (`0.1.2` 기준 — `0.1.1` 은 `trigger` 가 없는 3종):
+9번의 기대 출력 (`0.1.5` 기준 — `0.1.4` 까지는 `call_guard` 가 없는 4종, `0.1.1` 은 `trigger` 도 없는 3종):
 
 ```json
-{"status":"ok","postgres_configured":true,"elasticsearch_configured":true,"spokes":["masking","closure_gate","retrieval","trigger"]}
+{"status":"ok","postgres_configured":true,"elasticsearch_configured":true,"spokes":["masking","closure_gate","retrieval","trigger","call_guard"]}
 ```
+
+> ⚠ **`0.1.5` 는 DB 스키마가 바뀐다**(2026-09-14, `decisions/304`·`305`) — `customer_id` 길이 64 · `admin_account.agent_id` ·
+> `closure` 재정의 + `closure_item`. 17장대로 **이미지를 올리기 전에** 스키마를 넣는다. **데이터가 있는 운영 DB 에는 `schema.sql` 이 아니라
+> `db/migrations/2026-09-14-customer-ref-admin-closure.sql` 을 넣는다** — 09-14 운영 확인 결과 `admin_account` 도 없는 22개 테이블 상태였다. 안 넣으면 발신 번호 있는 통화 시작과
+> 필요서류 판정 저장이 500 이다. `server-env` 에 `CUSTOMER_REF_HMAC_KEY` 도 넣는다(없으면 고객 연결만 꺼진다).
 
 **`spokes` 에 `retrieval` 이 있어야 검색이 꽂힌 것입니다.** 없으면 ES 가 안 떴거나 `ELASTICSEARCH_URL` 이 안 잡힌 것이며, **조용히 501 로 남는 것이 설계된 동작**이라 서버 자체는 정상으로 뜹니다 (`decisions/024`). 순서는 상관없습니다.
 
