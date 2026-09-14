@@ -18,6 +18,13 @@
 > RDS 만 섞여 있다: **식별자 `callguard-pg` · 마스터 사용자 `callguard` · 초기 DB `assist`**
 > (`aws rds describe-db-instances` 로 확인). RDS 에 붙은 DB 보안 그룹도 원안 이름 **`assist-db`** 이고
 > 5432 인바운드 소스가 운영 EC2 에 붙은 **`assist-web`** 이다(3-2 의 대조 명령으로 두 ID 일치 확인, 2026-09-11).
+>
+> **이름 정정 (2026-09-14, 세 번째).** 위 「AWS 자원은 원안 `assist-*`」에 **예외가 둘 더 있다** —
+> **IAM 역할은 `callguard-ec2-role`**(원안 `assist-ec2-role` 아님) · **S3 버킷은 `assist-apne2`**
+> (원안 `assist-<계정ID>-apne2` 아님 — 계정 번호가 붙어 있지 않다). 둘 다 2026-09-14 콘솔 확인이고,
+> 이 런북의 4장 · 5장 · 7-5 · 22장을 실물 이름으로 고쳤다. 나머지 이름(`assist-web` · `assist-db` ·
+> `callguard-pg`)은 위 정정대로 맞다. 배포용 역할 **`callguard-deploy-role`**(GitHub OIDC)도 별도로 있다.
+>
 > 나머지 장 — 특히 13(클론) · 16-2(Caddy) — 은 원안 그대로다. 클러스터 구성의 정본은
 > `infra/k8s/base/` 다(라이브 클러스터와 `kubectl diff` 차이 0, 2026-09-08).
 
@@ -96,8 +103,8 @@
 | 1 | 키 페어 | `assist-key` | RSA, .pem |
 | 2 | 보안 그룹 | `assist-web` | 80·443 전체 / 22·6443 내 IP |
 | 3 | 보안 그룹 | `assist-db` | 5432 ← `assist-web` |
-| 4 | IAM 역할 | `assist-ec2-role` | S3 + SSM |
-| 5 | S3 버킷 | `assist-<계정ID>-apne2` | 데이터셋·모델·골든셋 |
+| 4 | IAM 역할 | `callguard-ec2-role` | S3 + SSM |
+| 5 | S3 버킷 | `assist-apne2` | 데이터셋·모델·골든셋 |
 | 6 | VPC 엔드포인트 | `assist-s3-gw` | **Gateway** 유형, 무료 |
 | 7 | RDS | `callguard-pg` | PostgreSQL 17, db.t4g.micro, 20GiB |
 | 8 | EC2 | `assist-gpu-01` | **g4dn.xlarge**, Ubuntu DLAMI |
@@ -317,15 +324,15 @@ EC2 → 왼쪽 **보안 그룹** → **보안 그룹 생성**
 
 1. 신뢰할 수 있는 엔터티 유형 → **AWS 서비스** → 사용 사례 **EC2**
 2. 권한 → `AmazonSSMManagedInstanceCore` 검색 후 체크
-3. 역할 이름 → **`assist-ec2-role`** → 생성
+3. 역할 이름 → **`callguard-ec2-role`** → 생성
 
 ### 4-1. S3 권한을 인라인 정책으로 추가
 
 `AmazonS3FullAccess` 를 붙이면 계정의 모든 버킷에 접근됩니다. 버킷 하나로 좁힙니다.
 
-역할 `assist-ec2-role` → **권한 추가** → **인라인 정책 생성** → **JSON** 탭
+역할 `callguard-ec2-role` → **권한 추가** → **인라인 정책 생성** → **JSON** 탭
 
-`<계정ID>` 를 본인 12자리 계정 번호로 바꾸십시오 (우상단 계정 메뉴에서 확인).
+버킷 이름을 그대로 씁니다 — 실물 버킷은 `assist-apne2` 입니다(계정 ID 가 붙어 있지 않습니다).
 
 ```json
 {
@@ -334,12 +341,12 @@ EC2 → 왼쪽 **보안 그룹** → **보안 그룹 생성**
     {
       "Effect": "Allow",
       "Action": ["s3:ListBucket", "s3:GetBucketLocation"],
-      "Resource": "arn:aws:s3:::assist-<계정ID>-apne2"
+      "Resource": "arn:aws:s3:::assist-apne2"
     },
     {
       "Effect": "Allow",
       "Action": ["s3:GetObject", "s3:PutObject", "s3:DeleteObject"],
-      "Resource": "arn:aws:s3:::assist-<계정ID>-apne2/*"
+      "Resource": "arn:aws:s3:::assist-apne2/*"
     }
   ]
 }
@@ -357,7 +364,7 @@ EC2 → 왼쪽 **보안 그룹** → **보안 그룹 생성**
 
 | 항목 | 값 | 이유 |
 |---|---|---|
-| 이름 | **`assist-<계정ID>-apne2`** | 버킷 이름은 **전역 고유**. 계정 ID 를 넣으면 충돌 없음 |
+| 이름 | **`assist-apne2`** | 실물 이름(2026-09-08 생성, 콘솔 확인). ⚠ 버킷 이름은 **전역 고유**라 다른 계정에서 다시 만들 때는 이 이름을 못 쓴다 — 그때는 `assist-<계정ID>-apne2` 처럼 계정 번호를 붙인다 |
 | 리전 | **아시아 태평양(서울)** | EC2 와 같아야 전송 무료 |
 | 객체 소유권 | ACL 비활성화 (기본) | |
 | 퍼블릭 액세스 차단 | **모두 차단** | 전사·평가 데이터가 들어감 |
@@ -379,7 +386,7 @@ EC2 → 왼쪽 **보안 그룹** → **보안 그룹 생성**
 버킷 안에 폴더를 만들 필요는 없습니다. 업로드할 때 경로를 이렇게 쓰면 자동으로 생깁니다.
 
 ```
-s3://assist-<계정ID>-apne2/
+s3://assist-apne2/
 ├── datasets/
 │   ├── aihub-seoul-minwon/   서울 행정 민원상담 음성 6,614개
 │   ├── aihub-505/            외국인 한국어 발화 (A-5)
@@ -601,7 +608,7 @@ postgresql://callguard:<암호>@<엔드포인트>:5432/assist?sslmode=require
 
 | 항목 | 값 |
 |---|---|
-| **IAM 인스턴스 프로파일** | **`assist-ec2-role`** ← 4장 |
+| **IAM 인스턴스 프로파일** | **`callguard-ec2-role`** ← 4장 |
 | **종료 방지** | **활성화** |
 | 종료 동작 | **중지** (기본값) |
 
@@ -1382,7 +1389,7 @@ c = psycopg.connect(os.environ['DATABASE_URL'], connect_timeout=5)
 print(c.execute(\"select count(*) from pg_tables where schemaname='public'\").fetchone()[0], '테이블 · ssl', c.pgconn.ssl_in_use)"
 
 # 7. S3 (IAM 역할이 붙어 있는지) — 원안 자원. 버킷이 없으면 건너뛴다
-aws s3 ls s3://assist-<계정ID>-apne2/
+aws s3 ls s3://assist-apne2/
 
 # 8. 인스턴스 스토어 — g4dn 원안 항목. 없으면 건너뛴다
 df -h /mnt/scratch
