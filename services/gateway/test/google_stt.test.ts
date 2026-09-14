@@ -164,3 +164,51 @@ test("오디오 없이 end() 하면 곧바로 onEnd", () => {
   stt.end();
   assert.equal(isEnded(), true);
 });
+
+test("화자 분리 — 공장에 diarize 를 넘기고, final 을 화자 구간마다 라벨을 붙여 나눈다", () => {
+  const flags: boolean[] = [];
+  const streams: FakeRecognizeStream[] = [];
+  const engine = new GoogleSttEngine((_rate, diarize) => {
+    flags.push(diarize);
+    const stream = new FakeRecognizeStream();
+    streams.push(stream);
+    return stream;
+  });
+  const results: SttResult[] = [];
+  const stt = engine.open(
+    16000,
+    { onResult: (result) => results.push(result), onFatal: () => {}, onEnd: () => {} },
+    { diarize: true },
+  );
+  stt.write(silence(0.1));
+  const word = (text: string, end: number, tag: number) => ({ word: text, endTime: { seconds: String(Math.floor(end)), nanos: Math.round((end % 1) * 1e9) }, speakerTag: tag });
+  const final = (words: unknown[]) =>
+    streams[0]!.emit("data", { results: [{ isFinal: true, alternatives: [{ transcript: "무시", words }] }] });
+
+  streams[0]!.result("네 다산", false, 0.5); // interim — 라벨 없이 그대로
+  final([word("네", 0.4, 1), word("다산콜센터입니다", 1.2, 1), word("여권", 2.1, 2)]);
+  // 구글은 다음 응답에 처음부터의 단어를 다시 싣는다 — 새 단어만 나가야 한다
+  final([word("네", 0.4, 1), word("다산콜센터입니다", 1.2, 1), word("여권", 2.1, 2), word("재발급이요", 2.6, 2)]);
+
+  assert.deepEqual(flags, [true]);
+  assert.deepEqual(
+    results.map((r) => [r.text, r.isFinal, r.speakerLabel, r.audioEndMs]),
+    [
+      ["네 다산", false, undefined, 500],
+      ["네 다산콜센터입니다", true, "1", 1200],
+      ["여권", true, "2", 2100],
+      ["재발급이요", true, "2", 2600],
+    ],
+  );
+});
+
+test("화자 분리를 안 켜면 설정·결과가 지금과 같다 (V4 측정 설정)", () => {
+  const flags: boolean[] = [];
+  const engine = new GoogleSttEngine((_rate, diarize) => {
+    flags.push(diarize);
+    return new FakeRecognizeStream();
+  });
+  const stt = engine.open(16000, { onResult: () => {}, onFatal: () => {}, onEnd: () => {} });
+  stt.write(silence(0.1));
+  assert.deepEqual(flags, [false]);
+});

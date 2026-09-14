@@ -8,7 +8,9 @@ import { CaptureBroadcaster, FakeHub, FakeStt, MemoryLedger, newLog, silence, ti
 
 const RAW_PII = "주민번호 900101-1234567 입니다";
 
-function setup(opts: { ledger?: Record<string, number>; caps?: { perDay: number; perMonth: number } } = {}) {
+function setup(
+  opts: { ledger?: Record<string, number>; caps?: { perDay: number; perMonth: number }; announcePending?: boolean } = {},
+) {
   const hub = new FakeHub();
   const stt = new FakeStt();
   const broadcaster = new CaptureBroadcaster();
@@ -29,6 +31,7 @@ function setup(opts: { ledger?: Record<string, number>; caps?: { perDay: number;
     log,
     nowMs: () => now,
     drainTimeoutMs: 500,
+    announcePending: opts.announcePending,
   });
   return {
     hub,
@@ -254,4 +257,84 @@ test("글자 채널은 구글 키가 없어도 열린다", async () => {
   const result = await registry.open({ callId: "test-t3", speaker: "agent", sampleRate: 16000, channelCount: 1, source: "text" });
   assert.equal(result.ok, true);
   await (result as { ok: true; channel: Channel }).channel.close();
+});
+
+test("추천 요청에 STT final 을 받은 시각을 싣는다 — 통화 시작 기준, 서버 대기 시간은 섞지 않는다", async () => {
+  const { registry, hub, stt, advance } = setup();
+  const agent = await openOk(registry, "test-1", "agent", 2);
+  advance(2000);
+  const customer = await openOk(registry, "test-1", "customer", 2);
+  advance(1500); // 고객 채널이 열린 지 1.5초 — 통화 시작 기준 3.5초
+  hub.ingestDelayMs = 20; // 서버가 느려도 도착 시각은 받은 순간 그대로다
+  stt.streams[1]!.emit("전입신고 서류가 뭐예요", true, 1150);
+  advance(5000);
+  await customer.close();
+  await agent.close();
+  assert.equal(hub.recommended.length, 1);
+  assert.equal(hub.recommended[0]!.utterance_end_ms, 3150);
+  assert.equal(hub.recommended[0]!.received_at_ms, 3500);
+});
+
+test("「검색 중」 신호는 기본으로 보내지 않는다 — 대시보드 파서가 아직 모르는 type 이다", async () => {
+  const { registry, stt, broadcaster } = setup();
+  const customer = await openOk(registry, "test-1", "customer");
+  stt.last().emit("여권 재발급 서류", true, 900);
+  await customer.close();
+  assert.equal(broadcaster.ofType("recommendation_pending").length, 0);
+  assert.equal(broadcaster.ofType("recommendation").length, 1);
+});
+
+test("켜면 추천 요청 직전에 「검색 중」 을 보낸다 — 전사 뒤, 추천 앞, 값은 문자열", async () => {
+  const { registry, stt, broadcaster } = setup({ announcePending: true });
+  const customer = await openOk(registry, "test-1", "customer");
+  stt.last().emit("여권 재발급 서류", false, 500);
+  stt.last().emit("여권 재발급 서류가 뭐예요", true, 900);
+  await customer.close();
+  const types = broadcaster.messages.map((item) => item.message.type);
+  assert.deepEqual(types.slice(-3), ["transcript", "recommendation_pending", "recommendation"]);
+  assert.equal(broadcaster.ofType("recommendation_pending").length, 1); // interim 에는 없다
+  assert.deepEqual(broadcaster.ofType("recommendation_pending")[0]!.payload, { call_id: "test-1", segment_id: "1" });
+});
+
+test("speaker=auto — 먼저 말한 화자를 상담원으로, 라벨 없는 interim 은 보내지 않고, 엔진 이름에 +diarize 를 남긴다", async () => {
+  const { registry, hub, stt, broadcaster } = setup();
+  const result = await registry.open({ callId: "test-1", speaker: "auto", sampleRate: 16000, channelCount: 1 });
+  assert.equal(result.ok, true);
+  const channel = (result as { ok: true; channel: Channel }).channel;
+  assert.equal(stt.last().options.diarize, true);
+  assert.equal(hub.calls[0]!.stt_engine, "fake-stt+diarize");
+
+  stt.last().emit("네 다산", false, 500); // 라벨 없음 — 버린다
+  stt.last().emit("네 다산콜센터입니다", true, 1200, "2");
+  stt.last().emit("여권 재발급 서류가 뭐예요", true, 3000, "1");
+  await channel.close();
+
+  assert.deepEqual(
+    hub.ingested.map((raw) => [raw.text, raw.speaker, raw.segment_id]),
+    [
+      ["네 다산콜센터입니다", "agent", 1],
+      ["여권 재발급 서류가 뭐예요", "customer", 2],
+    ],
+  );
+  assert.deepEqual(hub.recommended.map((r) => r.speaker), ["agent", "customer"]);
+  assert.equal(broadcaster.ofType("transcript").length, 2);
+});
+
+test("speaker=auto 는 그 통화의 두 화자를 다 차지한다 — 다른 채널과 섞이지 않는다", async () => {
+  const { registry } = setup();
+  await openOk(registry, "test-1", "agent", 2);
+  const auto = await registry.open({ callId: "test-1", speaker: "auto", sampleRate: 16000, channelCount: 1 });
+  assert.equal(auto.ok ? "" : auto.kind, "busy");
+
+  const other = await registry.open({ callId: "test-2", speaker: "auto", sampleRate: 16000, channelCount: 1 });
+  assert.equal(other.ok, true);
+  const customer = await registry.open({ callId: "test-2", speaker: "customer", sampleRate: 16000, channelCount: 1 });
+  assert.equal(customer.ok ? "" : customer.kind, "busy");
+});
+
+test("speaker=auto 는 글자 채널에서 거절한다 — 가를 소리가 없다", async () => {
+  const { registry, hub } = setup();
+  const result = await registry.open({ callId: "test-1", speaker: "auto", sampleRate: 16000, channelCount: 1, source: "text" });
+  assert.equal(result.ok, false);
+  assert.equal(hub.calls.length, 0);
 });

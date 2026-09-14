@@ -58,3 +58,29 @@ def test_인덱스가_없으면_503이고_이유를_말한다():
         app.dependency_overrides.clear()
     assert r.status_code == 503
     assert "적재" in r.json()["detail"]
+
+
+@pytest.mark.skipif(not ES_AVAILABLE, reason="elasticsearch 패키지 없음")
+@pytest.mark.parametrize("error_name", ["ConnectionError", "ConnectionTimeout"])
+def test_ES_에_연결하지_못하면_503이고_주소를_싣지_않는다(error_name):
+    """로컬에 ES 가 없을 때 500 이었다 (w4-es-unreachable-503). 예외 메시지의 주소는 밖에 내지 않는다(SEC-2)."""
+    import elasticsearch
+
+    from hub.app.ports.output import RetrievalPort
+    from hub.dependencies.retrieval_provider import get_retrieval_port
+
+    error = getattr(elasticsearch, error_name)
+
+    class _Unreachable(RetrievalPort):
+        async def retrieve(self, utterance: str, top_k: int = 5):
+            raise error("http://secret-es.internal:9200 refused")
+
+    app.dependency_overrides[get_retrieval_port] = lambda: _Unreachable()
+    try:
+        with TestClient(app) as client:
+            r = client.post("/hub/search", json={"utterance": "여권 재발급"})
+    finally:
+        app.dependency_overrides.clear()
+    assert r.status_code == 503
+    assert "연결" in r.json()["detail"]
+    assert "secret-es" not in r.text

@@ -19,6 +19,9 @@ class RecommendRequest(BaseModel):
     text: str = Field(min_length=1, description="마스킹 완료본")
     is_final: bool
     utterance_end_ms: int | None = None
+    received_at_ms: int | None = Field(
+        default=None, description="게이트웨이가 STT final 을 받은 시각(통화 기준 ms). 있으면 트리거 발동 시각이 된다"
+    )
     top_k: int = Field(default=5, ge=1, le=20)
 
 

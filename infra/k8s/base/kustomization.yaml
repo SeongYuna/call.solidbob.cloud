@@ -25,9 +25,9 @@ resources:
 
 images:
   - name: seongyuna/callguard-server
-    newTag: "0.1.3"
+    newTag: "0.1.4"
   - name: seongyuna/callguard-es
     newTag: "9.5.1"
   # 게이트웨이(services/gateway). server 와 태그를 따로 올린다 — release.yml 이 이미지마다 판단한다.
   - name: seongyuna/callguard-gateway
-    newTag: "0.1.1"
+    newTag: "0.1.2"
