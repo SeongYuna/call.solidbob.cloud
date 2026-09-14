@@ -2092,6 +2092,25 @@ button {
   box-shadow: 0 6px 16px rgba(21, 21, 19, 0.2);
 }
 
+/* 상담원 대시보드(apps/call) ThemeToggle과 같은 모양 — 관리자 화면 헤더에서 쓴다. */
+.theme-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  padding: 6px 12px;
+  color: var(--muted);
+  background: transparent;
+  cursor: pointer;
+}
+
+.theme-toggle:hover,
+.theme-toggle:focus-visible {
+  color: var(--text);
+  outline: none;
+}
+
 .standby .theme-toggle {
   border-color: var(--line);
   color: var(--muted);
