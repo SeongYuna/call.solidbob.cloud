@@ -40,11 +40,11 @@ def test_도메인_라우팅은_더_이상_채점하지_않는다():
 class _PerfectClosureGate(ClosureGatePort):
     """골든셋의 기대값을 그대로 돌려주는 가짜 포트 구현 — 배선만 검증한다."""
 
-    def evaluate(self, call_id, closure_type, evidence, reason=None) -> ClosureVerdict:
+    def evaluate(self, call_id, procedure, evidence, reason=None) -> ClosureVerdict:
         missing = tuple(field for field, ok in evidence.items() if not ok)
         return ClosureVerdict(
-            call_id=call_id, closure_type=closure_type, evidence=evidence,
-            verdict="approved" if not missing else "blocked", missing=missing,
+            call_id=call_id, procedure=procedure, evidence=evidence,
+            verdict="complete" if not missing else "incomplete", missing=missing,
         )
 
 

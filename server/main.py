@@ -24,6 +24,14 @@ from fastapi.middleware.cors import CORSMiddleware  # noqa: E402
 
 from admin_auth.adapter.inbound.api.v1.auth_router import auth_router  # noqa: E402
 from core.config import Settings, load_settings  # noqa: E402
+from hub.adapter.inbound.api.v1.blacklist_decision_router import blacklist_decision_router  # noqa: E402
+from hub.adapter.inbound.api.v1.blacklist_entry_list_router import blacklist_entry_list_router  # noqa: E402
+from hub.adapter.inbound.api.v1.blacklist_release_router import blacklist_release_router  # noqa: E402
+from hub.adapter.inbound.api.v1.blacklist_request_create_router import blacklist_request_create_router  # noqa: E402
+from hub.adapter.inbound.api.v1.blacklist_request_list_router import blacklist_request_list_router  # noqa: E402
+from hub.adapter.inbound.api.v1.call_guard_check_router import call_guard_check_router  # noqa: E402
+from hub.adapter.inbound.api.v1.call_guard_flag_list_router import call_guard_flag_list_router  # noqa: E402
+from hub.adapter.inbound.api.v1.call_list_router import call_list_router  # noqa: E402
 from hub.adapter.inbound.api.v1.call_start_router import call_start_router  # noqa: E402
 from hub.adapter.inbound.api.v1.card_feedback_router import card_feedback_router  # noqa: E402
 from hub.adapter.inbound.api.v1.closure_router import closure_router  # noqa: E402
@@ -35,6 +43,7 @@ from hub.adapter.inbound.api.v1.knowledge_gap_router import knowledge_gap_router
 from hub.adapter.inbound.api.v1.myself_router import myself_router  # noqa: E402
 from hub.adapter.inbound.api.v1.postcall_router import postcall_router  # noqa: E402
 from hub.adapter.inbound.api.v1.recommendation_router import recommendation_router  # noqa: E402
+from hub.adapter.inbound.api.v1.required_docs_detection_router import required_docs_detection_router  # noqa: E402
 from hub.adapter.inbound.api.v1.search_router import search_router  # noqa: E402
 from hub.adapter.inbound.api.v1.transcript_ingest_router import transcript_ingest_router  # noqa: E402
 from hub.adapter.inbound.api.v1.transcript_query_router import transcript_query_router  # noqa: E402
@@ -112,6 +121,25 @@ def _wire_trigger(app: FastAPI) -> str | None:
     return "trigger"
 
 
+def _wire_call_guard(app: FastAPI) -> str | None:
+    """`ai/` 의 콜 가드 탐지(C-6)를 꽂는다. 꽂았으면 이름을, 못 꽂았으면 None.
+
+    트리거와 같다 — 규칙 사전뿐이라 설정 조건이 없고, 구현 선택(`RuleCallGuardAdapter` v1)은 `ai/` 몫이다.
+    못 꽂으면 `POST /hub/call-guard-checks` 가 501 로 남는다(빈 목록을 "폭언 없음"으로 돌려주지 않는다).
+    """
+    sys.path.insert(0, str(AI_APPS))
+    sys.path.insert(0, str(AI_APPS.parent))
+    try:
+        from provider import build_call_guard_provider  # noqa: PLC0415
+    except (ModuleNotFoundError, ImportError):
+        return None
+
+    from hub.dependencies.call_guard_provider import get_call_guard_port  # noqa: PLC0415
+
+    app.dependency_overrides.setdefault(get_call_guard_port, build_call_guard_provider())
+    return "call_guard"
+
+
 def _install_missing_index_handler(app: FastAPI) -> None:
     """ES 인덱스가 없거나 ES 에 연결하지 못할 때 500 대신 **503 + 이유**를 돌려준다.
 
@@ -162,7 +190,7 @@ async def lifespan(app: FastAPI):
 
     SPOKES.clear()
     SPOKES.extend(_BUILTIN_SPOKES)
-    for wired in (_wire_retrieval(app, settings), _wire_trigger(app)):
+    for wired in (_wire_retrieval(app, settings), _wire_trigger(app), _wire_call_guard(app)):
         if wired:
             SPOKES.append(wired)
     yield
@@ -186,6 +214,14 @@ app.add_middleware(
 _install_missing_index_handler(app)
 
 app.include_router(auth_router)
+app.include_router(blacklist_decision_router)
+app.include_router(blacklist_entry_list_router)
+app.include_router(blacklist_release_router)
+app.include_router(blacklist_request_create_router)
+app.include_router(blacklist_request_list_router)
+app.include_router(call_guard_check_router)
+app.include_router(call_guard_flag_list_router)
+app.include_router(call_list_router)
 app.include_router(call_start_router)
 app.include_router(card_feedback_router)
 app.include_router(closure_router)
@@ -195,6 +231,7 @@ app.include_router(knowledge_gap_router)
 app.include_router(myself_router)
 app.include_router(postcall_router)
 app.include_router(recommendation_router)
+app.include_router(required_docs_detection_router)
 app.include_router(search_router)
 app.include_router(transcript_ingest_router)
 app.include_router(transcript_query_router)

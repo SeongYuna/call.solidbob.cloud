@@ -48,6 +48,10 @@ const registry = new CallRegistry({
   nowMs: () => Date.now(),
   // 「검색 중」 신호 — apps/call 이 recommendation_pending 을 받게 되면 true 로 켠다(w4-recommendation-pending-contract)
   announcePending: false,
+  // C-6 콜 가드 메시지 — 검사·저장은 늘 돈다. apps/call 이 call_guard 를 받게 되면 true 로 켠다(w4-call-guard-wiring)
+  announceCallGuard: false,
+  // F-2 필요서류 판정 메시지 — 판정·저장은 늘 돈다. apps/call 이 새 closure 형식(procedure·complete/incomplete)을 받게 되면 켠다
+  announceClosure: false,
 });
 
 const server = createGatewayServer({

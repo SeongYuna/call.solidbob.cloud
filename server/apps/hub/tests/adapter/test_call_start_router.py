@@ -57,3 +57,26 @@ def test_DB가_없으면_로그_어댑터로_떨어져도_200이다(monkeypatch)
     with TestClient(app) as client:
         r = client.post("/hub/calls", json={"call_id": "test-c002"})
     assert r.status_code == 200 and r.json()["created"] == "true"
+
+
+def test_발신_번호는_식별자로만_남고_응답에_번호도_식별자도_없다(monkeypatch):
+    monkeypatch.setenv("CUSTOMER_REF_HMAC_KEY", "test-key")
+    record = _SpyRecord()
+    r = _post({"call_id": "test-c7", "caller_phone": "010-1234-5678"}, record)
+    assert r.status_code == 200
+    assert r.json()["customer_linked"] == "true"
+    assert "1234" not in r.text and record.calls[0].customer_id not in r.text
+    assert len(record.calls[0].customer_id) == 64
+
+
+def test_HMAC_키가_없으면_통화는_열리고_고객만_잇지_않는다():
+    record = _SpyRecord()
+    r = _post({"call_id": "test-c8", "caller_phone": "01012345678"}, record)
+    assert r.status_code == 200 and r.json()["customer_linked"] == "false"
+    assert record.calls[0].customer_id is None
+
+
+def test_번호_형식이_아니면_422이고_입력을_되돌려_주지_않는다(monkeypatch):
+    monkeypatch.setenv("CUSTOMER_REF_HMAC_KEY", "test-key")
+    r = _post({"call_id": "test-c9", "caller_phone": "12-34"}, _SpyRecord())
+    assert r.status_code == 422 and "12-34" not in r.text

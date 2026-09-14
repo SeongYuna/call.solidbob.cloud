@@ -16,6 +16,9 @@
  *
  * 이 머신 밖 게이트웨이에 붙을 때는 환경변수 `GATEWAY_INGEST_TOKEN`(과금 문)·`GATEWAY_VIEW_TOKEN`(`--watch`)을
  * **헤더로** 보낸다. 명령줄 인자로 받지 않는다 — 셸 기록에 비밀이 남는다.
+ *
+ * 환경변수 `CALLER_PHONE` 을 주면 발신 번호로 `X-Caller-Phone` 헤더에 싣는다 — 서버가 HMAC 으로 바꿔 재상담 이력·
+ * 블랙리스트 요청이 고객을 잇는다(`decisions/304`). 같은 이유로 명령줄 인자로 받지 않는다. 실제 시민 번호를 넣지 않는다.
  */
 import { readFile } from "node:fs/promises";
 import { WebSocket } from "ws";
@@ -123,9 +126,10 @@ function channelOf(wav: Wav, index: number): Buffer {
   return out;
 }
 
-function open(url: string, token = ""): Promise<WebSocket> {
+function open(url: string, token = "", extra: Record<string, string> = {}): Promise<WebSocket> {
   return new Promise((resolve, reject) => {
-    const ws = new WebSocket(url, token ? { headers: { authorization: `Bearer ${token}` } } : {});
+    const headers = { ...extra, ...(token ? { authorization: `Bearer ${token}` } : {}) };
+    const ws = new WebSocket(url, { headers });
     ws.once("unexpected-response", (_req, res) => reject(new Error(`게이트웨이가 거절했다 (HTTP ${res.statusCode})`)));
     ws.once("open", () => resolve(ws));
     ws.once("error", reject);
@@ -139,7 +143,12 @@ async function streamChannel(args: Args, wav: Wav, speaker: Args["speaker"], pcm
     sample_rate: String(wav.sampleRate),
     channels: String(channelCount),
   });
-  const ws = await open(`${args.url}/ingest?${query}`, process.env.GATEWAY_INGEST_TOKEN ?? "");
+  const phone = (process.env.CALLER_PHONE ?? "").trim();
+  const ws = await open(
+    `${args.url}/ingest?${query}`,
+    process.env.GATEWAY_INGEST_TOKEN ?? "",
+    phone ? { "x-caller-phone": phone } : {},
+  );
   const closed = new Promise<{ code: number; reason: string }>((resolve) =>
     ws.once("close", (code, reason) => resolve({ code, reason: reason.toString() })),
   );

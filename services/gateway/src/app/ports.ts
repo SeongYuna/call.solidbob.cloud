@@ -51,6 +51,8 @@ export interface CallStartRequest {
   call_id: string;
   stt_engine: string;
   channel_count: number;
+  /** ⚠ 평문 발신 번호(C-5 P4). 서버가 곧바로 HMAC 으로 바꾼다(`decisions/304`). 이 게이트웨이는 로그에 남기지 않는다. */
+  caller_phone?: string;
 }
 
 /** 마스킹 **전** 원문. 게이트웨이 → 서버로만 가고 그 밖으로는 나가지 않는다 (SEC-1). */
@@ -83,6 +85,26 @@ export interface RecommendRequest {
 
 export type RecommendPayload = Record<string, unknown>;
 
+/** F-2 필요서류 자동 판정 — 그 통화 **상담원** 확정 발화의 **마스킹본**을 모아 보낸다. */
+export interface RequiredDocsCheckRequest {
+  call_id: string;
+  procedure: string;
+  agent_utterances: string[];
+}
+
+/** `POST /hub/required-docs-checks` 응답 그대로 — `plan.md` 7.3절 필요서류 체크리스트(값은 전부 문자열). */
+export type ClosurePayload = Record<string, unknown> & { procedure: string };
+
+/** C-6 콜 가드 검사 — **마스킹 후** 고객 발화만. 잡힌 표현이 그대로 저장·표시되기 때문이다(MANUAL-5.5). */
+export interface CallGuardCheckRequest {
+  call_id: string;
+  segment_id: number;
+  customer_utterance: string;
+}
+
+/** `POST /hub/call-guard-checks` 응답 그대로 — `{call_id, segment_id, flags: [{category, phrase, span, source_doc_id}]}`. */
+export type CallGuardPayload = Record<string, unknown> & { flags: unknown[] };
+
 export class HubError extends Error {
   readonly status: number | null;
 
@@ -97,6 +119,8 @@ export interface HubPort {
   startCall(request: CallStartRequest): Promise<void>;
   ingestTranscript(raw: RawTranscript): Promise<MaskedTranscript>;
   recommend(request: RecommendRequest): Promise<RecommendPayload>;
+  checkCallGuard(request: CallGuardCheckRequest): Promise<CallGuardPayload>;
+  checkRequiredDocs(request: RequiredDocsCheckRequest): Promise<ClosurePayload>;
 }
 
 // ── 대시보드로 내보내기 ──────────────────────────────────────────────────────
@@ -113,7 +137,9 @@ export interface RecommendationPending {
 export type GatewayMessage =
   | { type: "transcript"; payload: MaskedTranscript }
   | { type: "recommendation_pending"; payload: RecommendationPending }
-  | { type: "recommendation"; payload: RecommendPayload };
+  | { type: "recommendation"; payload: RecommendPayload }
+  | { type: "call_guard"; payload: CallGuardPayload }
+  | { type: "closure"; payload: ClosurePayload };
 
 export interface Broadcaster {
   publish(callId: string, message: GatewayMessage): void;

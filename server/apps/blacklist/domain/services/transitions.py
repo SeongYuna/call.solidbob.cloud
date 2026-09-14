@@ -41,7 +41,7 @@ _ALLOWED: dict[str, dict[str, str]] = {
 
 
 class TransitionNotAllowed(ValueError):
-    """규칙표에 없는 전이. **판정하지 않고 거절한다** — `UnknownClosureType` 과 같은 태도다."""
+    """규칙표에 없는 전이. **판정하지 않고 거절한다** — `UnknownProcedure`(F-2) 와 같은 태도다."""
 
 
 class RoleNotAllowed(PermissionError):

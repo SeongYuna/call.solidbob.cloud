@@ -13,6 +13,8 @@
 >
 > **⚠ 2026-09-14 수정 (장민석)**: 7.3절 계약에 **통화 시작 · 추천 요청의 `received_at_ms` · 「검색 중」 신호**를 올렸다.
 > 셋 다 이미 코드에 있거나(통화 시작 — `decisions/301`) 같은 날 넣은 것이다(`w4-trigger-arrival-time` · `w4-recommendation-pending-contract`).
+> 같은 날 뒤이어 **필요서류 체크리스트 계약(F-2)을 코드와 맞추고**(`decisions/305`), 통화 시작의 `caller_phone`(`decisions/304`) ·
+> 콜 가드 · 통화 목록 · 블랙리스트 · 수동 검색 경로를 7.3절 끝 「허브 HTTP 표면」 에 올렸다.
 
 # 실시간 상담원 어시스트 RAG 시스템
 
@@ -1001,16 +1003,23 @@ F-2(필요서류 체크리스트)가 참조하는 필수 항목 정의도 이 �
   "e2e_latency_ms": 1240
 }
 
-// 필요서류 체크리스트 판정 (F-2, rev.5 — 이전엔 "종결 판정")
+// 필요서류 체크리스트 판정 (F-2, rev.5 — 이전엔 "종결 판정". 2026-09-14 코드와 맞춤, decisions/305)
+// procedure = 필요서류 조항 ID (추천 카드 source.doc_id 와 같은 체계). 값은 전부 문자열(HTTP 응답)
 {
   "call_id": "c_001",
-  "procedure": "증명서_대리신청",
-  "evidence": {"위임장_안내": true, "위임자_신분증_안내": false, "대리인_신분증_안내": false},
+  "procedure": "DASAN-TERM-4.3",
+  "procedure_title": "주민등록초본 발급",
+  "evidence": {"신분증": "false"},
   "verdict": "incomplete",
-  "missing": ["위임자_신분증_안내", "대리인_신분증_안내"],
-  "source": {"doc": "응대매뉴얼", "clause": "3.1"}
+  "missing": ["신분증"],
+  "conditional": ["대리 발급: 위임장·위임인 신분증 사본·대리인 신분증"],
+  "source": {"doc_id": "DASAN-TERM-4.3", "title": "주민등록초본 발급 — 필요서류"},
+  "detected": "true"
 }
 ```
+
+> `conditional` 은 조건부 추가 서류다 — **판정에 넣지 않는다**(조건 충족 여부를 게이트가 모른다). `detected` 가 `"true"` 면
+> 서류 안내 여부를 **상담원 발화 키워드로 자동 판정**한 것이다 — 부정 문맥(「필요 없어요」)을 모른다. 규칙은 조건 없는 조항 25개뿐이다.
 
 게이트웨이(`services/gateway`)가 위 셋 사이를 잇는 메시지 셋 (2026-09-14 추가):
 
@@ -1025,13 +1034,42 @@ F-2(필요서류 체크리스트)가 참조하는 필수 항목 정의도 이 �
 {"call_id": "c_001", "segment_id": 17, "speaker": "customer", "text": "카드번호는 **** 입니다",
  "is_final": true, "utterance_end_ms": 3100, "received_at_ms": 3480}
 
+// 발신 번호(선택) — 게이트웨이는 /ingest 헤더 X-Caller-Phone 으로 받아 통화 시작에 caller_phone 으로 싣는다.
+// 서버가 곧바로 HMAC 으로 바꿔 call.customer_id 에 두고 응답에는 customer_linked 만 싣는다 (decisions/304)
+{"call_id": "c_001", "stt_engine": "google-stt", "channel_count": 2, "caller_phone": "010-0000-0000"}
+
 // 「검색 중」 — 게이트웨이 → 대시보드 WS. 추천을 **요청했다**는 뜻이지 발동했다는 뜻이 아니다(판정은 서버).
 // 뒤따르는 카드의 fired 가 "false" 면 대시보드가 로딩을 거둔다. 값은 전부 문자열
 {"type": "recommendation_pending", "payload": {"call_id": "c_001", "segment_id": "17"}}
 ```
 
-> ⚠ **「검색 중」 은 게이트웨이에서 꺼 두었다**(`announcePending: false`). `apps/call` 의 실서버 파서가
-> 모르는 `type` 에 오류 배너를 띄워서, 수신 코드가 들어가기 전에 켜면 라이브 화면이 깨진다.
+```json
+// 콜 가드(C-6) — 게이트웨이 → 대시보드 WS. 고객 확정 발화마다 POST /hub/call-guard-checks 응답 그대로, 잡힌 게 있을 때만
+{"type": "call_guard", "payload": {"call_id": "c_001", "segment_id": "17",
+  "flags": [{"category": "insult", "phrase": "***", "span": ["3", "5"], "source_doc_id": "DASAN-MANUAL-5.1"}]}}
+
+// 필요서류 체크리스트(F-2) — 게이트웨이 → 대시보드 WS. 위 판정 JSON 그대로. 추천 1순위 조항을 절차로 잡고
+// 상담원 확정 발화가 쌓일 때마다 POST /hub/required-docs-checks 로 다시 판정한다
+{"type": "closure", "payload": { /* 필요서류 체크리스트 판정 */ }}
+```
+
+> ⚠ **「검색 중」 · `call_guard` · `closure` 셋 다 게이트웨이에서 대시보드 전송을 꺼 두었다**(`announcePending`·`announceCallGuard`·`announceClosure`).
+> `apps/call` 의 실서버 파서가 앞의 둘은 모르는 `type` 으로, `closure` 는 옛 형식(`closure_type`·`approved/blocked`)만 받아
+> 오류 배너를 띄운다. **검사·판정·저장은 끄지 않았다** — 수신 코드가 들어가면 켠다.
+> `category` 는 DDL 정본(`insult·threat·sexual·distress`)이다 — 프론트 mock 의 `폭언·욕설·위협` 과 다르다.
+
+**허브 HTTP 표면 (2026-09-14)** — 게이트웨이가 아니라 화면이 직접 부르는 것. 값은 전부 문자열이다.
+
+| 경로 | 누가 | 무엇 |
+|---|---|---|
+| `POST /hub/search` `{utterance, top_k}` | 상담원 수동 검색 | `{query, docs: [{doc_id, title, snippet, score}]}` — 카드 모양 변환(`summary` ← `snippet`, `source_type: "manual"`)은 화면 몫 |
+| `GET /hub/calls?limit&offset&customer_id` | 상담기록 | 최근 시작순 통화 목록. `customer_id` 는 HMAC — 재상담 이력 |
+| `GET /hub/calls/{id}/transcript` | 상담기록 | 마스킹된 자막 재조회 |
+| `POST /hub/closure-checks` `{call_id, procedure, evidence, reason}` | 체크리스트를 사람이 채울 때 | 위 판정 JSON(`detected: "false"`) |
+| `POST /hub/blacklist-requests` `{call_id, requested_by, reason}` | 상담원 | `pending` 요청. 근거·고객·자막은 서버가 모은다 · `has_distress` |
+| `GET /hub/blacklist-requests?status` · `POST …/{id}/decision {approve, expires_in_days, note}` | **관리자 로그인** | 승인 시 등록 에피소드. 결정자는 `admin_account.agent_id` |
+| `GET /hub/blacklist-entries?active_only` · `POST …/{id}/release {reason}` | **관리자 로그인** | 해제는 지우지 않고 기록 |
+| `GET /hub/call-guard-flags?call_id&category&limit&offset` | **관리자 로그인** | 콜 가드 로그 |
 
 > **`score` 는 페이로드에만 있고 화면에 쓰지 않는다.** 부록 A-1 이 수치 표기를 금지하며,
 > rev.4 의 화면 구성에 `유사도 0.87` 이 찍혀 있던 것은 **위반이었다**(2026-08-28 발견, 2.1절에서 제거).
@@ -1040,12 +1078,9 @@ F-2(필요서류 체크리스트)가 참조하는 필수 항목 정의도 이 �
 > **`verdict` 가 `blocked` → `incomplete` 로 바뀌었다.** 다산에는 차단할 "종결" 행위가 없다
 > — 통화는 상담원이 끊으면 끝난다. 게이트는 **경고만** 한다(F 블록 「무엇이 달라지는가」).
 
-> ⚠ **이 계약 변경은 아직 코드에 반영되지 않았다.** 현재
-> `server/apps/hub/app/dtos/closure_verdict_dto.py` 와 `db/schema.sql` 의 `closure` 테이블은
-> **통신사 스키마**(`closure_type`·`reason`·`위약금_안내`)를 그대로 쓴다.
-> **`server/` 는 장민석 담당**이므로(`decisions/012`) 여기서 고치지 않았다 — 위 표는 **바뀌어야
-> 할 목표 형태**이고, 실제 변경은 그쪽과 맞춘 뒤에 한다. 영향 범위: DTO 1개 · 스키마 1개 ·
-> `closure_gate` 스포크의 규칙 정의(`closure_rule.py`) · 관련 테스트.
+> ~~⚠ 이 계약 변경은 아직 코드에 반영되지 않았다.~~ **2026-09-14 반영했다**(`decisions/305`) — DTO·`closure`+`closure_item` 스키마·
+> `closure_rule.py`(다산 필요서류 조항 25개)·자동 판정. 원래 적힌 문장: *현재 `closure_verdict_dto.py` 와 `closure` 테이블은
+> 통신사 스키마(`closure_type`·`reason`·`위약금_안내`)를 그대로 쓴다 … 실제 변경은 그쪽과 맞춘 뒤에 한다.*
 
 ---
 

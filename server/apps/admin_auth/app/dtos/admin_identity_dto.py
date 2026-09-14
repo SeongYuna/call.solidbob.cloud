@@ -21,3 +21,5 @@ class AdminAccount:
     id: int
     email: str
     name: str | None
+    # J-4 승인·해제를 기록할 상담원 마스터 ID(`decisions/304`). None 이면 블랙리스트 결정을 못 한다
+    agent_id: str | None = None

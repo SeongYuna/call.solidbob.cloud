@@ -27,6 +27,9 @@ class CallGuardFlag:
     category: str  # "insult" | "threat" | "sexual" | "distress"
     phrase: str  # 걸린 표현 — **마스킹된 자막에서 잘라낸다**(MANUAL-5.5)
     source_doc_id: str | None = None  # 근거 조항 (DASAN-MANUAL-5.x)
+    # [start, end) — 받은(마스킹된) 발화 기준 문자 오프셋. `call_guard_flag.span_start/end` 로 간다.
+    # 평가 하네스처럼 위치가 필요 없는 호출자를 깨지 않으려고 선택으로 둔다 — 저장 경로는 없으면 거부한다
+    span: tuple[int, int] | None = None
 
     def __post_init__(self) -> None:
         allowed = ABUSE_CATEGORIES + (DISTRESS_CATEGORY,)

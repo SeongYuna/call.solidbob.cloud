@@ -24,6 +24,8 @@ class CallStartCommand:
     stt_engine: str
     channel_count: int
     started_at: datetime | None = None  # 없으면 인터랙터가 지금 시각을 넣는다
+    # ⚠ 평문 발신 번호(C-5 P4). 인터랙터가 곧바로 `CustomerRefPort` 로 바꾸고 버린다 — 저장·로그·응답에 싣지 않는다
+    caller_phone: str | None = None
 
 
 @dataclass(frozen=True)
@@ -37,3 +39,4 @@ class CallStarted:
     started_at: datetime
     status: str
     created: bool
+    customer_id: str | None = None  # 발신 번호의 HMAC. 번호가 없거나 키가 없으면 None — 지어내지 않는다

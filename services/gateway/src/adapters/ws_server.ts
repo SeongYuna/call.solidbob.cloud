@@ -180,7 +180,7 @@ export function createGatewayServer(deps: GatewayServerDeps): Server {
     if (route === "audio") {
       ingestWss.handleUpgrade(req, socket, head, (ws) => {
         track(ws);
-        void acceptIngest(ws, url, deps);
+        void acceptIngest(ws, url, deps, req);
       });
       return;
     }
@@ -254,7 +254,17 @@ function parseIngest(url: URL, allowAuto = false): IngestParams | string {
   return { callId, speaker, sampleRate, channelCount };
 }
 
-async function acceptIngest(ws: WebSocket, url: URL, deps: GatewayServerDeps): Promise<void> {
+/**
+ * 발신 번호는 헤더 `X-Caller-Phone` 으로만 받는다(`decisions/304`). URL 쿼리는 접근 로그·프록시 기록에 남는다 —
+ * 과금 토큰을 헤더로만 받는 것과 같은 이유다. 값은 로그에 싣지 않는다. 형식 검사는 서버가 한다(한 곳에서만).
+ */
+function callerPhoneOf(req: IncomingMessage): { callerPhone?: string } {
+  const raw = req.headers["x-caller-phone"];
+  const value = (Array.isArray(raw) ? raw[0] : raw)?.trim() ?? "";
+  return value.length > 0 && value.length <= 32 ? { callerPhone: value } : {};
+}
+
+async function acceptIngest(ws: WebSocket, url: URL, deps: GatewayServerDeps, req: IncomingMessage): Promise<void> {
   const params = parseIngest(url, true);
   if (typeof params === "string") {
     closeWith(ws, CLOSE_POLICY, params);
@@ -293,6 +303,7 @@ async function acceptIngest(ws: WebSocket, url: URL, deps: GatewayServerDeps): P
     speaker: params.speaker,
     sampleRate: params.sampleRate,
     channelCount: params.channelCount,
+    ...callerPhoneOf(req),
   });
   if (!result.ok) {
     deps.log.warn(`채널 거절 call=${params.callId} speaker=${params.speaker} — ${result.reason}`);
