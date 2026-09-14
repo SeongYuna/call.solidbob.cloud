@@ -402,3 +402,65 @@ Environment Variables → **Production 만** → Deployments → Redeploy(`VITE_
   34584307027 확인). 누가 클러스터를 손댄 흔적이 아니라 **적용할 때마다 생기는 차이**다(bc 세션 확인). 해는 없지만(검색 200, 인덱스 그대로)
   **진짜 변경이 생겨도 이 줄에 묻힌다.** 추정: `volumeClaimTemplates` 에 서버가 기본값을 채우는 필드. 확인은 인스턴스에서
   `kubectl kustomize infra/k8s/base/ | sudo k3s kubectl diff -f -` — 나온 필드를 매니페스트에 적어 두면 사라진다
+
+
+### 릴리스 태그 게이트를 고치며 남은 것 (2026-09-14, `decisions/111`)
+
+- [ ] **룰셋에 `tag-check` 를 필수 통과 검사로 등록** — `.github/workflows/tag-check.yml` 을 만들었지만
+  룰셋(`21538648`)의 필수 검사는 아직 `jekyll`·`ai`·`server` 셋뿐이다. 등록해야 「태그를 안 올린 PR」이
+  실제로 **머지 전에** 막힌다. 지금은 빨간 X 만 뜨고 머지는 된다. 저장소 admin(정성윤) 콘솔 작업.
+  같이 볼 것: **`gateway` job 도 아직 필수가 아니다**(2026-09-11부터 미등록). 게이트웨이는 운영 경로인데
+  테스트가 빨개도 머지된다.
+- [ ] **⚠ `.github/branch-protection.json` 이 라이브 룰셋과 어긋난다** — 파일은
+  `required_approving_review_count: 1`, 라이브는 `0`(혼자 관리라 0이 맞다). 파일에는 `gateway`·`tag-check` 도 없다.
+  **그 파일로 룰셋을 복원하면 승인 1건 필수가 생겨 지금 흐름이 막힌다.** 라이브에 맞추거나, 참고용임을 파일에 적는다.
+- [ ] **OIDC 신뢰 정책을 아직 못 봤다** — `release.yml` 주석 ④ 는 `callguard-deploy-role` 의 신뢰 정책이
+  `refs/heads/main` 한정이라고 적지만 **실물을 확인한 사람이 없다**(네 세션 모두 AWS 자격증명 없음).
+  `#54`·`#55` 가 그 스텝에서 거부당한 이력이 있어 한 번 어긋난 적이 있다.
+  확인: IAM → 역할 → `callguard-deploy-role` → **「신뢰 관계」 탭**(자격증명 불필요, 30초) 또는 CloudShell 에서
+  `aws iam get-role --role-name callguard-deploy-role --query 'Role.AssumeRolePolicyDocument'`.
+  **`sub` 가 `repo:SeongYuna/call.solidbob.cloud:ref:refs/heads/main` 으로 좁혀져 있는지**가 핵심이다 —
+  넓게 열려 있으면 PR 에서도 역할을 빌릴 수 있어 위험도가 한 단계 올라간다.
+- [ ] **ES 이미지(`seongyuna/callguard-es`)는 CI 가 굽지 않는다** — 갈래가 둘이다.
+  ① `infra/elasticsearch/Dockerfile` 을 고쳐도 `release.yml` 의 `paths` 에 없어 **워크플로가 깨어나지 않는다**
+  ② ES `newTag` 만 올리면 워크플로는 도는데 **굽는 잡이 없어** `deploy` 가 없는 태그를 적용 → **ImagePullBackOff**.
+  server 스모크는 통과하므로 늦게 발견된다. 지금 정본은 손으로 굽는 것이다(`infra/README.md:34`).
+  자동화할지, 「손으로 굽는다」를 규칙으로 못박을지 정한다.
+- [ ] **`converge.sh:55` 가 게이트웨이 롤아웃을 보지 않는다** — `rollout status deploy/callguard-server` 만
+  기다린다. 부팅 시 게이트웨이가 못 떠도 「완료」를 찍는다(`release.yml` 의 배포는 둘 다 본다).
+  09-11 게이트웨이 도입 때 갱신이 누락된 것으로 보인다. 한 줄 추가면 된다.
+- [ ] **`test.yml` 이 같은 SHA 에 검사를 2벌 단다** — 브랜치 push 런과 main PR 런이 **같은 커밋**을 헤드로 쓴다
+  (실측: `61a3d35d69` 에 `push frontend` · `pull_request frontend` 둘). 러너 분과 checks 목록 소음 문제다.
+  **⚠ 싼 수정(`concurrency` group 을 `head_ref || ref_name` 으로 통합)은 위험하다** — 두 런이 같은 SHA 에
+  **같은 이름**(`server`·`ai`·`jekyll`)으로 check-run 을 보고하므로, 한쪽을 취소하면 필수 검사가 `cancelled` 로
+  남아 **머지가 막힐 수 있다**(경합이라 재현이 들쭉날쭉하다). 실제 해결은 push 트리거 정책을 바꾸는 것인데
+  `CLAUDE.md` §7 이 네 브랜치 push 에서 돈다고 적고 있어 **정책 결정**이 필요하다.
+- [ ] **운영 이미지에 테스트가 실린다** — `server.Dockerfile` 의 `COPY server/` · `COPY ai/apps/` 가 넓어
+  `tests/` 하위 `.py` **86개**(디렉터리 9개, `__pycache__` 제외)와 `ai/apps/evaluation/`(336K)이 들어간다.
+  `pytest` 가 이미지에 없어 **동작 위험은 없다** — 결함이 아니라 사실 기록이다.
+  줄이려면 `.dockerignore` 에 `**/tests`·`**/conftest.py`·`**/pytest.ini`·`**/.importlinter` + `ai/apps/evaluation`.
+  **⚠ 그때까지는 `ai/apps/evaluation/` 만 고친 PR 도 태그를 올려야 한다** — server 경로 정규식이
+  `^(server/|ai/|…)` 라 평가 하네스만 손대도 게이트가 걸린다(2026-09-14부터는 **머지 전에** 걸린다).
+  버그가 아니라 「이미지에 들어갈 필요 없는 것이 들어가 있다」의 증상이다 — 위 두 곳을 좁히면 같이 사라진다.
+
+  **⚠ `ai/apps/call_guard`·`voice_signal` 은 빼지 않는다** — C-6·D-5 가 꽂힐 자리다. 지금 배선이 없을 뿐이고
+  (`/health` 의 `spokes` 와 `release.yml` 의 `EXPECTED` 둘 다 넷뿐), 빼면 나중에 꽂는 사람이
+  **로컬에선 되는데 운영에서만 ImportError** 로 헤맨다. `server/tests/test_image_layout.py` 가 안전망이지만
+  **지금 `main.py` 가 import 하는 것**(`ai/provider.py`·`ai/apps/retrieval`)만 보므로 이 경우는 못 잡는다.
+
+### 운영 스키마가 배포보다 늦게 따라간다 (신규, 2026-09-14)
+
+- [ ] **「머지 = 배포」인데 스키마는 사람 손이라 구조적으로 뒤따라간다** — 09-14 에 실제로 났다.
+  PR #79 머지 → `release.yml` 자동 → server `0.1.5` 가 06:33 배포됐는데 운영 DB 는 22 테이블(`fd96adc`, 09-09)
+  이었다. 런북 19장이 「**이미지를 올리기 전에** 스키마를 넣는다」고 적어 뒀지만 **사람이 끼어들 지점이 없다.**
+  ⚠ **`/health` 는 이 상태에서도 `ok` 다**(`0.1.5` 기대 출력과 일치) — 배포 판정으로는 안 드러나고
+  발신 번호 있는 통화 시작·F-2 저장·관리자 로그인만 500 이었다.
+  **정할 것**: `tag-check.yml`(PR 전용, 이미지를 굽지 않는다)에 **스키마 선행 확인**을 붙일지.
+  붙인다면 무엇으로 보나 — ① `db/migrations/` 에 새 파일이 있으면 「적용했는가」를 묻는 체크박스 ②
+  `schema.sql` 의 `CREATE TABLE` 수와 운영 조회값 비교(운영 접근이 CI 에 필요해진다 — 반대급부가 크다).
+  ①이 싸고, ②는 자격증명을 CI 에 들이는 값이 든다.
+- [ ] **`admin_account` 행이 비어 있다 (2026-09-14)** — 넣기 전까지 블랙리스트 승인·해제가 409.
+  회원가입 화면이 없어 운영자가 SQL 로 넣고 `agent_id` 를 채운다. `CUSTOMER_REF_HMAC_KEY` 는 09-14 에 넣었다.
+- [ ] **런북 8장의 SSH 키 이름이 실물과 다르다 (2026-09-14)** — 런북은 `~/.ssh/assist-key.pem` 인데
+  그런 파일이 없다(있는 것은 `callguard-key.pem`·`admin-keypair.pem`). 09-14 에 고친 IAM 역할·S3 버킷
+  이름과 같은 부류다. **맞는 키를 아는 사람이 런북을 고친다** — 이름을 추측해서 적지 않는다.

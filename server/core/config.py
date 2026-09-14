@@ -33,6 +33,9 @@ def _env_csv(name: str, default: tuple[str, ...]) -> tuple[str, ...]:
 
 _LOCAL_VITE_ORIGINS = ("http://localhost:5173", "http://127.0.0.1:5173")
 
+# AI Hub 음성 한 건은 수 MB 다. 넉넉하되 데이터셋을 통째로 올리는 실수는 막는 값.
+_DEFAULT_UPLOAD_MAX_BYTES = 100 * 1024 * 1024
+
 
 @dataclass(frozen=True)
 class Settings:
@@ -55,6 +58,13 @@ class Settings:
     # 기본값은 로컬 Vite 뿐이다. 운영 origin 은 배포 env 가 넣는다 — 운영 주소를 개발 기본값으로 굳히지 않는다
     # (`.claude/rules/dashboard.md` §5). 대시보드를 `server.solidbob.cloud` 와 같은 origin 에서 내주면 이 값은 쓰이지 않는다.
     cors_allowed_origins: tuple[str, ...]
+
+    # --- 테스트 음성 업로드·보관 (A-6, 2026-09-14 `_project/decisions/110`) ---
+    # 자격증명은 여기 없다 — boto3 가 EC2 인스턴스 역할을 IMDSv2 로 가져온다(운영 파드에서 확인).
+    s3_bucket: str | None
+    aws_region: str | None
+    upload_token: str | None        # 없으면 업로드 문이 **잠긴다**(fail-closed, `110` 4번)
+    upload_max_bytes: int           # S3 정책 `content-length-range` 의 상한으로도 같이 나간다
 
     # --- 관리자 로그인(구글, 2026-09-14) — apps/admin. 회원가입 없음, 허용 목록은 admin_account ---
     google_oauth_client_id: str | None
@@ -82,6 +92,11 @@ class Settings:
     def elasticsearch_configured(self) -> bool:
         return bool(self.elasticsearch_url)
 
+    @property
+    def uploads_configured(self) -> bool:
+        """저장소와 문이 **둘 다** 있어야 켜진 것이다. 하나만 있으면 반쪽이라 켜지 않는다."""
+        return bool(self.s3_bucket) and bool(self.upload_token)
+
 
 def load_settings() -> Settings:
     """호출 시점의 환경을 읽는다. 앱 기동 시 한 번 부르고 DI 로 넘긴다 — 모듈 전역에 캐시하지 않는다
@@ -97,6 +112,10 @@ def load_settings() -> Settings:
         elasticsearch_api_key=_env("ELASTICSEARCH_API_KEY"),
         huggingface_token=_env("HUGGINGFACE_TOKEN"),
         cors_allowed_origins=_env_csv("CORS_ALLOWED_ORIGINS", _LOCAL_VITE_ORIGINS),
+        s3_bucket=_env("S3_BUCKET"),
+        aws_region=_env("AWS_REGION"),
+        upload_token=_env("UPLOAD_TOKEN"),
+        upload_max_bytes=_env_int("UPLOAD_MAX_BYTES", _DEFAULT_UPLOAD_MAX_BYTES) or _DEFAULT_UPLOAD_MAX_BYTES,
         google_oauth_client_id=_env("GOOGLE_OAUTH_CLIENT_ID"),
         admin_jwt_secret=_env("ADMIN_JWT_SECRET"),
         admin_access_token_ttl_seconds=_env_int("ADMIN_ACCESS_TOKEN_TTL_SECONDS", 300) or 300,

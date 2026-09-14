@@ -46,7 +46,9 @@ paths:
 - [x] **EC2 배포 완료 (2026-09-08)** — Amazon Linux 2023 · k3s v1.36.4 · Traefik Ingress + cert-manager
 - [x] `https://server.solidbob.cloud/health` 가 `spokes:[masking,closure_gate,retrieval]` 보고, Let's Encrypt 인증서 정상
 - [x] **매니페스트를 실제 구성에 맞춰 재작성** — `kubectl diff` 로 클러스터와 **차이 0** 확인
-- [ ] ES 인덱스 적재 (`scripts/index_knowledge_base.py --to-es --recreate`) — 없으면 `/hub/search` 가 500
+- [x] **ES 인덱스 적재 (2026-09-11)** — 이미지에 `knowledge-base/`·`scripts/` 가 없어 GitHub `main` tar 를
+      파드 안에서 풀어 적재했다. `callguard-kb-single` · 청크 98개 · `_cat/indices` green docs.count 98.
+      밖에서 `POST /hub/search` 200 확인. 절차는 런북 15-1
 - [ ] **AMI 스냅샷** — 지금 구성이 EC2 안에만 있다
 - [ ] 자동 중지 cron (지침서 21-1)
 
