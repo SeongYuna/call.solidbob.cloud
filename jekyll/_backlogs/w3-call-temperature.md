@@ -10,6 +10,7 @@ requirement:
   - "D-5"
 paths:
   - "ai/apps/voice_signal/*"
+note: "모델 학습(정성윤 · 개인 PC) 후 진행 예정 — 하네스 배선·골든셋 채점(정확도 측정)"
 ---
 
 ## 무엇을

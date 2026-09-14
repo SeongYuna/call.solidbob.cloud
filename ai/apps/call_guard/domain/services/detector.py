@@ -96,8 +96,10 @@ def detect(customer_utterance: str) -> list[Detection]:
     "전부 폭언"이라고 답하는 구현이 만점을 받는다(절대 원칙 10) — 그래서 골든셋에
     정상 발화(강한 항의·불만 표현)를 함께 실었다.
     """
-    text = (customer_utterance or "").strip()
-    if not text:
+    # 앞뒤 공백을 **잘라내지 않는다** — 오프셋이 저장되는 자막(`transcript_segment.text`)과
+    # 어긋난다. 비었는지만 공백을 무시하고 본다.
+    text = customer_utterance or ""
+    if not text.strip():
         return []
 
     found: list[Detection] = []
