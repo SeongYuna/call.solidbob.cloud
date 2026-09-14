@@ -18,7 +18,7 @@ npm start                       # ../../.env 를 읽는다. 셸 변수가 .env �
 ```
 
 server 가 `http://localhost:8000` 에 떠 있어야 한다(`cd server && uvicorn main:app --env-file ../.env`).
-대시보드는 `apps/dashboard/.env.local` 에 `VITE_GATEWAY_WS_URL=ws://localhost:8080/ws` 를 넣으면 라이브 모드로 붙는다.
+대시보드는 `apps/call/.env.local` 에 `VITE_GATEWAY_WS_URL=ws://localhost:8080/ws` 를 넣으면 라이브 모드로 붙는다.
 
 ### 통화 흉내 — AI Hub 녹음 재생
 
@@ -93,7 +93,7 @@ node scripts/stream_wav.ts <파일.wav> --speaker customer --watch
 - 끝낼 때 텍스트 `{"type":"end"}` → 남은 결과를 다 보낸 뒤 `1000` 으로 닫힌다. 그냥 끊어도 된다
 - 거절·중단은 close 코드와 이유로 알린다 — `1008` 잘못된 요청·같은 화자 중복, `1013` STT 한도(COST-1), `1011` 서버·STT 문제
 
-브라우저 마이크(①)는 `apps/dashboard` 몫이다 — `getUserMedia` → PCM16 변환 → 이 계약으로 붙는다.
+브라우저 마이크(①)는 `apps/call` 몫이다 — `getUserMedia` → PCM16 변환 → 이 계약으로 붙는다.
 
 ### `WS /ws[?call_id=]` — 대시보드
 

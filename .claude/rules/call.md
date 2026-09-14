@@ -1,10 +1,10 @@
 ---
 paths:
-  - "apps/dashboard/**/*.tsx"
-  - "apps/dashboard/**/*.ts"
+  - "apps/call/**/*.tsx"
+  - "apps/call/**/*.ts"
 ---
 
-# 프론트엔드 규칙 (apps/dashboard)
+# 프론트엔드 규칙 (apps/call)
 
 CallGuard 상담원 대시보드는 React(웹)다 ([팀 분업](/docs/07/): 조서희 담당 — 2026-08-26
 팀 개편 이전에는 장민석 담당이었으나, 장민석이 백엔드·AI로 옮기고 조서희가 신규 합류해
@@ -17,7 +17,7 @@ CallGuard 상담원 대시보드는 React(웹)다 ([팀 분업](/docs/07/): 조�
 > **다른 사람은 `apps/` 를 고치지 않는다** — 문제를 발견하면 고치지 말고 조서희에게 알린다.
 > 프론트가 소비하는 **계약(`server/` 의 DTO·WebSocket 스키마)** 은 `server/` 쪽 파일이므로
 > 이 잠금과 무관하다.
-`apps/dashboard`는 상담원 화면이다. 자막(좁게) | 이용약관·충족요건(넓게).
+`apps/call`(옛 `apps/dashboard`, 2026-09-14 이름 변경)는 상담원 화면이다. 자막(좁게) | 이용약관·충족요건(넓게).
 고객 화면(`apps/customer`)은 `_project/decisions/014` 로 철회했다.
 
 ---
@@ -70,7 +70,7 @@ interface RecommendationCard {
 
 ## 4. 테스트
 
-- `apps/dashboard/test/`에 컴포넌트 테스트 — 상세 규칙은 `.claude/rules/testing.md` 참고.
+- `apps/call/test/`에 컴포넌트 테스트 — 상세 규칙은 `.claude/rules/testing.md` 참고.
 
 ## 5. 배포 전제 — `docs/infra-runbook.md`
 

@@ -1,10 +1,10 @@
 /**
- * J — 콜 라우팅 보호(`_project/decisions/204`) 계약. `apps/dashboard`의
+ * J — 콜 라우팅 보호(`_project/decisions/204`) 계약. `apps/call`의
  * `types/contract.ts`에서 관리자 화면이 쓰는 부분만 옮겼다.
  *
  * ⚠ 2026-09-10 — 두 앱을 완전히 분리하면서 타입을 일부러 따로 둔다. 실제
  * 백엔드 API가 붙으면 그쪽이 정본이 되고, 이 파일은 서버 응답 스키마에 맞춰
- * 독립적으로 갱신한다 — `apps/dashboard`와 같은 파일을 공유하지 않는다.
+ * 독립적으로 갱신한다 — `apps/call`와 같은 파일을 공유하지 않는다.
  */
 
 export type BlacklistStatus = "pending" | "approved" | "rejected";

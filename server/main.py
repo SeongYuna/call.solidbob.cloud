@@ -22,6 +22,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent / "apps"))
 from fastapi import FastAPI, Request  # noqa: E402
 from fastapi.middleware.cors import CORSMiddleware  # noqa: E402
 
+from admin_auth.adapter.inbound.api.v1.auth_router import auth_router  # noqa: E402
 from core.config import Settings, load_settings  # noqa: E402
 from hub.adapter.inbound.api.v1.call_start_router import call_start_router  # noqa: E402
 from hub.adapter.inbound.api.v1.card_feedback_router import card_feedback_router  # noqa: E402
@@ -168,6 +169,7 @@ app.add_middleware(
 )
 _install_missing_index_handler(app)
 
+app.include_router(auth_router)
 app.include_router(call_start_router)
 app.include_router(card_feedback_router)
 app.include_router(closure_router)

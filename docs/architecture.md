@@ -183,5 +183,5 @@ DDD 쪽 대응: 바운디드 컨텍스트 = 스포크, 유비쿼터스 언어 = 
 - **도메인 라우팅** — 통화가 4개 도메인 중 어디인지 누가·언제 판정하는가(게이트웨이 메타데이터? `retrieval` 첫 발화 분류?). 7.3절 계약에 `domain` 필드가 없다 → v3 필요. 라우팅 정확도는 지표로 편입해야 한다.
 
 - 각 스포크 `adapter/outbound/` 하위 이름(`es`/`postgres`/`hf`/`stt`)은 제안이다. [Task 1] 때 확정하고 이 문서를 고친다.
-- Node 게이트웨이(`services/gateway`)·React 대시보드(`apps/dashboard`)의 계층 규칙은 이 문서 범위 밖이다. TypeScript라 import-linter를 못 쓰므로 스캐폴딩 시 `dependency-cruiser` 또는 `eslint-plugin-boundaries` 중 하나를 고른다 — 미결.
+- Node 게이트웨이(`services/gateway`)·React 대시보드(`apps/call`)의 계층 규칙은 이 문서 범위 밖이다. TypeScript라 import-linter를 못 쓰므로 스캐폴딩 시 `dependency-cruiser` 또는 `eslint-plugin-boundaries` 중 하나를 고른다 — 미결.
 - 허브가 F-2 게이트를 "요청 시"에만 부르는지, 종결 시도 이벤트를 게이트웨이가 별도 메시지로 보내는지는 7.3절 계약 v2에 없다. 7주차 체크포인트 전에 정한다.

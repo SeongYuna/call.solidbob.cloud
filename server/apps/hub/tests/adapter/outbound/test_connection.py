@@ -17,6 +17,8 @@ def _settings(**over) -> Settings:
         postgres_host=None, postgres_port=5432, postgres_db_name=None, postgres_user=None,
         postgres_password=None, database_url=None, elasticsearch_url=None, elasticsearch_api_key=None,
         huggingface_token=None, cors_allowed_origins=(),
+        google_oauth_client_id=None, admin_jwt_secret=None,
+        admin_access_token_ttl_seconds=300, admin_refresh_token_ttl_seconds=600, redis_url=None,
     )
     return Settings(**{**base, **over})
 

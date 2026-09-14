@@ -54,7 +54,7 @@ Show DNS configuration** 이고, **복사 버튼으로** 가져와야 한다. �
 |---|---|---|---|
 | `A` | `@` | `216.198.79.1` | Vercel apex (→ `www` 307). **계정이 바뀌어도 같은 값** — 공용 IP |
 | `CNAME` | `www` | `ea6aaafa6f786127.vercel-dns-017.com.` | 소개 페이지 `apps/platform`. **정성윤 계정** ⚠ 값은 옛 해시 — 아래 참조 |
-| `CNAME` | `call` | `2ff10b62284009c0.vercel-dns-017.com.` | 데모 `apps/dashboard`. **정성윤 계정**(09-03 신설) |
+| `CNAME` | `call` | `2ff10b62284009c0.vercel-dns-017.com.` | 데모 `apps/call`(옛 `apps/dashboard`, 2026-09-14 이름 변경). **정성윤 계정**(09-03 신설) — Vercel 프로젝트 Root Directory 설정도 함께 바꿔야 한다 |
 | `TXT` | `_vercel` ×2 | `solidbob.cloud,d6ed4bb765cc19600009` · `www.solidbob.cloud,8b6c87dca5bf2a244207` | **09-03 교체** — 정성윤 계정 값 |
 | `CNAME` | `docs` | ~~`solidbob02.github.io`~~ → **`seongyuna.github.io`** | GitHub Pages. ⚠ **아래 참조** |
 | `CNAME` | `api` | Railway (`uivwfh8v.up.railway.app`) | 백엔드 임시. **TLS 미발급 — 안 열린다** |

@@ -3,6 +3,7 @@ import { AgentStandbyScreen } from "./components/AgentStandbyScreen";
 import { AppHeader } from "./components/AppHeader";
 import { CallSummaryHost } from "./components/CallSummaryPanel";
 import { ForcePasswordSetup } from "./components/ForcePasswordSetup";
+import { GatewayOverrideBanner } from "./components/GatewayOverrideBanner";
 import { TermsPanel } from "./components/TermsPanel";
 import { TranscriptPanel } from "./components/TranscriptPanel";
 import { useGatewaySession } from "./hooks/useGatewaySession";
@@ -37,6 +38,7 @@ export function App(): ReactElement {
   if (voluntaryPassword) {
     return (
       <div className="app-viewport">
+        <GatewayOverrideBanner />
         <div className="app-shell">
           <ForcePasswordSetup
             mode="voluntary"
@@ -54,6 +56,7 @@ export function App(): ReactElement {
 
   return (
     <div className="app-viewport">
+      <GatewayOverrideBanner />
       <div className="app-shell">
         {showSummary ? (
           <>
