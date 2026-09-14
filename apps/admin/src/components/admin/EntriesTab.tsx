@@ -132,7 +132,7 @@ function EntryRow({
             onExtend(months);
           }}
         >
-          지금부터 {months}개월로 재설정
+          재설정
         </button>
         <button type="button" className="btn-outline admin-release" onClick={onRelease}>
           해제
