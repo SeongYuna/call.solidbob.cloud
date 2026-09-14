@@ -1325,6 +1325,21 @@ print(c.execute(\"select count(*) from pg_tables where schemaname='public'\").fe
 
 적용한 스키마의 커밋을 진행 기록에 남긴다 — 로컬에서 `git log -1 --format=%h origin/main -- db/schema.sql`.
 
+### 17-3. 조항 적재 — `document` (2026-09-14 추가, 류준)
+
+**스키마만 넣으면 `document` 가 비어 있다.** 콜 가드(C-6) 기록 `call_guard_flag.source_doc_id` 와 추천 카드
+`recommendation_card.source_doc_id` 가 조항을 외래키로 가리키는데, 비어 있으면 **근거 조항이 NULL 로 저장된다**
+(콜 가드 저장소가 FK 위반 대신 NULL 로 떨어뜨린다 — 기록은 남고 「어느 조항 근거였는지」만 DB 에서 빠진다).
+15장 ES 적재와 같은 방식으로 서버 파드 안에서 넣는다. UPSERT 라 다시 돌려도 된다:
+
+```bash
+curl -fsSL https://codeload.github.com/SeongYuna/call.solidbob.cloud/tar.gz/main | sudo k3s kubectl -n callguard exec -i deploy/callguard-server -- tar -xz -C /app --strip-components=1 --wildcards '*/scripts/seed_documents.py' '*/knowledge-base/*'
+
+sudo k3s kubectl -n callguard exec deploy/callguard-server -- python /app/scripts/seed_documents.py   # 조항 98개 → 적재 완료 98개
+```
+
+⚠ **운영에서 아직 돌리지 않았다**(2026-09-14). 로컬 `postgres:17` + 현재 `schema.sql` 에서만 확인했다.
+
 ---
 
 ## 18. DNS · HTTPS
@@ -1414,7 +1429,8 @@ curl -fsS $B/hub/calls/$C/transcript
 ```
 
 > ⚠ **`0.1.5` 는 DB 스키마가 바뀐다**(2026-09-14, `decisions/304`·`305`) — `customer_id` 길이 64 · `admin_account.agent_id` ·
-> `closure` 재정의 + `closure_item`. 17장대로 **이미지를 올리기 전에** 스키마를 넣는다. 안 넣으면 발신 번호 있는 통화 시작과
+> `closure` 재정의 + `closure_item`. 17장대로 **이미지를 올리기 전에** 스키마를 넣는다. **데이터가 있는 운영 DB 에는 `schema.sql` 이 아니라
+> `db/migrations/2026-09-14-customer-ref-admin-closure.sql` 을 넣는다** — 09-14 운영 확인 결과 `admin_account` 도 없는 22개 테이블 상태였다. 안 넣으면 발신 번호 있는 통화 시작과
 > 필요서류 판정 저장이 500 이다. `server-env` 에 `CUSTOMER_REF_HMAC_KEY` 도 넣는다(없으면 고객 연결만 꺼진다).
 
 **`spokes` 에 `retrieval` 이 있어야 검색이 꽂힌 것입니다.** 없으면 ES 가 안 떴거나 `ELASTICSEARCH_URL` 이 안 잡힌 것이며, **조용히 501 로 남는 것이 설계된 동작**이라 서버 자체는 정상으로 뜹니다 (`decisions/024`). 순서는 상관없습니다.
@@ -1427,7 +1443,7 @@ curl -fsS $B/hub/calls/$C/transcript
 > 현재 `schema.sql`(PK `(call_id, segment_id)`)에서 `ON CONFLICT` 가 거부된다 — 500. RDS 문제가 아니라 어댑터 문제다.
 >
 > ⚠ **11번이 남긴 `test-` 행은 운영 DB 에 그대로 남는다.** 지우는 API 는 없다 — 필요하면 17장처럼 서버 파드에서
-> `masking_event` → `transcript_segment` → `call` 순서로 지운다(외래키).
+> `masking_event`·`call_guard_flag`·`voice_outlier` → `transcript_segment` → `call` 순서로 지운다(외래키).
 
 ### 19-1. 게이트웨이 (2026-09-11 추가)
 

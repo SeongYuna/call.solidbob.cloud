@@ -138,3 +138,49 @@ def summarize_speaker(speaker: str, values: list[float]) -> SpeakerTemperature:
         spread=baseline.scale,
         outlier_indices=tuple(d.index for d in devs if d.is_outlier),
     )
+
+
+@dataclass(frozen=True)
+class SegmentOutlier:
+    """저장 단위 1건 — 튄 발화를 **`segment_id` 로** 가리킨다(`voice_outlier` 행).
+
+    `SpeakerTemperature.outlier_indices` 는 목록 안의 위치라 통화가 끝나면 무엇을 가리키는지
+    잃는다. 저장하려면 자막 행과 이어지는 키가 필요하다.
+    ⚠ `robust_z` 는 **재판정용**이다 — 화면에 내지 않는다(부록 A-1).
+    """
+
+    segment_id: int
+    robust_z: float
+    baseline_n: int
+
+
+@dataclass(frozen=True)
+class SpeakerOutliers:
+    """한 화자의 판정 결과. **`baseline_usable` 이 False 면 `outliers` 는 비어 있지만 「튄 구간 없음」이
+    아니다 — 「판정하지 않았다」다**(절대 원칙 10). 저장하는 쪽이 둘을 구분해야 한다."""
+
+    speaker: str
+    baseline_usable: bool
+    outliers: tuple[SegmentOutlier, ...]
+
+
+def segment_outliers(speaker: str, samples: list[tuple[int, float]]) -> SpeakerOutliers:
+    """`(segment_id, 특징값)` 목록 → 그 화자의 튄 발화. 기준선은 **이 화자의 값만으로** 만든다.
+
+    `segment_id` 가 겹치면 거부한다 — 같은 발화를 두 번 넣으면 기준선이 그 값 쪽으로 기운다.
+    """
+    ids = [sid for sid, _ in samples]
+    if len(ids) != len(set(ids)):
+        raise ValueError(f"'{speaker}' 의 발화 목록에 segment_id 가 겹칩니다")
+    values = [v for _, v in samples]
+    baseline = build_baseline(values)
+    devs = deviations(values, baseline)
+    return SpeakerOutliers(
+        speaker=speaker,
+        baseline_usable=baseline.usable,
+        outliers=tuple(
+            SegmentOutlier(segment_id=ids[d.index], robust_z=d.robust_z, baseline_n=baseline.n)
+            for d in devs
+            if d.is_outlier
+        ),
+    )

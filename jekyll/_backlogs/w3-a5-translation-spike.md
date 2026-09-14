@@ -8,6 +8,7 @@ priority: 8
 date: 2026-08-28
 requirement:
   - "A-5"
+note: "모델 학습(정성윤 · 개인 PC) 후 진행 예정 — 숙련도 등급별 WER/CER 정확도 측정"
 ---
 
 ## 무엇을
