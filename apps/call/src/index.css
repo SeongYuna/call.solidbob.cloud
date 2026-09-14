@@ -2934,3 +2934,93 @@ button {
   opacity: 0.85;
   outline: none;
 }
+
+/* --- 재상담 고객 이력 요약 (2026-09-14) — 필요서류 카드 위, 통화 시작 시 자동으로 뜬다 --- */
+.customer-history-summary {
+  flex-shrink: 0;
+  margin: 10px 24px 0;
+  border-radius: 14px;
+  background: var(--ok-bg);
+  color: var(--ok-fg);
+  overflow: hidden;
+}
+
+.customer-history-toggle {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  gap: 8px;
+  padding: 10px 14px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font-family: inherit;
+  cursor: pointer;
+  text-align: left;
+}
+
+.customer-history-badge {
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.customer-history-count {
+  flex: 1;
+  font-size: 12.5px;
+  font-weight: 600;
+  opacity: 0.85;
+}
+
+.customer-history-chevron {
+  flex-shrink: 0;
+  transition: transform 0.15s ease;
+}
+
+.customer-history-summary.is-collapsed .customer-history-chevron {
+  transform: rotate(-90deg);
+}
+
+.customer-history-body {
+  padding: 0 14px 12px;
+}
+
+.customer-history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0 0 8px;
+  padding: 0;
+  list-style: none;
+  font-size: 12.5px;
+}
+
+.customer-history-list li {
+  display: flex;
+  gap: 8px;
+}
+
+.customer-history-list time {
+  flex-shrink: 0;
+  font-family: var(--mono);
+  opacity: 0.8;
+}
+
+.customer-history-memo {
+  margin: 0;
+  padding-top: 8px;
+  border-top: 1px solid color-mix(in srgb, var(--ok-fg) 20%, transparent);
+  font-size: 12.5px;
+  line-height: 1.5;
+}
+
+.customer-history-memo-label {
+  margin-right: 6px;
+  padding: 1px 6px;
+  border-radius: var(--radius-pill);
+  background: var(--ok-fg);
+  color: var(--ok-bg);
+  font-size: 10.5px;
+  font-weight: 700;
+  vertical-align: middle;
+}
