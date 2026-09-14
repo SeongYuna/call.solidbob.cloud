@@ -37,6 +37,7 @@ from hub.adapter.inbound.api.v1.recommendation_router import recommendation_rout
 from hub.adapter.inbound.api.v1.search_router import search_router  # noqa: E402
 from hub.adapter.inbound.api.v1.transcript_ingest_router import transcript_ingest_router  # noqa: E402
 from hub.adapter.inbound.api.v1.transcript_query_router import transcript_query_router  # noqa: E402
+from hub.adapter.inbound.api.v1.upload_router import upload_router  # noqa: E402
 
 SPOKES: list[str] = []  # 스포크를 꽂을 때 이름을 추가한다 — /health 가 그대로 보고한다
 
@@ -111,6 +112,35 @@ def _wire_trigger(app: FastAPI) -> str | None:
     return "trigger"
 
 
+def _wire_uploads(app: FastAPI, settings: Settings) -> str | None:
+    """테스트 음성 보관(A-6)의 S3 어댑터를 꽂는다. 꽂았으면 이름을, 못 꽂았으면 None.
+
+    **버킷과 토큰이 둘 다 있어야 꽂는다.** 하나만 있으면 반쪽이다 — 버킷만 있으면 문이 없고,
+    토큰만 있으면 올릴 곳이 없다. 안 꽂히면 `get_upload_storage_port` 가 501 로 남는다.
+
+    자격증명은 여기서 다루지 않는다. boto3 기본 체인이 EC2 인스턴스 역할을 IMDSv2 로 가져온다 —
+    2026-09-14 운영 파드에서 확인했다(`역할: callguard-ec2-role`). `_project/decisions/110`.
+    """
+    if not settings.uploads_configured:
+        return None
+
+    try:
+        from hub.adapter.outbound.s3.s3_upload_storage_adapter import (  # noqa: PLC0415
+            S3UploadStorageAdapter,
+        )
+    except ModuleNotFoundError:
+        # boto3 가 없는 환경(경량 CI 설치 목록)에서도 이 파일은 import 돼야 한다.
+        return None
+
+    from hub.dependencies.upload_provider import get_upload_storage_port  # noqa: PLC0415
+
+    # 기동 시 버킷에 접근해 보지 않는다 — S3 가 잠깐 안 되는 것과 «설정 안 됨» 은 다른 문제이고,
+    # 여기서 막으면 전사·마스킹까지 못 뜬다(`_wire_retrieval` 과 같은 원칙).
+    adapter = S3UploadStorageAdapter(bucket=settings.s3_bucket, region=settings.aws_region)
+    app.dependency_overrides.setdefault(get_upload_storage_port, lambda: adapter)
+    return "uploads"
+
+
 def _install_missing_index_handler(app: FastAPI) -> None:
     """ES 인덱스가 없을 때 500 대신 **503 + 이유**를 돌려준다.
 
@@ -145,7 +175,7 @@ async def lifespan(app: FastAPI):
 
     SPOKES.clear()
     SPOKES.extend(_BUILTIN_SPOKES)
-    for wired in (_wire_retrieval(app, settings), _wire_trigger(app)):
+    for wired in (_wire_retrieval(app, settings), _wire_trigger(app), _wire_uploads(app, settings)):
         if wired:
             SPOKES.append(wired)
     yield
@@ -180,6 +210,7 @@ app.include_router(recommendation_router)
 app.include_router(search_router)
 app.include_router(transcript_ingest_router)
 app.include_router(transcript_query_router)
+app.include_router(upload_router)
 
 
 @app.get("/health")

@@ -17,6 +17,7 @@ def _settings(**over) -> Settings:
         postgres_host=None, postgres_port=5432, postgres_db_name=None, postgres_user=None,
         postgres_password=None, database_url=None, elasticsearch_url=None, elasticsearch_api_key=None,
         huggingface_token=None, cors_allowed_origins=(),
+        s3_bucket=None, aws_region=None, upload_token=None, upload_max_bytes=0,
     )
     return Settings(**{**base, **over})
 

@@ -89,6 +89,7 @@ forbidden_modules =
     psycopg
     elasticsearch
     google
+    boto3
 
 # -----------------------------------------------------------------------------
 # 계약 4) 도메인 순수성 — domain 계층은 pydantic 도 모른다 (순수 파이썬)
