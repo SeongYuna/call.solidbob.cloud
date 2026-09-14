@@ -7,6 +7,7 @@ import { QaReviewTab } from "./admin/QaReviewTab";
 import { RequestsTab } from "./admin/RequestsTab";
 import { SettingsTab } from "./admin/SettingsTab";
 import { WallboardTab } from "./admin/WallboardTab";
+import { ThemeToggle } from "./ThemeToggle";
 import { useAdminStore } from "../store/adminStore";
 
 type Tab =
@@ -84,6 +85,7 @@ export function AdminPanel({
               setTab("requests");
             }}
           />
+          <ThemeToggle />
           <button type="button" className="btn-outline" onClick={onLogout}>
             {admin} 로그아웃
           </button>
