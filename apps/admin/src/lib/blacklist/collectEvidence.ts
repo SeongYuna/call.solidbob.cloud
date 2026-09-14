@@ -1,5 +1,5 @@
 /**
- * J-6 근거 읽기용 헬퍼. `apps/dashboard`의 `lib/blacklist/collectEvidence.ts`와
+ * J-6 근거 읽기용 헬퍼. `apps/call`의 `lib/blacklist/collectEvidence.ts`와
  * 달리 근거를 **모으지 않는다** — 관리자는 이미 만들어진 `BlacklistEvidence`를
  * 읽기만 하므로 `collectEvidence()`(콜가드 플래그 집계)는 여기 없다.
  */

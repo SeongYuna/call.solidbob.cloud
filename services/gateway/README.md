@@ -1,6 +1,6 @@
 # services/gateway
 
-`/dev`(브라우저 음성인식) → `server/apps/hub`(마스킹) → `apps/dashboard`(WebSocket)
+`/dev`(브라우저 음성인식) → `server/apps/hub`(마스킹) → `apps/call`(WebSocket)
 로 이어지는 실시간 자막 배선. A-3(브라우저 실시간 전달) 자리를 채운다.
 
 담당 경계는 `_project/decisions/012`상 정성윤이다 — 2026-09-10 사용자 지시로
@@ -53,7 +53,7 @@ ngrok http 8080       # 별도 터미널. https://<발급된 주소>.ngrok-free.
 2. "통화 시작" 버튼 → 마이크 권한 허용
 3. 말하면 브라우저가 즉시 텍스트로 바꿔 `/dev/media` WebSocket으로 보낸다 —
    서버 쪽 hub·대시보드 배선은 실제 전화 경로가 생겨도 그대로 재사용된다
-4. 대시보드(`apps/dashboard` 로컬 `npm run dev` 이거나, 개인 Vercel 배포)를
+4. 대시보드(`apps/call` 로컬 `npm run dev` 이거나, 개인 Vercel 배포)를
    `?gateway=wss://<ngrok 주소>/dashboard` 쿼리로 한 번 열어 라이브 모드로 전환한다
    (`lib/ws/types.ts` 참고 — Vercel 환경변수 없이도 되는 런타임 오버라이드)
 5. 콘솔 로그에 `[gateway] 통화 시작 ...`이 뜨고, 대시보드 자막 패널에 발화가

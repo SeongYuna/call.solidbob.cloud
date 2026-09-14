@@ -86,7 +86,7 @@ LOGS_REL = "jekyll/_logs/"
 def changed_today() -> tuple[list[str], list[str]]:
     """(작업 트리에서 바뀐 파일, 오늘 내가 만든 커밋 제목)"""
     # -uall: 미추적 디렉터리를 "apps/" 로 접지 않고 파일 단위로 펼친다.
-    # 접힌 경로는 티켓의 paths 패턴(apps/dashboard/*)에 걸리지 않는다.
+    # 접힌 경로는 티켓의 paths 패턴(apps/call/*)에 걸리지 않는다.
     dirty = [ln[3:].strip() for ln in git("status", "--porcelain", "-uall").splitlines()
              if ln.strip()]
 

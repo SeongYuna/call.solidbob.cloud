@@ -6,7 +6,7 @@ import { QA_REVIEW_FIXTURES, type QaReviewFixture } from "../../mock/qaReviewFix
  * 콜가드 태그가 뜬 통화·감정분석이 "주의 필요"로 본 통화를 모아 보여준다.
  * 새로 만드는 판정이 아니라 이미 있는 값을 필터링만 한다.
  *
- * ⚠ 2026-09-10 — 앱 분리로 `apps/dashboard`의 상담기록 mock을 더는 못 쓴다.
+ * ⚠ 2026-09-10 — 앱 분리로 `apps/call`의 상담기록 mock을 더는 못 쓴다.
  * 지금은 `mock/qaReviewFixtures.ts`의 예시 몇 건으로 화면만 먼저 만들고,
  * 백엔드가 붙으면 통화 목록 조회 API로 바꾼다.
  */

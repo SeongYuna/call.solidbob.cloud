@@ -1,6 +1,6 @@
 // Requirement: A-3
 // 대시보드 실시간 자막 배선: /dev(브라우저 음성인식) → hub(마스킹) →
-// apps/dashboard(WebSocket). server/CLAUDE.md·rfp-harness.md가 원래 예정해
+// apps/call(WebSocket). server/CLAUDE.md·rfp-harness.md가 원래 예정해
 // 둔 services/gateway 자리를 처음 채운다.
 //
 // ⚠ 담당 경계 — `_project/decisions/012`(디렉터리 경계 = 담당 경계)상

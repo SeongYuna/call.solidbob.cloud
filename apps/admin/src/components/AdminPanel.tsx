@@ -7,7 +7,6 @@ import { QaReviewTab } from "./admin/QaReviewTab";
 import { RequestsTab } from "./admin/RequestsTab";
 import { SettingsTab } from "./admin/SettingsTab";
 import { WallboardTab } from "./admin/WallboardTab";
-import { getMockAdminAccount } from "../mock/adminAuth";
 import { useAdminStore } from "../store/adminStore";
 
 type Tab =
@@ -39,14 +38,19 @@ const TABS: { id: Tab; label: string }[] = [
  * 만들지 않는다.
  *
  * 2026-09-10 — `apps/admin`으로 완전히 독립된 앱이다(포트 5174). 상담원
- * 대시보드(`apps/dashboard`)와 번들·상태를 공유하지 않는다 — 지금은
+ * 대시보드(`apps/call`)와 번들·상태를 공유하지 않는다 — 지금은
  * `store/adminStore.ts`의 mock 시드로 시작하고, 실제 백엔드가 붙으면 그
  * 안쪽만 API 호출로 바꾼다.
+ *
+ * 2026-09-14 — `adminName`은 더 이상 mock(`mock/adminAuth.ts`)이 아니라 구글 로그인으로
+ * 확인된 실제 관리자다(`App.tsx`가 `admin_auth` 세션에서 받아 내려준다).
  */
 export function AdminPanel({
-  onExit,
+  adminName,
+  onLogout,
 }: {
-  onExit: () => void;
+  adminName: string;
+  onLogout: () => void;
 }): ReactElement {
   const requests = useAdminStore((s) => s.requests);
   const entries = useAdminStore((s) => s.entries);
@@ -61,7 +65,7 @@ export function AdminPanel({
   const blacklistExpiryMonths = useAdminStore((s) => s.blacklistExpiryMonths);
   const setBlacklistExpiryMonths = useAdminStore((s) => s.setBlacklistExpiryMonths);
   const [tab, setTab] = useState<Tab>("wallboard");
-  const admin = getMockAdminAccount().name;
+  const admin = adminName;
 
   const pendingRequests = requests.filter((r) => r.status === "pending");
   const pendingCount = pendingRequests.length;
@@ -80,8 +84,8 @@ export function AdminPanel({
               setTab("requests");
             }}
           />
-          <button type="button" className="btn-outline" onClick={onExit}>
-            상담 화면으로
+          <button type="button" className="btn-outline" onClick={onLogout}>
+            {admin} 로그아웃
           </button>
         </div>
       </header>

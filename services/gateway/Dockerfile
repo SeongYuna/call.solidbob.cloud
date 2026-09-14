@@ -1,7 +1,7 @@
 # Requirement: A-1, A-2, A-3, COST-1
 #
 # 실제 전화 → Twilio Media Streams → Google STT → server/apps/hub(마스킹) →
-# apps/dashboard 로 이어지는 게이트웨이. server.Dockerfile과 같은 관례를
+# apps/call 로 이어지는 게이트웨이. server.Dockerfile과 같은 관례를
 # 따른다(플랫폼 고정·루트 미사용·버전 태그).
 #
 # ⚠ 지금은 배포용이 아니라 **내일 이후를 위한 준비물**이다 — 오늘은 로컬 +

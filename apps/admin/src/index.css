@@ -3072,3 +3072,58 @@ button {
   color: inherit;
   font: inherit;
 }
+
+/* --- 관리자 로그인 (2026-09-14) — 구글 버튼 하나뿐, 회원가입 없음 --- */
+.admin-login-screen {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  padding: 24px;
+}
+
+.admin-login-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+  max-width: 360px;
+  padding: 40px 32px;
+  border-radius: var(--radius-card);
+  background: var(--shell);
+  box-shadow:
+    0 1px 2px rgba(20, 20, 18, 0.04),
+    0 28px 70px rgba(20, 20, 18, 0.14);
+  text-align: center;
+}
+
+.admin-login-title {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.admin-login-subtitle {
+  margin: 0;
+  font-size: 13px;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.admin-login-google-button {
+  margin-top: 8px;
+}
+
+.admin-login-status {
+  margin: 0;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.admin-login-error {
+  margin: 0;
+  font-size: 13px;
+  color: var(--pii);
+}

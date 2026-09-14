@@ -1,5 +1,5 @@
 // Requirement: A-3 (브라우저 실시간 전달)
-// apps/dashboard(realGatewayClient.ts)가 붙는 WebSocket. hub에서 받은
+// apps/call(realGatewayClient.ts)가 붙는 WebSocket. hub에서 받은
 // TranscriptEventSchema JSON을 그대로 중계한다 — 여기서 모양을 바꾸지 않는다.
 const clients = new Set();
 

@@ -37,7 +37,7 @@
 
 ```
 [상담원 브라우저]                          [Node.js 게이트웨이]        [FastAPI 코어]
-apps/dashboard (React)      --WebSocket-->  services/gateway            fastapi
+apps/call (React)      --WebSocket-->  services/gateway            fastapi
 ├── 실시간 자막 · 경고 · 하단 책갈피 카드    ├── 오디오 청크 중계        ├── C-5 마스킹
 └── F-2 종결 모달                           ├── Google STT 연동         ├── 트리거 판정
                                             └── 화자 분리                ├── 검색(ES 하이브리드)
@@ -55,7 +55,7 @@ infra/ (Docker, AWS, PostgreSQL, Elasticsearch)
 | **정성윤** | AWS·인프라 | `services/gateway/`, `infra/`, CI 운영 | [팀 분업](/docs/07/) |
 | **류준** | 백엔드·AI 중 **AI** | `ai/` — 데이터셋 모델 학습·청킹·BM25·리랭크·임베딩·LangChain/LangGraph·평가 하네스 | `_project/decisions/012` |
 | **장민석** | 백엔드·AI 중 **서버** | `server/` — 파이프라인 구축·클린 아키텍처·계약(포트·DTO)·요청 경로 배선 | `_project/decisions/012` |
-| **조서희** | 프론트엔드 | `apps/dashboard/`(상담원: 자막 · 이용약관·충족요건), 결과 시각화(matplotlib) | [팀 분업](/docs/07/), `_project/decisions/014` |
+| **조서희** | 프론트엔드 | `apps/call/`(상담원: 자막 · 이용약관·충족요건), 결과 시각화(matplotlib) | [팀 분업](/docs/07/), `_project/decisions/014` |
 
 > ⚠ **«주 담당» 은 잠금이 아니다 (2026-09-10, `_project/decisions/302`).** 위 표의 세 번째 열은
 > **주로 누가 보는가**를 가리키는 표기이지 편집 권한이 아니다 —
@@ -120,7 +120,7 @@ infra/ (Docker, AWS, PostgreSQL, Elasticsearch)
 |---|---|---|---|---|
 | **SEC-1** | 개인정보 원본 미보관 | `server/apps/masking/`, PostgreSQL `transcript` 스키마 | 마스킹 전 원문이 DB·로그 어디에도 남지 않음 (스키마 리뷰로 검증) | [기능 명세 C-5](/docs/02/), [부록 A](/docs/12/) |
 | **SEC-2** | 자격증명 분리 | `.env.example`, `infra/secrets/` | Google STT 키·PostgreSQL 비밀번호가 코드/레포에 커밋되지 않음. `.env.example`엔 키 이름만 | `.env.example` |
-| **QUA-1** | 요구 ID별 PyTest/Jest 자동화 테스트 | `server/apps/*/tests/`, `apps/dashboard/test/` | 핵심 모듈(트리거·검색·마스킹·F-2 게이트) 단위 테스트 존재, CI에서 실행 | [평가 설계 6.2](/docs/06/) |
+| **QUA-1** | 요구 ID별 PyTest/Jest 자동화 테스트 | `server/apps/*/tests/`, `apps/call/test/` | 핵심 모듈(트리거·검색·마스킹·F-2 게이트) 단위 테스트 존재, CI에서 실행 | [평가 설계 6.2](/docs/06/) |
 | **QUA-2** | 골든셋 회귀 평가 자동화 | `ai/apps/evaluation/harness.py` | 골든셋(1주차 10개→2주차 50개→3주차 150개) 기준 eval 하네스가 스프린트마다 실행되고 [진행상황](/progress/)에 기록됨 | [데이터 확보 계획 5.3](/docs/05/) |
 | **COST-1** | Google STT 사용량을 무료 크레딧/무료 한도 내로 이중 캡 | `services/gateway/stt/budget_guard.js`, GCP 콘솔 쿼터 | ① GCP 쿼터로 하드 리밋(1차) ② `STT_MAX_SECONDS_PER_DAY`/`_MONTH`(`.env.example`) 초과 시 새 스트림 오픈 거부(2차, 애플리케이션 가드) | [리스크 및 대응](/docs/11/) |
 
@@ -134,11 +134,11 @@ infra/ (Docker, AWS, PostgreSQL, Elasticsearch)
 
 ```
 claude "rfp-harness.md의 요구사항을 반영해 CallGuard 모노레포 뼈대를 구축해줘.
-1. Root에 services/gateway, fastapi, apps/dashboard, infra/ 디렉토리 생성
+1. Root에 services/gateway, fastapi, apps/call, infra/ 디렉토리 생성
 2. services/gateway: Node.js WebSocket 게이트웨이 골격 + Google STT 스트리밍 연동 지점 +
    COST-1 사용량 가드(STT_MAX_SECONDS_PER_DAY/_MONTH 초과 시 스트림 오픈 거부)
 3. fastapi: FastAPI 앱 골격 + PostgreSQL 연결 설정 (SEC-2 반영, .env.example의 키 이름만 사용)
-4. apps/dashboard: React 프로젝트 초기화 (2.1절 — 자막/경고 + 하단 책갈피 카드)
+4. apps/call: React 프로젝트 초기화 (2.1절 — 자막/경고 + 하단 책갈피 카드)
    고객 화면 apps/customer 는 만들지 않는다. `_project/decisions/014`
 5. 모든 주요 생성 파일 상단에 관련 [요구 ID] 주석 명시할 것"
 ```
@@ -167,7 +167,7 @@ claude "C-5 요구사항에 따라 server/apps/masking/에 STT 전사 결과를 
 
 ```
 claude "2.1절 화면 구성을 위한 React 컴포넌트를 만들어줘.
-- 상담원 apps/dashboard: 실시간 자막 / 경고, 추천 카드는 하단 책갈피 팝업, F-2는 모달
+- 상담원 apps/call: 실시간 자막 / 경고, 추천 카드는 하단 책갈피 팝업, F-2는 모달
 - 고객 화면 없음 (`_project/decisions/014`)
 - 위험도 점수나 '안전합니다' 류 표현이 UI 어디에도 없어야 함 (부록 A-1 연동)"
 ```
