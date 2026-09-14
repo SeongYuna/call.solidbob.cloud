@@ -8,7 +8,8 @@ paths:
 
 CallGuard 상담원 대시보드는 React(웹)다 ([팀 분업](/docs/07/): 조서희 담당 — 2026-08-26
 팀 개편 이전에는 장민석 담당이었으나, 장민석이 백엔드·AI로 옮기고 조서희가 신규 합류해
-프론트엔드를 전담한다. `_project/decisions/005`). 앱(Flutter)은 개발하지 않는다.
+프론트엔드를 전담한다. `_project/decisions/005`). 앱(Flutter)은 개발하지 않는다
+(단, 저장소 루트 `flutter/` 는 조서희 개인 실험 — 팀 스코프 예외, `_project/decisions/405`).
 
 > ⚠ **여기는 조서희 전담이다 — 저장소에서 유일하게 남은 담당 잠금이다.**
 > 2026-09-10 에 `ai/`·`server/`·`infra/` 의 담당 경계는 풀렸지만(`_project/decisions/302`),
