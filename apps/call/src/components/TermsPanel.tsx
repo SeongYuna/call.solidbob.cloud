@@ -18,6 +18,7 @@ import {
 import { ProgressRing } from "./ProgressRing";
 import { BookmarkDock } from "./BookmarkDock";
 import { CallHistoryPanel } from "./CallHistoryPanel";
+import { CustomerHistorySummaryCard } from "./CustomerHistorySummaryCard";
 
 type TermsContentView = "closure" | "popup";
 
@@ -106,6 +107,7 @@ export function TermsPanel({
           </div>
         ) : null}
       </header>
+      <CustomerHistorySummaryCard />
       <div className="panel-body terms-body" ref={bodyRef}>
         {view === "popup" ? (
           cards.length === 0 ? (

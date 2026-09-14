@@ -45,6 +45,11 @@ export function getScenario(): MockScenario {
   return BY_ID[selectedId];
 }
 
+/** 지금 통화에 재생 중인 시나리오 ID — 재상담 고객 이력 조회 등 ID 자체가 필요할 때 쓴다. */
+export function getSelectedMockScenarioId(): MockScenarioId {
+  return selectedId;
+}
+
 export function getScenarioById(id: MockScenarioId): MockScenario {
   return BY_ID[id];
 }
