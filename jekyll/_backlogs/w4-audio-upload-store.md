@@ -31,8 +31,9 @@ paths:
 - [x] **선행 — 파드 자격증명 판정.** 2026-09-14 운영 파드에서 IMDSv2 로 확인 —
       「토큰 발급 성공 → 역할: `callguard-ec2-role`」. **추가 자격증명이 필요 없다**
       (hop limit 인상도, 전용 IAM 사용자도 불필요). `server-env` 에 AWS 키를 넣지 않는다
-- [ ] **버킷 CORS 규칙** — 오리진 `https://server.solidbob.cloud` 하나, 메서드 `POST`·`GET`, `*` 금지.
-      콘솔 → S3 → `assist-apne2` → 권한 → CORS. **이게 없으면 브라우저 업로드가 100% 막힌다**
+- [x] **버킷 CORS 규칙** (2026-09-14 콘솔) — 오리진 `https://server.solidbob.cloud` 하나 · `POST`·`GET` · `*` 아님.
+      ⚠ EC2 역할에는 `s3:PutBucketCors`·`GetBucketCors` 가 없다 — 설정도 확인도 **콘솔에서만** 된다.
+      진짜 검증은 배포 뒤 브라우저 업로드 성공 여부다
 - [x] ~~`server/apps/uploads/` 슬라이스~~ → **`server/apps/hub/` 수직 슬라이스로 넣었다.**
       `masking`·`blacklist` 는 HTTP 가 없는 **규칙 스포크**이고 라우터는 전부 `hub` 에 있다
       (`server/CLAUDE.md` §2). 업로드는 규칙 판정이 아니라 요청 경로라 `hub` 가 맞다 —
@@ -45,10 +46,15 @@ paths:
 - [x] `boto3==1.35.76` 을 `server/requirements.txt` 에. `root_packages` 추가는 **불필요**(hub 안이다).
       대신 **계약 3 에 `boto3` 를 금지 목록으로 추가** — `hub.app` 은 S3 를 모른다. 계약 4종 KEPT
 - [x] `secret.example.yaml` 에 `S3_BUCKET`·`AWS_REGION`·`UPLOAD_TOKEN`·`UPLOAD_MAX_BYTES` (YAML 파싱 확인)
-- [ ] **`.env.example` — 사람이 넣는다.** 자격증명 보호 훅이 이 파일 편집을 막는다(`server/CLAUDE.md` §6)
+- [x] `.env.example` 에 `S3_BUCKET`·`UPLOAD_TOKEN`·`UPLOAD_MAX_BYTES` (`AWS_REGION` 은 이미 있었다).
+      값 없는 키 추가라 자격증명 보호 훅에 걸리지 않았다. `core/config.py` 와 1:1 대조 확인
 - [x] **`kustomization.yaml` 의 `newTag` 를 올린다** — `server/` 를 고치므로 안 올리면 릴리스가 실패한다(오늘까지 네 번 겪었다)
-- [ ] 운영 확인 — `0.1.5` 배포 후 브라우저에서 한 건 올리고 `aws s3 ls s3://assist-apne2/uploads/` 로 보인다.
-      `/health` 의 `spokes` 에 `uploads` 가 추가된다(스모크 테스트는 부분집합 검사라 영향 없다)
+- [x] **운영 `server-env` 주입** (2026-09-14) — `S3_BUCKET=assist-apne2` · `AWS_REGION` · `UPLOAD_TOKEN`(32바이트) ·
+      `UPLOAD_MAX_BYTES`. 키 목록으로 확인했고 **`AWS_ACCESS_KEY_ID`·`AWS_SECRET_ACCESS_KEY` 는 없다**(`108` ③ 유지).
+      ⚠ SSM 에서 `K=` 변수가 붙여넣기에 씹혀 `patch: command not found` 가 났다 — **전체 명령을 한 줄씩** 쳐서 해결.
+      같은 이유로 첫 백업이 **0바이트**로 만들어졌다(리다이렉트만 실행됨). 다시 떴다
+- [ ] 운영 관통 확인 — **`0.1.6`** 배포 후 `/health` `spokes` 에 `uploads`, 토큰 없이 401,
+      브라우저에서 한 건 올리고 `aws s3 ls s3://assist-apne2/uploads/` 로 보인다
 
 ## 하지 않는 것
 
