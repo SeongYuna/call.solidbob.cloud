@@ -24,6 +24,7 @@ from .retrieval_port import RetrievalPort
 from .transcript_ingest_record_port import CallNotStartedError, TranscriptIngestRecordPort
 from .transcript_query_port import TranscriptQueryPort
 from .trigger_port import TriggerPort
+from .voice_outlier_record_port import VoiceOutlierRecordPort
 
 __all__ = [
     "CallNotStartedError",
@@ -41,4 +42,5 @@ __all__ = [
     "TranscriptIngestRecordPort",
     "TranscriptQueryPort",
     "TriggerPort",
+    "VoiceOutlierRecordPort",
 ]
