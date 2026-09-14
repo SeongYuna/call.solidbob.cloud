@@ -42,10 +42,12 @@ Root 단독 운영이라 대안이 **Root 액세스 키뿐**인데 그건 계정
 - [x] `.github/workflows/release.yml`
 - [x] ~~탄력적 IP 부착~~ — **붙이지 않기로 했다**(2026-09-09). IP 갱신을 매일 수동으로 한다
 - [x] Docker Hub Access Token + GitHub Secrets 4개 (2026-09-09)
-- [ ] 첫 배포 실검증
-- [ ] 부팅 시 자동 수렴 systemd 유닛
-- [ ] 자동 중지 cron
-- [ ] `_project/decisions/108`
+- [x] **첫 배포 실검증 (2026-09-14)** — PR #74 에서 네 잡(`plan`·`image`·`gateway-image`·`deploy`)이
+      전부 통과했다(117초). 운영 `/health` 스포크 4종(`masking`·`closure_gate`·`retrieval`·`trigger`) 유지 확인
+- [x] 부팅 시 자동 수렴 systemd 유닛 — `infra/systemd/callguard-converge.service` · `converge.sh`
+- [ ] 자동 중지 cron (런북 21-1)
+- [ ] 결정 기록 — ⚠ **번호가 갈렸다.** 여기서 예약해 둔 `108` 은 **운영 DB RDS 이관**으로 나갔고,
+      태그 게이트는 `_project/decisions/111` 이 가져갔다. **파이프라인 자체(SSM·OIDC·렌더 방식)의 결정 기록은 아직 없다**
 
 ## 탄력적 IP 를 붙이지 않는다 (2026-09-09 결정)
 
@@ -56,6 +58,13 @@ Root 단독 운영이라 대안이 **Root 액세스 키뿐**인데 그건 계정
 ⚠ **파이프라인에 미치는 영향 하나** — `release.yml` 의 스모크 테스트가
 `https://server.solidbob.cloud/health` 를 친다. **DNS 가 낡은 상태에서 머지하면 배포는
 성공해도 스모크 테스트가 실패한다.** 인스턴스를 켠 뒤 DNS 를 먼저 고치고 머지한다.
+
+## 머지 후 빨간불이 세 번 났다 (2026-09-14)
+
+가드는 **설계대로 작동했다** — PR `#59`·`#61`·`#73` 셋 다 「코드가 바뀌었는데 `newTag` 가 그대로」다.
+문제는 판정 시점이다. 이 티켓이 일부러 필수 통과 검사에서 뺐기 때문에(아래) **머지가 먼저 되고
+배포가 막힌다.** 배포를 하지 않는 **태그 검사만** 떼어내면 머지 전에 걸 수 있다 →
+[w4-release-tag-gate](/backlog/w4-release-tag-gate/)(2026-09-14 완료, `_project/decisions/111`).
 
 ## 안 하는 것
 
