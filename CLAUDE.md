@@ -265,7 +265,11 @@ infra/                   로컬 개발 인프라(compose · ES nori 이미지) +
                          CLAUDE.md(AWS 전제 · 만들지 말 것) · README.md(로컬 사용법). 주 담당: 정성윤
                          (잠금 아님 — 세 사람 누구나 고친다. 단 런북 선행 읽기는 그대로, `decisions/302`)
 scripts/ data/           유틸리티 / 데이터 (원본은 .gitignore)
-.github/workflows/       Pages 배포(pages.yml) · CI(test.yml — server · ai · jekyll job) · branch-protection.json
+.github/workflows/       Pages 배포(pages.yml) · CI(test.yml — server · ai · jekyll · gateway job)
+                         · 릴리스(release.yml — plan · image · gateway-image · k3s-deploy)
+                         · 배포 태그 검사(tag-check.yml — tag-check job, PR 전용. 이미지를 굽지 않는다)
+                         · branch-protection.json ⚠ 라이브 룰셋과 어긋나 있다 — [미결](/open-items/)
+                         판정 로직은 `scripts/check_release_tags.py` 한 벌이다(`decisions/111`)
 jekyll/                  지킬 사이트 루트 — 지킬 명령은 전부 이 안에서 실행
   index.markdown         표지 (layout: cover)
   toc.markdown           목차
