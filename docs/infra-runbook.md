@@ -1332,6 +1332,21 @@ print(c.execute(\"select count(*) from pg_tables where schemaname='public'\").fe
 
 적용한 스키마의 커밋을 진행 기록에 남긴다 — 로컬에서 `git log -1 --format=%h origin/main -- db/schema.sql`.
 
+### 17-3. 조항 적재 — `document` (2026-09-14 추가, 류준)
+
+**스키마만 넣으면 `document` 가 비어 있다.** 콜 가드(C-6) 기록 `call_guard_flag.source_doc_id` 와 추천 카드
+`recommendation_card.source_doc_id` 가 조항을 외래키로 가리키는데, 비어 있으면 **근거 조항이 NULL 로 저장된다**
+(콜 가드 저장소가 FK 위반 대신 NULL 로 떨어뜨린다 — 기록은 남고 「어느 조항 근거였는지」만 DB 에서 빠진다).
+15장 ES 적재와 같은 방식으로 서버 파드 안에서 넣는다. UPSERT 라 다시 돌려도 된다:
+
+```bash
+curl -fsSL https://codeload.github.com/SeongYuna/call.solidbob.cloud/tar.gz/main | sudo k3s kubectl -n callguard exec -i deploy/callguard-server -- tar -xz -C /app --strip-components=1 --wildcards '*/scripts/seed_documents.py' '*/knowledge-base/*'
+
+sudo k3s kubectl -n callguard exec deploy/callguard-server -- python /app/scripts/seed_documents.py   # 조항 98개 → 적재 완료 98개
+```
+
+⚠ **운영에서 아직 돌리지 않았다**(2026-09-14). 로컬 `postgres:17` + 현재 `schema.sql` 에서만 확인했다.
+
 ---
 
 ## 18. DNS · HTTPS
@@ -1430,7 +1445,7 @@ curl -fsS $B/hub/calls/$C/transcript
 > 현재 `schema.sql`(PK `(call_id, segment_id)`)에서 `ON CONFLICT` 가 거부된다 — 500. RDS 문제가 아니라 어댑터 문제다.
 >
 > ⚠ **11번이 남긴 `test-` 행은 운영 DB 에 그대로 남는다.** 지우는 API 는 없다 — 필요하면 17장처럼 서버 파드에서
-> `masking_event` → `transcript_segment` → `call` 순서로 지운다(외래키).
+> `masking_event`·`call_guard_flag`·`voice_outlier` → `transcript_segment` → `call` 순서로 지운다(외래키).
 
 ### 19-1. 게이트웨이 (2026-09-11 추가)
 

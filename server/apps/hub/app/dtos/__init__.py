@@ -22,6 +22,7 @@ from .search_dto import SearchQuery, SearchResult
 from .transcript_dto import MaskedSpan, Speaker, TranscriptEvent
 from .transcript_ingest_dto import TranscriptIngestCommand
 from .trigger_decision_dto import TriggerDecision
+from .voice_outlier_dto import VoiceOutlier
 
 __all__ = [
     "CallDomain",
@@ -53,4 +54,5 @@ __all__ = [
     "TranscriptIngestCommand",
     "TriggerDecision",
     "Verdict",
+    "VoiceOutlier",
 ]

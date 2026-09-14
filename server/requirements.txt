@@ -33,6 +33,11 @@ google-cloud-speech==2.40.0
 # 기본 체인이 EC2 인스턴스 역할을 IMDSv2 로 가져온다(운영 파드 확인).
 boto3==1.35.76
 
+# --- 관리자 로그인(구글, 2026-09-14) — admin_auth/adapter/outbound 에서만 import 한다 ---
+PyJWT==2.10.1                # access token 서명(HS256)
+redis==5.2.1                  # access token 세션 저장 — 테스트 스코프(ElastiCache 아님, infra/CLAUDE.md §1-2)
+google-auth==2.36.0           # 구글 id_token 검증(서명·issuer·audience)
+
 # --- 검증 ---
 pytest==9.1.1
 httpx==0.28.1

@@ -1,5 +1,5 @@
 /**
- * QA 리뷰 큐 mock. `apps/dashboard`의 상담기록(`mock/scenarios/`) 전체
+ * QA 리뷰 큐 mock. `apps/call`의 상담기록(`mock/scenarios/`) 전체
  * 시나리오 엔진을 옮기지 않고, 리뷰 목록에 필요한 최소 정보만 담았다 —
  * 문의 유형·요약·상담 분위기·콜가드 건수.
  */

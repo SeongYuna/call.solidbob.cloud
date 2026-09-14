@@ -1,5 +1,5 @@
 # Requirement: [Task 1], QUA-1
-"""브라우저(apps/dashboard)가 다른 origin 에서 코어 API 를 부를 수 있는지 — CORS.
+"""브라우저(apps/call)가 다른 origin 에서 코어 API 를 부를 수 있는지 — CORS.
 
 프론트가 붙는 운영 주소는 `server.solidbob.cloud` 하나지만(런북 16-2·18), 대시보드를 어디서
 서빙할지는 아직 정해지지 않았고 로컬 개발은 Vite(5173) → uvicorn(8000) 으로 origin 이 항상 다르다.

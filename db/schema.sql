@@ -380,3 +380,31 @@ CREATE TABLE "routing_log" (
     FOREIGN KEY ("assigned_agent_id") REFERENCES "agent"("agent_id")
 );
 COMMENT ON COLUMN "routing_log"."fell_back" IS '베테랑이 없어 일반 배정으로 떨어진 건';
+
+-- 관리자 로그인 허용 목록. 회원가입이 없다 — 구글 로그인으로 들어온 이메일이 여기 있어야 관리자로 인정한다. 행을 추가·삭제하는 것이 곧 관리자 등록·해제다. `agent.role='admin'`(J-4 승인 권한)과는 다른 개념이다 — 그쪽은 상담원 마스터의 역할 구분이고, 이것은 관리자 화면 로그인 자격이다. 둘을 합치면 상담원이 아닌 관리자 계정을 못 만든다
+CREATE TABLE "admin_account" (
+    "id" BIGINT GENERATED ALWAYS AS IDENTITY NOT NULL,
+    "email" VARCHAR(255) NOT NULL,
+    "name" VARCHAR(100) NULL,
+    "created_at" TIMESTAMPTZ NOT NULL,
+    PRIMARY KEY ("id"),
+    UNIQUE ("email")
+);
+COMMENT ON COLUMN "admin_account"."email" IS '구글 계정 이메일. 대소문자는 저장 전에 소문자로 맞춘다';
+COMMENT ON COLUMN "admin_account"."name" IS '구글 프로필 이름 — 화면 표시용, 판단에 쓰지 않는다';
+
+-- 관리자 세션의 refresh token. **원문을 저장하지 않는다** — SHA-256 해시만 둔다(SEC-1과 같은 원칙: 탈취되는 값을 저장하지 않는다). 만료(10분, 테스트 값)는 애플리케이션이 계산해서 넣는다. 회전(rotation) 방식이라 refresh 할 때마다 기존 행을 revoked_at 으로 무효화하고 새 행을 만든다 — 지우지 않는다 (절대 원칙 8, 탈취 흔적 추적용)
+CREATE TABLE "admin_refresh_token" (
+    "id" BIGINT GENERATED ALWAYS AS IDENTITY NOT NULL,
+    "admin_account_id" BIGINT NOT NULL,
+    "token_hash" VARCHAR(64) NOT NULL,
+    "issued_at" TIMESTAMPTZ NOT NULL,
+    "expires_at" TIMESTAMPTZ NOT NULL,
+    "revoked_at" TIMESTAMPTZ NULL,
+    PRIMARY KEY ("id"),
+    UNIQUE ("token_hash"),
+    FOREIGN KEY ("admin_account_id") REFERENCES "admin_account"("id")
+);
+COMMENT ON COLUMN "admin_refresh_token"."token_hash" IS 'SHA-256 hex — 원문은 응답으로만 한 번 나가고 저장하지 않는다';
+COMMENT ON COLUMN "admin_refresh_token"."revoked_at" IS '회전·로그아웃으로 무효화된 시각. NULL 이면 아직 유효(만료 전이라면)';
+CREATE INDEX "admin_refresh_token_idx0" ON "admin_refresh_token" ("admin_account_id");

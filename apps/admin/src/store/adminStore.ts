@@ -14,7 +14,7 @@ import type {
 } from "../types/blacklist";
 
 /**
- * 관리자 화면 전용 스토어. `apps/dashboard`의 `callStore.ts`와 더는
+ * 관리자 화면 전용 스토어. `apps/call`의 `callStore.ts`와 더는
  * 공유하지 않는다(2026-09-10, 앱 분리) — 지금은 mock 시드 데이터로
  * 시작하고, 실제 백엔드가 붙으면 액션 안쪽을 API 호출로 바꾼다. 화면
  * 컴포넌트(`components/admin/*`)는 그대로 두면 된다.

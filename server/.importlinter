@@ -14,7 +14,9 @@
 #
 # (apps/ 를 경로에 올려야 hub 가 최상위 패키지로 보인다. main.py 의 sys.path.insert 와 동일한 맥락.)
 # 스포크를 새로 만들면 root_packages 와 계약 1 의 containers 에 이름을 추가한다.
-# 등록됨: masking(C-5) · closure_gate(F-2) · blacklist(J-4·J-5, 2026-09-09 `decisions/204`).
+# 등록됨: masking(C-5) · closure_gate(F-2) · blacklist(J-4·J-5, 2026-09-09 `decisions/204`) ·
+#         admin_auth(관리자 로그인, 2026-09-14 — hub 포트를 구현하는 스포크는 아니지만 같은
+#         클린 아키텍처 계약을 받는다).
 # 예정: postcall(D-4)  — 규칙 기반 판정이라 server 쪽이다.
 # =============================================================================
 
@@ -24,6 +26,7 @@ root_packages =
     masking
     closure_gate
     blacklist
+    admin_auth
     core
 include_external_packages = True
 
@@ -44,6 +47,7 @@ containers =
     masking
     closure_gate
     blacklist
+    admin_auth
 
 # -----------------------------------------------------------------------------
 # 계약 2) 의존 방향 — server 는 ai 를 모른다
@@ -59,6 +63,7 @@ source_modules =
     masking
     closure_gate
     blacklist
+    admin_auth
     core
 forbidden_modules =
     evaluation
@@ -83,6 +88,7 @@ source_modules =
     masking.domain
     closure_gate.domain
     blacklist.domain
+    admin_auth.app
 forbidden_modules =
     fastapi
     sqlalchemy
@@ -90,6 +96,8 @@ forbidden_modules =
     elasticsearch
     google
     boto3
+    jwt
+    redis
 
 # -----------------------------------------------------------------------------
 # 계약 4) 도메인 순수성 — domain 계층은 pydantic 도 모른다 (순수 파이썬)

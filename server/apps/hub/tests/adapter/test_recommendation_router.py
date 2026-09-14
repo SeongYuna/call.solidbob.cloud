@@ -89,3 +89,23 @@ def test_빈_텍스트는_422다():
         assert r.status_code == 422
     finally:
         app.dependency_overrides.clear()
+
+
+def test_게이트웨이_도착_시각을_트리거까지_그대로_넘긴다():
+    """`received_at_ms` 가 트리거 발동 시각의 측정값이다 (w4-trigger-arrival-time)."""
+    seen = []
+
+    class _Recording(_Trigger):
+        def decide(self, event):
+            seen.append(event.received_at_ms)
+            return super().decide(event)
+
+    _wire()
+    app.dependency_overrides[get_trigger_port] = lambda: _Recording()
+    try:
+        with TestClient(app) as client:
+            client.post("/hub/recommendations", json={**BODY, "received_at_ms": 3020})
+            client.post("/hub/recommendations", json=BODY)
+        assert seen == [3020, None]
+    finally:
+        app.dependency_overrides.clear()

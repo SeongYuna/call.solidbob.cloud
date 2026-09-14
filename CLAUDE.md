@@ -18,7 +18,7 @@
 이 4개를 읽기 전에 코드를 건드리지 않는다. 사용자가 다른 지시를 하면 그것이 우선하고, 대신 위 문서를 그에 맞게 고친다.
 코드를 건드릴 때는 `docs/harness.md`(검증 장치)·`docs/architecture.md`(계층·슬라이스 규칙)를 추가로 먼저 읽고,
 **그 디렉터리의 `CLAUDE.md` 를 함께 읽는다** — `server/CLAUDE.md`(요청이 흐르는 길) · `ai/CLAUDE.md`(품질을 만들고 재는 쪽).
-프론트엔드 작업은 `.claude/rules/dashboard.md`도 함께 본다.
+프론트엔드 작업은 `.claude/rules/call.md`도 함께 본다.
 
 **배포·런타임에 닿는 작업은 `docs/infra-runbook.md`(AWS 운영 환경 정본)를 먼저 읽는다 — 네 영역 모두 해당한다.**
 로컬에서 되는 코드가 운영에서 안 되는 이유가 거의 전부 여기 적혀 있다.
@@ -260,7 +260,7 @@ ai/                      품질을 만들고 재는 쪽 (Python 3.13). 청킹·B
                          함께 실린다(decisions/024·105). 옛 `ai.solidbob.cloud` 서술은 2026-09-03 삭제
                          검증: cd ai && pytest && PYTHONPATH=apps:../server/apps lint-imports --config .importlinter
                          의존 방향은 ai → server 한쪽뿐이다 (evaluation 이 hub 계약을 import). 역방향은 계약이 막는다
-apps/                    dashboard(상담원). 고객 화면은 `_project/decisions/014` 로 철회(013 철회)
+apps/                    call(상담원, 옛 dashboard — 2026-09-14 이름 변경). 고객 화면은 `_project/decisions/014` 로 철회(013 철회)
 infra/                   로컬 개발 인프라(compose · ES nori 이미지) + 운영 배포 산출물.
                          CLAUDE.md(AWS 전제 · 만들지 말 것) · README.md(로컬 사용법). 주 담당: 정성윤
                          (잠금 아님 — 세 사람 누구나 고친다. 단 런북 선행 읽기는 그대로, `decisions/302`)

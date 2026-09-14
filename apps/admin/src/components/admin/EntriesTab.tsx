@@ -16,6 +16,22 @@ function entryDisplayHint(
   );
 }
 
+type EntryFilter = "all" | "new" | "repeat";
+
+/**
+ * "기존(재범)" 판정 — 같은 customer_ref로 지금 이 행 말고 다른 등록 이력(해제된 것
+ * 포함)이 하나라도 있으면 재범이다. 「고객 1명 = 1행」이 아니라 「등록 1건 = 1행」
+ * 구조라서(`decisions/205` ②) customer_ref로 묶어야 재등록 여부를 알 수 있다.
+ */
+function isRepeatOffender(
+  entry: BlacklistEntryItem,
+  allEntries: BlacklistEntryItem[],
+): boolean {
+  return allEntries.some(
+    (e) => e.entry_id !== entry.entry_id && e.customer_ref === entry.customer_ref,
+  );
+}
+
 /** J-4 블랙리스트 관리창. */
 export function EntriesTab({
   entries,
@@ -30,8 +46,19 @@ export function EntriesTab({
   onRelease: (entryId: string) => void;
   onExtend: (entryId: string, months: number) => void;
 }): ReactElement {
+  const [filter, setFilter] = useState<EntryFilter>("all");
   const active = entries.filter((e) => e.released_at === null);
   const released = entries.filter((e) => e.released_at !== null);
+
+  const newCount = active.filter((e) => !isRepeatOffender(e, entries)).length;
+  const repeatCount = active.length - newCount;
+  const filtered = active.filter((e) => {
+    if (filter === "all") {
+      return true;
+    }
+    const repeat = isRepeatOffender(e, entries);
+    return filter === "repeat" ? repeat : !repeat;
+  });
 
   return (
     <section aria-label="블랙리스트">
@@ -39,15 +66,25 @@ export function EntriesTab({
         등록된 고객의 전화도 <strong>정상적으로 받습니다.</strong> 바뀌는 것은
         근속 3년 이상 상담사에게 배정된다는 점 하나입니다.
       </p>
+      <div className="admin-tabs admin-subfilter" role="tablist" aria-label="신규·기존 분류">
+        <FilterChip label="전체" count={active.length} active={filter === "all"} onClick={() => setFilter("all")} />
+        <FilterChip label="신규" count={newCount} active={filter === "new"} onClick={() => setFilter("new")} />
+        <FilterChip label="기존(재범)" count={repeatCount} active={filter === "repeat"} onClick={() => setFilter("repeat")} />
+      </div>
       {active.length === 0 ? (
         <p className="admin-empty">등록된 고객이 없습니다.</p>
+      ) : filtered.length === 0 ? (
+        <p className="admin-empty">
+          {filter === "new" ? "신규 등록된 고객이 없습니다." : "기존(재범) 등록된 고객이 없습니다."}
+        </p>
       ) : (
         <ul className="admin-list">
-          {active.map((entry) => (
+          {filtered.map((entry) => (
             <EntryRow
               key={entry.entry_id}
               entry={entry}
               displayHint={entryDisplayHint(entry, requests)}
+              isRepeat={isRepeatOffender(entry, entries)}
               defaultExpiryMonths={defaultExpiryMonths}
               onRelease={() => {
                 onRelease(entry.entry_id);
@@ -83,15 +120,42 @@ export function EntriesTab({
   );
 }
 
+function FilterChip({
+  label,
+  count,
+  active,
+  onClick,
+}: {
+  label: string;
+  count: number;
+  active: boolean;
+  onClick: () => void;
+}): ReactElement {
+  return (
+    <button
+      type="button"
+      role="tab"
+      aria-selected={active}
+      className={`admin-tab${active ? " is-active" : ""}`}
+      onClick={onClick}
+    >
+      {label}
+      <span className="admin-count">{count}</span>
+    </button>
+  );
+}
+
 function EntryRow({
   entry,
   displayHint,
+  isRepeat,
   defaultExpiryMonths,
   onRelease,
   onExtend,
 }: {
   entry: BlacklistEntryItem;
   displayHint: string;
+  isRepeat: boolean;
   defaultExpiryMonths: number;
   onRelease: () => void;
   onExtend: (months: number) => void;
@@ -106,6 +170,12 @@ function EntryRow({
         {/* ⚠ 전체 식별자(HMAC)를 화면에 내지 않는다 — 표시는 힌트만
             (`_project/decisions/205` ③). */}
         <span className="admin-ref">{displayHint}</span>
+        <span className={`admin-repeat-badge${isRepeat ? " is-repeat" : ""}`}>
+          {isRepeat ? "기존(재범)" : "신규"}
+        </span>
+        <span className="admin-meta">
+          {new Date(entry.approved_at).toLocaleDateString("ko-KR")} 등록
+        </span>
         <span className="admin-meta">
           {new Date(entry.expires_at).toLocaleDateString("ko-KR")} 만료
         </span>
@@ -132,7 +202,7 @@ function EntryRow({
             onExtend(months);
           }}
         >
-          지금부터 {months}개월로 재설정
+          재설정
         </button>
         <button type="button" className="btn-outline admin-release" onClick={onRelease}>
           해제

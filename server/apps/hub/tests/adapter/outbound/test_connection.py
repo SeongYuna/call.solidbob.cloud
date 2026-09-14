@@ -18,6 +18,8 @@ def _settings(**over) -> Settings:
         postgres_password=None, database_url=None, elasticsearch_url=None, elasticsearch_api_key=None,
         huggingface_token=None, cors_allowed_origins=(),
         s3_bucket=None, aws_region=None, upload_token=None, upload_max_bytes=0,
+        google_oauth_client_id=None, admin_jwt_secret=None,
+        admin_access_token_ttl_seconds=300, admin_refresh_token_ttl_seconds=600, redis_url=None,
     )
     return Settings(**{**base, **over})
 

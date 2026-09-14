@@ -14,6 +14,8 @@ export interface SttResult {
   isFinal: boolean;
   /** 채널 첫 오디오 기준 결과 끝 시각(ms). 스트림 교대가 있어도 이어진다. */
   audioEndMs: number;
+  /** 화자 분리(`diarize`)를 켰을 때만 — 구글 화자 라벨. 누가 상담원인지는 채널이 정한다(`domain/diarization.ts`). */
+  speakerLabel?: string;
 }
 
 export interface SttHandlers {
@@ -35,7 +37,12 @@ export interface SttEngine {
   readonly name: string;
   /** null 이 아니면 쓸 수 없다(키 없음 등). 채널을 열기 전에 — 서버에 통화 행을 만들기 전에 — 본다. */
   readonly unavailableReason: string | null;
-  open(sampleRate: number, handlers: SttHandlers): SttStream;
+  open(sampleRate: number, handlers: SttHandlers, options?: SttOpenOptions): SttStream;
+}
+
+export interface SttOpenOptions {
+  /** 모노 한 줄의 두 화자를 가른다(`speaker=auto`). final 결과를 화자 구간마다 `speakerLabel` 을 붙여 나눠 보낸다. */
+  diarize?: boolean;
 }
 
 // ── 서버 (hub) ──────────────────────────────────────────────────────────────
@@ -67,6 +74,11 @@ export interface RecommendRequest {
   text: string;
   is_final: boolean;
   utterance_end_ms: number;
+  /**
+   * 이 게이트웨이가 STT final 을 **받은** 시각 — `utterance_end_ms` 와 같은 통화 시작 기준 ms.
+   * 서버 트리거가 발동 시각으로 쓴다(없으면 «발화 종료 + 346ms» 모형). `w4-trigger-arrival-time`
+   */
+  received_at_ms: number;
 }
 
 export type RecommendPayload = Record<string, unknown>;
@@ -89,8 +101,18 @@ export interface HubPort {
 
 // ── 대시보드로 내보내기 ──────────────────────────────────────────────────────
 
+/**
+ * 「검색 중」 — 서버에 추천을 **요청했다**는 뜻이지 트리거가 발동했다는 뜻이 아니다(판정은 서버 몫).
+ * 뒤따르는 `recommendation` 의 `fired` 가 `"false"` 면 대시보드가 로딩을 거둔다. 값은 전부 문자열(7.3절).
+ */
+export interface RecommendationPending {
+  call_id: string;
+  segment_id: string;
+}
+
 export type GatewayMessage =
   | { type: "transcript"; payload: MaskedTranscript }
+  | { type: "recommendation_pending"; payload: RecommendationPending }
   | { type: "recommendation"; payload: RecommendPayload };
 
 export interface Broadcaster {

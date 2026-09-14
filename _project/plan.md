@@ -8,6 +8,11 @@
 > 아래 「rev.5 변경 요약」에 무엇이 바뀌고 무엇을 남겼는지 적었다. 근거: `_project/decisions/201`.
 >
 > **⚠ 2026-08-27 수정**: 관계형 DB 를 **MySQL → PostgreSQL** 로 바꿨다(7곳). 이 파일은 원래 rev.4 사본이라 수정하지 않는 문서였으나 사용자 지시로 직접 고쳤다 — `CLAUDE.md` §3 규칙도 함께 갱신했다. 근거·되돌리는 법: `_project/decisions/018-DB-PostgreSQL-전환.md`, `rev4-보완지시서.md` 11번.
+>
+> **⚠ 2026-09-14 수정**: 프론트엔드 디렉터리 `apps/dashboard` → `apps/call` 로 이름을 바꿨다(사용자 지시).
+>
+> **⚠ 2026-09-14 수정 (장민석)**: 7.3절 계약에 **통화 시작 · 추천 요청의 `received_at_ms` · 「검색 중」 신호**를 올렸다.
+> 셋 다 이미 코드에 있거나(통화 시작 — `decisions/301`) 같은 날 넣은 것이다(`w4-trigger-arrival-time` · `w4-recommendation-pending-contract`).
 
 # 실시간 상담원 어시스트 RAG 시스템
 
@@ -942,7 +947,7 @@ F-2(필요서류 체크리스트)가 참조하는 필수 항목 정의도 이 �
 | **AWS·인프라** | 정성윤 | `services/gateway/` · `infra/` · `PM` | Node.js WebSocket 게이트웨이, Google STT 연동, 화자 분리, PostgreSQL 스키마, Docker·배포, 레이턴시 측정 인프라, **CI 운영** |
 | **AI** | 류준 | `ai/` · `ai` | 청킹·BM25·리랭크·임베딩, 트리거 판정, 생성 모듈, 컴플라이언스 분류기, **A-5 통번역**, **C-6 콜 가드**, **D-5 감정분석**, 평가 하네스 |
 | **서버** | 장민석 | `server/` · `server` | 파이프라인 배선, 클린 아키텍처, 계약(포트·DTO), **C-5 마스킹**(2026-08-27 이관 — `decisions/019`), **F-2 게이트** |
-| **프론트엔드** | 조서희 | `apps/dashboard/` · `frontend` | React 대시보드(자막·원문 병기·서류 카드·경고), WebSocket 클라이언트, 데모 시나리오, 결과 시각화 |
+| **프론트엔드** | 조서희 | `apps/call/`(옛 `apps/dashboard`) · `frontend` | React 대시보드(자막·원문 병기·서류 카드·경고), WebSocket 클라이언트, 데모 시나리오, 결과 시각화 |
 | 공동 | 4인 | — | 골든셋 작성·라벨링, 발표 자료 |
 
 > **rev.5 신규 기능 셋(A-5·C-6·D-5)을 전부 `ai/` 에 배정했다.** 셋 다 모델을 쓰고,
@@ -1006,6 +1011,27 @@ F-2(필요서류 체크리스트)가 참조하는 필수 항목 정의도 이 �
   "source": {"doc": "응대매뉴얼", "clause": "3.1"}
 }
 ```
+
+게이트웨이(`services/gateway`)가 위 셋 사이를 잇는 메시지 셋 (2026-09-14 추가):
+
+```json
+// 통화 시작 — 게이트웨이 → 서버 POST /hub/calls. 첫 채널이 열릴 때 한 번(화자가 둘이어도).
+// 실패하면 채널을 열지 않는다 — transcript_segment.call_id 외래키 때문에 전사 저장이 전부 실패한다 (decisions/301)
+{"call_id": "c_001", "stt_engine": "google-stt", "channel_count": 2}
+
+// 추천 요청 — 게이트웨이 → 서버 POST /hub/recommendations. 마스킹 **후** 본문으로.
+// received_at_ms: 게이트웨이가 STT final 을 받은 시각(utterance_end_ms 와 같은 통화 기준 ms).
+// 트리거가 발동 시각(trigger_at_ms)으로 쓴다 — 없으면 "발화 종료 + 346ms" 모형값이다
+{"call_id": "c_001", "segment_id": 17, "speaker": "customer", "text": "카드번호는 **** 입니다",
+ "is_final": true, "utterance_end_ms": 3100, "received_at_ms": 3480}
+
+// 「검색 중」 — 게이트웨이 → 대시보드 WS. 추천을 **요청했다**는 뜻이지 발동했다는 뜻이 아니다(판정은 서버).
+// 뒤따르는 카드의 fired 가 "false" 면 대시보드가 로딩을 거둔다. 값은 전부 문자열
+{"type": "recommendation_pending", "payload": {"call_id": "c_001", "segment_id": "17"}}
+```
+
+> ⚠ **「검색 중」 은 게이트웨이에서 꺼 두었다**(`announcePending: false`). `apps/call` 의 실서버 파서가
+> 모르는 `type` 에 오류 배너를 띄워서, 수신 코드가 들어가기 전에 켜면 라이브 화면이 깨진다.
 
 > **`score` 는 페이로드에만 있고 화면에 쓰지 않는다.** 부록 A-1 이 수치 표기를 금지하며,
 > rev.4 의 화면 구성에 `유사도 0.87` 이 찍혀 있던 것은 **위반이었다**(2026-08-28 발견, 2.1절에서 제거).

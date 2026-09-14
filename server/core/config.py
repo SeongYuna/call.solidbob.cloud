@@ -54,7 +54,7 @@ class Settings:
     # --- HuggingFace (임베딩·분류기·카드 요약 모델; 공개 모델이면 비워도 됨) ---
     huggingface_token: str | None
 
-    # --- CORS (apps/dashboard 가 브라우저에서 코어 API 를 부른다) ---
+    # --- CORS (apps/call 가 브라우저에서 코어 API 를 부른다) ---
     # 기본값은 로컬 Vite 뿐이다. 운영 origin 은 배포 env 가 넣는다 — 운영 주소를 개발 기본값으로 굳히지 않는다
     # (`.claude/rules/dashboard.md` §5). 대시보드를 `server.solidbob.cloud` 와 같은 origin 에서 내주면 이 값은 쓰이지 않는다.
     cors_allowed_origins: tuple[str, ...]
@@ -65,6 +65,17 @@ class Settings:
     aws_region: str | None
     upload_token: str | None        # 없으면 업로드 문이 **잠긴다**(fail-closed, `110` 4번)
     upload_max_bytes: int           # S3 정책 `content-length-range` 의 상한으로도 같이 나간다
+
+    # --- 관리자 로그인(구글, 2026-09-14) — apps/admin. 회원가입 없음, 허용 목록은 admin_account ---
+    google_oauth_client_id: str | None
+    admin_jwt_secret: str | None
+    # 테스트 스코프로 짧게 잡은 값(사용자 지시) — access는 Redis 세션, refresh는 admin_refresh_token(RDS)
+    admin_access_token_ttl_seconds: int
+    admin_refresh_token_ttl_seconds: int
+
+    # --- Redis (관리자 access token 세션 전용, 테스트 스코프) ---
+    # ElastiCache 를 쓰지 않는다(infra/CLAUDE.md §1-2) — 로컬 `docker run redis` 하나면 된다.
+    redis_url: str | None
 
     @property
     def postgres_configured(self) -> bool:
@@ -100,4 +111,9 @@ def load_settings() -> Settings:
         aws_region=_env("AWS_REGION"),
         upload_token=_env("UPLOAD_TOKEN"),
         upload_max_bytes=_env_int("UPLOAD_MAX_BYTES", _DEFAULT_UPLOAD_MAX_BYTES) or _DEFAULT_UPLOAD_MAX_BYTES,
+        google_oauth_client_id=_env("GOOGLE_OAUTH_CLIENT_ID"),
+        admin_jwt_secret=_env("ADMIN_JWT_SECRET"),
+        admin_access_token_ttl_seconds=_env_int("ADMIN_ACCESS_TOKEN_TTL_SECONDS", 300) or 300,
+        admin_refresh_token_ttl_seconds=_env_int("ADMIN_REFRESH_TOKEN_TTL_SECONDS", 600) or 600,
+        redis_url=_env("REDIS_URL"),
     )
