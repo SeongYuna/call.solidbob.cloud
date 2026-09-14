@@ -294,7 +294,8 @@ Google STT → 로컬 server 마스킹 → 대시보드 WS 까지 관통했다. 
   없으면 통화는 열리고 고객 연결만 꺼진다(`decisions/304`). `secret.example.yaml` 에는 적었다
 - [ ] **`admin_account.agent_id` 를 채워야 블랙리스트 승인·해제가 된다 (신규, 2026-09-14)** — 비어 있으면 409. 회원가입 화면이 없어 운영자가 SQL 로 넣는다
 - [ ] **운영·Neon DB 에 2026-09-14 스키마를 넣어야 한다 (신규, 2026-09-14)** — `customer_id` 64자 · `admin_account.agent_id` · `closure` 재정의 +
-  `closure_item`. 이미지 `0.1.5` 를 올리기 전에 넣는다(런북 17·19장). Neon 은 그 전 스키마 차이(`transcript_segment` 복합키)도 남아 있다
+  `closure_item`. **운영 확인(같은 날): 테이블 22개 · `admin_account` 없음 · `closure` 0건** → 넣을 파일은 `db/migrations/2026-09-14-customer-ref-admin-closure.sql`
+  (옛 스키마 `fd96adc` 에 적용 → 새 `schema.sql` 과 컬럼·제약·인덱스·주석 333항목 일치, integration 10 통과로 로컬 검증). 이미지 `0.1.5` 를 올리기 전에 넣는다(런북 17·19장). Neon 은 그 전 스키마 차이(`transcript_segment` 복합키)도 남아 있다
 - [ ] **`document` 테이블을 채우는 경로가 없다 (신규, 2026-09-14)** — 조항 본문은 ES 에만 적재된다. 그런데 `call_guard_flag`·`recommendation_card` 등이
   `document` 를 외래키로 참조해 **근거 조항을 넣으면 23503** 이었다(E2E 로 재현 — 콜 가드 저장이 통째로 실패). 콜 가드는 조항이 있을 때만 잇도록 고쳤고,
   새 `closure.source_doc_id` 는 FK 를 걸지 않았다. **정할 것**: `index_knowledge_base.py` 가 `document` 도 채울지, FK 를 걷을지
