@@ -98,15 +98,3 @@ def test_빈_URL_은_거부한다():
     """설정이 비었는데 조용히 뜨면 런타임에 이유 없는 연결 실패로 나타난다."""
     with pytest.raises(ValueError):
         build_es_client("")
-
-
-def test_콜_가드_프로바이더는_같은_인스턴스를_돌려주고_구간을_채운다():
-    """C-6 — `server/main.py` 가 전사 수신 경로에 꽂는 팩토리."""
-    from hub.app.ports.output.call_guard_port import CallGuardPort
-    from provider import build_call_guard_provider
-
-    provide = build_call_guard_provider()
-    port = provide()
-    assert isinstance(port, CallGuardPort) and provide() is port
-    [flag] = asyncio.run(port.detect("이 개새끼야"))
-    assert (flag.category, flag.span_start, flag.span_end) == ("insult", 2, 5)

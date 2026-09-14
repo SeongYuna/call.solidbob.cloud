@@ -84,39 +84,3 @@ def test_ES_에_연결하지_못하면_503이고_주소를_싣지_않는다(erro
     assert r.status_code == 503
     assert "연결" in r.json()["detail"]
     assert "secret-es" not in r.text
-
-
-@pytest.mark.skipif(not _ai_provider_available(), reason="ai/ 가 없다 — 콜 가드가 안 꽂힌다")
-def test_콜_가드가_전사_수신에_꽂혀_마스킹된_구간만_기록한다():
-    """C-6 · MANUAL-5.5 — 실제 마스킹(server)과 실제 콜 가드(ai)를 합성 루트에서 함께 돌린다.
-    기록 포트만 스파이로 바꾼다(DB 없이)."""
-    from hub.app.ports.output import CallGuardRecordPort, TranscriptIngestRecordPort
-    from hub.dependencies.call_guard_provider import get_call_guard_record_port
-    from hub.dependencies.transcript_record_provider import get_transcript_record_port
-
-    saved_text: list[str] = []
-    saved_flags: list = []
-
-    class _Segments(TranscriptIngestRecordPort):
-        async def record(self, event):
-            saved_text.append(event.text)
-
-    class _Flags(CallGuardRecordPort):
-        async def replace(self, call_id, segment_id, flags):
-            saved_flags.extend(flags)
-
-    app.dependency_overrides[get_transcript_record_port] = lambda: _Segments()
-    app.dependency_overrides[get_call_guard_record_port] = lambda: _Flags()
-    body = {"call_id": "test-c6", "segment_id": 1, "speaker": "customer", "is_final": True,
-            "text": "제 번호는 01012345678 이고 이 개새끼야 가만 안 둬"}
-    with TestClient(app) as client:
-        assert "call_guard" in client.get("/health").json()["spokes"]
-        r = client.post("/hub/transcripts", json=body)
-
-    assert r.status_code == 200, r.text
-    [text] = saved_text
-    assert "01012345678" not in text
-    assert {f.category for f in saved_flags} >= {"insult", "threat"}
-    for f in saved_flags:
-        assert text[f.span_start:f.span_end] == f.phrase
-        assert not any(ch.isdigit() for ch in f.phrase)

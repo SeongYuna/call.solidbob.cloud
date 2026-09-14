@@ -115,3 +115,14 @@ def test_갈래마다_근거_조항이_다르다():
 def test_같은_구간이_두_번_잡히지_않는다():
     for d_a, d_b in zip(detect("씨발 개새끼야 찾아간다"), detect("씨발 개새끼야 찾아간다")[1:]):
         assert d_a.end <= d_b.start
+
+
+def test_앞뒤_공백이_있어도_구간이_밀리지_않는다():
+    """전에는 `strip()` 한 문자열 기준으로 오프셋을 냈다 — 저장하면 앞 공백 수만큼 구간이 밀린다(2026-09-14)."""
+    text = "   이 개새끼야  "
+    [d] = detect(text)
+    assert text[d.start : d.end] == d.phrase == "개새끼"
+
+
+def test_공백뿐인_발화는_탐지하지_않는다():
+    assert detect("   ") == []

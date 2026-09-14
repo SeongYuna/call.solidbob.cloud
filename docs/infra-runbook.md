@@ -1327,9 +1327,9 @@ print(c.execute(\"select count(*) from pg_tables where schemaname='public'\").fe
 
 ### 17-3. 조항 적재 — `document` (2026-09-14 추가, 류준)
 
-**스키마만 넣으면 `document` 가 비어 있다.** 콜 가드(C-6)가 걸린 발화를 `call_guard_flag` 에 남길 때
-근거 조항(`DASAN-MANUAL-5.x`)을 외래키로 가리키므로, **비어 있으면 욕설·위기 신호가 걸린 고객 발화의
-`POST /hub/transcripts` 가 500 이다**(자막 행은 이미 저장된 뒤라 자막은 남고 탐지 기록만 실패한다).
+**스키마만 넣으면 `document` 가 비어 있다.** 콜 가드(C-6) 기록 `call_guard_flag.source_doc_id` 와 추천 카드
+`recommendation_card.source_doc_id` 가 조항을 외래키로 가리키는데, 비어 있으면 **근거 조항이 NULL 로 저장된다**
+(콜 가드 저장소가 FK 위반 대신 NULL 로 떨어뜨린다 — 기록은 남고 「어느 조항 근거였는지」만 DB 에서 빠진다).
 15장 ES 적재와 같은 방식으로 서버 파드 안에서 넣는다. UPSERT 라 다시 돌려도 된다:
 
 ```bash
@@ -1427,9 +1427,6 @@ curl -fsS $B/hub/calls/$C/transcript
 ```json
 {"status":"ok","postgres_configured":true,"elasticsearch_configured":true,"spokes":["masking","closure_gate","retrieval","trigger"]}
 ```
-
-C-6 콜 가드를 실은 이미지(2026-09-14 이후 빌드)부터는 `"call_guard"` 가 하나 더 붙는다 — 없으면 `ai/provider.py` 가
-이미지에 안 들어간 것이다. 붙어 있으면 **17-3 조항 적재가 끝났는지** 함께 본다.
 
 **`spokes` 에 `retrieval` 이 있어야 검색이 꽂힌 것입니다.** 없으면 ES 가 안 떴거나 `ELASTICSEARCH_URL` 이 안 잡힌 것이며, **조용히 501 로 남는 것이 설계된 동작**이라 서버 자체는 정상으로 뜹니다 (`decisions/024`). 순서는 상관없습니다.
 

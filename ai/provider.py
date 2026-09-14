@@ -1,4 +1,4 @@
-# Requirement: B-1, B-2, C-6
+# Requirement: B-1, B-2
 """스포크를 hub 포트에 꽂기 위한 팩토리. **이 파일은 `server/main.py` 를 위한 것이다.**
 
 `server/` 는 `ai/` 를 import 할 수 없다(`server/.importlinter` 계약 2 — 두 서브도메인을 따로
@@ -40,11 +40,9 @@ from __future__ import annotations
 
 from typing import Any, Callable
 
-from hub.app.ports.output.call_guard_port import CallGuardPort
 from hub.app.ports.output.retrieval_port import RetrievalPort
 from hub.app.ports.output.trigger_port import TriggerPort
 
-from call_guard.adapter.outbound.rule_call_guard_adapter import RuleCallGuardAdapter
 from retrieval.adapter.outbound.es_bm25_retriever import EsBm25Retriever
 from retrieval.adapter.outbound.es_index import SINGLE_INDEX
 from retrieval.adapter.outbound.is_final_trigger import IsFinalTrigger
@@ -88,14 +86,4 @@ def build_trigger_provider(**kwargs: Any) -> Callable[[], TriggerPort]:
     포트 시그니처에 도착 시각이 없어서 지금은 **실측 상수로 모형화**하고 있다.
     """
     port = IsFinalTrigger(**kwargs)
-    return lambda: port
-
-
-def build_call_guard_provider() -> Callable[[], CallGuardPort]:
-    """`get_call_guard_port` 를 대체할 프로바이더(C-6). 규칙 사전뿐이라 외부 자원이 없다.
-
-    ⚠ 이 포트는 **전사 수신 경로에서 마스킹 뒤에** 불린다(`TranscriptIngestInteractor`).
-    어댑터는 받은 문자열을 그대로 자르므로, 마스킹 전 원문을 넘기는 호출부를 새로 만들지 않는다.
-    """
-    port = RuleCallGuardAdapter()
     return lambda: port
