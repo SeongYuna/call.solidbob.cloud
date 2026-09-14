@@ -35,6 +35,7 @@ permalink: /kanban/
   .kanban .col.empty-hint{ color:#4d5568; font-size:0.8rem; }
   .kanban .card .badges{ display:flex; flex-wrap:wrap; align-items:center; gap:0.3rem; margin-bottom:0.4rem; }
   .kanban .card .badges .role{ margin-bottom:0; }
+  .kanban .card .note{ margin:0.45rem 0 0; padding:0.3rem 0.5rem; border-left:2px solid #A896E0; background:rgba(168,150,224,.08); color:#B9AEE0; font-size:0.74rem; line-height:1.45; }
   .req{ font-family:'IBM Plex Mono',monospace; font-size:0.6rem; letter-spacing:.03em; font-weight:600; padding:0.1rem 0.4rem; border-radius:3px; white-space:nowrap; border:1px solid currentColor; }
   .req-A{ background:rgba(126,214,199,.12); color:#7ED6C7; }
   .req-B{ background:rgba(245,166,35,.12); color:#F5A623; }
@@ -163,6 +164,7 @@ permalink: /kanban/
                 {% for f in feats %}{% assign parts = f | split: "|" %}<span class="req req-{{ parts[0] }}" title="기능 ID: {{ item.requirement | join: ', ' }}">{{ parts[1] }}</span>{% endfor %}
               </div>
               <a href="{{ item.url | relative_url }}">{{ item.title }}</a>
+              {% if item.note %}<p class="note">{{ item.note }}</p>{% endif %}
             </div>
             {% endfor %}
             {% if column.size == 0 %}<div class="empty-hint">없음</div>{% endif %}
@@ -202,6 +204,7 @@ status: "in-progress"     # todo | in-progress | done | cancelled
 sprint: 1
 priority: 5               # 같은 칸 안에서의 정렬 순서
 date: 2026-08-25
+note: "모델 학습 후 진행 예정 — 정확도 측정"   # (선택) 카드 제목 아래에 뜨는 한 줄 메모
 paths:                    # (선택) 이 티켓 소관 파일 — 붙여두면 상태 갱신을 잊었을 때 경고해 줍니다
   - "apps/dashboard/*"
 depends_on:               # (선택) 앞 단계 티켓. 일부러 나눈 단계는 중복 경고에서 빠집니다
