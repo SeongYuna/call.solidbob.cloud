@@ -1,0 +1,74 @@
+# Requirement: [Task 1], SEC-2
+#
+# 배포 태그 검사 — **머지하기 전에** 「코드는 바뀌었는데 newTag 가 그대로」를 잡는다.
+#
+# 왜 별도 워크플로인가 (2026-09-14, `_project/decisions/111`)
+#  ① 전에는 이 판정이 `release.yml` 의 plan 잡 안에만 있었고, 그 워크플로는 **main push 에서만**
+#     돈다. 그래서 태그를 안 올린 것을 **머지하고 나서야** 알았다 — 그 시점의 main 은 이미
+#     「코드는 새건데 배포는 옛것」이고, 되돌리려면 PR 을 하나 더 내야 한다. 릴리스 실패 5건 중
+#     4건(#55·#59·#61·#73)이 전부 이것이었다.
+#  ② 그런데 `release.yml` 의 `on:` 에 pull_request 를 더하는 것으로는 **안 된다.**
+#     `image`·`gateway-image`·`k3s-deploy` 에 이벤트 가드가 없어 같이 도는데, same-repo PR 이라
+#     DOCKERHUB 시크릿이 붙는다 → **머지되지 않은 PR 코드가 Docker Hub 에 push 된다.**
+#     그리고 그 PR 이 머지되면 plan 이 「태그가 이미 있다」를 보고 **정상 PR 을 스스로 막는다.**
+#     `concurrency: group: release` 도 공유하게 되어 PR 검사가 실제 배포 뒤에 줄을 선다.
+#     → 그래서 **판정만 하는 워크플로를 따로 둔다. 여기서는 어떤 이미지도 굽거나 push 하지 않고,
+#       AWS 도 건드리지 않는다.** 이 제약이 이 파일의 존재 이유다 — 깨지 말 것.
+#
+# ⚠ **`paths:` 필터를 쓰지 않는다.** 필수 통과 검사로 걸 때 경로가 안 걸린 PR 에서는 검사가
+#   아예 **생성되지 않아** PR 이 영원히 pending 이 된다. 필터 없이 모든 PR 에서 돌리고,
+#   관련 없는 변경이면 스크립트가 안에서 판단해 그냥 통과시킨다.
+#
+# ⚠ job 이름 `tag-check` 는 룰셋에 걸 **필수 통과 검사 이름**이다(아직 등록 전 — 저장소 admin 몫).
+#   바꾸면 룰셋과 `CLAUDE.md` §7 을 함께 고친다. 기존 이름(`server`·`ai`·`jekyll`·`gateway`·
+#   `deploy`·`build`)과 겹치지 않게 지었다.
+
+name: 배포 태그 검사
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  # PR 안에서 연속 push 할 때만 앞의 것을 취소한다.
+  # ⚠ 브랜치 push 런과 **같은 그룹에 넣지 않는다.** 두 실행이 같은 SHA 에 같은 이름으로
+  #   check-run 을 보고하기 때문에, 한쪽을 취소하면 필수 검사가 cancelled 로 남아 머지가
+  #   막힐 수 있다(경합이라 재현이 들쭉날쭉하다). 이 워크플로는 PR 에서만 도므로 애초에
+  #   겹치지 않지만, 나중에 push 트리거를 더하려는 사람을 위해 적어 둔다.
+  group: tag-check-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  tag-check:
+    name: tag-check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # base·head 양쪽 커밋이 다 있어야 한다. 얕게 받으면 비교가 실패한다.
+          # 다른 브랜치의 newTag 를 읽는 검사(⑥)도 원격 브랜치가 다 받아져 있어야 돈다.
+          fetch-depth: 0
+
+      - name: 이 PR 이 이미지에 들어가는 코드를 고쳤는지 본다
+        env:
+          BASE: ${{ github.event.pull_request.base.sha }}
+          HEAD: ${{ github.event.pull_request.head.sha }}
+          # 익명 조회는 레이트 리밋·비공개 저장소에서 실패한다. 인증해서 빈도를 낮춘다.
+          # ⚠ 포크 PR 에서는 시크릿이 비어 익명으로 떨어진다 — 그때 판정 불가로 빨간불이 날 수 있다.
+          #   이 저장소는 포크 PR 을 쓰지 않는다(혼자 관리, `CLAUDE.md` §7).
+          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+          DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+        run: |
+          if [ -z "$BASE" ]; then
+            echo "::notice::PR 이벤트가 아니다(수동 실행) — 마지막 커밋만 본다."
+            BASE="HEAD~1"; HEAD="HEAD"
+          fi
+          # 세 점(merge-base 기준)을 쓴다. 두 점이면 base 가 앞서 나간 변경까지 «이 PR 이 고쳤다»로 센다.
+          git -c core.quotePath=false diff --name-only "$BASE...$HEAD" | tee changed.txt
+
+          # `--emit-build` 를 주지 않는다 — 여기서는 무엇을 구울지 정하지 않는다. 판정만 한다.
+          python3 scripts/check_release_tags.py < changed.txt
