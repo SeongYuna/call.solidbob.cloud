@@ -447,3 +447,20 @@ Environment Variables → **Production 만** → Deployments → Redeploy(`VITE_
   (`/health` 의 `spokes` 와 `release.yml` 의 `EXPECTED` 둘 다 넷뿐), 빼면 나중에 꽂는 사람이
   **로컬에선 되는데 운영에서만 ImportError** 로 헤맨다. `server/tests/test_image_layout.py` 가 안전망이지만
   **지금 `main.py` 가 import 하는 것**(`ai/provider.py`·`ai/apps/retrieval`)만 보므로 이 경우는 못 잡는다.
+
+### 운영 스키마가 배포보다 늦게 따라간다 (신규, 2026-09-14)
+
+- [ ] **「머지 = 배포」인데 스키마는 사람 손이라 구조적으로 뒤따라간다** — 09-14 에 실제로 났다.
+  PR #79 머지 → `release.yml` 자동 → server `0.1.5` 가 06:33 배포됐는데 운영 DB 는 22 테이블(`fd96adc`, 09-09)
+  이었다. 런북 19장이 「**이미지를 올리기 전에** 스키마를 넣는다」고 적어 뒀지만 **사람이 끼어들 지점이 없다.**
+  ⚠ **`/health` 는 이 상태에서도 `ok` 다**(`0.1.5` 기대 출력과 일치) — 배포 판정으로는 안 드러나고
+  발신 번호 있는 통화 시작·F-2 저장·관리자 로그인만 500 이었다.
+  **정할 것**: `tag-check.yml`(PR 전용, 이미지를 굽지 않는다)에 **스키마 선행 확인**을 붙일지.
+  붙인다면 무엇으로 보나 — ① `db/migrations/` 에 새 파일이 있으면 「적용했는가」를 묻는 체크박스 ②
+  `schema.sql` 의 `CREATE TABLE` 수와 운영 조회값 비교(운영 접근이 CI 에 필요해진다 — 반대급부가 크다).
+  ①이 싸고, ②는 자격증명을 CI 에 들이는 값이 든다.
+- [ ] **`admin_account` 행이 비어 있다 (2026-09-14)** — 넣기 전까지 블랙리스트 승인·해제가 409.
+  회원가입 화면이 없어 운영자가 SQL 로 넣고 `agent_id` 를 채운다. `CUSTOMER_REF_HMAC_KEY` 는 09-14 에 넣었다.
+- [ ] **런북 8장의 SSH 키 이름이 실물과 다르다 (2026-09-14)** — 런북은 `~/.ssh/assist-key.pem` 인데
+  그런 파일이 없다(있는 것은 `callguard-key.pem`·`admin-keypair.pem`). 09-14 에 고친 IAM 역할·S3 버킷
+  이름과 같은 부류다. **맞는 키를 아는 사람이 런북을 고친다** — 이름을 추측해서 적지 않는다.
