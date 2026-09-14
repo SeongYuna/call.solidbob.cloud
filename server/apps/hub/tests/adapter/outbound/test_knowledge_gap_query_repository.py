@@ -9,8 +9,6 @@ LEFT JOIN 은 문법이 틀려도 가짜 커서에서는 통과하므로, 여기
 """
 
 import asyncio
-import os
-import pathlib
 
 import pytest
 
@@ -22,27 +20,11 @@ from hub.app.dtos.knowledge_gap_query_dto import KnowledgeGapQuery
 CALL_ID = "it_gap_001"
 
 
-def _settings():
-    env_path = pathlib.Path(__file__).resolve().parents[6] / ".env"
-    if env_path.exists():
-        for line in env_path.read_text(encoding="utf-8").splitlines():
-            if "=" in line and not line.startswith("#"):
-                k, _, v = line.partition("=")
-                os.environ.setdefault(k.strip(), v.strip())
-    from core.config import load_settings
-
-    return load_settings()
-
-
 @pytest.mark.integration
-def test_실제_DB에서_조회_집계_상태전이가_돈다():
+def test_실제_DB에서_조회_집계_상태전이가_돈다(integration_settings):
     from hub.adapter.outbound.postgres.connection import build_connection_factory
 
-    settings = _settings()
-    if not settings.postgres_configured:
-        pytest.skip("PostgreSQL 설정 없음 — infra/README.md 참고")
-
-    connect = build_connection_factory(settings)
+    connect = build_connection_factory(integration_settings)
     repo = PostgresKnowledgeGapQueryRepository(connect)
 
     async def scenario():

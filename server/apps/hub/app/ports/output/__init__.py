@@ -21,11 +21,12 @@ from .masking_port import MaskingPort
 from .myself_record_port import MyselfRecordPort
 from .postcall_port import PostcallPort
 from .retrieval_port import RetrievalPort
-from .transcript_ingest_record_port import TranscriptIngestRecordPort
+from .transcript_ingest_record_port import CallNotStartedError, TranscriptIngestRecordPort
 from .transcript_query_port import TranscriptQueryPort
 from .trigger_port import TriggerPort
 
 __all__ = [
+    "CallNotStartedError",
     "CallStartRecordPort",
     "CardFeedbackPort",
     "ClosureGatePort",

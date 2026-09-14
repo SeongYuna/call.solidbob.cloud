@@ -90,6 +90,18 @@ cd server && PYTHONPATH=apps lint-imports --config .importlinter   # 구조 계�
 ```
 
 CI(`.github/workflows/test.yml`)의 `server` job 이 이 둘을 돌린다.
+
+**실제 PostgreSQL 이 필요한 테스트**(`@pytest.mark.integration`)도 같은 job 이 돈다(2026-09-11) —
+매번 새로 띄운 `postgres:17` 에 현재 `../db/schema.sql` 을 넣고 `pytest -m integration`.
+DB 는 `conftest.py` 의 `integration_settings` 픽스처로 받는다. 로컬에서는:
+
+```bash
+CALLGUARD_TEST_DATABASE_URL=postgresql://…/<새 DB> pytest -m integration   # 현재 schema.sql 을 넣은 DB
+```
+
+변수를 안 주면 **스킵한다 — 루트 `.env` 의 DB 는 쓰지 않는다.** 이 테스트들은 행을 쓰고 지우는데
+`.env` 의 DB 는 공유·운영 DB 일 수 있다. **가짜 커서 테스트는 SQL 이 스키마와 맞는지 못 본다** —
+PK·FK·`ON CONFLICT` 를 건드리면 integration 을 같이 돌린다.
 **job 이름은 main 브랜치 보호의 필수 통과 검사 이름이다** — 바꾸면 보호 설정이 조용히 무력화된다.
 
 새 스포크를 만들면 `.importlinter` 의 `root_packages` 와 계약 1 `containers` 에 이름을 추가한다.
@@ -126,13 +138,15 @@ CI(`.github/workflows/test.yml`)의 `server` job 이 이 둘을 돌린다.
 
 운영은 **단일 g4dn.xlarge + k3s**(AWS 서울, 담당 정성윤)다. 로컬에서 도는 것과 거기서 뜨는 것은 다르다.
 **파이프라인 배선·설정·HTTP 경계를 고칠 때는 런북 12·16·19장을 먼저 읽는다.**
+클러스터에 실제로 떠 있는 구성의 정본은 `../infra/k8s/base/` 다 — 네임스페이스 `callguard` ·
+Deployment `callguard-server` · 시크릿 `server-env` (런북 머리말, 2026-09-11).
 
 | 런북 | `server/` 가 지켜야 하는 것 |
 |---|---|
-| 12-2 | DB 접속은 k8s 시크릿 `db-credentials` 의 **`DATABASE_URL` 하나**로 들어온다. 개별 `POSTGRES_*` 는 주입되지 않는다 |
-| 16-1 | 주입되는 환경변수는 `DATABASE_URL` · `ELASTICSEARCH_URL=http://elasticsearch:9200` · `OLLAMA_URL=http://ollama:11434` · `HF_HOME=/models` 다. **`core/config.py` 가 읽는 키와 이 목록이 어긋나면 배포가 조용히 기본값으로 뜬다** |
+| 12-2 | 설정은 k8s 시크릿 **`server-env`** 로 `.env` 키 전체가 들어온다(`server.yaml` `envFrom`). DB 는 **`DATABASE_URL` 과 `POSTGRES_*` 둘 다 같은 RDS 값**이다 — 이미지 `0.1.1` 은 `POSTGRES_*` 만, `0.1.2` 부터는 `DATABASE_URL` 을 먼저 읽는다. 둘이 다른 값을 가리켜 운영 DB 가 09-08~09-11 한 번도 안 붙었다(`decisions/108`). **커넥션 코드와 `/health` 가 같은 규칙으로 키를 읽게 유지한다.** RDS 는 SSL 강제라 URL 에 `?sslmode=require` 가 붙는다 |
+| 16-1 | `core/config.py` 가 읽는 키는 `server-env` 에 있어야 한다(`../infra/k8s/base/secret.example.yaml` 이 키 목록). ES 는 같은 네임스페이스의 `http://elasticsearch:9200`. **읽는 키를 새로 만들면 `secret.example.yaml` 과 운영 시크릿에 같이 넣지 않는 한 배포가 조용히 기본값으로 뜬다** |
 | 16-1 | 의존 서비스 주소는 호스트가 아니라 **같은 네임스페이스의 서비스 이름**이다. `localhost:9200` 을 기본값으로 굳히지 않는다 |
-| 19 | `GET /health` 의 **`spokes` 배열이 배포 검증 항목**이다(9번). 필드 이름·형태를 바꾸면 런북 19장이 깨진다. 스포크가 안 꽂히면 조용히 501 로 남는 것이 설계된 동작이다(`decisions/024`) |
+| 19 | `GET /health` 의 **`spokes` 배열이 배포 검증 항목**이다(9번). 필드 이름·형태를 바꾸면 런북 19장이 깨진다. 스포크가 안 꽂히면 조용히 501 로 남는 것이 설계된 동작이다(`decisions/024`). ⚠ `postgres_configured` 는 설정 **여부**일 뿐이다 — DB 가 붙었는지는 10번(`GET /hub/knowledge-gaps`)·11번(통화 → 전사 → 조회)이 본다. **이 두 엔드포인트의 경로·순서를 바꾸면 19장을 같이 고친다** |
 | 16-2 | 외부에 열리는 것은 Caddy 를 지나는 `server.solidbob.cloud` **443 하나**다. 새 포트가 필요한 설계는 인프라 변경이므로 정성윤과 함께 정한다 |
 | 만들지 말 것 | Kinesis·ElastiCache·ALB 를 전제한 코드를 쓰지 않는다. 캐시는 3.1절대로 **인메모리 LRU** 다 |
 

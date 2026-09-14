@@ -20,6 +20,16 @@ spec:
     - host: server.solidbob.cloud
       http:
         paths:
+          # 게이트웨이(A-1~A-4). 밖에 여는 도메인이 하나라 경로로 가른다 — 더 긴 접두어가 이긴다.
+          # 접두어는 게이트웨이가 스스로 뗀다(`ws_server.ts` PUBLIC_PREFIX) — Traefik 미들웨어를 쓰지 않는다.
+          # 이 경로를 바꾸면 PUBLIC_PREFIX 도 같이 바꾼다. WebSocket 은 Traefik 이 그대로 넘긴다.
+          - path: /gateway
+            pathType: Prefix
+            backend:
+              service:
+                name: callguard-gateway
+                port:
+                  number: 80
           - path: /
             pathType: Prefix
             backend:

@@ -11,8 +11,13 @@ requirement:
   - "A-1"
 paths:
   - "server/apps/closure_gate/domain/value_objects/closure_rule.py"
-  - "server/apps/hub/adapter/outbound/postgres/transcript_segment_repository.py"
 ---
+
+> **2026-09-11 정성윤 — ①·② 를 이 티켓에서 뗐다.** ① 은 운영 배포(이미지 `0.1.2`)를 막고 있어
+> [w4-segment-composite-upsert](/backlog/w4-segment-composite-upsert/) 로 옮겨 정성윤이 고쳤다
+> (`decisions/302` — `server/` 는 누구나 고친다). ② 는 장민석의 `POST /hub/calls`
+> ([w3-call-start-api](/backlog/w3-call-start-api/), `decisions/301`)로 이미 풀렸다.
+> **이 티켓에 남은 것은 ③ 하나다** — 담당·상태는 그대로 둔다.
 
 ## 무엇을
 
@@ -63,7 +68,7 @@ NULL 의 이중 의미가 사라진다. rev.5 의 `verdict` `blocked` → `incom
 
 ## 완료 조건
 
-- [ ] ① UPSERT 복합키 반영 — 통화 둘의 같은 순번 발화가 각각 남는 테스트
-- [ ] ② `call` 행 생성 경로 — 첫 세그먼트가 FK 위반 없이 들어가는 테스트
+- [x] ① UPSERT 복합키 반영 — 통화 둘의 같은 순번 발화가 각각 남는 테스트 → [w4-segment-composite-upsert](/backlog/w4-segment-composite-upsert/)
+- [x] ② `call` 행 생성 경로 — 첫 세그먼트가 FK 위반 없이 들어가는 테스트 → [w3-call-start-api](/backlog/w3-call-start-api/)
 - [ ] ③ 필요서류 체크리스트 스키마 + `closure_rule.py` 다산 절차 + DTO `incomplete`
 - [ ] ③ 이후 골든셋에 F-2 케이스를 넣을 수 있다 → 류준에게 알린다

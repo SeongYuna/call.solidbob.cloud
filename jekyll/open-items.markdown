@@ -82,7 +82,10 @@ permalink: /open-items/
    밖에서 못 치므로 클러스터 안 Job 이나 `kubectl exec` 절차가 필요하다. 이게 없으면 `/hub/search` 는
    운영에서 계속 빈 인덱스를 본다 — 정성윤(실행)·류준(명령)
 3. **DB 스키마 적용은 런북 17장 그대로 정성윤 실행 항목이다.** 09-04 의 어긋남 4건과 별개로, 배포 순서에
-   17장·위 2번 적재가 들어가야 프론트가 붙일 게 생긴다
+   17장·위 2번 적재가 들어가야 프론트가 붙일 게 생긴다.
+   **2026-09-11: 17장을 실물 기준으로 고쳤다** — 인스턴스에 클론이 없어 `raw.githubusercontent.com` 에서 받고,
+   서버 파드 안에서 서버와 같은 `DATABASE_URL` 로 넣는다(12-2 시크릿 교체가 먼저). **실행은 아직이다** —
+   [w4-rds-prod-db](/backlog/w4-rds-prod-db/)
 
 ### 블랙컨슈머 수동 분류 카드 — 결정 기록 없음 (2026-09-10)
 
@@ -193,8 +196,11 @@ rev.5의 C-6은 **자동 탐지**(고객 욕설·폭언, 재현율 우선 분류
 
 세부 진행은 [8주 마일스톤](/docs/08/)의 칸반 보드, 완료 기록은 [진행상황](/progress/)에서 확인하세요.
 - [ ] **통화 시작이 §7.3 계약에 없다 — 게이트웨이가 `POST /hub/calls` 를 먼저 불러야 한다 (신규, 2026-09-10)** — `transcript_segment.call_id → call` 외래키 때문에 통화 행이 먼저 있어야 전사가 저장되는데, 계약 3종(전사·카드·종결)에 "통화가 시작됐다"는 메시지가 없었다. 서버에 `POST /hub/calls` 를 만들었다(`_project/decisions/301`). **정할 것**: 게이트웨이(정성윤)가 통화를 여는 순간 이 엔드포인트를 부르는 것으로 §7.3 에 올릴지, 게이트웨이 → 허브 WebSocket 이 생기면 그 첫 메시지로 할지. 지금은 테스트하는 사람이 직접 부른다
+- [x] **CI 에서 PostgreSQL integration 테스트가 돌지 않는다 (신규, 2026-09-11 · 같은 날 붙였다)** — **권고안대로 붙였다**: `test.yml` `server` job 에 `postgres:17` 서비스(trust 인증, 암호 없음) → 새 DB 에 `db/schema.sql` 적용 → `pytest -m integration`(0건·스킵이면 실패). 세 테스트 파일에 복사돼 있던 `.env` 읽기는 `server/conftest.py` 의 `integration_settings` 픽스처 하나로 합쳤고, `CALLGUARD_TEST_DATABASE_URL` 이 있으면 그것만 쓴다. 로컬에서 같은 절차로 4 passed, 수정 전 어댑터로 되돌리면 2 failed 로 잡히는 것까지 확인했다. **CI 에서 실제로 도는 것은 첫 PR 에서 확인한다**(job 이름 `server` 는 그대로라 룰셋은 안 고친다). 원래 적힌 내용 — `test.yml` 의 `server` job 에 psycopg 도 PostgreSQL 서비스도 없어 `@pytest.mark.integration` 이 한 번도 CI 에서 안 돌았다. 그래서 09-09 스키마 QA(`decisions/205`)로 PK 가 `(call_id, segment_id)` 가 된 뒤 전사 저장 어댑터가 **새 스키마에서 저장 전부가 실패**하는 상태(`InvalidColumnReference`)로 사흘간 초록이었다([w4-segment-composite-upsert](/backlog/w4-segment-composite-upsert/)에서 고침). 게다가 integration 테스트는 루트 `.env` 에서 DB 를 읽는데 그 DB(Neon)는 옛 스키마다. **정할 것**: `postgres:17` 서비스 + 매번 새 DB 에 `db/schema.sql` 을 적용하는 픽스처를 CI 에 붙일지. 붙이면 `server` job 이 느려지고 `test.yml` 을 고쳐야 한다(런북 13·21~22장)
+- [ ] **지식베이스에 여권 발급·재발급 조항이 없다 (신규, 2026-09-11)** — 운영 ES 적재 뒤 「여권 재발급 서류가 뭐예요」로 검색하니 1위가 `DASAN-MANUAL-4.1`(의학적 판단 금지)이었다. 검색 결함이 아니라 **정답 문서가 없다** — `knowledge-base/dasan/` 98조항에서 「여권」은 신분 확인 서류 목록에 두 번 나올 뿐이다. 그런데 `decisions/201` 은 다산을 고른 근거로 **서류 문의 상위 단어에 `여권` 이 4위**라고 적었고, 외국인 지원(A-5)이 차별점이다. **정할 것**: 여권 관련 절차 조항을 지식베이스에 넣을지(출처 확인 필요 — 절대 원칙 6, 원문 전재 금지), 골든셋에 「정답 없음」 케이스로 둘지. D-4(공백 리포트)가 잡아야 할 전형이다
+- [ ] **`POST /hub/cards/{id}/feedback` 이 새 스키마에서 늘 500 (신규, 2026-09-11)** — `card_feedback.card_id` 가 `recommendation_card` 를 FK 로 참조하는데 `recommendation`·`recommendation_card` 를 쓰는 코드가 없고, 카드 응답에 `card_id` 도 없다. 피드백을 받을 카드가 DB 에 있을 수 없는 구조다. **정할 것**: 추천 결과를 저장할지(카드 응답에 `card_id` 추가), FK 를 뺄지. `db/schema.sql` FK · `INSERT INTO "recommendation…"` 0곳 · 카드 스키마에 `card_id` 없음을 grep 으로 확인했다(실행으로는 안 쟀다). 코드는 손대지 않았다
 - [x] **서버는 `segment_id` 를 정수로 보내는데 프론트 파서가 문자열만 받는다 — 전사가 조용히 버려진다 (신규, 2026-09-10 · 같은 날 해결)** — 조서희 요청으로 **서버 HTTP 표면을 문자열로 맞췄다.** §7.3 예시가 문자열이고 프론트가 그대로 따르고 있었으므로 서버가 계약 쪽으로 간 것이다. DB 는 BIGINT, 내부 DTO 는 int 그대로이고 **변환은 라우터(경계)에서만** 한다. 요청은 정수·숫자 문자열 둘 다 받는다(pydantic lax). `/openapi.json` 이 `string` 으로 공표하는지 테스트가 고정한다(`test_segment_id_contract.py`). **같은 날 오후, 범위가 «모든 응답의 모든 필드 문자열» 로 커졌다** — 조서희 파서가 전부 문자열을 전제로 만들어졌고 사용자가 그 범위를 택했다. 불리언은 `"true"`/`"false"`, 숫자는 `str()`, `null` 은 그대로. 변환은 `schemas/_types.py` `StrField` 한 곳이고 라우터·DTO·DB 는 원래 타입이다. `/health` 만 예외(스키마 없는 dict, 런북 19장 배포 검증 항목이라 불리언 유지). ⚠ **§7.3 계약 정본·프론트 `types/contract.ts`(`is_final: boolean`·`utterance_end_ms: number`)와 이제 어긋난다** — 계약 문서를 «전부 문자열» 로 고치는 것이 남았다. 류준(ai 는 HTTP 표면을 안 쓰므로 영향 없음 — 확인함)·조서희와 같이 본다
-- [ ] **운영 커넥션이 실제로 붙은 적이 있는지 확인 (신규, 2026-09-10)** — 커넥션 팩토리가 `DATABASE_URL` 을 안 읽고 개별 `POSTGRES_*` 만 읽었는데, 운영은 `DATABASE_URL` 하나만 주입한다(런북 12-2). `/health` 의 `postgres_configured: true` 는 설정 «여부»라 이걸 못 잡는다. 09-10 에 고쳤지만 **운영에 재배포되기 전까지는 운영 전사 저장이 실패하는 상태**일 수 있다 — 정성윤 복귀 시 재배포 + 운영 DB 에서 `transcript_segment` 행 수 확인. 배포 확인 항목(런북 19장)에 «저장이 실제로 되는가»가 없다는 뜻이기도 하다
+- [x] **운영 커넥션이 실제로 붙은 적이 있는지 확인 (신규, 2026-09-10 · 2026-09-11 답: 한 번도 없다)** — **09-11 운영 파드 로그로 확정했다**(정성윤): `connection to server on socket "/var/run/postgresql/.s.PGSQL.5432" failed`. 운영 시크릿의 `POSTGRES_HOST` 가 비어 있었고, `DATABASE_URL` 은 임시로 넣은 **Neon** 이었으며, **RDS 는 만들어진 적이 없다**(`describe-db-instances` 빈 결과). 아래 «운영은 `DATABASE_URL` 하나만 주입한다(런북 12-2)» 는 런북 기준이고 실제 시크릿은 `server-env`(`.env` 16키)였다. RDS 로 옮긴다 → `_project/decisions/108` · [w4-rds-prod-db](/backlog/w4-rds-prod-db/). 원래 적힌 내용: 커넥션 팩토리가 `DATABASE_URL` 을 안 읽고 개별 `POSTGRES_*` 만 읽었는데, 운영은 `DATABASE_URL` 하나만 주입한다(런북 12-2). `/health` 의 `postgres_configured: true` 는 설정 «여부»라 이걸 못 잡는다. 09-10 에 고쳤지만 **운영에 재배포되기 전까지는 운영 전사 저장이 실패하는 상태**일 수 있다 — 정성윤 복귀 시 재배포 + 운영 DB 에서 `transcript_segment` 행 수 확인. 배포 확인 항목(런북 19장)에 «저장이 실제로 되는가»가 없다는 뜻이기도 하다
 - [ ] **ngrok 으로 연 서버에 인증이 없다 (신규, 2026-09-10)** — 주소를 아는 사람은 누구나 `/hub/transcripts` 로 Neon 에 쓰고 `/docs` 를 본다. **basic auth 는 걸지 않기로 했다(09-10)** — 브라우저 fetch 의 CORS preflight(OPTIONS)에는 Authorization 헤더가 실리지 않아 ngrok 이 401 로 끊고, 그러면 조서희의 fetch 가 통째로 실패한다. «데모 데이터·`test-` 접두어·터널은 필요할 때만 연다» 로 감수한다. 주소는 임시 도메인이라 재시작마다 바뀐다 — 그것이 유일한 방어다
 - [x] **담당 디렉터리 잠금을 풀었다 — 프론트만 전담 (2026-09-10, `_project/decisions/302`)** — 사용자 지시. **`ai/`·`server/`·`infra/` 는 정성윤·류준·장민석 누구나 고친다.** 전담이 남는 곳은 **조서희의 프론트엔드(`apps/`) 하나**다. 이유는 «구멍»이다 — 기능 하나가 배선(`server/`)·구현체(`ai/`)·배포(`infra/`) 셋에 걸치는데 담당이 갈려 **각자 자기 몫을 끝내도 호출부만 있고 구현체가 없는 상태**로 남았다. `decisions/022` ①이 같은 것을 이미 적었고(하네스에 C-5·F-2 를 꽂는 3줄), `023` 이 협의 절차를 없앴지만 **경계 자체는 남아 있어** 그 3줄은 여전히 못 고쳤다. **`012` 의 나머지는 그대로다** — 역할 구분(요청이 흐르는 길 / 품질을 만들고 재는 쪽)과 의존 방향(`ai → server`)은 담당자 문제가 아니라 아키텍처이고, 코드를 어디에 둘지는 여전히 그 기준으로 가른다. **브랜치도 넷 그대로**(`011`) — 바뀐 것은 «어느 브랜치에서 어느 디렉터리를 고칠 수 있는가» 뿐이라 `test.yml` 트리거·job 이름·main 룰셋은 손대지 않았다. **잠금 대신 남는 것**: `.importlinter` 계층 계약 · `infra_runbook_guard.py`(배포에 닿는 파일은 담당자든 아니든 런북 먼저) · 손대기 전 `grep` 으로 영향 범위 확인(`023`). `infra/` 의 되돌리기 어려운 변경(자원 생성·삭제)은 정성윤과 말로 맞춘다. 고친 곳: `CLAUDE.md` §0·§1·§3·§4·§7 · `.claude/rules/rfp-harness.md` §2 · `.claude/rules/dashboard.md` · `server/CLAUDE.md` §5 · `ai/CLAUDE.md` §6 · `infra/CLAUDE.md` · [7.1절](/docs/07/). **이 항목으로 풀리는 것**: 위 「P6·P7 NER — `ai/` 몫」(포트를 양쪽에서 같이 만들 수 있다) · 「`generation`·`compliance` 를 `ai/` 에 두는 것 — 장민석 확인 필요」(담당이 바뀌는 변경이 아니게 됐다). ⚠ **남의 티켓 관련 항목(중복 티켓 — 조서희 님 확인 필요)은 그대로 남는다** — 프론트는 여전히 전담이다
 
@@ -218,3 +224,112 @@ rev.5의 C-6은 **자동 탐지**(고객 욕설·폭언, 재현율 우선 분류
 - [ ] **`admin_account`에 첫 행을 아무도 안 넣었다 (신규, 2026-09-14)** — 회원가입이 없으므로 이 테이블이 비어 있으면 구글 인증을 통과해도 전원 403이다. 운영 RDS에 관리자로 둘 이메일을 SQL로 직접 넣어야 한다(`INSERT INTO admin_account (email, name, created_at) VALUES (...)`). **정할 것**: 누구를 첫 관리자로 넣을지, 그리고 이후 등록·해제 절차(운영자가 직접 SQL — 지금은 이 방법뿐)를 문서화할지
 - [ ] **운영(k3s)에 Redis를 어떻게 띄울지 정하지 않았다 (신규, 2026-09-14)** — `decisions/403`은 로컬 스코프(`docker run redis:7-alpine`)만 다뤘다. **ElastiCache(관리형)는 만들지 않기로 이미 정해져 있다**(`infra/CLAUDE.md` §1-2). k3s 안에 컨테이너로 띄우는 선택지가 남는데, 퍼시스턴스(재시작 시 전체 로그아웃 허용 여부)·리소스 요청량을 정성윤과 정해야 한다. 그 전까지는 로컬 개발에서만 관리자 로그인이 동작한다
 - [ ] **access 5분·refresh 10분은 테스트 값이다 — 운영 값을 따로 정해야 한다 (신규, 2026-09-14)** — 사용자가 "테스트만 진행할 것"이라는 전제로 준 값을 그대로 코드 기본값(`.env.example`)에 넣었다. 실제로 운영에 올리기 전에 이 두 숫자(그리고 리프레시 회전 주기가 사용성에 미치는 영향)를 다시 정해야 한다
+
+### 게이트웨이를 붙이며 남은 것 (2026-09-11)
+
+`services/gateway` 가 생겼다([w4-gateway-streaming-stt](/backlog/w4-gateway-streaming-stt/)) — 실제 AI Hub 음성 →
+Google STT → 로컬 server 마스킹 → 대시보드 WS 까지 관통했다. 거기서 나온 것들이다.
+
+- [x] **`.env.example` 에 게이트웨이 키 넷을 사람이 넣어야 한다 (신규, 2026-09-11 · 같은 날 넣었다)** — 사용자가 `!` 로 직접 붙였다(값 없이 키 이름·설명만, 보호 훅은 우회하지 않았다). 원래 적힌 내용 — `GATEWAY_PORT`(기본 8080) ·
+  `CORE_API_URL`(기본 `http://localhost:8000`, 운영은 `http://callguard-server`) · `GATEWAY_INGEST_TOKEN` · `GATEWAY_VIEW_TOKEN`
+  (둘 다 없으면 루프백만 받는다). 자격증명 보호 훅이 이 파일을
+  **파일 이름으로** 막아 Claude 가 넣지 않았다(우회하지 않았다). 값 없이 키 이름만 넣으면 된다(SEC-2).
+  ⚠ 이 머신의 `.env` 는 `GOOGLE_APPLICATION_CREDENTIALS` 가 **류준 님 Mac 경로**(`/Users/ryujun/…`)라 그대로는
+  키를 못 찾는다 — 실제 키는 `~/.gcp/callguard-stt.json` 이고, 검증 때는 셸 변수로 덮어 썼다
+- [ ] **모노 한 줄에 섞인 두 화자는 가르지 못한다 — A-2 는 채널 분리만 (신규, 2026-09-11)** — V1 실측대로 AI Hub
+  녹음은 전부 모노라, 재생하면 한 화자로 찍힌다. 구글 화자 태그(diarization)는 final 에만 붙고 **누가 상담원인지는
+  알려 주지 않는다** — 첫 화자를 상담원으로 치는 식의 추측을 넣으면 C-1~C-4(상담원)·C-6(고객) 방향이 뒤집힐 수 있어
+  넣지 않았다. **정할 것**: 데모를 물리 2채널(브라우저 2대)로만 할지, 모노 녹음 재생용으로 diarization + 규칙을 둘지
+- [x] **게이트웨이 배포 — 위 「A-1 게이트웨이를 같은 EC2 에 올릴지」(2026-09-03)의 답이 런북에 이미 있다 (신규, 2026-09-11 · 같은 날 배포)** —
+  **→ 2026-09-11 운영에 올렸다**(PR #68 — 같은 노드, Ingress `/gateway`, `infra/k8s/base/gateway.yaml`). ①~⑥ 전부 반영 — ⑤ 장부는 hostPath,
+  ⑥ 토큰은 배포가 인스턴스 안에서 만든다. 첫 배포는 Docker Hub 새 저장소가 비공개로 만들어져 멈췄다(아래 원문은 그대로 둔다).
+  원래 적은 것 —
+  런북 0장 사양표가 **FastAPI server · Node 게이트웨이 · Caddy ≈ 1.0GB** 를 같은 노드에 넣고 계산했다. 남은 것은
+  ① 이미지(`infra/docker/gateway.Dockerfile`) ② k8s Deployment·Service(시크릿 `server-env` · `gcp-stt-credentials`
+  재사용) ③ Ingress 경로 — 밖에 여는 주소는 `server.solidbob.cloud` 하나이므로 `/gateway` 같은 경로로 붙인다
+  ④ `release.yml` 이 server 이미지만 굽는다 ⑤ **STT 사용량 장부가 파드 안 파일이라 재시작하면 0 이 된다** —
+  볼륨에 두거나 1차 방어선(GCP 쿼터)만 믿을지 ⑥ **인증 — Ingress 로 열기 전에 `/ws`·`/ingest` 접근 제어가 먼저다
+  (배포 선행 조건).** 처음엔 `Origin` 검사뿐이라 **브라우저만** 막았다 — 밖에 열리면 비브라우저 클라이언트가 `call_id`
+  없이 `WS /ws` 로 **모든 통화의 마스킹된 자막·추천을 받고**, `/ingest` 로 **STT 캡까지 과금을 태울 수 있었다**(a5 세션 지적).
+  → **같은 날 토큰 두 개로 막았다**(`services/gateway/src/domain/access.ts`). 루프백 밖은 문마다 토큰이 맞아야 하고, 토큰을
+  안 넣고 배포하면 **전부 401(fail-closed)**. `/ingest` 는 진짜 비밀(`GATEWAY_INGEST_TOKEN`, 헤더로만), `/ws` 는
+  `GATEWAY_VIEW_TOKEN` — **브라우저가 내므로 비밀이 아니다.** 번들에서 뽑혀도 과금 문은 안 열리게 가른 것이다.
+  ⚠ **그래서 `/ws` 는 아직 제대로 막힌 게 아니다** — 자막을 보는 사람을 가르려면 상담원 로그인이 있어야 하고, 서버에도 없다
+  (「서버에 인증이 없다」). 배포 때 할 일: 두 토큰을 시크릿에 넣는다(서로 다른 값). 공개 대시보드 번들에 뷰 토큰을 넣을지는
+  그 한계를 알고 정한다
+  ⚠ 지금 EC2 등급이 런북의 g4dn.xlarge 인지 확인이 먼저다
+- [ ] **통화 시작(2026-09-10 항목)은 게이트웨이가 ①로 구현했다 — §7.3 문서 반영이 남았다 (신규, 2026-09-11)** —
+  첫 `/ingest` 채널이 열리는 순간 `POST /hub/calls` 를 부르고, 실패하면 채널을 열지 않는다(외래키 때문에 저장이 전부
+  실패하므로). 같은 통화에 화자가 둘이어도 한 번만 부른다. 「검색 중」 신호(2026-09-09 항목)도 게이트웨이가 추천을
+  부르기 직전에 쏘면 된다 — 계약만 정하면 붙일 자리가 있다
+- [ ] **ES 에 못 붙을 때 `/hub/recommendations` 가 500 이다 (신규, 2026-09-11)** — 09-10 에 인덱스가 없을 때(`index_not_found`)는
+  503 + 「적재해야 한다」로 돌려주게 했는데, **ES 자체에 연결을 못 하면**(로컬 ES 없음) 여전히 500 이다. 게이트웨이는
+  둘 다 상태 코드만 로그에 남기므로 동작은 같지만, 운영에서 원인을 가르려면 503 쪽이 낫다 — `server/` (누구나)
+
+### frontend 브랜치를 main 에 합칠 때 — 조서희 님께 (2026-09-11, `decisions/109`)
+
+- [x] **`services/gateway` 가 두 벌이다 — main 쪽을 쓰고 frontend 쪽 것은 버린다.** → **2026-09-11 정성윤이 직접 합쳤다**(사용자 결정, 머지 `ce7f525`).
+  아래 ①~③ 그대로 했고 ④ 는 해당 없음. frontend 브랜치 자체는 고치지 않았다 — 조서희 님은 main 을 받으면 이 정리가 그대로 들어온다. 원래 적은 것 — 같은 날 조서희 님(`decisions/402`, 브라우저 음성 인식 dev 경로)과
+  정성윤(정식 A-1, 운영 배포)이 서로 모르고 같은 디렉터리에 게이트웨이를 만들었다. 합치면 `README.md`·`package.json`·`package-lock.json` 이
+  충돌한다. **402 의 쓸모는 main 게이트웨이로 옮겼다**(`decisions/109`) — 운영 `https://server.solidbob.cloud/gateway/dev` 가 같은 테스트 페이지이고
+  (ngrok 필요 없음), `/dashboard` 경로도 그대로 받는다. 합칠 때 할 일:
+  ① `services/gateway/` 는 main 쪽을 고른다(`git checkout origin/main -- services/gateway`) — frontend 의 `server.js`·`devPage.js`·`hubClient.js`·
+  `dashboardHub.js`·`Dockerfile`·`.dockerignore`·`.gitignore` 는 버린다(남으면 게이트웨이 이미지에 섞이고 릴리스 태그 검사가 막는다)
+  ② **`apps/dashboard/src/lib/ws/types.ts` 의 `?gateway=` 덮어쓰기는 그대로 넣는다** — 정식 게이트웨이와 맞물린다. 운영 주소는
+  `?gateway=` + `encodeURIComponent("wss://server.solidbob.cloud/gateway/ws?token=<뷰 토큰>")` (토큰 안에 `&` 는 없지만 인코딩해 두는 편이 안전하다)
+  ③ `decisions/402` 머리에 «일부 대체됨 — 109» 를 적는다(게이트웨이 신설 부분). 대시보드 덮어쓰기 결정은 402 그대로 유효하다
+  ④ `w3-gateway-dev-testcall` 티켓은 그대로 `done` 이다 — 옮겨 온 쪽은 [w4-gateway-dev-browser-stt](/backlog/w4-gateway-dev-browser-stt/)
+- [ ] **뷰 토큰을 대시보드에 어떻게 줄지 (신규, 2026-09-11)** — `?gateway=` 로 넣으면 localStorage 에 남고, Vercel env 로 넣으면 공개 번들에 들어간다.
+  둘 다 **비밀이 아니다**(무작위 스캔만 막는다). 사람별 인증이 생기기 전까지는 그 한계를 알고 쓴다. 뷰 토큰 값은 인스턴스에서 꺼낸다(`secret.example.yaml` ③)
+  → 아래 「공개 데모를 라이브로 바꿀지」에 선택지를 정리했다.
+
+### 공개 데모(`call.solidbob.cloud`)를 라이브로 바꿀지 — 조서희 님과 정할 것 (2026-09-11)
+
+게이트웨이가 운영에 떴다(`/gateway/health` — 키·캡·토큰 둘 전부 true). 대시보드를 실제 게이트웨이에 붙이려면 Vercel 에
+`VITE_GATEWAY_WS_URL=wss://server.solidbob.cloud/gateway/ws?token=<뷰 토큰>` 을 넣고 재배포하면 된다 — **그런데 정성윤은
+이 설정을 일부러 멈췄다.** 기술 문제가 아니라 팀이 정할 일이라서다: 대시보드는 조서희 님 전담이고(`decisions/302`),
+`decisions/109` 도 «프론트는 건드리지 않는다» 고 적었다.
+
+**먼저 알아 둘 사실** (2026-09-11 코드·운영 확인)
+
+- 대시보드의 실시간 자막·추천은 **전부 게이트웨이 WebSocket** 으로 온다. 필요한 빌드 변수는 `VITE_GATEWAY_WS_URL` 하나다.
+  `VITE_CORE_API_URL` 은 지금 헤더 `REST` 배지만 켠다(`AppHeader.tsx`) — 통화 기록(`coreClient.ts`)은 아직 mock 이다.
+  그래서 **운영 서버의 CORS(`call.solidbob.cloud` → 지금 400)도 지금은 필요 없다.** 통화 기록이 서버 REST 로 바뀔 때 넣는다
+- 지금 배포된 번들에는 서버·게이트웨이 주소가 없다 → **가짜 시나리오(mock)** 를 재생한다. 누가 열어도 자막·카드가 흐른다
+- 라이브로 바꾸면 **오디오를 보내는 쪽(생산자)이 있어야** 화면에 뭔가 뜬다. 지금 생산자는 개발용 `/gateway/dev`(ingest 토큰 필요) 하나다
+- 게이트웨이 허용 origin 은 `https://call.solidbob.cloud` · 로컬 Vite 뿐이다 — Vercel **Preview**(`*.vercel.app`)는 붙지 못한다
+
+| | 방법 | 좋은 점 | 나쁜 점 |
+|---|---|---|---|
+| **A** | **공개 데모는 mock 그대로** · 라이브는 개발자가 `?gateway=<주소>` 로 자기 브라우저에서만 | 바꿀 것 없음. 공개 데모가 늘 돈다. 자막이 밖에 노출되지 않는다 | 방문자는 실제 동작을 못 본다. 뷰 토큰을 쓸 사람에게 따로 건넨다. ⚠ **`?gateway=` 가 아무 주소나 받는다 — 아래 항목을 먼저 고쳐야 A 가 안전하다** |
+| **B** | **Vercel Production 에 `VITE_GATEWAY_WS_URL`** (뷰 토큰 포함) → 재배포 | 주소만 열면 라이브. 시연 준비가 간단하다 | ① 생산자가 없으면 **빈 화면** ② 번들이 공개라 **주소를 아는 누구나 모든 통화의 (마스킹된) 자막을 본다** ③ EC2 가 꺼지면(자동 중지를 걸면) 멈춘다 ④ 토큰을 바꾸면 재배포 |
+| **C** | 기본은 mock, 화면에서 「라이브 연결」을 골라 **토큰을 사람이 입력** | 공개 데모도 살고 라이브도 쉽다. 토큰이 번들에 안 들어간다 | **프론트 코드 작업**이 필요하다(조서희 님). 지금의 `?gateway=` 를 화면으로 올린 것에 가깝다 |
+
+**권고: 지금은 A — 단, `?gateway=` 허용 목록을 먼저 고친 뒤에.** 공개 데모를 망가뜨리지 않고 노출도 없으며, 라이브 확인은
+`?gateway=` 로 충분하다. 그런데 그 `?gateway=` 에 지금 구멍이 있다(바로 아래 항목 — A/B 선택과 상관없이 **이미 운영 번들에 있다**). **B 로 가는 조건** —
+① 시연 때 오디오를 누가 어떻게 보낼지 정해졌다(`/gateway/dev` 등) ② 「주소를 아는 사람은 자막을 본다」를 팀이 받아들였다
+(상담원 로그인은 서버에도 아직 없다 — 「서버에 인증이 없다」). 발표 시연만 라이브가 필요하면 **그날만 B 로 바꿨다가 되돌리는** 방법도 있다.
+
+**B 를 고르면 할 일** (정성윤 — Vercel 계정):
+뷰 토큰 꺼내기(`sudo k3s kubectl -n callguard get secret gateway-tokens -o jsonpath='{.data.GATEWAY_VIEW_TOKEN}' | base64 -d`, 32자 — 48자인
+`INGEST` 는 **절대 넣지 않는다**) → `call.solidbob.cloud` 가 붙은 Vercel 프로젝트(Root Directory `apps/dashboard`) → Settings →
+Environment Variables → **Production 만** → Deployments → Redeploy(`VITE_` 는 빌드 때 박힌다) → 확인: 번들에 `gateway/ws` 가 들어갔는지 ·
+대시보드를 연 동안 `/gateway/health` 의 `dashboards` 가 1 이 되는지.
+
+- [ ] **A / B / C 중 무엇으로 할지** — 조서희 님(대시보드) · 정성윤(Vercel). 정하면 위 「뷰 토큰을 대시보드에 어떻게 줄지」와 함께 닫는다
+- [ ] **⚠ `?gateway=` 가 아무 WebSocket 주소나 받아 저장한다 — 운영 대시보드에 이미 떠 있다 (신규, 2026-09-11)** —
+  `apps/dashboard/src/lib/ws/types.ts` 가 `ws://`·`wss://` 로 **시작만 하면** 받아 localStorage 에 남긴다(PR #70 으로 배포,
+  운영 번들 `index-ZZuCSHQN.js` 에 `callguard:gatewayUrlOverride` 확인). 그래서 `call.solidbob.cloud/?gateway=wss://<남의 서버>/ws` 링크
+  하나를 누른 브라우저는 `?gateway=clear` 를 하기 전까지 **그 서버에 붙고, 그 서버가 보내는 가짜 자막·「필요서류」 카드를 그대로 띄운다.**
+  상담원이 가짜 서류 안내를 믿고 고객에게 전하는 경로가 된다(a5·33 세션 확인, bc 세션이 운영 번들로 재확인).
+  **고치는 법**: ① 허용 목록 — `wss://server.solidbob.cloud/gateway/*` 와 `ws://localhost` · `ws://127.0.0.1`(로컬 개발)만 받고 나머지는 버린다
+  ② 덮어쓰기가 켜져 있는 동안 **화면에 눈에 띄는 배너**(어디에 붙었는지 + 해제 버튼). 코드는 `apps/`(조서희 님 전담, `decisions/302`)라
+  **이 기록은 고치지 않았다** — 누가 고칠지는 사용자·조서희 님이 정한다. 고치기 전까지는 A 를 쓰더라도 **모르는 `?gateway=` 링크를 열지 않는다**
+
+
+### 배포하면 ES 가 매번 «configured» 로 나온다 (신규, 2026-09-11)
+
+- [ ] **`statefulset.apps/elasticsearch configured` 가 모든 릴리스에 찍힌다** — `elasticsearch.yaml` 을 안 바꿔도 그렇다(릴리스 34580004558·34580734409·
+  34584307027 확인). 누가 클러스터를 손댄 흔적이 아니라 **적용할 때마다 생기는 차이**다(bc 세션 확인). 해는 없지만(검색 200, 인덱스 그대로)
+  **진짜 변경이 생겨도 이 줄에 묻힌다.** 추정: `volumeClaimTemplates` 에 서버가 기본값을 채우는 필드. 확인은 인스턴스에서
+  `kubectl kustomize infra/k8s/base/ | sudo k3s kubectl diff -f -` — 나온 필드를 매니페스트에 적어 두면 사라진다

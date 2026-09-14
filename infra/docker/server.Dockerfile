@@ -38,9 +38,12 @@ COPY ai/requirements.txt /tmp/ai-requirements.txt
 RUN pip install -r /tmp/server-requirements.txt \
  && pip install "$(grep -E '^elasticsearch==' /tmp/ai-requirements.txt)"
 
-# main.py 가 기대하는 배치 그대로 둔다: /app/server/main.py 와 /app/ai/apps/
+# main.py 가 기대하는 배치 그대로 둔다: /app/server/main.py 와 /app/ai/apps/ · /app/ai/provider.py
 COPY server/ /app/server/
 COPY ai/apps/ /app/ai/apps/
+# 트리거(B-1) 팩토리. main.py `_wire_trigger` 가 `from provider import …` 로 부른다 — 없으면 **오류 없이**
+# trigger 스포크만 빠진다(decisions/024 설계). 0.1.2 가 이 줄 없이 나가 운영 spokes 가 3종이었다(2026-09-11).
+COPY ai/provider.py /app/ai/provider.py
 
 # 루트로 돌리지 않는다.
 RUN useradd --create-home --uid 10001 callguard \
