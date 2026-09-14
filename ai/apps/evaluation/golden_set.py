@@ -47,9 +47,9 @@ class CallGuardCase:
 
 @dataclass(frozen=True)
 class F2Case:
-    closure_type: str
+    procedure: str  # 필요서류 조항 ID (DASAN-TERM-x.y) — 2026-09-14 `closure_type` 에서 바뀌었다(`decisions/305`)
     evidence: dict[str, bool]
-    expected_verdict: str  # "approved" | "blocked"
+    expected_verdict: str  # "complete" | "incomplete"
     expected_missing: list[str]
     source: str | None = None
 

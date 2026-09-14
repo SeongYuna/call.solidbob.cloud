@@ -9,7 +9,7 @@ frozen dataclass 를 쓴다: 값 객체이고, pydantic 스키마는 HTTP 표면
 from .call_start_dto import CallDomain, CallStartCommand, CallStarted
 from .call_summary_dto import CallSummaryDraft, FollowUpAction
 from .closure_dto import ClosureCheckCommand
-from .closure_verdict_dto import ClosureType, ClosureVerdict, Verdict
+from .closure_verdict_dto import ClosureVerdict, Verdict
 from .compliance_dto import ComplianceCheckCommand, ComplianceCheckResult
 from .compliance_finding_dto import ComplianceFinding
 from .domain_classification_dto import DomainClassification
@@ -31,7 +31,6 @@ __all__ = [
     "CallSummaryDraft",
     "Card",
     "ClosureCheckCommand",
-    "ClosureType",
     "ClosureVerdict",
     "ComplianceCheckCommand",
     "ComplianceCheckResult",

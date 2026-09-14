@@ -40,9 +40,11 @@ from __future__ import annotations
 
 from typing import Any, Callable
 
+from hub.app.ports.output.call_guard_port import CallGuardPort
 from hub.app.ports.output.retrieval_port import RetrievalPort
 from hub.app.ports.output.trigger_port import TriggerPort
 
+from call_guard.adapter.outbound.rule_call_guard_adapter import RuleCallGuardAdapter
 from retrieval.adapter.outbound.es_bm25_retriever import EsBm25Retriever
 from retrieval.adapter.outbound.es_index import SINGLE_INDEX
 from retrieval.adapter.outbound.is_final_trigger import IsFinalTrigger
@@ -86,4 +88,13 @@ def build_trigger_provider(**kwargs: Any) -> Callable[[], TriggerPort]:
     포트 시그니처에 도착 시각이 없어서 지금은 **실측 상수로 모형화**하고 있다.
     """
     port = IsFinalTrigger(**kwargs)
+    return lambda: port
+
+
+def build_call_guard_provider() -> Callable[[], CallGuardPort]:
+    """`get_call_guard_port` 를 대체할 프로바이더(C-6). 규칙 사전뿐이라 외부 자원이 필요 없다.
+
+    ⚠ 호출하는 쪽이 **마스킹된 고객 발화**를 넘겨야 한다 — 잡힌 `phrase` 가 그대로 저장된다(MANUAL-5.5).
+    """
+    port = RuleCallGuardAdapter()
     return lambda: port

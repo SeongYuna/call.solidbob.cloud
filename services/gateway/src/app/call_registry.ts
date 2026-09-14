@@ -47,6 +47,11 @@ export interface ChannelSpec {
   channelCount: number;
   /** 기본 `audio`. `text` 는 브라우저 음성 인식 결과(글자)를 받는다. */
   source?: "audio" | "text";
+  /**
+   * 발신 번호(선택) — 통화를 **처음 여는** 채널의 것만 서버로 간다(통화 시작은 한 번). 재상담 이력·블랙리스트가
+   * 고객을 잇는 재료다(`decisions/304`). ⚠ 평문이다 — 로그·대시보드로 보내지 않는다.
+   */
+  callerPhone?: string;
 }
 
 /** 글자 입력 채널이 `call.stt_engine` 에 적는 이름 — 구글 STT 가 아니라는 것을 기록에 남긴다. */
@@ -73,6 +78,16 @@ export interface RegistryDeps {
    * 라이브 화면이 깨진다(`w4-recommendation-pending-contract`).
    */
   announcePending?: boolean;
+  /**
+   * 잡힌 콜 가드 신호(C-6)를 `call_guard` 메시지로 대시보드에 보낼까. 기본 false — 이유는 `announcePending` 과 같다.
+   * **검사·저장은 끄지 않는다** — 서버가 `call_guard_flag` 에 남기는 것은 화면과 무관하게 돈다.
+   */
+  announceCallGuard?: boolean;
+  /**
+   * F-2 필요서류 판정을 `closure` 메시지로 대시보드에 보낼까. 기본 false — 대시보드 파서가 아직 옛 종결 형식
+   * (`closure_type`·`approved/blocked`)만 받는다. **판정·저장은 끄지 않는다.**
+   */
+  announceClosure?: boolean;
 }
 
 interface CallState {
@@ -81,6 +96,16 @@ interface CallState {
   readonly counter: SegmentCounter;
   readonly channels: Map<ChannelSpeaker, Channel>;
   started: Promise<boolean>;
+  /**
+   * F-2 — 이 통화에서 판정 중인 절차(필요서류 조항 ID). 추천 카드 1순위의 `source.doc_id` 에서 온다.
+   * 서버가 규칙이 없다고 한(422) 조항은 `notProcedures` 로 옮겨 다시 묻지 않는다.
+   */
+  readonly procedures: Set<string>;
+  readonly notProcedures: Set<string>;
+  /** 상담원 확정 발화 **마스킹본** — 서버 판정 입력. 원문은 여기 없다(SEC-1). */
+  readonly agentFinals: string[];
+  /** 판정 요청을 한 줄로 세운다 — 늦게 보낸 요청의 응답이 먼저 와서 화면이 옛 판정으로 되돌아가지 않게. */
+  closureChain: Promise<void>;
 }
 
 export class CallRegistry {
@@ -145,6 +170,10 @@ export class CallRegistry {
       counter: new SegmentCounter(),
       channels: new Map(),
       started: Promise.resolve(false),
+      procedures: new Set(),
+      notProcedures: new Set(),
+      agentFinals: [],
+      closureChain: Promise.resolve(),
     };
     this.calls.set(spec.callId, call);
     const engine =
@@ -152,7 +181,12 @@ export class CallRegistry {
         ? TEXT_ENGINE_NAME
         : `${this.deps.stt.name}${spec.speaker === "auto" ? DIARIZE_ENGINE_SUFFIX : ""}`;
     call.started = this.deps.hub
-      .startCall({ call_id: spec.callId, stt_engine: engine, channel_count: spec.channelCount })
+      .startCall({
+        call_id: spec.callId,
+        stt_engine: engine,
+        channel_count: spec.channelCount,
+        ...(spec.callerPhone ? { caller_phone: spec.callerPhone } : {}),
+      })
       .then(
         () => true,
         (error: unknown) => {
@@ -187,6 +221,7 @@ interface QueuedResult {
 }
 
 export class Channel {
+  private readonly call: CallState;
   readonly callId: string;
   readonly speaker: ChannelSpeaker;
   private readonly spec: ChannelSpec;
@@ -208,6 +243,7 @@ export class Channel {
   private closing: Promise<void> | null = null;
 
   constructor(call: CallState, spec: ChannelSpec, deps: RegistryDeps, onDetach: () => void) {
+    this.call = call;
     this.callId = spec.callId;
     this.speaker = spec.speaker;
     this.spec = spec;
@@ -355,8 +391,74 @@ export class Channel {
     this.deps.broadcaster.publish(this.callId, { type: "transcript", payload: masked });
 
     if (item.isFinal && masked.text.trim().length > 0) {
-      const task = this.recommend(item, masked.text).finally(() => this.inflight.delete(task));
-      this.inflight.add(task);
+      this.track(this.recommend(item, masked.text));
+      if (item.raw.speaker === "customer") {
+        this.track(this.checkCallGuard(item, masked.text));
+      } else {
+        // F-2 — 상담원이 서류를 안내했을 수 있다. 판정 중인 절차를 전부 다시 본다
+        this.call.agentFinals.push(masked.text);
+        for (const procedure of this.call.procedures) {
+          this.track(this.checkRequiredDocs(procedure));
+        }
+      }
+    }
+  }
+
+  /**
+   * F-2 — 절차 하나를 지금까지의 상담원 발화로 판정한다. 판정(누락이 무엇인가)은 서버 규칙이 한다.
+   * 한 통화의 요청은 줄을 세워 순서대로 보낸다 — 응답이 뒤집혀 화면이 옛 판정으로 돌아가지 않게.
+   */
+  private checkRequiredDocs(procedure: string): Promise<void> {
+    const utterances = [...this.call.agentFinals];
+    const run = async (): Promise<void> => {
+      if (this.call.notProcedures.has(procedure)) {
+        return;
+      }
+      try {
+        const payload = await this.deps.hub.checkRequiredDocs({
+          call_id: this.callId,
+          procedure,
+          agent_utterances: utterances,
+        });
+        if (this.deps.announceClosure === true) {
+          this.deps.broadcaster.publish(this.callId, { type: "closure", payload });
+        }
+      } catch (error) {
+        if (error instanceof HubError && error.status === 422) {
+          // 규칙이 없는 조항(필요서류 조항이 아니거나 조건 분기로 제외된 것) — 절차가 아니다. 다시 묻지 않는다
+          this.call.procedures.delete(procedure);
+          this.call.notProcedures.add(procedure);
+          return;
+        }
+        this.deps.log.warn(`필요서류 판정 실패 call=${this.callId} procedure=${procedure} status=${statusOf(error)}`);
+      }
+    };
+    const next = this.call.closureChain.then(run);
+    this.call.closureChain = next;
+    return next;
+  }
+
+  private track(work: Promise<void>): void {
+    const task = work.finally(() => this.inflight.delete(task));
+    this.inflight.add(task);
+  }
+
+  /**
+   * C-6 — 고객 final 의 **마스킹된 본문**을 검사한다. 판정·저장은 서버가 한다. 화자로 거르는 것은 판정이 아니라
+   * 계약이다(검사 대상이 고객 발화뿐 — 상담원 발화는 C-1~C-4 몫). 다음 자막을 막지 않도록 줄 밖에서 돈다.
+   */
+  private async checkCallGuard(item: QueuedResult, maskedText: string): Promise<void> {
+    try {
+      const payload = await this.deps.hub.checkCallGuard({
+        call_id: this.callId,
+        segment_id: item.segmentId,
+        customer_utterance: maskedText,
+      });
+      if (this.deps.announceCallGuard === true && payload.flags.length > 0) {
+        this.deps.broadcaster.publish(this.callId, { type: "call_guard", payload });
+      }
+    } catch (error) {
+      this.deps.log.warn(`콜 가드 검사 실패 call=${this.callId} segment=${item.segmentId} status=${statusOf(error)}`);
     }
   }
 
@@ -382,10 +484,25 @@ export class Channel {
         received_at_ms: item.receivedAtMs,
       });
       this.deps.broadcaster.publish(this.callId, { type: "recommendation", payload });
+      const procedure = topSourceDocId(payload);
+      if (procedure !== null && !this.call.procedures.has(procedure) && !this.call.notProcedures.has(procedure)) {
+        this.call.procedures.add(procedure);
+        this.track(this.checkRequiredDocs(procedure));
+      }
     } catch (error) {
       this.deps.log.warn(`추천 요청 실패 call=${this.callId} segment=${item.segmentId} status=${statusOf(error)}`);
     }
   }
+}
+
+/** 추천 응답 1순위 카드의 근거 조항 ID. 카드가 없거나 모양이 다르면 null — 절차를 지어내지 않는다. */
+function topSourceDocId(payload: Record<string, unknown>): string | null {
+  const cards = payload["cards"];
+  if (!Array.isArray(cards) || cards.length === 0) {
+    return null;
+  }
+  const source = (cards[0] as { source?: { doc_id?: unknown } } | null)?.source;
+  return typeof source?.doc_id === "string" && source.doc_id.length > 0 ? source.doc_id : null;
 }
 
 function statusOf(error: unknown): string {

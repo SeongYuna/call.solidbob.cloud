@@ -21,11 +21,11 @@ def test_recommendation_cards_empty_means_no_relevant_document():
     assert not RecommendationCards(call_id="c_001", trigger_at_ms=3150, cards=(card,)).no_relevant_document
 
 
-def test_closure_verdict_carries_gs009_shape():
+def test_closure_verdict_carries_required_docs_shape():
     v = ClosureVerdict(
-        call_id="c_001", closure_type="해지",
-        evidence={"위약금_안내": True, "잔여할부_안내": False, "고객확인_기록": False},
-        verdict="blocked", missing=("잔여할부_안내", "고객확인_기록"),
-        source=Source(doc_id="POLICY-CANCEL-1", title="내부처리규정 해지 필수 근거"),
+        call_id="c_001", procedure="DASAN-TERM-4.3",
+        evidence={"신분증": False},
+        verdict="incomplete", missing=("신분증",),
+        source=Source(doc_id="DASAN-TERM-4.3", title="주민등록초본 발급 — 필요서류"),
     )
-    assert v.verdict == "blocked" and v.source.doc_id == "POLICY-CANCEL-1"
+    assert v.verdict == "incomplete" and v.source.doc_id == "DASAN-TERM-4.3" and v.detected is False

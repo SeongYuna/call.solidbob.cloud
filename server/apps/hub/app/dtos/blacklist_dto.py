@@ -76,6 +76,8 @@ class BlacklistRequest:
     requested_at: datetime | None = None
     decided_by: str | None = None
     decided_at: datetime | None = None
+    # 근거 건수를 집계한 시각 — 관리자가 본 값이 «그때» 의 스냅샷이라는 표시(`blacklist_request.evidence_snapshot_at`)
+    evidence_snapshot_at: datetime | None = None
 
     def __post_init__(self) -> None:
         if self.status not in STATUSES:

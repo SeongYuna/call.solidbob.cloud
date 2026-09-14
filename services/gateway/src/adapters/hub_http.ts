@@ -9,6 +9,10 @@
 import {
   HubError,
   type CallStartRequest,
+  type CallGuardCheckRequest,
+  type CallGuardPayload,
+  type ClosurePayload,
+  type RequiredDocsCheckRequest,
   type HubPort,
   type MaskedTranscript,
   type RawTranscript,
@@ -43,6 +47,22 @@ export class HttpHub implements HubPort {
       throw new HubError("추천 응답 형식이 계약과 다르다", null);
     }
     return body as RecommendPayload;
+  }
+
+  async checkCallGuard(request: CallGuardCheckRequest): Promise<CallGuardPayload> {
+    const body = await this.post("/hub/call-guard-checks", request);
+    if (typeof body !== "object" || body === null || !Array.isArray((body as { flags?: unknown }).flags)) {
+      throw new HubError("콜 가드 응답 형식이 계약과 다르다", null);
+    }
+    return body as CallGuardPayload;
+  }
+
+  async checkRequiredDocs(request: RequiredDocsCheckRequest): Promise<ClosurePayload> {
+    const body = await this.post("/hub/required-docs-checks", request);
+    if (typeof body !== "object" || body === null || typeof (body as { procedure?: unknown }).procedure !== "string") {
+      throw new HubError("필요서류 판정 응답 형식이 계약과 다르다", null);
+    }
+    return body as ClosurePayload;
   }
 
   private async post(path: string, payload: unknown): Promise<unknown> {

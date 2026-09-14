@@ -11,13 +11,16 @@ from hub.app.ports.output.myself_record_port import MyselfRecordPort
 _ENDPOINTS = (
     "GET /hub/myself — 이 자기소개",
     "POST /hub/calls — 게이트웨이가 통화 시작을 알린다. 전사보다 먼저 와야 한다(transcript_segment → call 외래키)",
+    "GET /hub/calls — 지난 통화 목록(최근 시작순, customer_id 필터). 자막은 GET /hub/calls/{call_id}/transcript",
     "POST /hub/transcripts — 게이트웨이가 보낸 전사 1건을 받아 C-5 마스킹을 거친 전사 이벤트(7.3절 계약)로 돌려준다",
+    "POST /hub/call-guard-checks — 마스킹된 고객 발화 1건에서 C-6 폭언·위기 신호를 찾아 기록한다(규칙 사전 기준)",
 )
 _DOES_NOT = (
     "마스킹·트리거·검색·생성·컴플라이언스·종결 판정을 직접 하지 않는다 — 각 스포크가 구현한 포트를 부를 뿐이다",
     "종결 가능 여부나 마스킹 대상을 생성 모델로 판정하지 않는다 (절대 원칙 9)",
     "마스킹 전 원문을 저장·로그·다른 스포크에 넘기지 않는다 (SEC-1)",
     "정의된 P1~P5 패턴 밖의 개인정보 탐지를 보장하지 않는다 (5.5절 한계)",
+    "콜 가드 신호로 통화를 끊거나 상급자를 부르지 않는다 — 탐지와 경고까지다 (MANUAL-5.2)",
 )
 
 

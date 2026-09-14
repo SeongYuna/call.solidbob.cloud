@@ -86,8 +86,8 @@ ES 는 `docker build -t callguard-es:local infra/elasticsearch/` 후 9200 으로
 | 트리거 스포크 배선 | 류준 | 마지막 501 이 여기 걸린다 |
 | **P6·P7 NER** | **류준** | **C-5 절대 규칙이 여기서 뚫린다.** `server/` 규칙 폴백은 문맥 있는 이름만 잡는다 |
 | **AI Hub 505/71479 신청** | 류준 | A-5 본체가 여기서 막혀 있다. 승인에 시간이 걸린다 |
-| **J 서버 어댑터·라우터** | 장민석 | 도메인 규칙(`server/apps/blacklist/`)은 있고 저장·HTTP 가 없다 |
-| **F-2 규칙표·`closure` 테이블이 다산을 모른다** | 장민석 | 넣으면 CHECK 거부 + `UnknownClosureType`. 골든셋 F-2 0건의 원인 → `w4-schema-qa-followup` |
+| ~~J 서버 어댑터·라우터~~ | ~~장민석~~ | **09-14 만들었다**(`w4-blacklist-api`) — 남은 것: 상담원 인증·`admin_account.agent_id` 채우기 |
+| ~~F-2 규칙표·`closure` 테이블이 다산을 모른다~~ | ~~장민석~~ | **09-14 다시 만들었다**(`decisions/305`) — 골든셋 F-2 케이스는 류준 몫으로 넘어갔다 |
 | **`transcript_segment` UPSERT 복합키 미반영** | 장민석 | **스키마는 고쳤다. 어댑터를 안 고치면 UPSERT 가 터진다** |
 | **`call` 행 생성 경로 없음** | 장민석 | 운영에서 첫 세그먼트가 FK 위반으로 실패한다(QA 중 실제로 부딪혔다) |
 | **운영 `document` 테이블 비어 있음** | 정성윤·류준 | `scripts/seed_documents.py` 를 운영 RDS 에 안 돌렸다(런북 17-3). 안 돌리면 콜 가드·추천 카드의 근거 조항이 NULL 로 저장된다 |

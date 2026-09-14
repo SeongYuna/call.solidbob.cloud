@@ -88,6 +88,7 @@ node scripts/stream_wav.ts <파일.wav> --speaker customer --watch
 | `speaker` | `agent` · `customer` — **연결 하나 = 화자 하나**(채널 분리, A-2). `auto` — 모노 녹음 화자 분리(아래) |
 | `sample_rate` | 8000 · 16000 · 22050 · 24000 · 44100 · 48000. 기본 16000 |
 | `channels` | 이 통화에 붙을 채널 수 1·2. `call.channel_count` 로 간다 |
+| 헤더 `X-Caller-Phone` | (선택) 발신 번호 — 통화를 **처음 여는** 채널 것만 통화 시작에 `caller_phone` 으로 간다. 서버가 HMAC 으로 바꿔 고객을 잇는다(`decisions/304`). **쿼리로는 받지 않는다**(접근 로그). 로그에 남기지 않는다 · `stream_wav.ts` 는 환경변수 `CALLER_PHONE` |
 
 - 바이너리 프레임 = **PCM 16비트 리틀엔디언 모노**. 100ms 안팎으로 잘라 보낸다
 - 끝낼 때 텍스트 `{"type":"end"}` → 남은 결과를 다 보낸 뒤 `1000` 으로 닫힌다. 그냥 끊어도 된다
@@ -115,6 +116,13 @@ node scripts/stream_wav.ts <파일.wav> --speaker customer --watch
 {"type": "recommendation", "payload": { /* POST /hub/recommendations 응답 그대로 */ }}
 ```
 
+- **`call_guard`** — 고객 확정 발화마다 **마스킹본**으로 `POST /hub/call-guard-checks`(C-6). 잡힌 게 있으면 응답 그대로
+  `{"type":"call_guard","payload":{…}}` 을 보낼 수 있다. 검사·저장(`call_guard_flag`)은 늘 돈다
+- **`closure`** — F-2 필요서류 체크리스트(`decisions/305`). 추천 응답 **1순위 카드의 `source.doc_id`** 를 통화의 절차로 잡고,
+  상담원 확정 발화(마스킹본)가 쌓일 때마다 `POST /hub/required-docs-checks` 로 다시 판정한다. 한 통화의 판정 요청은 줄을 세운다.
+  서버가 422(규칙 없는 조항)면 그 조항은 다시 묻지 않는다
+- ⚠ **`call_guard`·`closure` 도 대시보드 전송을 꺼 두었다**(`main.ts` `announceCallGuard`·`announceClosure`) — `apps/call` 파서가 앞은 모르는
+  `type`, 뒤는 옛 형식(`closure_type`·`approved/blocked`)만 받는다
 - **추천 요청에는 `received_at_ms` 를 싣는다** — STT final 을 받은 시각(통화 기준 ms). 서버 트리거가 발동 시각으로 쓴다
   (없으면 «발화 종료 + 346ms» 모형). 줄에 넣기 전에 재므로 서버 대기 시간은 섞이지 않는다
 - **「검색 중」** `{"type": "recommendation_pending", "payload": {"call_id", "segment_id"}}` 을 추천 요청 직전에 보낼 수 있다

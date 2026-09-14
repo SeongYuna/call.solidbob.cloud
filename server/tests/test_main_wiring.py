@@ -84,3 +84,15 @@ def test_ES_에_연결하지_못하면_503이고_주소를_싣지_않는다(erro
     assert r.status_code == 503
     assert "연결" in r.json()["detail"]
     assert "secret-es" not in r.text
+
+
+@pytest.mark.skipif(not _ai_provider_available(), reason="ai/ 가 없다")
+def test_콜_가드_스포크가_꽂혀_실제_규칙으로_잡는다():
+    """C-6 — 합성 루트가 `ai/` 탐지기를 꽂는다. DB 가 없으면 로그 기록으로 떨어진다."""
+    body = {"call_id": "test-c6", "segment_id": 4, "customer_utterance": "이런 병신 같은"}
+    with TestClient(app) as client:
+        assert "call_guard" in client.get("/health").json()["spokes"]
+        r = client.post("/hub/call-guard-checks", json=body)
+    assert r.status_code == 200
+    flags = r.json()["flags"]
+    assert flags and flags[0]["category"] == "insult"

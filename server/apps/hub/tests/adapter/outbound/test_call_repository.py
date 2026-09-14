@@ -33,7 +33,7 @@ class _FakeConnection:
         self.committed = True
 
 
-def _run(rowcount: int):
+def _run(rowcount: int, customer_id=None):
     log, holder = [], []
 
     @asynccontextmanager
@@ -43,7 +43,8 @@ def _run(rowcount: int):
         yield conn
 
     call = CallStarted(call_id="test-c001", domain="dasan", stt_engine="mock", channel_count=1,
-                       started_at=datetime(2026, 9, 10, tzinfo=timezone.utc), status="in_progress", created=True)
+                       started_at=datetime(2026, 9, 10, tzinfo=timezone.utc), status="in_progress", created=True,
+                       customer_id=customer_id)
     created = asyncio.run(PostgresCallRepository(_connect).record(call))
     return created, log, holder[0]
 
@@ -53,10 +54,22 @@ def test_새_통화는_INSERT하고_커밋한다():
     assert created is True and conn.committed is True
     sql, args = log[0]
     assert sql.startswith('INSERT INTO "call"') and 'ON CONFLICT ("call_id") DO NOTHING' in sql
-    assert args[0] == "test-c001" and args[1] == "dasan" and args[4] == "mock" and args[5] == "in_progress"
+    assert args[0] == "test-c001" and args[1] == "dasan" and args[2] is None
+    assert args[5] == "mock" and args[6] == "in_progress"
+    assert len(log) == 1  # 고객 식별자가 없으면 customer 행을 만들지 않는다
 
 
 def test_이미_있으면_False를_돌려주고_덮어쓰지_않는다():
     created, log, _ = _run(rowcount=0)
     assert created is False
     assert "DO UPDATE" not in log[0][0]
+
+
+def test_고객_식별자가_있으면_customer_를_먼저_만들고_통화에_잇는다():
+    """`call.customer_id` 는 외래키다 — customer 행이 먼저다. 이미 있으면 첫 방문 시각을 덮지 않는다."""
+    ref = "a" * 64
+    created, log, _ = _run(rowcount=1, customer_id=ref)
+    assert created is True
+    assert log[0][0].startswith('INSERT INTO "customer"') and 'ON CONFLICT ("customer_id") DO NOTHING' in log[0][0]
+    assert log[0][1][0] == ref
+    assert log[1][0].startswith('INSERT INTO "call"') and log[1][1][2] == ref
