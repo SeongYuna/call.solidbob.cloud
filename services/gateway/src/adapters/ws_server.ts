@@ -4,7 +4,7 @@
  *
  * | 경로 | 누가 | 무엇이 흐르나 |
  * |---|---|---|
- * | `WS /ingest?call_id=&speaker=&sample_rate=&channels=` | 오디오 생산자 | → PCM16LE 모노 바이너리 |
+ * | `WS /ingest?call_id=&speaker=&sample_rate=&channels=` | 오디오 생산자 | → PCM16LE 모노 바이너리. `speaker=auto` 는 모노 녹음 화자 분리(`decisions/303`) |
  * | `WS /ws[?call_id=]` (별칭 `/dashboard`) | 대시보드 | ← `{type, payload}` JSON (마스킹된 결과만) |
  * | `GET /dev` · `WS /dev/text?call_id=&speaker=` | 개발자 브라우저 | → 브라우저 음성 인식 결과 글자(`decisions/109`) |
  * | `GET /health` | 쿠버네티스·사람 | ← 설정 여부·사용량 (값·주소는 싣지 않는다, SEC-2) |
@@ -31,7 +31,7 @@
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from "node:http";
 import type { Duplex } from "node:stream";
 import { WebSocketServer, type WebSocket, type RawData } from "ws";
-import type { CallRegistry, Channel } from "../app/call_registry.ts";
+import type { CallRegistry, Channel, ChannelSpeaker } from "../app/call_registry.ts";
 import {
   bearerFromSubprotocols,
   bearerToken,
@@ -220,19 +220,28 @@ function handleHttp(req: IncomingMessage, res: ServerResponse, deps: GatewayServ
 
 interface IngestParams {
   callId: string;
-  speaker: Speaker;
+  speaker: ChannelSpeaker;
   sampleRate: number;
   channelCount: number;
 }
 
-function parseIngest(url: URL): IngestParams | string {
+/** `allowAuto` — `speaker=auto`(화자 분리)는 오디오 문(`/ingest`)만 받는다. 글자 입력은 화자를 가를 소리가 없다. */
+function parseIngest(url: URL, allowAuto = false): IngestParams | string {
   const callId = url.searchParams.get("call_id") ?? "";
   if (!CALL_ID.test(callId)) {
     return "call_id 는 영문·숫자·_.:- 1~40자다";
   }
   const speaker = url.searchParams.get("speaker");
+  if (speaker === "auto" && allowAuto) {
+    // 두 화자가 한 줄에 있으니 채널은 하나다.
+    const sampleRate = Number(url.searchParams.get("sample_rate") ?? "16000");
+    if (!SAMPLE_RATES.has(sampleRate)) {
+      return `sample_rate 는 ${[...SAMPLE_RATES].join("·")} 중 하나다`;
+    }
+    return { callId, speaker, sampleRate, channelCount: 1 };
+  }
   if (speaker !== "agent" && speaker !== "customer") {
-    return "speaker 는 agent 또는 customer 다";
+    return allowAuto ? "speaker 는 agent · customer · auto 중 하나다" : "speaker 는 agent 또는 customer 다";
   }
   const sampleRate = Number(url.searchParams.get("sample_rate") ?? "16000");
   if (!SAMPLE_RATES.has(sampleRate)) {
@@ -246,7 +255,7 @@ function parseIngest(url: URL): IngestParams | string {
 }
 
 async function acceptIngest(ws: WebSocket, url: URL, deps: GatewayServerDeps): Promise<void> {
-  const params = parseIngest(url);
+  const params = parseIngest(url, true);
   if (typeof params === "string") {
     closeWith(ws, CLOSE_POLICY, params);
     return;

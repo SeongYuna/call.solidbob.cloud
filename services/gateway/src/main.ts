@@ -46,6 +46,8 @@ const registry = new CallRegistry({
   broadcaster: dashboards,
   log,
   nowMs: () => Date.now(),
+  // 「검색 중」 신호 — apps/call 이 recommendation_pending 을 받게 되면 true 로 켠다(w4-recommendation-pending-contract)
+  announcePending: false,
 });
 
 const server = createGatewayServer({
