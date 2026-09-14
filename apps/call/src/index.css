@@ -2893,3 +2893,44 @@ button {
   color: inherit;
   font: inherit;
 }
+
+/* --- ?gateway= 런타임 오버라이드 배너 (2026-09-14) — 눈에 띄게, 해제 가능하게 --- */
+.gateway-override-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-shrink: 0;
+  margin-bottom: 12px;
+  padding: 10px 16px;
+  border-radius: 12px;
+  background: var(--warn-bg);
+  color: var(--warn-fg);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.gateway-override-text code {
+  font-family: var(--mono);
+  font-weight: 500;
+  word-break: break-all;
+}
+
+.gateway-override-clear {
+  flex-shrink: 0;
+  padding: 6px 14px;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: var(--warn-fg);
+  color: var(--warn-bg);
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.gateway-override-clear:hover,
+.gateway-override-clear:focus-visible {
+  opacity: 0.85;
+  outline: none;
+}

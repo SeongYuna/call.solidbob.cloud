@@ -317,14 +317,15 @@ Environment Variables → **Production 만** → Deployments → Redeploy(`VITE_
 대시보드를 연 동안 `/gateway/health` 의 `dashboards` 가 1 이 되는지.
 
 - [ ] **A / B / C 중 무엇으로 할지** — 조서희 님(대시보드) · 정성윤(Vercel). 정하면 위 「뷰 토큰을 대시보드에 어떻게 줄지」와 함께 닫는다
-- [ ] **⚠ `?gateway=` 가 아무 WebSocket 주소나 받아 저장한다 — 운영 대시보드에 이미 떠 있다 (신규, 2026-09-11)** —
-  `apps/dashboard/src/lib/ws/types.ts` 가 `ws://`·`wss://` 로 **시작만 하면** 받아 localStorage 에 남긴다(PR #70 으로 배포,
+- [x] **⚠ `?gateway=` 가 아무 WebSocket 주소나 받아 저장한다 — 운영 대시보드에 이미 떠 있었다 (신규, 2026-09-11 · 2026-09-14 해결)** —
+  `apps/call/src/lib/ws/types.ts`(옛 `apps/dashboard`) 가 `ws://`·`wss://` 로 **시작만 하면** 받아 localStorage 에 남기고 있었다(PR #70 으로 배포,
   운영 번들 `index-ZZuCSHQN.js` 에 `callguard:gatewayUrlOverride` 확인). 그래서 `call.solidbob.cloud/?gateway=wss://<남의 서버>/ws` 링크
-  하나를 누른 브라우저는 `?gateway=clear` 를 하기 전까지 **그 서버에 붙고, 그 서버가 보내는 가짜 자막·「필요서류」 카드를 그대로 띄운다.**
-  상담원이 가짜 서류 안내를 믿고 고객에게 전하는 경로가 된다(a5·33 세션 확인, bc 세션이 운영 번들로 재확인).
-  **고치는 법**: ① 허용 목록 — `wss://server.solidbob.cloud/gateway/*` 와 `ws://localhost` · `ws://127.0.0.1`(로컬 개발)만 받고 나머지는 버린다
-  ② 덮어쓰기가 켜져 있는 동안 **화면에 눈에 띄는 배너**(어디에 붙었는지 + 해제 버튼). 코드는 `apps/`(조서희 님 전담, `decisions/302`)라
-  **이 기록은 고치지 않았다** — 누가 고칠지는 사용자·조서희 님이 정한다. 고치기 전까지는 A 를 쓰더라도 **모르는 `?gateway=` 링크를 열지 않는다**
+  하나를 누른 브라우저는 `?gateway=clear` 를 하기 전까지 **그 서버에 붙고, 그 서버가 보내는 가짜 자막·「필요서류」 카드를 그대로 띄웠다.**
+  상담원이 가짜 서류 안내를 믿고 고객에게 전하는 경로가 될 수 있었다(a5·33 세션 확인, bc 세션이 운영 번들로 재확인).
+  **고친 것**: ① `isAllowedGatewayUrl()` 허용 목록 — `wss://server.solidbob.cloud/gateway/*` 와 `ws://localhost` · `ws://127.0.0.1`(로컬 개발)만
+  받고 나머지는 조용히 버린다(서브도메인 스푸핑 `server.solidbob.cloud.evil.com` 같은 것도 정확한 hostname 비교라 걸린다)
+  ② `GatewayOverrideBanner.tsx` — 덮어쓰기가 켜져 있는 동안 화면 상단에 붙은 주소 + 「연결 해제」 버튼을 보여준다.
+  `npm run typecheck && npm run build` 통과 확인(사용자 지시로 조서희 진행).
 
 
 ### 배포하면 ES 가 매번 «configured» 로 나온다 (신규, 2026-09-11)
