@@ -16,7 +16,7 @@ paths:
 
 `server/apps/admin_auth/`(구글 로그인 · JWT(Redis) + refresh(RDS))가 **코드로는 main 에 올라갔는데
 운영에는 붙을 곳이 없다.** 지금 배포된 파드에서 `/admin/auth/*` 를 부르면 500 이다.
-앱 쪽 티켓([w4-admin-google-login](/backlog/w4-admin-google-login/), 조서희)과 **갈래가 다르다** —
+앱 쪽 티켓(`w4-admin-google-login`, 조서희 — 이 브랜치에 없어 링크를 걸지 않았다)과 **갈래가 다르다** —
 여기는 클러스터·시크릿·DB 쪽 몫이다.
 
 ## 왜 지금 티켓으로
