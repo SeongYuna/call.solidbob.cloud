@@ -33,3 +33,6 @@ class TranscriptEvent:
     is_final: bool
     utterance_end_ms: int | None = None  # is_final 일 때만 의미 있음 — 트리거 채점 기준점
     masked: tuple[MaskedSpan, ...] = field(default_factory=tuple)
+    # 게이트웨이가 STT 결과를 받은 시각 — utterance_end_ms 와 같은 통화 기준 ms. 실시간 경로만 채운다.
+    # 트리거가 발동 시각으로 쓴다(없으면 모형값). 골든셋·배치에는 없다 (w4-trigger-arrival-time)
+    received_at_ms: int | None = None

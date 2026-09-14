@@ -15,10 +15,16 @@
  *
  * 오디오가 한동안 안 오면(음소거 등) 구글이 같은 `OUT_OF_RANGE` 로 끊는다. 그때는 다음 오디오가
  * 올 때 새로 연다 — 채널을 닫지 않는다.
+ *
+ * **화자 분리(`diarize`, `speaker=auto` 채널만 — `decisions/303`)** 를 켜면 단어 시각·화자 라벨을 요청하고,
+ * final 결과를 **화자가 바뀌는 곳마다 잘라** `speakerLabel` 을 붙여 보낸다. 구글은 응답마다 처음부터의 단어를
+ * 다시 보내므로 이미 보낸 끝 시각 뒤의 단어만 친다(`domain/diarization.ts`). 설정이 V4 측정과 달라지므로
+ * 이 채널의 지연은 V4 수치로 인용하지 않는다.
  */
 import { EventEmitter } from "node:events";
 import speech from "@google-cloud/speech";
-import type { SttEngine, SttHandlers, SttStream } from "../app/ports.ts";
+import type { SttEngine, SttHandlers, SttOpenOptions, SttStream } from "../app/ports.ts";
+import { newRuns, type TaggedWord } from "../domain/diarization.ts";
 
 /** 구글 스트림에서 이 어댑터가 쓰는 부분만. 테스트는 이것을 가짜로 만든다. */
 export interface RecognizeStream extends EventEmitter {
@@ -26,7 +32,7 @@ export interface RecognizeStream extends EventEmitter {
   end(): void;
 }
 
-export type RecognizeStreamFactory = (sampleRate: number) => RecognizeStream;
+export type RecognizeStreamFactory = (sampleRate: number, diarize: boolean) => RecognizeStream;
 
 export interface RotationOptions {
   rotateAfterMs: number;
@@ -40,12 +46,18 @@ const OUT_OF_RANGE = 11;
 
 export function googleStreamFactory(): RecognizeStreamFactory {
   const client = new speech.SpeechClient();
-  return (sampleRate) =>
+  return (sampleRate, diarize) =>
     client.streamingRecognize({
       config: {
         encoding: "LINEAR16",
         sampleRateHertz: sampleRate,
         languageCode: "ko-KR",
+        ...(diarize
+          ? {
+              enableWordTimeOffsets: true,
+              diarizationConfig: { enableSpeakerDiarization: true, minSpeakerCount: 2, maxSpeakerCount: 2 },
+            }
+          : {}),
       },
       interimResults: true,
     }) as unknown as RecognizeStream;
@@ -62,8 +74,8 @@ export class GoogleSttEngine implements SttEngine {
     this.rotation = rotation;
   }
 
-  open(sampleRate: number, handlers: SttHandlers): SttStream {
-    return new RotatingStream(this.factory, sampleRate, this.rotation, handlers);
+  open(sampleRate: number, handlers: SttHandlers, options: SttOpenOptions = {}): SttStream {
+    return new RotatingStream(this.factory, sampleRate, this.rotation, handlers, options.diarize === true);
   }
 }
 
@@ -85,12 +97,22 @@ class RotatingStream implements SttStream {
   private ended = false;
   private endNotified = false;
   private fatal = false;
+  private readonly diarize: boolean;
+  /** 화자 분리 — 이 시각(채널 기준 ms)까지 끝난 단어는 이미 보냈다. */
+  private diarizedUntilMs = 0;
 
-  constructor(factory: RecognizeStreamFactory, sampleRate: number, rotation: RotationOptions, handlers: SttHandlers) {
+  constructor(
+    factory: RecognizeStreamFactory,
+    sampleRate: number,
+    rotation: RotationOptions,
+    handlers: SttHandlers,
+    diarize: boolean,
+  ) {
     this.factory = factory;
     this.sampleRate = sampleRate;
     this.rotation = rotation;
     this.handlers = handlers;
+    this.diarize = diarize;
   }
 
   write(pcm: Buffer): void {
@@ -120,7 +142,7 @@ class RotatingStream implements SttStream {
   }
 
   private openLeg(): Leg {
-    const leg: Leg = { stream: this.factory(this.sampleRate), baseMs: this.sentMs, done: false };
+    const leg: Leg = { stream: this.factory(this.sampleRate, this.diarize), baseMs: this.sentMs, done: false };
     this.legs.add(leg);
     this.current = leg;
     leg.stream.on("data", (response: unknown) => this.onData(leg, response));
@@ -150,6 +172,10 @@ class RotatingStream implements SttStream {
     const interims = results.filter((result) => result.isFinal !== true);
 
     for (const result of finals) {
+      if (this.diarize) {
+        this.emitDiarized(leg, result);
+        continue;
+      }
       this.handlers.onResult({ text: transcriptOf(result), isFinal: true, audioEndMs: this.endOf(leg, result) });
     }
     if (interims.length > 0) {
@@ -159,6 +185,30 @@ class RotatingStream implements SttStream {
     }
     if (finals.length > 0 && this.current === leg && this.sentMs - leg.baseMs >= this.rotation.rotateAfterMs) {
       this.retire(leg); // 발화 경계에서 갈아타면 문장이 두 스트림에 쪼개지지 않는다
+    }
+  }
+
+  /**
+   * final 하나를 화자 구간마다 나눠 보낸다. 단어 정보가 없으면(구글이 안 줬으면) 라벨 없이 통째로 보낸다 —
+   * 누구 말인지 모르는 결과를 어떻게 할지는 채널이 정한다.
+   */
+  private emitDiarized(leg: Leg, result: GoogleResult): void {
+    const words: TaggedWord[] = [];
+    for (const info of result.alternatives?.[0]?.words ?? []) {
+      const endMs = durationMs(info.endTime);
+      if (endMs === null) {
+        continue;
+      }
+      const label = (info.speakerLabel ?? "").trim() || (info.speakerTag ? String(info.speakerTag) : "");
+      words.push({ word: info.word ?? "", endMs: leg.baseMs + endMs, label: label || null });
+    }
+    if (words.length === 0) {
+      this.handlers.onResult({ text: transcriptOf(result), isFinal: true, audioEndMs: this.endOf(leg, result) });
+      return;
+    }
+    for (const run of newRuns(words, this.diarizedUntilMs)) {
+      this.handlers.onResult({ text: run.text, isFinal: true, audioEndMs: run.endMs, speakerLabel: run.label });
+      this.diarizedUntilMs = Math.max(this.diarizedUntilMs, run.endMs);
     }
   }
 
@@ -212,17 +262,22 @@ class RotatingStream implements SttStream {
   }
 }
 
+type GoogleDuration = { seconds?: number | string | { toString(): string }; nanos?: number };
+
 interface GoogleResult {
   isFinal?: boolean;
-  alternatives?: Array<{ transcript?: string }>;
-  resultEndTime?: { seconds?: number | string | { toString(): string }; nanos?: number };
+  alternatives?: Array<{
+    transcript?: string;
+    words?: Array<{ word?: string; endTime?: GoogleDuration; speakerTag?: number; speakerLabel?: string }>;
+  }>;
+  resultEndTime?: GoogleDuration;
 }
 
 function transcriptOf(result: GoogleResult): string {
   return result.alternatives?.[0]?.transcript ?? "";
 }
 
-function durationMs(value: { seconds?: number | string | { toString(): string }; nanos?: number } | undefined): number | null {
+function durationMs(value: GoogleDuration | undefined): number | null {
   if (value === undefined || value === null) {
     return null;
   }

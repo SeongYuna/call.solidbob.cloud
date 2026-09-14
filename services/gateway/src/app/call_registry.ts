@@ -5,6 +5,11 @@
  * **채널 = 화자 하나.** V1 실측이 전부 모노라 화자 분리는 채널로 한다(데모의 물리 2채널, A-2).
  * 한 통화에 `agent`·`customer` 채널이 하나씩 붙을 수 있고, 발화 번호는 통화 안에서 하나로 센다.
  *
+ * **`speaker: "auto"`** — 모노 녹음에 두 사람이 섞여 있을 때. 구글 화자 분리를 켜고 **먼저 말한 화자를 상담원**으로
+ * 친다(`domain/diarization.ts`, `decisions/303`). 추측이라 기본값이 아니고, 통화 기록의 엔진 이름에 `+diarize` 를
+ * 붙여 남긴다. 이 채널은 그 통화의 두 화자를 다 차지한다. 화자 라벨이 없는 결과(interim 전부)는 보내지 않는다
+ * — 누구 말인지 모르는 자막을 상담원·고객 어느 쪽으로도 지어내지 않는다.
+ *
  * 채널의 입력은 둘이다(`ChannelSpec.source`).
  * - `audio` — PCM 을 받아 구글 STT 로 전사한다. COST-1 캡을 쓴다
  * - `text`  — 브라우저가 이미 글자로 바꿔 보낸다(`/dev`, Web Speech API — `decisions/109`, 402 에서 옮김).
@@ -15,6 +20,7 @@
  * 로그에는 번호·상태 코드만 남긴다.
  */
 import { SegmentCounter, OpenSegment, utteranceEndMs } from "../domain/segments.ts";
+import { FirstSpeakerIsAgent } from "../domain/diarization.ts";
 import { pcm16Seconds } from "../domain/budget.ts";
 import type { BudgetGuard } from "./budget_guard.ts";
 import { CoalescingQueue } from "./coalescing_queue.ts";
@@ -30,9 +36,12 @@ import {
   type SttStream,
 } from "./ports.ts";
 
+/** 채널이 맡는 화자. `auto` 는 모노 한 줄의 두 화자를 구글 화자 분리로 가른다(오디오 채널만). */
+export type ChannelSpeaker = Speaker | "auto";
+
 export interface ChannelSpec {
   callId: string;
-  speaker: Speaker;
+  speaker: ChannelSpeaker;
   sampleRate: number;
   /** 이 통화에 붙을 채널 수(1 = 모노, 2 = 물리 분리). `call.channel_count` 로 간다. */
   channelCount: number;
@@ -42,6 +51,8 @@ export interface ChannelSpec {
 
 /** 글자 입력 채널이 `call.stt_engine` 에 적는 이름 — 구글 STT 가 아니라는 것을 기록에 남긴다. */
 export const TEXT_ENGINE_NAME = "web-speech";
+/** 화자 분리 채널이 엔진 이름 뒤에 붙인다 — 화자가 추측이라는 것을 통화 기록에 남긴다(`call.stt_engine` 30자 안). */
+export const DIARIZE_ENGINE_SUFFIX = "+diarize";
 
 export type OpenResult =
   | { ok: true; channel: Channel }
@@ -56,13 +67,19 @@ export interface RegistryDeps {
   nowMs: () => number;
   /** 채널을 닫을 때 남은 결과를 기다리는 최대 시간. */
   drainTimeoutMs?: number;
+  /**
+   * 추천 요청 직전에 `recommendation_pending` 을 대시보드로 보낼까. 기본 false —
+   * `apps/call` 의 실서버 파서가 모르는 `type` 에 오류 배너를 띄워서, 수신 코드가 들어가기 전에 켜면
+   * 라이브 화면이 깨진다(`w4-recommendation-pending-contract`).
+   */
+  announcePending?: boolean;
 }
 
 interface CallState {
   readonly callId: string;
   readonly startedAtMs: number;
   readonly counter: SegmentCounter;
-  readonly channels: Map<Speaker, Channel>;
+  readonly channels: Map<ChannelSpeaker, Channel>;
   started: Promise<boolean>;
 }
 
@@ -79,8 +96,11 @@ export class CallRegistry {
   }
 
   async open(spec: ChannelSpec): Promise<OpenResult> {
+    if (spec.speaker === "auto" && spec.source === "text") {
+      return { ok: false, kind: "unavailable", reason: "화자 분리(auto)는 오디오 채널만 된다" };
+    }
     const existing = this.calls.get(spec.callId);
-    if (existing?.channels.has(spec.speaker)) {
+    if (existing !== undefined && conflicts(existing, spec.speaker)) {
       return { ok: false, kind: "busy", reason: `이 통화의 ${spec.speaker} 채널이 이미 열려 있다` };
     }
 
@@ -101,7 +121,7 @@ export class CallRegistry {
       return { ok: false, kind: "unavailable", reason: "서버에 통화를 열지 못했다(POST /hub/calls)" };
     }
     // 기다리는 사이 같은 화자가 먼저 붙었을 수 있다.
-    if (call.channels.has(spec.speaker)) {
+    if (conflicts(call, spec.speaker)) {
       return { ok: false, kind: "busy", reason: `이 통화의 ${spec.speaker} 채널이 이미 열려 있다` };
     }
 
@@ -127,7 +147,10 @@ export class CallRegistry {
       started: Promise.resolve(false),
     };
     this.calls.set(spec.callId, call);
-    const engine = (spec.source ?? "audio") === "text" ? TEXT_ENGINE_NAME : this.deps.stt.name;
+    const engine =
+      (spec.source ?? "audio") === "text"
+        ? TEXT_ENGINE_NAME
+        : `${this.deps.stt.name}${spec.speaker === "auto" ? DIARIZE_ENGINE_SUFFIX : ""}`;
     call.started = this.deps.hub
       .startCall({ call_id: spec.callId, stt_engine: engine, channel_count: spec.channelCount })
       .then(
@@ -147,15 +170,25 @@ export class CallRegistry {
   }
 }
 
+/** `auto` 는 두 화자를 다 차지한다 — 같은 통화에 다른 채널과 함께 열리지 않는다. */
+function conflicts(call: CallState, speaker: ChannelSpeaker): boolean {
+  if (call.channels.has(speaker) || call.channels.has("auto")) {
+    return true;
+  }
+  return speaker === "auto" && call.channels.size > 0;
+}
+
 interface QueuedResult {
   segmentId: number;
   isFinal: boolean;
   raw: RawTranscript;
+  /** STT 결과를 받은 시각(통화 시작 기준 ms). 서버 대기·마스킹 시간을 섞지 않으려고 줄에 넣기 전에 잰다. */
+  receivedAtMs: number;
 }
 
 export class Channel {
   readonly callId: string;
-  readonly speaker: Speaker;
+  readonly speaker: ChannelSpeaker;
   private readonly spec: ChannelSpec;
   private readonly deps: RegistryDeps;
   private readonly channelStartMs: number;
@@ -166,6 +199,8 @@ export class Channel {
   private readonly stt: SttStream;
   private readonly onDetach: () => void;
   private readonly inflight = new Set<Promise<void>>();
+  /** `auto` 채널만 — 화자 라벨 → 상담원·고객. */
+  private readonly speakers: FirstSpeakerIsAgent | null;
   private readonly stopListeners: Array<(reason: string) => void> = [];
   private closed = false;
   private sttEnded: Promise<void>;
@@ -182,6 +217,7 @@ export class Channel {
     this.channelStartMs = this.openedAtMs - call.startedAtMs;
     this.isText = spec.source === "text";
     this.segment = new OpenSegment(call.counter);
+    this.speakers = spec.speaker === "auto" ? new FirstSpeakerIsAgent() : null;
     this.queue = new CoalescingQueue((item) => this.forward(item));
     this.sttEnded = new Promise((resolve) => {
       this.resolveSttEnded = resolve;
@@ -189,11 +225,15 @@ export class Channel {
     this.stt = this.isText
       ? // 글자 채널은 열 STT 가 없다. 끝낼 때 기다릴 것도 없다.
         { write: () => {}, end: () => this.resolveSttEnded() }
-      : deps.stt.open(spec.sampleRate, {
-          onResult: (result) => this.onResult(result),
-          onFatal: (message) => this.stop(`STT 오류 — ${message}`),
-          onEnd: () => this.resolveSttEnded(),
-        });
+      : deps.stt.open(
+          spec.sampleRate,
+          {
+            onResult: (result) => this.onResult(result),
+            onFatal: (message) => this.stop(`STT 오류 — ${message}`),
+            onEnd: () => this.resolveSttEnded(),
+          },
+          { diarize: this.speakers !== null },
+        );
   }
 
   /** 채널이 스스로 닫힐 때(캡 도달·STT 오류) 이유를 받는다. 소켓을 닫는 데 쓴다. */
@@ -271,6 +311,17 @@ export class Channel {
   }
 
   private onResult(result: SttResult): void {
+    let speaker: Speaker;
+    if (this.speakers === null) {
+      speaker = this.speaker as Speaker;
+    } else if (result.speakerLabel !== undefined) {
+      speaker = this.speakers.speakerOf(result.speakerLabel);
+    } else {
+      if (result.isFinal) {
+        this.deps.log.warn(`화자 라벨 없는 final 을 버렸다 call=${this.callId} — 누구 말인지 지어내지 않는다`);
+      }
+      return; // interim 은 라벨이 없다 — auto 채널은 final 만 흘린다
+    }
     const segmentId = this.segment.idFor(result.isFinal);
     if (result.text.trim().length === 0) {
       return;
@@ -278,10 +329,11 @@ export class Channel {
     this.queue.push({
       segmentId,
       isFinal: result.isFinal,
+      receivedAtMs: Math.max(0, this.deps.nowMs() - this.openedAtMs + this.channelStartMs),
       raw: {
         call_id: this.callId,
         segment_id: segmentId,
-        speaker: this.speaker,
+        speaker,
         text: result.text,
         is_final: result.isFinal,
         utterance_end_ms: utteranceEndMs(this.channelStartMs, result.audioEndMs),
@@ -313,14 +365,21 @@ export class Channel {
    * 을 넘기기만 한다. 다음 자막을 막지 않도록 줄 밖에서 돈다.
    */
   private async recommend(item: QueuedResult, maskedText: string): Promise<void> {
+    if (this.deps.announcePending === true) {
+      this.deps.broadcaster.publish(this.callId, {
+        type: "recommendation_pending",
+        payload: { call_id: this.callId, segment_id: String(item.segmentId) },
+      });
+    }
     try {
       const payload = await this.deps.hub.recommend({
         call_id: this.callId,
         segment_id: item.segmentId,
-        speaker: this.speaker,
+        speaker: item.raw.speaker,
         text: maskedText,
         is_final: true,
         utterance_end_ms: item.raw.utterance_end_ms,
+        received_at_ms: item.receivedAtMs,
       });
       this.deps.broadcaster.publish(this.callId, { type: "recommendation", payload });
     } catch (error) {

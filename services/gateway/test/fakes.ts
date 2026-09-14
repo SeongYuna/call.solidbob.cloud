@@ -14,6 +14,7 @@ import {
   type RecommendRequest,
   type SttEngine,
   type SttHandlers,
+  type SttOpenOptions,
   type SttStream,
 } from "../src/app/ports.ts";
 
@@ -26,12 +27,14 @@ export function newLog(): Logger & { warnings: string[] } {
 export class FakeSttStream implements SttStream {
   readonly handlers: SttHandlers;
   readonly sampleRate: number;
+  readonly options: SttOpenOptions;
   bytes = 0;
   ended = false;
 
-  constructor(sampleRate: number, handlers: SttHandlers) {
+  constructor(sampleRate: number, handlers: SttHandlers, options: SttOpenOptions = {}) {
     this.sampleRate = sampleRate;
     this.handlers = handlers;
+    this.options = options;
   }
 
   write(pcm: Buffer): void {
@@ -46,8 +49,8 @@ export class FakeSttStream implements SttStream {
     queueMicrotask(() => this.handlers.onEnd());
   }
 
-  emit(text: string, isFinal: boolean, audioEndMs: number): void {
-    this.handlers.onResult({ text, isFinal, audioEndMs });
+  emit(text: string, isFinal: boolean, audioEndMs: number, speakerLabel?: string): void {
+    this.handlers.onResult({ text, isFinal, audioEndMs, ...(speakerLabel === undefined ? {} : { speakerLabel }) });
   }
 }
 
@@ -56,8 +59,8 @@ export class FakeStt implements SttEngine {
   unavailableReason: string | null = null;
   readonly streams: FakeSttStream[] = [];
 
-  open(sampleRate: number, handlers: SttHandlers): SttStream {
-    const stream = new FakeSttStream(sampleRate, handlers);
+  open(sampleRate: number, handlers: SttHandlers, options: SttOpenOptions = {}): SttStream {
+    const stream = new FakeSttStream(sampleRate, handlers, options);
     this.streams.push(stream);
     return stream;
   }
@@ -129,8 +132,10 @@ export class CaptureBroadcaster implements Broadcaster {
     this.messages.push({ callId, message });
   }
 
-  ofType(type: GatewayMessage["type"]): GatewayMessage[] {
-    return this.messages.filter((item) => item.message.type === type).map((item) => item.message);
+  ofType<T extends GatewayMessage["type"]>(type: T): Array<Extract<GatewayMessage, { type: T }>> {
+    return this.messages
+      .map((item) => item.message)
+      .filter((message): message is Extract<GatewayMessage, { type: T }> => message.type === type);
   }
 }
 

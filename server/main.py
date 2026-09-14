@@ -113,7 +113,7 @@ def _wire_trigger(app: FastAPI) -> str | None:
 
 
 def _install_missing_index_handler(app: FastAPI) -> None:
-    """ES 인덱스가 없을 때 500 대신 **503 + 이유**를 돌려준다.
+    """ES 인덱스가 없거나 ES 에 연결하지 못할 때 500 대신 **503 + 이유**를 돌려준다.
 
     운영 ES 에 지식베이스가 적재되지 않은 채로 검색 스포크가 꽂히면 `/hub/search`·
     `/hub/recommendations` 가 `index_not_found_exception` 으로 500 이 났다(2026-09-08~09 실측).
@@ -137,6 +137,22 @@ def _install_missing_index_handler(app: FastAPI) -> None:
         )
 
     app.add_exception_handler(NotFoundError, _handler)
+
+    # ES 에 **연결 자체를** 못 할 때도 같다(2026-09-14, `w4-es-unreachable-503`) — 로컬에 ES 가 없거나
+    # 파드가 내려가 있으면 500 이었다. 인덱스 없음과 달리 고칠 곳은 적재가 아니라 ES 기동이다.
+    # 예외 메시지에는 ES 주소가 들어 있어 본문에 싣지 않는다(SEC-2).
+    from elasticsearch import ConnectionError as EsConnectionError  # noqa: PLC0415
+    from elasticsearch import ConnectionTimeout as EsConnectionTimeout  # noqa: PLC0415
+
+    async def _unreachable(_: Request, exc: Exception) -> JSONResponse:
+        return JSONResponse(
+            status_code=503,
+            content={"detail": "검색 엔진(Elasticsearch)에 연결하지 못했다 — ES 가 떠 있는지 확인해야 한다 "
+                               f"({type(exc).__name__})"},
+        )
+
+    app.add_exception_handler(EsConnectionError, _unreachable)
+    app.add_exception_handler(EsConnectionTimeout, _unreachable)
 
 
 @asynccontextmanager
