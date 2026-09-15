@@ -22,8 +22,16 @@ class _Clean(CompliancePort):
         return []
 
 
-def test_스포크가_없으면_501이다():
-    """빈 목록으로 200 을 주면 '탐지가 죽은 것'이 '위반 없음'으로 읽힌다."""
+def test_스포크가_없으면_501이다(monkeypatch):
+    """빈 목록으로 200 을 주면 '탐지가 죽은 것'이 '위반 없음'으로 읽힌다.
+
+    2026-09-15 부터 합성 루트가 `ai/` 규칙 스포크를 꽂는다(`_wire_compliance`) — 콜 가드 테스트와 같이
+    배선을 꺼서 「스포크가 없는 배포」를 재현한다.
+    """
+    import main
+
+    monkeypatch.setattr(main, "_wire_compliance", lambda app: None)
+    app.dependency_overrides.pop(get_compliance_port, None)
     with TestClient(app) as client:
         r = client.post("/hub/compliance-checks", json=BODY)
     assert r.status_code == 501

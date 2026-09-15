@@ -2,7 +2,7 @@
 title: "J-5 — 블랙리스트 고객을 베테랑 상담사에게 배정"
 assignee: "류준"
 role: "ai"
-status: "in-progress"
+status: "done"
 sprint: 4
 priority: 7
 date: 2026-09-09
@@ -12,7 +12,7 @@ depends_on:
   - "w4-blacklist-request-flow"
 paths:
   - "server/apps/blacklist/domain/services/routing.py"
-note: "장민석 server 브랜치 머지 후 진행 — 고객 식별(발신 번호 HMAC)이 먼저 필요"
+note: "09-15 남은 배선·후보 출처는 w4-j5-routing-decision(장민석, decisions/313)에서 끝났다"
 ---
 
 ## 무엇을
@@ -42,3 +42,10 @@ C-6 이 상담원을 보호하는 방식은 「경고」까지다. **가장 확�
   하는데(발신 번호 HMAC, `decisions/304`) 그게 그 브랜치에만 있다. main 기준으로 지금 만들면 고객 식별·등록 조회를 한 번 더 만든다.
   **그 뒤에도 먼저 정할 것**: 「지금 받을 수 있는 상담원」 목록이 시스템 어디에도 없다 — `route()` 에 넘길 후보를 어디서 얻는가
 
+
+## 2026-09-15 — 이 티켓의 남은 일은 [w4-j5-routing-decision](/backlog/w4-j5-routing-decision/)(장민석)에서 끝났다
+
+- 같은 날 장민석 님이 **인입 전 배정 판정 API**(`POST /hub/routing-decisions`, 후보 명단은 부르는 쪽이 준다)와 근속 기준 설정을 만들었다 — `decisions/313`
+- 이 티켓이 막혀 있던 두 가지(고객 식별 · 후보 상담원 출처)가 거기서 둘 다 풀렸다. **완료는 그 티켓에서 센다** — 이 티켓은 규칙(`route()`)·스키마까지의 기록으로 닫는다
+- 류준 몫으로 한 일은 없다. 처음엔 「후보 출처가 설계 질문으로 남았다」고 적었다가 main 을 받고 313 을 보고 고쳤다
+- 313 이 남긴 것: **부르는 곳(교환기·게이트웨이)이 아직 없다** · 근속 기준값의 근거 없음 · `fell_back` 집계 화면 없음

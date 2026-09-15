@@ -44,8 +44,11 @@ def _print_masking_coverage(coverage: dict[str, list[str]]) -> None:
     uncovered = coverage.get("uncovered") or []
     fallback = coverage.get("rule_fallback") or []
     print(f"  측정한 패턴: {', '.join(measured) if measured else '없음'}")
+    ner = coverage.get("ner_layered") or []
     if fallback:
         print(f"  규칙 폴백(명세는 NER): {', '.join(fallback)}")
+    if ner:
+        print(f"  NER + 규칙 두 겹: {', '.join(ner)}")
     if uncovered:
         print(f"  ⚠ 표본 없는 패턴: {', '.join(uncovered)} — 이 패턴은 판정된 적이 없다")
         print("     「누락 0건」은 위 '측정한 패턴' 범위 안에서만 성립한다 (절대 원칙 10)")

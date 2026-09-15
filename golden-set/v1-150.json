@@ -223,12 +223,12 @@
       "pii_patterns": [
         {
           "pattern": "P6",
-          "raw_span": "",
-          "masked_expected": false
+          "raw_span": "김민준",
+          "masked_expected": true
         }
       ],
       "f2_case": null,
-      "notes": "⚠ 규칙의 한계를 고정하는 음성 케이스(P6) — 문맥 없는 인명은 규칙으로 못 잡는다. NER 이 붙으면 이 항목을 masked_expected: true 로 뒤집는다.",
+      "notes": "문맥 없는 인명(P6) — 규칙 폴백은 구조적으로 못 잡는다. 2026-08-27~09-14 에는 그 한계를 고정하는 음성 케이스(masked_expected: false)였고, 2026-09-15 NER(ai/apps/pii_ner)이 붙으며 예고대로 true 로 뒤집었다(w5-ner-p6-p7). --no-ner 로 재면 이 항목이 누락으로 잡힌다 — 그게 규칙만의 한계다.",
       "source": "authored"
     },
     {

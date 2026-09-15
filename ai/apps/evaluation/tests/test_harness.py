@@ -4,7 +4,7 @@
 구현한 가짜 객체를 꽂았을 때 golden-set → metrics로 데이터가 올바르게 흘러가는지 두 가지만
 확인한다. 실제 정확도 수치를 여기서 하드코딩하지 않는다 (6.2절 원칙 5)."""
 
-from evaluation.golden_set import load_golden_set
+from evaluation.golden_set import GoldenItem, PiiPattern, load_golden_set
 from evaluation.harness import NO_SAMPLES, NOT_IMPLEMENTED, Ports, run_eval
 from hub.app.dtos import ClosureVerdict, DomainClassification, MaskedSpan, TranscriptEvent, TriggerDecision
 from hub.app.ports.output import ClosureGatePort, DomainRoutingPort, MaskingPort, TriggerPort
@@ -116,3 +116,26 @@ def test_masking_wiring_reports_misses_per_pattern():
     assert result["miss_count"] > 0
     non_digit = {p.pattern for it in items for p in it.pii_patterns if p.pattern in ("P6", "P7")}
     assert non_digit, "숫자가 아닌 PII 표본이 없어 이 테스트가 아무것도 검증하지 못한다"
+
+
+class _HalfAddressMasking(MaskingPort):
+    """주소 앞 어절만 가리고 번지를 남기는 가짜 — 2026-09-15 까지 하네스가 **통과로 셌던** 모양이다."""
+
+    def mask(self, text: str):
+        target = "성북구 정릉로"
+        idx = text.find(target)
+        if idx < 0:
+            return text, ()
+        return text[:idx] + "*" * len(target) + text[idx + len(target):], (MaskedSpan(type="P7", span=(idx, idx + len(target))),)
+
+
+def test_partial_mask_leaving_house_number_is_a_miss():
+    """`raw_span not in masked_text` 는 조각 하나만 가려져도 참이었다 — 번지가 보이는데 통과였다(GS-415)."""
+    items = [
+        GoldenItem(
+            id="GS-T1", module="C-5", customer_utterance="성북구 정릉로 77길 12에서 물이 새요",
+            pii_patterns=[PiiPattern(pattern="P7", raw_span="성북구 정릉로 77길 12", masked_expected=True)],
+        )
+    ]
+    result = run_eval(items, Ports(masking=_HalfAddressMasking()))["masking"]
+    assert result["miss_count"] == 1 and result["absolute_rule_passed"] is False
