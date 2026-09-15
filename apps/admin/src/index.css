@@ -3013,6 +3013,15 @@ button {
   color: inherit;
   font: inherit;
 }
+.admin-entry-reason-input {
+  width: 180px;
+  padding: 6px 8px;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+}
 .admin-entry-row { flex-wrap: wrap; justify-content: space-between; }
 .admin-entry-row-main { display: flex; align-items: center; gap: 12px; flex: 1; min-width: 140px; }
 .admin-entry-row-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }

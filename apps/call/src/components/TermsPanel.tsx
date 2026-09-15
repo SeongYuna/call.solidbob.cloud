@@ -188,6 +188,9 @@ function TermCard({
   const adopted = useCallStore(
     (state) => state.adoptions[cardId(item.card)]?.adopted === true,
   );
+  // 채택 기록은 `state.callId`(실시간 통화)에 귀속된다 — 상담기록 조회 중엔 그 통화가
+  // 아니므로 토글을 아예 숨긴다(엉뚱한 통화에 채택 기록이 붙는 것을 막는다).
+  const isHistory = useCallStore((state) => state.viewMode === "history");
   const category = categoryFromDocId(item.card.source.doc_id);
   const closure = item.closure;
   const manual = cardSourceType(item.card) === "manual";
@@ -219,7 +222,7 @@ function TermCard({
               {closure?.is_example === true ? (
                 <span className="example-badge">예시</span>
               ) : null}
-              <AdoptToggle adopted={adopted} onToggle={onAdopt} />
+              {isHistory ? null : <AdoptToggle adopted={adopted} onToggle={onAdopt} />}
             </div>
             <h3>{item.card.title}</h3>
             <p className="card-summary">{item.card.summary}</p>

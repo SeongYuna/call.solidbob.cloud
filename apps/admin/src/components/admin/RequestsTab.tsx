@@ -132,7 +132,7 @@ function RequestCard({
         <input
           type="number"
           min={1}
-          max={24}
+          max={12}
           value={expiryMonths}
           onChange={(event) => {
             const next = Number(event.target.value);

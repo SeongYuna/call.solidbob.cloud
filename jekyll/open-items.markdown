@@ -497,14 +497,36 @@ Environment Variables → **Production 만** → Deployments → Redeploy(`VITE_
 
 - [x] **카드 피드백(`POST /hub/cards/{id}/feedback`)을 부를 방법이 없다** → **같은 날
   장민석이 풀었다**(`decisions/308` — 추천 카드에 `card_id` 추가, 아래 섹션 참고).
-  ⚠ 남은 것: `card_id`가 **문자열**로 온다 — `coreClient.ts`의 `submitCardFeedback`은
-  숫자를 기대한다(아래 「프론트 수정 5건」 ③과 같은 지적).
-- [ ] **상담기록(통화 재생) 화면을 실제 API로 못 바꾼다** — `apps/call`의 "상담기록"은 지금
+  → **2026-09-15 조서희가 마저 처리** — `coreClient.ts`의 `submitCardFeedback`을 문자열
+  타입으로 정정(아래 「프론트 수정 5건」 ③과 같은 항목). 화면(`TermsPanel`)에는 아직 연결 안 함.
+- [x] **상담기록(통화 재생) 화면을 실제 API로 못 바꾼다** — `apps/call`의 "상담기록"은 지금
   카드·종결·감정분석까지 통째로 재생하는 mock 시나리오(`mock/callHistory.ts`) 기반인데,
   실제 API(`GET /hub/calls`·`GET /hub/calls/{id}/transcript`)는 통화 목록+자막만 준다 —
   카드·종결·감정분석 재조회 엔드포인트가 없다. REST 함수(`fetchCallList`·
   `fetchCallTranscript`)는 만들어 뒀다. → **같은 날 장민석이 `GET /hub/calls/{id}/record`를
   만들었다**(아래 섹션 참고, 감정분석은 모델이 없어 빈 채로). 화면 연결은 아직.
+  → **2026-09-15 조서희가 재설계·연결** — 코드를 보다가 `historyCards`·`historySegments`
+  등 인라인 자막 재생용 상태가 `TranscriptPanel`·`TermsPanel`에 이미 있는데 `App.tsx`의
+  `showSummary`(`viewMode === "history"`면 무조건 요약 화면으로 이동)에 가려 **실제로는
+  절대 렌더링되지 않는 죽은 코드**였던 걸 발견했다(`.claude/rules/call.md`가 적어 둔
+  "왼쪽 자막 패널이 그 기록을 보여준다"는 설계와 실제 동작이 어긋나 있었다). 사용자 지시
+  ("둘 다 살리는 방향으로")에 따라 죽이지 않고 **요약 보기·자막 보기 두 화면을 오가는
+  토글**로 되살렸다 — `historyView: "record" | "transcript"`(신규) 상태를 추가하고
+  `App.tsx`의 `showSummary`를 `phase === "wrapup" || (viewMode === "history" && historyView
+  === "record")`로 좁혔다. `openHistory`가 실 API 설정 시 `fetchCallTranscript` +
+  `fetchCallRecord`(신규, `coreClient.ts`)를 병렬로 불러 `historySegments`·`historyCards`를
+  채운다 — 카드/판정은 실제 계약이 서로 다른 배열(`recommendations[].cards[]` vs
+  `closures[]`)이라 mock처럼 "카드 하나에 판정 하나"가 아니다: 실 카드는 판정 없이
+  그대로, 판정마다 표시용 카드를 하나 따로 만든다(`panelCardsFromRecord`). 번역·TTS·
+  콜가드·악센트 힌트 재생은 실서버에 애초에 없어 항상 빈 채로 둔다(정직하게 — 지어내지
+  않는다). `CallHistoryPanel`(목록)도 실 API 분기 추가(`GET /hub/calls`, "다시 재생"은
+  mock 전용이라 뺐다). 카드 채택 토글은 상담기록 조회 중엔 숨김(채택 기록이 `state.callId`
+  — 실시간 통화 — 에 귀속돼 엉뚱한 통화에 붙는 걸 막는다). 확정된 요약이면 "요약 확정"
+  폼이 잠긴 채 열려 곧바로 재수정할 수 있다(`historyConfirmed` prop). **버그 하나 잡음**:
+  대기화면의 「최근 상담기록」에서 열면 `shell`이 `standby`로 남아 있어 자막 보기로
+  전환하는 순간 대기화면이 대신 떴다 — `openHistory`가 `shell: "assist"`도 같이 정하도록
+  고쳤다. 헤드리스 크롬 + CDP로 mock 모드 왕복(목록→요약→자막→요약→실시간 복귀) 스크린샷
+  확인, 콘솔 에러 없음. `apps/call` `tsc --noEmit`·`vite build` 클린.
 - [ ] **관리자 "지식베이스 갭" 화면이 실제 계약과 모양이 다르다** — 화면(`KnowledgeGapTab.tsx`)은
   지금 `{call_id, query, found}`(상담원이 직접 검색해 못 찾은 질의) 기준으로 묶어 세는데,
   실제 `GET /hub/knowledge-gaps` 계약은 `{module: B|C|F, description, status: open|resolved}`
@@ -519,9 +541,11 @@ Environment Variables → **Production 만** → Deployments → Redeploy(`VITE_
   09-14 마이그레이션이 먼저 들어가 있어야 한다(파일이 확인하고 멈춘다). 안 넣으면 `POST /hub/blacklist-requests`·`/admin/agent-tokens` 가 500(`42P01`).
   ⚠ **09-14 마이그레이션 적용 후 출력도 아직 아무도 찍지 않았다** — 같은 SSM 세션에서 런북 19장 6번(테이블 수)으로 둘 다 확인한다.
   `server` 브랜치는 이미지 태그를 **일부러** 안 올렸다 — 머지 = 배포라 순서가 뒤집히지 않게
-- [ ] **조서희 님께 — 블랙리스트 요청 계약이 바뀌었다**(`decisions/307`) — `POST /hub/blacklist-requests` 는 `Authorization: Bearer cga_…`(상담원 토큰)이 필요하고
+- [x] **조서희 님께 — 블랙리스트 요청 계약이 바뀌었다**(`decisions/307`) — `POST /hub/blacklist-requests` 는 `Authorization: Bearer cga_…`(상담원 토큰)이 필요하고
   본문에서 `requested_by` 가 빠졌다(실어도 무시). 토큰은 관리자가 `POST /admin/agent-tokens {agent_id}` 로 발급하며 **응답에서 한 번만 보인다.**
-  **정할 것**: ① `apps/call` 이 토큰을 어디에 두는지(입력 · sessionStorage) ② `apps/admin` 에 발급·목록·폐기 화면을 둘지
+  → **2026-09-15 조서희가 처리** — ① `apps/call`은 기존 `liveCallToken.ts`(`apps/platform`)와 같은 패턴으로
+  `?agent_token=` URL 쿼리 한 번 → sessionStorage(`lib/agentToken.ts`) ② `apps/admin`의 `SettingsTab.tsx`에
+  발급·목록·폐기 화면을 새로 뒀다(원문 1회 노출 + 복사 버튼)
 - [ ] **상담원 토큰을 어디까지 걸지** — 지금 가드가 달린 곳은 블랙리스트 요청 하나다. 카드 피드백·수동 검색·통화 목록·전사 조회 등은 인증이 없다.
   모두 걸면 게이트웨이(`services/gateway`)가 부르는 허브 API 와 겹치는 것부터 갈라야 한다. **토큰 만료도 없다** — 폐기로만 끊는다
   ⚠ **카드 피드백(`POST /hub/cards/{id}/feedback`)은 걸면 안 된다** — 상담원 ID 를 **일부러** 받지 않는 API 다(부록 A-1, 상담원 단위 집계 금지).
@@ -538,7 +562,7 @@ Environment Variables → **Production 만** → Deployments → Redeploy(`VITE_
 - [ ] **관리자 가드가 «헤더 없음» 에도 500 이다 — 운영에서 확인 (2026-09-15)** — `0.1.8` 배포 뒤 `GET /admin/agent-tokens`·`GET /hub/blacklist-requests`·`/admin/auth/me` 가 로그인 없이 **401 이 아니라 500**.
   `require_admin` 이 `Authorization` 을 보기 전에 `get_current_admin_use_case` → Redis 프로바이더를 먼저 풀어, Redis 가 없으면 `RuntimeError` 가 난다. 운영 Redis(`w4-admin-auth-runtime`, 정성윤 님)가 붙으면 증상은 사라지지만
   **헤더가 없으면 인프라를 타기 전에 401** 이 맞다 — 가드에서 헤더 검사를 의존성 해석보다 앞에 두는 수정은 `server/` 몫(장민석). 이 상태로는 운영에서 상담원 토큰을 발급할 수 없다
-- [ ] **조서희 님께 — `frontend` 병합분 대조에서 나온 프론트 수정 5건 (2026-09-15, 장민석)** — `apps/` 는 전담 영역이라 서버 쪽만 고치고 여기 모은다.
+- [x] **조서희 님께 — `frontend` 병합분 대조에서 나온 프론트 수정 5건 (2026-09-15, 장민석)** — `apps/` 는 전담 영역이라 서버 쪽만 고치고 여기 모은다.
   서버 쪽은 같은 날 고쳤다: 관리자·상담원 가드가 헤더 없으면 401 · 추천 카드에 `card_id`(`decisions/308`).
   ① **막힘 — 블랙리스트 요청**(`apps/call/src/lib/api/coreClient.ts` `createBlacklistRequest`): 헤더 없이 본문 `requested_by` 를 보낸다 → 운영 `0.1.8` 에서 **늘 401**.
   `Authorization: Bearer cga_…`(관리자가 `/admin/agent-tokens` 로 발급) 를 붙이고 `requested_by` 를 뺀다. 토큰을 어디에 두고 누가 넣을지는 화면이 정한다(`decisions/307`)
@@ -547,23 +571,41 @@ Environment Variables → **Production 만** → Deployments → Redeploy(`VITE_
   ④ 해제 사유가 `"관리자 해제"` 고정(`AdminPanel.tsx`) — 동작은 하지만 왜 풀었는지가 남지 않는다
   ⑤ `fetchCallList` 주석 「`customer_id` 늘 null」 은 낡았다 — 발신 번호가 넘어온 통화는 채워진다
   ✅ 맞는 것: 관리자 `hubClient.ts` 경로·필드 전부 · 통화 목록·자막·수동 검색 · WS `closure`(procedure·complete/incomplete)·`call_guard`(영어 4종)·`recommendation_pending` 파서. `apps/call` `tsc --noEmit` 통과
-- [ ] **조서희 님께 — 상담기록 재생·블랙리스트 연장 API 가 생겼다 (2026-09-15, 장민석)** — 조서희 님 쪽 보고 「끝까지 못 한 것」 3·4번의 서버 몫이다.
+  → **2026-09-15 조서희가 ①~④ 처리** — ① 토큰 인증으로 교체(위 항목 참고) ② `RequestsTab.tsx`·`EntriesTab.tsx`·`SettingsTab.tsx`
+  상한 24→12개월 ③ `card_id`/`feedback_id` 문자열로 정정(`coreClient.ts`·`types/contract.ts`·`realGatewayClient.ts`) ④ `EntriesTab.tsx`에
+  사유 입력창 추가, `AdminPanel.tsx`가 하드코딩 대신 실제 사유를 넘긴다(연장도 같이). **⑤는 아직 안 고쳤다** — 남겨 둔다.
+  `apps/call`·`apps/admin` 둘 다 `tsc --noEmit`·`vite build` 클린
+- [x] **조서희 님께 — 상담기록 재생·블랙리스트 연장 API 가 생겼다 (2026-09-15, 장민석)** — 조서희 님 쪽 보고 「끝까지 못 한 것」 3·4번의 서버 몫이다.
   ③ **`GET /hub/calls/{call_id}/record`** — 한 통화의 요약 초안·후속조치·추천(카드 `card_id` 포함)·필요서류 판정(서류별)을 한 번에. 전사는 기존 `…/transcript`.
   **감정분석은 저장되지 않아 없다**(모델 없음) — 재생 화면의 그 칸은 비워 둔다. `0.1.9` 전 통화는 추천이 저장되지 않아 `recommendations: []`
   ④ **`POST /hub/blacklist-entries/{id}/expiry {expires_in_days, reason}`** + **`GET …/expiry-changes`** — 연장·단축 모두 «지금부터 N일 뒤»(1~365), 사유 필수.
   `decisions/205` 「연장은 새 요청으로만」 을 **철회**했다(`decisions/309`). 관리자 화면 `extendEntry`(개월 × 30, 로컬)를 이 API 로 바꾸고 사유 입력을 받는다
   ✅ **2026-09-15 운영 반영**(서버 `0.1.9`, 운영 DB 27 테이블 확인) — 붙여도 된다
+  → **2026-09-15 조서희가 ④ 처리** — `adminStore.ts`의 `extendEntry`를 로컬 날짜계산 mock에서
+  `POST .../expiry`(사유 필수) 실호출로 바꿨다. `GET …/expiry-changes`(이력 조회 화면)는 아직 안 만들었다 — 요청받으면 착수.
+  **③(상담기록 재생 화면)도 2026-09-15 나중에 처리** — 위 "`w4-dashboard-live-contract`
+  로 드러난 계약 구멍 셋" 섹션에 처리 내역을 적었다(요약 보기·자막 보기 토글로 재설계).
 - [x] **블랙리스트 연장을 되풀이하면 사실상 영구 표시가 된다 (2026-09-15, `decisions/309`)** **→ 같은 날 누적 상한 «승인일 + 365일» 로 막았다(사용자 선택, 넘으면 422). 이력 사유 보존 기간은 아직 안 정했다.** 원문 — — 365일 상한은 변경 1회에만 걸린다. 이력으로 드러날 뿐 막지 않는다.
   **정할 것**: 등록 1건의 누적 상한(예: 승인일로부터 N일)을 둘지. 이력 테이블의 사유 보존 기간도 함께
-- [ ] **조서희 님께 — 요약 확정 API · 연장 누적 상한 (2026-09-15, 장민석)** — ① `POST /hub/calls/{id}/summary-confirmation {summary_text, inquiry_type?, follow_up_actions[]}`
+- [x] **조서희 님께 — 요약 확정 API · 연장 누적 상한 (2026-09-15, 장민석)** — ① `POST /hub/calls/{id}/summary-confirmation {summary_text, inquiry_type?, follow_up_actions[]}`
   (상담원 토큰 필수) — 통화 후 화면에서 초안을 고쳐 확정한다. 확정은 한 번(409). `GET /hub/calls/{id}/record` 의 `summary_confirmed` 가 `"true"` 가 된다(`decisions/310`)
   ② 연장·단축은 **승인일 + 365일** 을 넘으면 422 — 응답 `detail` 에 언제까지 가능한지가 있다. ③ 게이트웨이가 `recommendation_pending`·`call_guard`·`closure` 를 이제 실제로 보낸다(`0.1.4` 배포 뒤)
   ④ `POST /hub/calls/{id}/summary-revision {summary_text, reason, …}` + `GET …/summary-revisions`(상담원 토큰) — 확정된 요약을 사유와 함께 고친다. 확정 전 409(`decisions/311`)
   ⑤ 관리자 `POST /hub/blacklist-retention/purge` — 끝난 뒤 180일 지난 문장을 비운다(`decisions/312`). 관리자 화면에 버튼이 필요하다
-  ⚠ 전부 **운영 반영 전**(서버 `0.1.10` · 게이트웨이 `0.1.4`). **`0.1.10` 은 운영 DB 마이그레이션이 먼저다**(`2026-09-15-summary-revision-app-setting.sql`, 27 → 28)
-- [ ] **조서희 님께 — J-5 베테랑 기준 설정이 서버에 생겼다 (2026-09-15, 장민석)** — 설정 탭 「근속 연차」 를 `GET /hub/routing-settings`(현재값, `saved:"false"` 면 기본 3년) ·
+  ✅ **2026-09-15 운영 반영**(서버 `0.1.10` · 게이트웨이 `0.1.4`, 운영 DB 29 테이블 확인) — 붙여도 된다. 게이트웨이가 알림 3종을 이제 실제로 보낸다
+  → **2026-09-15 조서희가 ①·④·⑤ 처리** — ① `RealGatewayClient.wrapUp()`이 그동안 "계약 없음"으로 늘 실패하던 것을 고쳐
+  `POST /hub/calls/{id}/close`(초안 생성)를 실제로 부르게 했고, `CallSummaryPanel`에 요약·유형·후속조치 편집 + 확정
+  버튼(`SummaryConfirmationForm`)을 추가했다. ④ 같은 폼에 "재수정" 버튼을 더해 확정 후에도 사유와 함께
+  고칠 수 있게 했다(취소 가능, 재수정 시각 표시) — `GET …/summary-revisions`(이력 목록)는 화면에서 안 씀, 필요하면
+  추가. ⑤ `SettingsTab.tsx`에 "지금 정리하기" 버튼 추가(`purgeBlacklistRetention`, 확인 다이얼로그 있음,
+  `apps/admin`의 `RetentionPurgeCard`). ②·③은 프론트 몫 아님(②는 서버 규칙, ③은 게이트웨이).
+  `apps/call`·`apps/admin` `tsc --noEmit`·`vite build` 클린
+- [x] **조서희 님께 — J-5 베테랑 기준 설정이 서버에 생겼다 (2026-09-15, 장민석)** — 설정 탭 「근속 연차」 를 `GET /hub/routing-settings`(현재값, `saved:"false"` 면 기본 3년) ·
   `PUT /hub/routing-settings {veteran_years: 0.5~40}` 에 붙이면 된다(관리자 로그인). 화면의 «서버에 연결 안 됨» 문구는 운영 반영 뒤 걷어도 된다.
   배정 판정 자체(`POST /hub/routing-decisions`)는 교환기가 부르는 것이라 화면이 부를 일은 없다. `fell_back` 집계 화면이 필요하면 조회 API 를 따로 만든다
+  → **2026-09-15 조서희가 처리** — `hubClient.ts`에 `fetchRoutingSetting`·`saveRoutingSetting` 추가,
+  `adminStore.ts`의 `loadAll`이 로그인 직후 현재값을 받고 `setVeteranThresholdYears`가 `PUT`으로 저장(저장 성공 응답으로만 상태 갱신 — 실패해도 화면 값이 서버와 어긋나지 않는다).
+  `SettingsTab.tsx` 입력 상한을 서버 값(0.5~40)에 맞추고 «연결 안 됨» 문구 걷어냄. 배정 판정을 실제로 부르는 쪽(아래 항목)은 그대로 미결.
 - [ ] **J-5 배정 판정을 부르는 곳이 없다 (2026-09-15, `decisions/313`)** — 교환기가 없고 게이트웨이도 부르지 않는다. 판정 API 는 인증도 없다(통화 시작과 같은 한계).
   **정할 것**: 데모에서 게이트웨이 `/dev` 테스트 콜이 통화 시작 직후 부르게 할지 · `routing_log.fell_back` 집계를 관리자 현황판에 올릴지
 - [ ] **블랙리스트 보존 정리를 누가 언제 부르나 (2026-09-15, `decisions/312`)** — 관리자 API 만 있고 주기 실행이 없다. 부르지 않으면 비워지지 않는다.

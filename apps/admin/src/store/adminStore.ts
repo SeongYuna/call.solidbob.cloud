@@ -1,12 +1,15 @@
 import { create } from "zustand";
 import {
+  changeBlacklistEntryExpiry,
   decideBlacklistRequestApi,
   fetchBlacklistEntries,
   fetchBlacklistRequests,
   fetchCallGuardFlagTotal,
   fetchCallListTotal,
+  fetchRoutingSetting,
   HubApiError,
   releaseBlacklistEntryApi,
+  saveRoutingSetting,
 } from "../lib/api/hubClient";
 import { useAuthStore } from "../lib/auth/authStore";
 import { SEED_KNOWLEDGE_GAP_LOG } from "../mock/adminFixtures";
@@ -38,6 +41,7 @@ interface AdminState {
   knowledgeGapLog: KnowledgeGapEntry[];
   callGuardTotal: number;
   completedCallsTotal: number;
+  /** `decisions/313` — 서버 값(`GET /hub/routing-settings`). `loadAll` 전까지는 로컬 기본값. */
   veteranThresholdYears: number;
   /**
    * J-4 등록 만료 기간(개월) **기본값**. `decisions/205` ⑤가 "만료가 없으면
@@ -56,12 +60,9 @@ interface AdminState {
     expiryMonths?: number,
   ) => Promise<void>;
   releaseEntry: (entryId: string, releasedBy: string, reason: string) => Promise<void>;
-  /**
-   * ⚠ 서버에 "연장" 엔드포인트가 아직 없다 — `POST .../release`뿐이다. 그때까지는
-   * 로컬에서만 바뀌고 새로고침하면 사라진다(티켓 범위 밖, 화면에는 그대로 둔다).
-   */
-  extendEntry: (entryId: string, months: number) => void;
-  setVeteranThresholdYears: (years: number) => void;
+  /** `decisions/309` — 연장·단축 실제 API. "지금부터 (개월) 뒤"로 다시 잡는다. 사유 필수. */
+  extendEntry: (entryId: string, months: number, reason: string) => Promise<void>;
+  setVeteranThresholdYears: (years: number) => Promise<void>;
   setBlacklistExpiryMonths: (months: number) => void;
 }
 
@@ -90,13 +91,22 @@ export const useAdminStore = create<AdminState>((set, get) => ({
     }
     set({ status: "loading", error: null });
     try {
-      const [requests, entries, callGuardTotal, completedCallsTotal] = await Promise.all([
+      const [requests, entries, callGuardTotal, completedCallsTotal, routingSetting] = await Promise.all([
         fetchBlacklistRequests(accessToken),
         fetchBlacklistEntries(accessToken),
         fetchCallGuardFlagTotal(accessToken),
         fetchCallListTotal(),
+        fetchRoutingSetting(accessToken),
       ]);
-      set({ status: "ready", error: null, requests, entries, callGuardTotal, completedCallsTotal });
+      set({
+        status: "ready",
+        error: null,
+        requests,
+        entries,
+        callGuardTotal,
+        completedCallsTotal,
+        veteranThresholdYears: routingSetting.veteranYears,
+      });
     } catch (error) {
       set({ status: "error", error: errorMessage(error) });
     }
@@ -160,24 +170,43 @@ export const useAdminStore = create<AdminState>((set, get) => ({
 
   // 연장·단축 둘 다 이걸로 한다 — "지금부터 (개월) 뒤" 로 다시 잡는 것이지
   // 기존 만료일에 더하는 것이 아니다. 그래야 관리자가 화면에서 결과 날짜를
-  // 바로 예상할 수 있다.
-  extendEntry: (entryId, months) => {
-    set((state) => ({
-      entries: state.entries.map((e) =>
-        e.entry_id === entryId && e.released_at === null
-          ? {
-              ...e,
-              expires_at: new Date(
-                Date.now() + Math.round(months * 30) * 24 * 60 * 60 * 1000,
-              ).toISOString(),
-            }
-          : e,
-      ),
-    }));
+  // 바로 예상할 수 있다. 서버가 1~365일(`MAX_EXPIRES_IN_DAYS`)로 제한한다.
+  extendEntry: async (entryId, months, reason) => {
+    const accessToken = useAuthStore.getState().accessToken;
+    if (accessToken === null) {
+      set({ error: "로그인이 필요합니다." });
+      return;
+    }
+    try {
+      const { entry } = await changeBlacklistEntryExpiry(
+        accessToken,
+        entryId,
+        Math.round(months * 30),
+        reason,
+      );
+      set((state) => ({
+        entries: state.entries.map((e) => (e.entry_id === entryId ? entry : e)),
+        error: null,
+      }));
+    } catch (error) {
+      set({ error: errorMessage(error) });
+    }
   },
 
-  setVeteranThresholdYears: (years) => {
-    set({ veteranThresholdYears: years });
+  // `decisions/313` — 다음 배정 판정부터 쓰인다. 저장 성공 응답으로만 상태를 바꾼다
+  // (낙관적 갱신을 하면 422 실패 시 화면과 서버 값이 어긋난다).
+  setVeteranThresholdYears: async (years) => {
+    const accessToken = useAuthStore.getState().accessToken;
+    if (accessToken === null) {
+      set({ error: "로그인이 필요합니다." });
+      return;
+    }
+    try {
+      const saved = await saveRoutingSetting(accessToken, years);
+      set({ veteranThresholdYears: saved.veteranYears, error: null });
+    } catch (error) {
+      set({ error: errorMessage(error) });
+    }
   },
 
   setBlacklistExpiryMonths: (months) => {

@@ -16,7 +16,14 @@ import type {
   BlacklistEvidence,
   BlacklistRequestItem,
 } from "../types/contract";
-import { createBlacklistRequest, getHistoryPlayback, isCoreApiConfigured } from "../lib/api/coreClient";
+import {
+  createBlacklistRequest,
+  fetchCallRecord,
+  fetchCallTranscript,
+  getHistoryPlayback,
+  isCoreApiConfigured,
+  type CallRecord,
+} from "../lib/api/coreClient";
 import { getScenarioById } from "../mock/scenarios";
 import type { GatewayMode } from "../lib/ws";
 import { sliceByCodepoints } from "../lib/text/codepoints";
@@ -99,8 +106,12 @@ export interface CallState {
   targetLanguage: TargetLanguage | null;
   utterances: Utterance[];
   viewMode: TranscriptViewMode;
+  /** 상담기록 안에서 "요약 보기"인지 "자막 보기"인지. `viewMode === "history"`일 때만 의미가 있다. */
+  historyView: "record" | "transcript";
   historyCallId: string | null;
   historyStartedAt: string | null;
+  /** 실 API 전용. mock은 `historyCards`(카드)만으로 「요약」 화면을 만든다. */
+  historyRecord: CallRecord | null;
   historySegments: TranscriptQuerySegment[];
   historyTargetLanguage: TargetLanguage | null;
   /** 히스토리 모드 전용. 실시간 translations 과 섞지 않는다. */
@@ -167,7 +178,8 @@ export interface CallState {
   openHistory: (
     item: CallHistoryItem,
     options?: { returnTo?: SummaryReturn },
-  ) => void;
+  ) => Promise<void>;
+  setHistoryView: (view: "record" | "transcript") => void;
   resumeLive: () => void;
   /**
    * J-1 — 상담원이 전환 요청을 올린다. **항상 `pending` 으로 들어간다.**
@@ -200,8 +212,10 @@ const emptyCall = {
   targetLanguage: null as TargetLanguage | null,
   utterances: [] as Utterance[],
   viewMode: "live" as TranscriptViewMode,
+  historyView: "record" as "record" | "transcript",
   historyCallId: null as string | null,
   historyStartedAt: null as string | null,
+  historyRecord: null as CallRecord | null,
   historySegments: [] as TranscriptQuerySegment[],
   historyTargetLanguage: null as TargetLanguage | null,
   historyTranslations: {} as Record<string, TranslatedUtterance>,
@@ -305,6 +319,52 @@ function panelFromScenario(scenario: {
     (acc, item) => withClosure(acc, item.event),
     cards,
   );
+}
+
+/**
+ * `GET /hub/calls/{id}/record` → `PanelCard[]`. 실서버 계약은 추천 카드
+ * (`recommendations[].cards[]`)와 필요서류 판정(`closures[]`)이 서로 다른 배열이라
+ * mock처럼 "카드 하나에 판정 하나가 붙는" 모양이 아니다 — 실제 카드는 판정 없이
+ * (`closure: null`) 그대로 보여주고, 판정마다 표시용 카드를 하나씩 따로 만든다.
+ * `settled: true`로 고정한다 — 이미 끝난 통화라 "아직 결정 안 됨"으로 보이면 안 된다
+ * (mock 재생은 반대로 `settled: false`로 둔다 — 실측 데이터가 아니라 굳이 맞추지 않는다).
+ */
+function panelCardsFromRecord(record: CallRecord): PanelCard[] {
+  const realCards: PanelCard[] = record.recommendations.flatMap((rec) =>
+    rec.cards.map((c) => ({
+      card: {
+        title: c.title,
+        summary: c.summary,
+        source: { doc_id: c.sourceDocId ?? "", title: c.sourceDocId ?? "출처 없음" },
+        similarity_score: c.similarityScore ?? 0,
+        source_type: "auto",
+      } satisfies RecommendationCard,
+      trigger_at_ms: rec.triggerAtMs,
+      closure: null,
+      settled: true,
+    })),
+  );
+  const closureCards: PanelCard[] = record.closures.map((cl) => ({
+    card: {
+      title: cl.procedure,
+      summary: cl.reason ?? "",
+      source: { doc_id: cl.sourceDocId ?? "", title: cl.sourceDocId ?? cl.procedure },
+      similarity_score: 0,
+      source_type: "auto",
+    } satisfies RecommendationCard,
+    trigger_at_ms: 0,
+    closure: {
+      call_id: record.callId,
+      procedure: cl.procedure,
+      reason: cl.reason,
+      evidence: Object.fromEntries(cl.items.map((i) => [i.documentName, i.informed])),
+      verdict: cl.verdict,
+      missing: cl.items.filter((i) => !i.informed).map((i) => i.documentName),
+      detected: cl.detected,
+    } satisfies ClosureEvent,
+    settled: true,
+  }));
+  return [...realCards, ...closureCards];
 }
 
 export function evidenceTally(closure: ClosureEvent): {
@@ -555,16 +615,54 @@ export const useCallStore = create<CallState>((set) => ({
     });
   },
 
-  openHistory: (item, options) => {
+  openHistory: async (item, options) => {
+    if (isCoreApiConfigured()) {
+      try {
+        const [transcript, record] = await Promise.all([
+          fetchCallTranscript(item.call_id, { limit: 500 }),
+          fetchCallRecord(item.call_id),
+        ]);
+        set({
+          error: null,
+          // 대기화면(standby)의 「최근 상담기록」에서 열어도 자막 보기로 전환할 수 있어야
+          // 한다 — shell이 standby로 남아 있으면 App.tsx가 그쪽을 대신 그린다.
+          shell: "assist",
+          viewMode: "history",
+          historyView: "record",
+          summaryReturn: options?.returnTo ?? "assist",
+          historyCallId: item.call_id,
+          historyStartedAt: item.started_at,
+          historyRecord: record,
+          historySegments: transcript.segments,
+          historyTargetLanguage: null,
+          historyTranslations: {},
+          historyAgentTts: {},
+          historyCallGuard: {},
+          historyAccentHints: {},
+          historyCards: panelCardsFromRecord(record),
+        });
+      } catch (error) {
+        set({
+          error:
+            error instanceof Error
+              ? `상담기록을 불러오지 못했다: ${error.message}`
+              : "상담기록을 불러오지 못했다.",
+        });
+      }
+      return;
+    }
     const playback = getHistoryPlayback(item.call_id);
     if (playback === null) {
       return;
     }
     set({
+      shell: "assist",
       viewMode: "history",
+      historyView: "record",
       summaryReturn: options?.returnTo ?? "assist",
       historyCallId: item.call_id,
       historyStartedAt: item.started_at,
+      historyRecord: null,
       historySegments: playback.page.segments,
       historyTargetLanguage: playback.targetLanguage ?? null,
       historyTranslations: playback.translations,
@@ -575,11 +673,17 @@ export const useCallStore = create<CallState>((set) => ({
     });
   },
 
+  setHistoryView: (view) => {
+    set({ historyView: view });
+  },
+
   resumeLive: () => {
     set({
       viewMode: "live",
+      historyView: "record",
       historyCallId: null,
       historyStartedAt: null,
+      historyRecord: null,
       historySegments: [],
       historyTargetLanguage: null,
       historyTranslations: {},
@@ -600,7 +704,6 @@ export const useCallStore = create<CallState>((set) => ({
     if (isCoreApiConfigured()) {
       const { request } = await createBlacklistRequest({
         callId: input.callId,
-        requestedBy: input.requestedBy,
         reason: input.reason,
       });
       set((state) => ({
