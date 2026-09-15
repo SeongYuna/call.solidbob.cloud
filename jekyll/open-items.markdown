@@ -515,6 +515,9 @@ Environment Variables → **Production 만** → Deployments → Redeploy(`VITE_
   LLM 이 들어오면 규칙 어댑터를 폴백으로 남길지 함께 정한다. 초안 저장은 [w7-postcall-persistence](/backlog/w7-postcall-persistence/)
 - [ ] **과잉 마스킹 관찰 — 「주민센터로 가시면」 이 `*********` 로 가려졌다**(09-15 로컬 E2E, 기존 동작). C-5 는 재현율 우선이라 방향은 맞지만
   통화 후 요약·자막 가독성을 깎는다. 어느 패턴(P6 인명 폴백 추정 — 미확인)이 잡았는지 먼저 본다. 과잉 마스킹률은 «측정·기록» 항목이다
+- [ ] **관리자 가드가 «헤더 없음» 에도 500 이다 — 운영에서 확인 (2026-09-15)** — `0.1.8` 배포 뒤 `GET /admin/agent-tokens`·`GET /hub/blacklist-requests`·`/admin/auth/me` 가 로그인 없이 **401 이 아니라 500**.
+  `require_admin` 이 `Authorization` 을 보기 전에 `get_current_admin_use_case` → Redis 프로바이더를 먼저 풀어, Redis 가 없으면 `RuntimeError` 가 난다. 운영 Redis(`w4-admin-auth-runtime`, 정성윤 님)가 붙으면 증상은 사라지지만
+  **헤더가 없으면 인프라를 타기 전에 401** 이 맞다 — 가드에서 헤더 검사를 의존성 해석보다 앞에 두는 수정은 `server/` 몫(장민석). 이 상태로는 운영에서 상담원 토큰을 발급할 수 없다
 - [ ] **저장한 통화 후 초안을 읽는 경로가 없다 (2026-09-15)** — `POST /hub/calls/{id}/close` 가 이제 `call.summary_text`·`follow_up_action`(draft)에 남기지만
   `GET /hub/calls` 는 `inquiry_type`·`summary_confirmed` 만 준다. 상담원이 초안을 **확정**하는 API(`summary_confirmed_at` 채우기)도 없다.
   **정할 것**: 상담기록 화면이 목록에서 요약을 보여줄지(목록 응답에 `summary_text` 추가) 상세 조회를 따로 둘지 — 조서희 님 화면 흐름에 달렸다
