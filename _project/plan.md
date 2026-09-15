@@ -15,6 +15,10 @@
 > 셋 다 이미 코드에 있거나(통화 시작 — `decisions/301`) 같은 날 넣은 것이다(`w4-trigger-arrival-time` · `w4-recommendation-pending-contract`).
 > 같은 날 뒤이어 **필요서류 체크리스트 계약(F-2)을 코드와 맞추고**(`decisions/305`), 통화 시작의 `caller_phone`(`decisions/304`) ·
 > 콜 가드 · 통화 목록 · 블랙리스트 · 수동 검색 경로를 7.3절 끝 「허브 HTTP 표면」 에 올렸다.
+>
+> **⚠ 2026-09-15 수정 (장민석)**: 7.3절을 **코드와 다시 맞췄다** — ① 전사 이벤트·필요서류 카드 예시가 옛 값(`documents`·`score`·`source.clause`·
+> `e2e_latency_ms`, `segment_id` 없음)이라 실제 응답 모양으로 교체 ② **「값은 전부 문자열」 규칙을 절 머리에 올렸다**(2026-09-10 합의 — 전에는 일부 예시에만 적혀 있었다)
+> ③ 허브 HTTP 표면에 통화 후 초안(`decisions/306`) · 상담원 토큰(`decisions/307`) · 블랙리스트 요청의 `Authorization` 헤더 · 카드 피드백을 올렸다.
 
 # 실시간 상담원 어시스트 RAG 시스템
 
@@ -975,32 +979,40 @@ F-2(필요서류 체크리스트)가 참조하는 필수 항목 정의도 이 �
 
 1주차에 모듈 간 스키마를 확정한다. 이것이 병렬 작업의 전제 조건이다.
 
+> **값의 타입 — 응답은 전부 문자열이다 (2026-09-10 조서희·장민석 합의, 2026-09-15 절 머리로 올림).**
+> 서버 HTTP 응답과, 게이트웨이가 그 응답을 그대로 실어 보내는 WS `payload`(`transcript`·`recommendation`·`call_guard`·`closure`) 모두 —
+> 불리언은 `"true"`/`"false"`, 숫자는 `"3150"`, **`null` 은 그대로 `null`**, 배열·객체 구조는 유지한다.
+> 요청은 원래 타입(정수·불리언)과 숫자 문자열 둘 다 받는다. 변환은 서버 `schemas/_types.py` `StrField` 한 곳이고 DB·DTO 는 원래 타입이다.
+> 예외는 `GET /health` 하나(배포 검증 항목이라 불리언 유지, 런북 19장). `/openapi.json` 이 `string` 으로 공표한다 — 화면은 그것을 기준으로 붙인다.
+
 ```json
-// 전사 이벤트 (마스킹 적용 후)
+// 전사 이벤트 (마스킹 적용 후) — POST /hub/transcripts 응답 = WS {"type": "transcript", "payload": …}
 {
   "call_id": "c_001",
+  "segment_id": "17",
   "speaker": "customer",
   "text": "카드번호는 **** 입니다",
-  "masked": [{"type": "P2", "span": [7, 11]}],
-  "is_final": true,
-  "utterance_end_ms": 3100
+  "masked": [{"type": "P2", "span": ["7", "11"]}],
+  "is_final": "true",
+  "utterance_end_ms": "3100"
 }
 
-// 필요서류 카드 (rev.5 — 이전엔 "추천 카드")
+// 필요서류 카드 (rev.5 — 이전엔 "추천 카드") — POST /hub/recommendations 응답 = WS {"type": "recommendation", …}
+// fired "false" 면 검색하지 않았다(cards: null). cards: [] 는 「관련 문서 없음」(B-6) — 둘을 섞지 않는다 (decisions/401)
 {
+  "fired": "true",
+  "domain": null,
   "call_id": "c_001",
-  "trigger_at_ms": 3150,
+  "trigger_at_ms": "3150",
   "cards": [
     {
       "title": "증명서 대리 신청 — 필요 서류",
-      "documents": ["위임장", "위임자 신분증", "대리인 신분증"],
       "summary": "대리 신청은 위임장과 양측 신분증이 필요합니다.",
-      "source": {"doc": "이용약관", "clause": "4.1"},
-      "score": 0.87
+      "source": {"doc_id": "DASAN-TERM-4.3", "title": "주민등록초본 발급 — 필요서류"},
+      "similarity_score": "7.802647"
     }
   ],
-  "internal_latency_ms": 780,
-  "e2e_latency_ms": 1240
+  "internal_latency_ms": "780"
 }
 
 // 필요서류 체크리스트 판정 (F-2, rev.5 — 이전엔 "종결 판정". 2026-09-14 코드와 맞춤, decisions/305)
@@ -1066,10 +1078,13 @@ F-2(필요서류 체크리스트)가 참조하는 필수 항목 정의도 이 �
 | `GET /hub/calls?limit&offset&customer_id` | 상담기록 | 최근 시작순 통화 목록. `customer_id` 는 HMAC — 재상담 이력 |
 | `GET /hub/calls/{id}/transcript` | 상담기록 | 마스킹된 자막 재조회 |
 | `POST /hub/closure-checks` `{call_id, procedure, evidence, reason}` | 체크리스트를 사람이 채울 때 | 위 판정 JSON(`detected: "false"`) |
-| `POST /hub/blacklist-requests` `{call_id, requested_by, reason}` | 상담원 | `pending` 요청. 근거·고객·자막은 서버가 모은다 · `has_distress` |
+| `POST /hub/calls/{id}/close` `{call_id, segments: [{segment_id, speaker, text}]}` | 통화 후 화면 | `{call_id, summary_text, inquiry_type, follow_up_actions: [{action_text}], confirmed: "false"}` — **규칙 발췌 초안**(`decisions/306`). `inquiry_type` 은 늘 `null`, 저장하지 않는다(아직) |
+| `POST /hub/cards/{card_id}/feedback` `{action: adopted\|ignored}` | 상담원 | `{feedback_id, card_id, action}`. 상담원 ID 를 받지 않는다(부록 A-1 — 상담원 단위 집계 금지) |
+| `POST /hub/blacklist-requests` `{call_id, reason}` + 헤더 **`Authorization: Bearer cga_…`** | **상담원 토큰** | `pending` 요청. **요청자는 토큰에서 온다** — 본문 `requested_by` 는 없다(실어도 무시, `decisions/307`). 토큰 없음·폐기 401 · 근거·고객·자막은 서버가 모은다 · `has_distress` |
 | `GET /hub/blacklist-requests?status` · `POST …/{id}/decision {approve, expires_in_days, note}` | **관리자 로그인** | 승인 시 등록 에피소드. 결정자는 `admin_account.agent_id` |
 | `GET /hub/blacklist-entries?active_only` · `POST …/{id}/release {reason}` | **관리자 로그인** | 해제는 지우지 않고 기록 |
 | `GET /hub/call-guard-flags?call_id&category&limit&offset` | **관리자 로그인** | 콜 가드 로그 |
+| `POST /admin/agent-tokens` `{agent_id}` · `GET /admin/agent-tokens?agent_id` · `POST /admin/agent-tokens/{id}/revoke` | **관리자 로그인** | 상담원 토큰 발급·목록·폐기. **원문 `token` 은 발급 응답에만 한 번** — 목록·폐기 응답에는 없다. 만료 없음(폐기로만 끊는다) |
 
 > **`score` 는 페이로드에만 있고 화면에 쓰지 않는다.** 부록 A-1 이 수치 표기를 금지하며,
 > rev.4 의 화면 구성에 `유사도 0.87` 이 찍혀 있던 것은 **위반이었다**(2026-08-28 발견, 2.1절에서 제거).
