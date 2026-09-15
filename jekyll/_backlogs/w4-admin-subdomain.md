@@ -1,8 +1,8 @@
 ---
-title: "관리자 화면 배포 — admin.solidbob.cloud (앞단 잠그고)"
+title: "관리자 화면 배포 — admin.solidbob.cloud"
 assignee: "정성윤"
 role: "infra"
-status: "in-progress"
+status: "done"
 sprint: 4
 priority: 2
 date: 2026-09-15
@@ -60,3 +60,12 @@ Vercel 프로젝트를 하나 더 만들고(Root Directory `apps/admin`), 클라
 
 - **`call.solidbob.cloud` 의 Vercel 설정을 건드리지 않는다.** 별도 프로젝트다.
 - **관리자 이메일을 저장소에 적지 않는다** — 허용 목록 행 추가는 `w4-admin-auth-runtime` 쪽 DB 작업이다.
+
+## 완료 (2026-09-15)
+
+`https://admin.solidbob.cloud` **200**, 구글 로그인 통과. 번들에 두 값이 들어간 것을 직접 확인했다
+(`/assets/index-2GxCi4n7.js` 에 `server.solidbob.cloud` · 클라이언트 ID). 절차는 런북 **18-3**.
+
+**Deployment Protection 은 켜지 않았다** — 켜려던 이유가 「로그인이 100% 실패하는 상태를 공개하지 않는다」였는데
+백엔드가 붙어 **진짜 관문이 살아났다.** 남는 노출은 번들의 UI 구조와 mock 시드뿐이고, 시드는 전부 합성이다
+(`req-seed-1`·`hmac_seed_1`·`****3841` — 실제 개인정보 0건). Hobby 플랜이라 Production 보호가 제약되는 것도 겹친다.
