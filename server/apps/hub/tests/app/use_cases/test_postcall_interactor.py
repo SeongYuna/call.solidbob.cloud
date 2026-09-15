@@ -1,5 +1,5 @@
 # Requirement: D-1, D-2, D-3, SEC-1, QUA-1
-"""스텁 포트로 배선만 검증. 요약 품질·환각은 postcall 스포크가 골든셋으로 채점받는다."""
+"""스텁 포트로 배선만 검증. 요약 품질·환각은 postcall 스포크가 골든셋으로 채점받는다. 저장은 기록 포트로 — 돌려준 초안과 같은 것이 남는다."""
 
 import asyncio
 
@@ -7,7 +7,7 @@ import pytest
 
 from hub.app.dtos import CallSummaryDraft, FollowUpAction, TranscriptEvent
 from hub.app.dtos.postcall_dto import PostcallCommand
-from hub.app.ports.output import PostcallPort
+from hub.app.ports.output import PostcallPort, PostcallRecordPort
 from hub.app.use_cases.postcall_interactor import PostcallInteractor
 
 SEGMENTS = (
@@ -28,8 +28,16 @@ class _Spy(PostcallPort):
             follow_up_actions=(FollowUpAction(action_text="재발급 안내 문자 발송"),))
 
 
-def _run(port, segments=SEGMENTS):
-    return asyncio.run(PostcallInteractor(postcall=port).close(
+class _Record(PostcallRecordPort):
+    def __init__(self):
+        self.saved = []
+
+    async def record(self, draft):
+        self.saved.append(draft)
+
+
+def _run(port, segments=SEGMENTS, record=None):
+    return asyncio.run(PostcallInteractor(postcall=port, record=record or _Record()).close(
         PostcallCommand(call_id="c_001", segments=segments)))
 
 
@@ -72,6 +80,16 @@ def test_call_id를_요청_기준으로_고정한다():
 
 def test_전사가_비면_거부한다():
     port = _Spy()
+    record = _Record()
     with pytest.raises(ValueError):
-        _run(port, ())
-    assert port.calls == []
+        _run(port, (), record)
+    assert port.calls == [] and record.saved == []
+
+
+def test_돌려주는_초안과_같은_초안을_저장한다():
+    """confirmed 를 덮고 call_id 를 고정한 **뒤의** 초안이 저장된다 — 모델이 보낸 원래 값이 아니다."""
+    record = _Record()
+    forged = CallSummaryDraft(call_id="OTHER", summary_text="요약", confirmed=True)
+    draft = _run(_Spy(forged), record=record)
+    assert record.saved == [draft]
+    assert record.saved[0].call_id == "c_001" and record.saved[0].confirmed is False

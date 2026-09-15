@@ -12,8 +12,9 @@ from hub.app.dtos.blacklist_dto import BlacklistRequest
 
 
 class BlacklistRequestCreateRequest(BaseModel):
+    """요청자는 본문에 없다 — 상담원 토큰에서 온다(`decisions/307`). 본문에 `requested_by` 를 실어도 무시된다."""
+
     call_id: str = Field(min_length=1, max_length=40)
-    requested_by: str = Field(min_length=1, max_length=20, description="agent.agent_id — 상담원 로그인이 없어 입력으로 받는다")
     reason: str = Field(min_length=1, max_length=2000, description="상담원이 적은 사유. 저장 전에 마스킹하고 500자로 자른다")
 
 

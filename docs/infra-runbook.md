@@ -1272,6 +1272,32 @@ EOF
 
 ---
 
+### 16-3. 세션 Redis (2026-09-15 추가)
+
+관리자 로그인의 access token 세션 저장소다(`decisions/403` §3 · `112`). **손으로 만들 것이 없다** —
+`infra/k8s/base/redis.yaml` 이 kustomize `resources` 에 들어 있어 **다음 릴리스에서 같이 적용된다.**
+
+| | |
+|---|---|
+| 주소 | `redis://redis:6379/0` (ClusterIP) — `server-env` 의 `REDIS_URL` 이 이 값이다 |
+| 영속 | **없다.** `--save "" --appendonly no`, 볼륨 없음 — 파드가 다시 뜨면 세션이 비고, 사용자는 refresh(RDS)로 조용히 복구된다 |
+| 노출 | ClusterIP 만. **Ingress 에 얹지 않는다** — 암호가 없다(`infra/CLAUDE.md` §1-4 와 같은 규칙) |
+| ElastiCache | **만들지 않는다**(「만들지 말 것」 · `infra/CLAUDE.md` §1-2) |
+
+확인:
+
+```bash
+$K get pod -l app=redis                      # Running 1/1
+$K exec deploy/redis -- redis-cli ping       # PONG
+$K exec deploy/callguard-server -- python -c "
+import os, redis; print(redis.from_url(os.environ['REDIS_URL']).ping())"   # True
+```
+
+`REDIS_URL` 이 비어 있으면 **파드는 정상으로 뜨고 `/health` 도 ok** 다 — 관리자 로그인 프로바이더가
+요청 스코프라 그때서야 RuntimeError 가 난다(`decisions/403` §7). 즉 **눌러 보기 전에는 드러나지 않는다.**
+
+---
+
 ## 17. DB 스키마
 
 RDS 는 퍼블릭 액세스가 없으므로 **클러스터 안에서** 넣습니다.
@@ -1346,6 +1372,46 @@ sudo k3s kubectl -n callguard exec deploy/callguard-server -- python /app/script
 ```
 
 ⚠ **운영에서 아직 돌리지 않았다**(2026-09-14). 로컬 `postgres:17` + 현재 `schema.sql` 에서만 확인했다.
+
+---
+
+### 17-4. 첫 관리자 계정 (2026-09-15 추가)
+
+**테이블은 이미 들어가 있다.** `admin_account`·`admin_refresh_token` 은
+`db/migrations/2026-09-14-customer-ref-admin-closure.sql` 이 만들었고, 2026-09-15 운영 확인에서
+**26 테이블 · `schema.sql` 과 이름 완전 일치**로 확인됐다(`_logs/2026-09-15-05-minseok.md`).
+스키마를 또 넣지 않는다 — 마이그레이션 파일이 앞에서 확인하고 멈춘다.
+
+```bash
+# 있는지만 본다
+$K exec deploy/callguard-server -- python -c "
+import os, psycopg
+c = psycopg.connect(os.environ['DATABASE_URL'])
+print(c.execute(\"select tablename from pg_tables where schemaname='public' and tablename like 'admin%' order by 1\").fetchall())"
+# → [('admin_account',), ('admin_refresh_token',)]
+```
+
+**남은 것은 행 하나다 — 이 행이 없으면 구글 인증을 통과해도 403 이다**(허용 목록,
+`decisions/403` §1). 회원가입 경로는 일부러 없다.
+
+```bash
+$K exec -i deploy/callguard-server -- python -c "
+import os, sys, psycopg
+c = psycopg.connect(os.environ['DATABASE_URL'])
+c.execute(sys.stdin.read()); c.commit()
+print(c.execute('select count(*) from \"admin_account\"').fetchone()[0], '명')" <<'SQL'
+INSERT INTO "admin_account" ("email", "name", "created_at")
+VALUES ('<본인 구글 이메일 소문자>', '<표시 이름>', now())
+ON CONFLICT ("email") DO NOTHING;
+SQL
+```
+
+> ⚠ **이메일은 소문자로 넣는다** — 서버가 조회 전에 소문자로 맞춘다(`admin_account.email` 주석).
+> `agent_id` 는 비워 둔다: 없어도 로그인은 되고 블랙리스트 승인·해제만 409 다(`decisions/304`).
+> **관리자 이메일을 저장소에 적지 않는다**(§8 — 개인정보).
+
+> **앞으로 스키마를 바꿀 때는 `db/migrations/` 에 파일을 하나 더 만든다.** 운영 DB 에
+> `schema.sql` 을 통째로 다시 넣을 수 없어서 생긴 규칙이고, 09-14·09-15 두 파일이 그 방식이다.
 
 ---
 
@@ -1434,6 +1500,17 @@ curl -fsS $B/hub/calls/$C/transcript
 ```json
 {"status":"ok","postgres_configured":true,"elasticsearch_configured":true,"spokes":["masking","closure_gate","retrieval","trigger","call_guard"]}
 ```
+
+> **`0.1.8` 부터**(2026-09-15 `server` 브랜치, PR #86) `closure_gate` 뒤에 `postcall` 이 붙는다(`decisions/306` — D-1 규칙 발췌 초안).
+> S3 가 설정돼 있으면 끝에 `uploads` 도 있다. 순서는 상관없다.
+>
+> ⚠ **같은 이미지는 DB 스키마도 바뀐다**(`decisions/307`) — `agent_token` 신설(25 → 26 테이블). **이미지를 올리기 전에**
+> `db/migrations/2026-09-15-agent-token.sql` 을 넣는다(09-14 마이그레이션이 먼저 들어가 있어야 한다 — 파일이 확인하고 멈춘다).
+> 안 넣으면 `POST /hub/blacklist-requests` 와 `/admin/agent-tokens` 가 500(`42P01`)이다. 6번 기대값도 26 이 된다.
+>
+> ⚠ **`0.1.9` 도 스키마가 바뀐다**(`decisions/309`) — `blacklist_entry_expiry_change` 신설(26 → 27). **이미지를 올리기 전에**
+> `db/migrations/2026-09-15-blacklist-expiry-change.sql` 을 넣는다(`agent_token` 마이그레이션이 먼저여야 한다 — 파일이 확인하고 멈춘다).
+> 안 넣으면 만료 연장·단축(`…/expiry`·`…/expiry-changes`)만 500 이고 다른 경로는 영향 없다. 6번 기대값은 27.
 
 > ⚠ **`0.1.5` 는 DB 스키마가 바뀐다**(2026-09-14, `decisions/304`·`305`) — `customer_id` 길이 64 · `admin_account.agent_id` ·
 > `closure` 재정의 + `closure_item`. 17장대로 **이미지를 올리기 전에** 스키마를 넣는다. **데이터가 있는 운영 DB 에는 `schema.sql` 이 아니라

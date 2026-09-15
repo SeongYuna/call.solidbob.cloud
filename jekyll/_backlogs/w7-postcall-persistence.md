@@ -2,7 +2,7 @@
 title: "후속조치 저장 — follow_up_action 이 비어 있다"
 assignee: "장민석"
 role: "ai"
-status: "todo"
+status: "done"
 sprint: 7
 priority: 75
 date: 2026-09-15
@@ -32,7 +32,14 @@ paths:
 
 ## 완료 조건
 
-- [ ] `follow_up_action` 저장 어댑터 + 포트 등록
-- [ ] `call.summary_text`(D-1) · `call.inquiry_type`(D-2)도 함께 저장된다
-- [ ] **마스킹 완료본만 저장된다** — 스키마에 원문 컬럼이 없는 것을 확인한다(SEC-1)
-- [ ] `cd server && pytest` 통과 · 계약 KEPT
+- [x] `follow_up_action` 저장 어댑터 + 포트 등록 — `PostcallRecordPort` · `postgres/postcall_repository.py` · DB 없으면 로그 어댑터
+- [x] `call.summary_text`(D-1) · `call.inquiry_type`(D-2)도 함께 저장된다 — `summary_confirmed_at` 은 건드리지 않는다(NULL = 초안)
+- [x] **마스킹 완료본만 저장된다** — 초안이 마스킹된 자막에서만 발췌된다(`decisions/306`). `call`·`follow_up_action` 에 원문 컬럼 없음
+- [x] `cd server && pytest` 698 passed · integration 13 · 계약 4종 KEPT (2026-09-15)
+
+## 2026-09-15 — 구현 (장민석)
+
+- 다시 닫으면 **확정 전 초안만 교체**한다 — 지우는 후속조치는 `status = 'draft'` 인 것뿐, 상담원이 손댄 항목은 남는다
+- **확정된 요약은 덮지 않는다** — `summary_confirmed_at` 을 행 잠금으로 읽고 채워져 있으면 409. 통화가 없으면 404
+- 실제 앱 + postgres:17: 없는 통화 404 → 통화 시작 → 저장 200 → 재요청 후 후속조치 1행 유지 → 확정 뒤 409
+- ⚠ 남은 것: 저장한 요약을 **읽는 경로가 없다** — `GET /hub/calls` 는 `inquiry_type`·`summary_confirmed` 만 주고 `summary_text`·후속조치는 안 준다. 상담원 확정 API 도 없다

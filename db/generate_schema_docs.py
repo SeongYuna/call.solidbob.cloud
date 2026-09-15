@@ -451,7 +451,8 @@ TABLES: list[Table] = [
                    note="등록 시작. 에피소드의 고유 사실이다. 승인자는 request.decided_by 로 따라간다"),
             Column("expires_at", "DATETIME", nullable=False,
                    note="**만료가 없으면 영구 표시가 된다**(`decisions/205` ⑤). J-5 는 "
-                        "released_at IS NULL AND expires_at > now() 만 본다. 연장은 새 요청 + 새 근거로만"),
+                        "released_at IS NULL AND expires_at > now() 만 본다. 관리자가 연장·단축할 수 있고 "
+                        "그때마다 blacklist_entry_expiry_change 에 쌓인다(`decisions/309` — 205 「새 요청으로만」 철회)"),
             Column("released_at", "DATETIME",
                    note="해제 시각. **행을 지우지 않는다** — 지우면 「왜 풀렸는지」가 사라진다(절대 원칙 8)"),
             Column("released_by", "VARCHAR(20)", "FK", "agent.agent_id",
@@ -461,6 +462,23 @@ TABLES: list[Table] = [
                    note="**관리자 승인 메모**다. 요청 사유의 사본이 아니다 — 사본을 두면 "
                         "같은 개인정보가 두 벌이 된다(`decisions/205` ⑤)"),
         ],
+    ),
+    Table(
+        "blacklist_entry_expiry_change", "J-4 등록 만료 변경 이력 — 관리자 연장·단축 1건 = 1행(`decisions/309`). "
+        "`blacklist_entry.expires_at` 만 덮으면 누가 왜 늘리거나 줄였는지가 사라진다. 갱신·삭제하지 않는다",
+        cluster="J(콜 라우팅 보호)",
+        columns=[
+            Column("change_id", "BIGINT", "PK", nullable=False, auto_increment=True),
+            Column("entry_id", "BIGINT", "FK", "blacklist_entry.entry_id", nullable=False, identifying=True),
+            Column("previous_expires_at", "DATETIME", nullable=False),
+            Column("new_expires_at", "DATETIME", nullable=False,
+                   note="이전보다 뒤면 연장, 앞이면 단축이다 — 방향을 따로 저장하지 않는다"),
+            Column("changed_by", "VARCHAR(20)", "FK", "agent.agent_id", nullable=False,
+                   note="로그인한 관리자에 연결된 agent_id(`decisions/304`) — released_by 와 같은 체계"),
+            Column("reason", "VARCHAR(500)", nullable=False, note="저장 전 마스킹(`decisions/205` ⑤)"),
+            Column("changed_at", "DATETIME", nullable=False),
+        ],
+        indexes=[(('"entry_id"',), None)],
     ),
     Table(
         "routing_log", "J-5 배정 결과. **떨어뜨린 경우를 세는 것**이 이 테이블의 목적이다 — "
@@ -517,6 +535,24 @@ TABLES: list[Table] = [
             Column("revoked_at", "DATETIME", note="회전·로그아웃으로 무효화된 시각. NULL 이면 아직 유효(만료 전이라면)"),
         ],
         indexes=[(('"admin_account_id"',), None)],
+    ),
+    Table(
+        "agent_token", "상담원 전용 토큰(`decisions/307`). 상담원 로그인 화면이 없어 관리자가 발급해 건넨다 — "
+        "블랙리스트 요청의 요청자를 본문이 아니라 이 토큰에서 얻는다(`decisions/304` 의 남은 구멍). "
+        "**원문을 저장하지 않는다** — SHA-256 해시만 둔다(`admin_refresh_token` 과 같은 원칙). "
+        "폐기해도 행을 지우지 않는다(절대 원칙 8, 누가 언제 쓰던 토큰인지 흔적용). 만료는 아직 없다 — 폐기로만 끊는다",
+        cluster="관리자 인증",
+        unique=[("token_hash",)],
+        columns=[
+            Column("id", "BIGINT", "PK", nullable=False, auto_increment=True),
+            Column("agent_id", "VARCHAR(20)", "FK", "agent.agent_id", nullable=False, identifying=True),
+            Column("token_hash", "VARCHAR(64)", nullable=False,
+                   note="SHA-256 hex — 원문(`cga_…`)은 발급 응답으로 한 번만 나가고 저장하지 않는다"),
+            Column("issued_by", "BIGINT", "FK", "admin_account.id", note="발급한 관리자"),
+            Column("issued_at", "DATETIME", nullable=False),
+            Column("revoked_at", "DATETIME", note="폐기 시각. NULL 이면 유효"),
+        ],
+        indexes=[(('"agent_id"',), None)],
     ),
 ]
 

@@ -16,8 +16,8 @@
 # 스포크를 새로 만들면 root_packages 와 계약 1 의 containers 에 이름을 추가한다.
 # 등록됨: masking(C-5) · closure_gate(F-2) · blacklist(J-4·J-5, 2026-09-09 `decisions/204`) ·
 #         admin_auth(관리자 로그인, 2026-09-14 — hub 포트를 구현하는 스포크는 아니지만 같은
-#         클린 아키텍처 계약을 받는다).
-# 예정: postcall(D-4)  — 규칙 기반 판정이라 server 쪽이다.
+#         클린 아키텍처 계약을 받는다) · agent_auth(상담원 토큰, 2026-09-15 `decisions/307`) · postcall(D-1~D-3 규칙 발췌 초안, 2026-09-15 `decisions/306`).
+# 예정: D-4 공백 리포트도 규칙 기반이라 postcall 에 붙인다.
 # =============================================================================
 
 [importlinter]
@@ -25,8 +25,10 @@ root_packages =
     hub
     masking
     closure_gate
+    postcall
     blacklist
     admin_auth
+    agent_auth
     core
 include_external_packages = True
 
@@ -46,8 +48,10 @@ containers =
     hub
     masking
     closure_gate
+    postcall
     blacklist
     admin_auth
+    agent_auth
 
 # -----------------------------------------------------------------------------
 # 계약 2) 의존 방향 — server 는 ai 를 모른다
@@ -62,8 +66,10 @@ source_modules =
     hub
     masking
     closure_gate
+    postcall
     blacklist
     admin_auth
+    agent_auth
     core
 forbidden_modules =
     evaluation
@@ -87,8 +93,11 @@ source_modules =
     hub.app
     masking.domain
     closure_gate.domain
+    postcall.domain
     blacklist.domain
     admin_auth.app
+    agent_auth.app
+    agent_auth.domain
 forbidden_modules =
     fastapi
     sqlalchemy
@@ -111,7 +120,9 @@ type = forbidden
 source_modules =
     masking.domain
     closure_gate.domain
+    postcall.domain
     blacklist.domain
+    agent_auth.domain
 forbidden_modules =
     pydantic
     fastapi

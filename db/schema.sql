@@ -354,11 +354,29 @@ CREATE TABLE "blacklist_entry" (
 );
 COMMENT ON COLUMN "blacklist_entry"."customer_ref" IS '전화번호의 HMAC. blacklist_request 와 같은 체계다(`decisions/205` ③)';
 COMMENT ON COLUMN "blacklist_entry"."approved_at" IS '등록 시작. 에피소드의 고유 사실이다. 승인자는 request.decided_by 로 따라간다';
-COMMENT ON COLUMN "blacklist_entry"."expires_at" IS '**만료가 없으면 영구 표시가 된다**(`decisions/205` ⑤). J-5 는 released_at IS NULL AND expires_at > now() 만 본다. 연장은 새 요청 + 새 근거로만';
+COMMENT ON COLUMN "blacklist_entry"."expires_at" IS '**만료가 없으면 영구 표시가 된다**(`decisions/205` ⑤). J-5 는 released_at IS NULL AND expires_at > now() 만 본다. 관리자가 연장·단축할 수 있고 그때마다 blacklist_entry_expiry_change 에 쌓인다(`decisions/309` — 205 「새 요청으로만」 철회)';
 COMMENT ON COLUMN "blacklist_entry"."released_at" IS '해제 시각. **행을 지우지 않는다** — 지우면 「왜 풀렸는지」가 사라진다(절대 원칙 8)';
 COMMENT ON COLUMN "blacklist_entry"."released_by" IS '⚠ 행만 남기고 이 컬럼이 없어서 **어차피 「왜 풀렸는지」가 기록되지 않았다**';
 COMMENT ON COLUMN "blacklist_entry"."note" IS '**관리자 승인 메모**다. 요청 사유의 사본이 아니다 — 사본을 두면 같은 개인정보가 두 벌이 된다(`decisions/205` ⑤)';
 CREATE UNIQUE INDEX "blacklist_entry_uq0" ON "blacklist_entry" ("customer_ref") WHERE "released_at" IS NULL;
+
+-- J-4 등록 만료 변경 이력 — 관리자 연장·단축 1건 = 1행(`decisions/309`). `blacklist_entry.expires_at` 만 덮으면 누가 왜 늘리거나 줄였는지가 사라진다. 갱신·삭제하지 않는다
+CREATE TABLE "blacklist_entry_expiry_change" (
+    "change_id" BIGINT GENERATED ALWAYS AS IDENTITY NOT NULL,
+    "entry_id" BIGINT NOT NULL,
+    "previous_expires_at" TIMESTAMPTZ NOT NULL,
+    "new_expires_at" TIMESTAMPTZ NOT NULL,
+    "changed_by" VARCHAR(20) NOT NULL,
+    "reason" VARCHAR(500) NOT NULL,
+    "changed_at" TIMESTAMPTZ NOT NULL,
+    PRIMARY KEY ("change_id"),
+    FOREIGN KEY ("entry_id") REFERENCES "blacklist_entry"("entry_id"),
+    FOREIGN KEY ("changed_by") REFERENCES "agent"("agent_id")
+);
+COMMENT ON COLUMN "blacklist_entry_expiry_change"."new_expires_at" IS '이전보다 뒤면 연장, 앞이면 단축이다 — 방향을 따로 저장하지 않는다';
+COMMENT ON COLUMN "blacklist_entry_expiry_change"."changed_by" IS '로그인한 관리자에 연결된 agent_id(`decisions/304`) — released_by 와 같은 체계';
+COMMENT ON COLUMN "blacklist_entry_expiry_change"."reason" IS '저장 전 마스킹(`decisions/205` ⑤)';
+CREATE INDEX "blacklist_entry_expiry_change_idx0" ON "blacklist_entry_expiry_change" ("entry_id");
 
 -- J-5 배정 결과. **떨어뜨린 경우를 세는 것**이 이 테이블의 목적이다 — 「베테랑이 부족하다」가 fell_back 의 집계다
 CREATE TABLE "routing_log" (
@@ -405,3 +423,21 @@ CREATE TABLE "admin_refresh_token" (
 COMMENT ON COLUMN "admin_refresh_token"."token_hash" IS 'SHA-256 hex — 원문은 응답으로만 한 번 나가고 저장하지 않는다';
 COMMENT ON COLUMN "admin_refresh_token"."revoked_at" IS '회전·로그아웃으로 무효화된 시각. NULL 이면 아직 유효(만료 전이라면)';
 CREATE INDEX "admin_refresh_token_idx0" ON "admin_refresh_token" ("admin_account_id");
+
+-- 상담원 전용 토큰(`decisions/307`). 상담원 로그인 화면이 없어 관리자가 발급해 건넨다 — 블랙리스트 요청의 요청자를 본문이 아니라 이 토큰에서 얻는다(`decisions/304` 의 남은 구멍). **원문을 저장하지 않는다** — SHA-256 해시만 둔다(`admin_refresh_token` 과 같은 원칙). 폐기해도 행을 지우지 않는다(절대 원칙 8, 누가 언제 쓰던 토큰인지 흔적용). 만료는 아직 없다 — 폐기로만 끊는다
+CREATE TABLE "agent_token" (
+    "id" BIGINT GENERATED ALWAYS AS IDENTITY NOT NULL,
+    "agent_id" VARCHAR(20) NOT NULL,
+    "token_hash" VARCHAR(64) NOT NULL,
+    "issued_by" BIGINT NULL,
+    "issued_at" TIMESTAMPTZ NOT NULL,
+    "revoked_at" TIMESTAMPTZ NULL,
+    PRIMARY KEY ("id"),
+    UNIQUE ("token_hash"),
+    FOREIGN KEY ("agent_id") REFERENCES "agent"("agent_id"),
+    FOREIGN KEY ("issued_by") REFERENCES "admin_account"("id")
+);
+COMMENT ON COLUMN "agent_token"."token_hash" IS 'SHA-256 hex — 원문(`cga_…`)은 발급 응답으로 한 번만 나가고 저장하지 않는다';
+COMMENT ON COLUMN "agent_token"."issued_by" IS '발급한 관리자';
+COMMENT ON COLUMN "agent_token"."revoked_at" IS '폐기 시각. NULL 이면 유효';
+CREATE INDEX "agent_token_idx0" ON "agent_token" ("agent_id");

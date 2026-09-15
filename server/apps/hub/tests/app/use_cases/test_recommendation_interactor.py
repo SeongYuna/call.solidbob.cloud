@@ -125,3 +125,57 @@ def test_생성이_준_카드를_그대로_내보낸다():
     result, _ = _run(generation=_Generation(cards=only))
     assert len(result.cards.cards) == 1
     assert result.cards.cards[0].source.doc_id == "FIN-TERM-1.1"
+
+
+class _Record:
+    """RecommendationRecordPort 스텁 — 받은 묶음을 남기고 순서대로 id 를 준다."""
+
+    def __init__(self, ids=None, clock_log=None):
+        self.ids, self.saved, self.clock_log = ids, [], clock_log
+
+    async def record(self, cards):
+        if self.clock_log is not None:
+            self.clock_log.append("record")
+        self.saved.append(cards)
+        return tuple(self.ids) if self.ids is not None else tuple(range(100, 100 + len(cards.cards)))
+
+
+def test_발동하면_저장하고_돌아온_card_id를_카드에_붙인다():
+    """카드 피드백(E-1)이 가리킬 id 는 저장한 뒤에만 생긴다."""
+    record = _Record()
+    two = [Card(title="A", summary="a", source=Source(doc_id="D-1", title="A"), similarity_score=0.9),
+           Card(title="B", summary="b", source=Source(doc_id="D-2", title="B"), similarity_score=0.8)]
+    result, _ = _run(generation=_Generation(cards=two), record=record)
+    assert [c.card_id for c in result.cards.cards] == [100, 101]  # 배열 순서 = rank
+    assert all(c.card_id is None for c in record.saved[0].cards)  # 저장소에는 id 없는 카드가 간다
+
+
+def test_내부_지연은_저장_전에_잰다():
+    """DB 왕복을 4.1절 p95 채점 구간에 섞지 않는다 — 시계는 발동·완성 두 번만 읽힌다."""
+    log = []
+
+    def clock():
+        log.append("clock")
+        return 10.0 if log.count("clock") == 1 else 10.25
+
+    result, _ = _run(clock=clock, record=_Record(clock_log=log))
+    assert log == ["clock", "clock", "record"]
+    assert result.cards.internal_latency_ms == 250
+
+
+def test_미발동이면_저장하지_않는다():
+    record = _Record()
+    _run(trigger=_Trigger(fire=False), record=record)
+    assert record.saved == []
+
+
+def test_관련문서없음도_발동이라_저장한다():
+    """B-6 빈 묶음도 «발동했는데 못 찾았다» 는 기록이다(공백 리포트 재료)."""
+    record = _Record()
+    result, _ = _run(retrieval=_Retrieval(docs=[]), generation=_Generation(cards=[]), record=record)
+    assert len(record.saved) == 1 and result.cards.cards == ()
+
+
+def test_기록_포트가_없으면_card_id는_None이다():
+    result, _ = _run()
+    assert result.cards.cards[0].card_id is None

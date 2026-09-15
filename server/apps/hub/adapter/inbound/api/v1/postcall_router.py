@@ -2,6 +2,7 @@
 """POST /hub/calls/{call_id}/close — 통화 종료 후 요약·유형 제안·후속조치.
 
 응답은 언제나 초안이다. `confirmed` 를 서버가 true 로 만드는 경로는 없다 — 확정은 상담원 몫이다.
+초안은 저장된다(`call.summary_text`·`inquiry_type`·`follow_up_action`). 통화가 없으면 404, 이미 확정된 요약이면 409 — 덮지 않는다.
 """
 
 from __future__ import annotations
@@ -16,6 +17,8 @@ from hub.adapter.inbound.api.schemas.postcall_schema import (
 from hub.app.dtos.postcall_dto import PostcallCommand
 from hub.app.dtos.transcript_dto import TranscriptEvent
 from hub.app.ports.input.postcall_use_case import PostcallUseCase
+from hub.app.ports.output.postcall_record_port import SummaryAlreadyConfirmedError
+from hub.app.ports.output.transcript_ingest_record_port import CallNotStartedError
 from hub.dependencies.postcall_provider import get_postcall_use_case
 
 postcall_router = APIRouter(prefix="/hub", tags=["hub"])
@@ -52,6 +55,10 @@ async def close_call(
         )
     except ValueError as exc:
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=str(exc)) from exc
+    except CallNotStartedError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"통화가 없습니다: {call_id} — POST /hub/calls 가 먼저 와야 한다") from exc
+    except SummaryAlreadyConfirmedError as exc:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="상담원이 이미 확정한 요약입니다 — 초안으로 덮지 않습니다") from exc
 
     return CallSummaryResponse(
         call_id=draft.call_id,
