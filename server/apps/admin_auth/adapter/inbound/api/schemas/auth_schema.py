@@ -34,14 +34,3 @@ class TokenPairResponse(BaseModel):
 class AdminMeResponse(BaseModel):
     email: str
     name: str | None
-
-
-class AuthProbeResponse(BaseModel):
-    """`GET /admin/auth/test` 의 응답. 필드가 전부 `str` 인 것은 위 계약 때문이다."""
-
-    status: str = Field(description="항상 \"ok\" — 이 라우터가 떠 있다는 것 외에는 아무 뜻이 없다")
-    router: str = Field(description="어느 라우터가 응답했는지. 항상 \"admin_auth\"")
-    marker: str = Field(
-        description="배포 확인용 표식. **자동이 아니다** — 새 이미지가 떴는지 눈으로 보려고 "
-                    "`infra/k8s/base/kustomization.yaml` 의 newTag 와 같이 손으로 올린다"
-    )

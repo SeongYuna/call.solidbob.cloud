@@ -29,6 +29,16 @@ function toNum(value: unknown): number {
   return n;
 }
 
+function toBool(value: unknown): boolean {
+  if (value === "true" || value === true) {
+    return true;
+  }
+  if (value === "false" || value === false || value === undefined || value === null) {
+    return false;
+  }
+  throw new HubApiError(`불리언 필드에 예상 밖 값이 왔다: ${JSON.stringify(value)}`, null);
+}
+
 async function authedRequest<T>(path: string, accessToken: string, init?: RequestInit): Promise<T> {
   let response: Response;
   try {
@@ -64,6 +74,10 @@ function authedGet<T>(path: string, accessToken: string): Promise<T> {
 
 function authedPost<T>(path: string, accessToken: string, body: unknown): Promise<T> {
   return authedRequest<T>(path, accessToken, { method: "POST", body: JSON.stringify(body) });
+}
+
+function authedPut<T>(path: string, accessToken: string, body: unknown): Promise<T> {
+  return authedRequest<T>(path, accessToken, { method: "PUT", body: JSON.stringify(body) });
 }
 
 // ── 블랙리스트 요청·등록 wire 모양 (둘 다 `_types.StrField` 규칙) ──────────
@@ -294,4 +308,174 @@ export async function fetchKnowledgeGaps(
     call_id: g.call_id,
     domain: g.domain,
   }));
+}
+
+// ── POST /hub/blacklist-entries/{entry_id}/expiry ─────────────────────────
+// `decisions/309` — 만료 연장·단축 실제 API (`decisions/205`의 "연장은 새 요청으로만" 철회).
+// ⚠ 서버는 `expires_in_days`를 1~365(MAX_EXPIRES_IN_DAYS)로 제한한다 — 화면 입력도 12개월(365일) 상한.
+
+export interface ExpiryChangeItem {
+  change_id: string;
+  entry_id: string;
+  previous_expires_at: string;
+  new_expires_at: string;
+  changed_by: string;
+  reason: string;
+  changed_at: string;
+}
+
+interface ExpiryChangeItemWire {
+  change_id: string;
+  entry_id: string;
+  previous_expires_at: string;
+  new_expires_at: string;
+  changed_by: string;
+  reason: string;
+  changed_at: string;
+}
+
+function toExpiryChangeItem(wire: ExpiryChangeItemWire): ExpiryChangeItem {
+  return { ...wire };
+}
+
+export async function changeBlacklistEntryExpiry(
+  accessToken: string,
+  entryId: string,
+  expiresInDays: number,
+  reason: string,
+): Promise<{ entry: BlacklistEntryItem; change: ExpiryChangeItem }> {
+  const wire = await authedPost<{ entry: BlacklistEntryItemWire; change: ExpiryChangeItemWire }>(
+    `/hub/blacklist-entries/${encodeURIComponent(entryId)}/expiry`,
+    accessToken,
+    { expires_in_days: expiresInDays, reason },
+  );
+  return { entry: toEntryItem(wire.entry), change: toExpiryChangeItem(wire.change) };
+}
+
+// ── GET /hub/blacklist-entries/{entry_id}/expiry-changes ──────────────────
+
+export async function fetchBlacklistExpiryChanges(
+  accessToken: string,
+  entryId: string,
+): Promise<ExpiryChangeItem[]> {
+  const wire = await authedGet<{ changes: ExpiryChangeItemWire[] }>(
+    `/hub/blacklist-entries/${encodeURIComponent(entryId)}/expiry-changes`,
+    accessToken,
+  );
+  return wire.changes.map(toExpiryChangeItem);
+}
+
+// ── /admin/agent-tokens — 상담원 토큰 발급·목록·폐기 (`decisions/307`) ──────
+
+export interface AgentTokenItem {
+  id: string;
+  agent_id: string;
+  issued_by: string | null;
+  issued_at: string;
+  revoked_at: string | null;
+}
+
+interface AgentTokenItemWire {
+  id: string;
+  agent_id: string;
+  issued_by: string | null;
+  issued_at: string;
+  revoked_at: string | null;
+}
+
+function toAgentTokenItem(wire: AgentTokenItemWire): AgentTokenItem {
+  return { ...wire };
+}
+
+/** 응답의 `token` 은 이번 한 번만 보인다 — 서버가 해시만 저장해 다시 못 보여준다. */
+export async function issueAgentToken(
+  accessToken: string,
+  agentId: string,
+): Promise<{ token: string; item: AgentTokenItem }> {
+  const wire = await authedPost<{ token: string; item: AgentTokenItemWire }>(
+    "/admin/agent-tokens",
+    accessToken,
+    { agent_id: agentId },
+  );
+  return { token: wire.token, item: toAgentTokenItem(wire.item) };
+}
+
+export async function fetchAgentTokens(accessToken: string, agentId?: string): Promise<AgentTokenItem[]> {
+  const query = agentId !== undefined ? `?agent_id=${encodeURIComponent(agentId)}` : "";
+  const wire = await authedGet<{ tokens: AgentTokenItemWire[] }>(`/admin/agent-tokens${query}`, accessToken);
+  return wire.tokens.map(toAgentTokenItem);
+}
+
+export async function revokeAgentToken(accessToken: string, tokenId: string): Promise<AgentTokenItem> {
+  const wire = await authedPost<AgentTokenItemWire>(
+    `/admin/agent-tokens/${encodeURIComponent(tokenId)}/revoke`,
+    accessToken,
+    {},
+  );
+  return toAgentTokenItem(wire);
+}
+
+// ── /hub/routing-settings — J-5 베테랑 배정 기준 (`decisions/313`) ──────────
+
+export interface RoutingSetting {
+  veteranYears: number;
+  /** false면 저장값이 없어 기본값(도메인이 갖는 `DEFAULT_VETERAN_YEARS`)이다. */
+  saved: boolean;
+  updatedAt: string | null;
+  updatedBy: string | null;
+}
+
+interface RoutingSettingWire {
+  veteran_years: string;
+  saved: string;
+  updated_at: string | null;
+  updated_by: string | null;
+}
+
+function toRoutingSetting(wire: RoutingSettingWire): RoutingSetting {
+  return {
+    veteranYears: toNum(wire.veteran_years),
+    saved: toBool(wire.saved),
+    updatedAt: wire.updated_at,
+    updatedBy: wire.updated_by,
+  };
+}
+
+export async function fetchRoutingSetting(accessToken: string): Promise<RoutingSetting> {
+  const wire = await authedGet<RoutingSettingWire>("/hub/routing-settings", accessToken);
+  return toRoutingSetting(wire);
+}
+
+export async function saveRoutingSetting(accessToken: string, veteranYears: number): Promise<RoutingSetting> {
+  const wire = await authedPut<RoutingSettingWire>("/hub/routing-settings", accessToken, {
+    veteran_years: veteranYears,
+  });
+  return toRoutingSetting(wire);
+}
+
+// ── POST /hub/blacklist-retention/purge — 보존 정리 (`decisions/312`) ──────
+
+export interface RetentionPurgeResult {
+  retentionDays: number;
+  cutoff: string;
+  expiryChangeReasonsPurged: number;
+  rejectedRequestsPurged: number;
+}
+
+interface RetentionPurgeResponseWire {
+  retention_days: string;
+  cutoff: string;
+  expiry_change_reasons_purged: string;
+  rejected_requests_purged: string;
+}
+
+/** 몇 번을 불러도 결과가 같다 — 확인 다이얼로그 이상의 되돌리기 방지 장치는 서버가 갖는다. */
+export async function purgeBlacklistRetention(accessToken: string): Promise<RetentionPurgeResult> {
+  const wire = await authedPost<RetentionPurgeResponseWire>("/hub/blacklist-retention/purge", accessToken, {});
+  return {
+    retentionDays: toNum(wire.retention_days),
+    cutoff: wire.cutoff,
+    expiryChangeReasonsPurged: toNum(wire.expiry_change_reasons_purged),
+    rejectedRequestsPurged: toNum(wire.rejected_requests_purged),
+  };
 }

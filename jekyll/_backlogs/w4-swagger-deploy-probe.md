@@ -2,7 +2,7 @@
 title: "배포 확인용 프로브 — GET /admin/auth/test"
 assignee: "정성윤"
 role: "infra"
-status: "in-progress"
+status: "done"
 sprint: 4
 priority: 6
 date: 2026-09-15
@@ -32,10 +32,16 @@ paths:
 - [x] `/openapi.json` 공표까지 검증하는 테스트 3건 (`test_auth_probe_router.py`)
 - [x] `kustomization.yaml` `newTag` 0.1.6 → 0.1.7 (`check_release_tags.py` 통과)
 - [x] main 머지 후 `curl https://server.solidbob.cloud/openapi.json` 에 경로가 **보인다** — 09-15 확인. 경로 집합 차이가 **`/admin/auth/test` 하나뿐**이고(28 → 29, 사라진 것 0), `/admin/auth/test` 가 `{"status":"ok","router":"admin_auth","marker":"0.1.7"}` 를 돌려준다
-- [ ] 확인이 끝나면 프로브를 걷어낸다 (아래)
+- [x] 확인이 끝나면 프로브를 걷어낸다 — **09-15 걷어냈다**(아래)
 
-## 걷어낼 때
+## 걷어냈다 (2026-09-15)
 
-`auth_router.py` 의 `probe`·`PROBE_MARKER`, `auth_schema.py` 의 `AuthProbeResponse`,
-`tests/test_auth_probe_router.py`, 이 티켓, 미결 항목 한 줄 — 다섯 곳이다.
-**걷어낼 때도 `newTag` 를 올린다.**
+`auth_router.py` 의 `probe`·`PROBE_MARKER`(+ 모듈 docstring 문단·import) · `auth_schema.py` 의
+`AuthProbeResponse` · `tests/test_auth_probe_router.py` — **코드 세 곳을 지웠다.**
+`GET /admin/auth/test` 는 이제 404 이고 `/openapi.json` 에서도 빠진다.
+**걷어낼 때도 `newTag` 를 올린다** — 안 올리면 노드가 프로브가 들어 있는 옛 이미지를 계속 쓴다.
+
+**이 티켓과 [미결 항목](/open-items/)은 지우지 않았다.** 처음엔 「다섯 곳을 지운다」로 적었지만,
+`STATE.md` 가 이 슬러그를 참조하고 있고 **무엇을 왜 넣었다 뺐는지가 기록으로 남아야 한다**
+(절대 원칙 8). 칸반에서는 «완료»로 내려간다. 미결에 남은 것은 프로브와 무관한
+**「어느 이미지가 도는지 응답으로 알 방법이 없다」** 한 건뿐이다.

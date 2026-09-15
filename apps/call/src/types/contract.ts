@@ -125,6 +125,11 @@ export interface RecommendationCard {
    * 프론트가 먼저 정의했다. 서버가 안 보내면 "auto" 로 본다.
    */
   source_type?: CardSourceType;
+  /**
+   * `decisions/308` — 카드 피드백(`POST /hub/cards/{card_id}/feedback`)에 쓴다.
+   * DB에 연결되지 않은 카드는 서버가 null로 보낸다.
+   */
+  card_id?: string | null;
 }
 
 /**

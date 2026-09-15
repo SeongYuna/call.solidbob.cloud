@@ -188,11 +188,11 @@ export function AdminPanel({
                 entries={entries}
                 requests={requests}
                 defaultExpiryMonths={blacklistExpiryMonths}
-                onRelease={(entryId) => {
-                  void release(entryId, admin, "관리자 해제");
+                onRelease={(entryId, reason) => {
+                  void release(entryId, admin, reason);
                 }}
-                onExtend={(entryId, months) => {
-                  extend(entryId, months);
+                onExtend={(entryId, months, reason) => {
+                  void extend(entryId, months, reason);
                 }}
               />
             ) : null}
