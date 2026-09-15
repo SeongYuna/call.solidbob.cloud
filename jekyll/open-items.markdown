@@ -572,3 +572,32 @@ Environment Variables → **Production 만** → Deployments → Redeploy(`VITE_
   `GET /hub/calls` 는 `inquiry_type`·`summary_confirmed` 만 준다. 상담원이 초안을 **확정**하는 API(`summary_confirmed_at` 채우기)도 없다.
   **정할 것**: 상담기록 화면이 목록에서 요약을 보여줄지(목록 응답에 `summary_text` 추가) 상세 조회를 따로 둘지 — 조서희 님 화면 흐름에 달렸다
 - [ ] **`ERD.png` 를 다시 그리지 못했다** — graphviz 없는 머신. `schema.sql`·`erd.dot` 은 `agent_token` 까지 갱신됐다. `brew install graphviz` 뒤 `db/generate_schema_docs.py`
+
+### 관리자 계정의 `agent_id` 를 무엇으로 둘지 (신규, 2026-09-15, 정성윤)
+
+2026-09-15 에 운영 관리자 로그인이 열렸다(`decisions/112`, 런북 18-3). 그런데 `admin_account` 에 넣은
+행의 **`agent_id` 가 `NULL`** 이다 — 로그인·조회는 되지만 **블랙리스트 승인·해제가 409** 다.
+
+`blacklist_request.decided_by` 와 `blacklist_entry.released_by` 가 `agent` 를 참조하기 때문이고,
+스키마 주석이 *"NULL 이면 로그인은 되지만 블랙리스트 결정은 못 한다 — 누구로 기록할지 지어내지 않는다"*
+라고 못박고 있다(`decisions/304`). **일부러 비워 둔 자리이지 빠뜨린 값이 아니다.**
+
+- [ ] **관리자의 결정을 어느 상담원 마스터 ID 로 기록할지** — 선택지 셋:
+  ① 관리자 각자에게 대응하는 `agent` 행을 만들어 잇는다(사람 = 행 하나, 감사 추적이 자연스럽다)
+  ② 운영용 공용 `agent` 행 하나(`admin-console` 같은)를 만들어 전부 그리로 기록한다(누가 눌렀는지는 감사 로그로 본다)
+  ③ 스키마를 바꿔 `decided_by` 가 `admin_account` 도 가리킬 수 있게 한다(마이그레이션 필요, 되돌리기 어렵다)
+  **정할 사람**: 장민석(스키마·서버) · 정성윤(운영). J-4 승인 흐름을 실제로 쓰기 전까지는 막히지 않는다
+
+### ~~운영 DB 에 저장소에 없는 테이블이 하나 있다~~ — **오인이었다. 닫는다** (2026-09-15, 정성윤)
+
+`blacklist_entry_expiry_change` 가 저장소에 없다고 적었으나 **틀렸다.** `decisions/309`(장민석, 09-15)가
+정한 정식 테이블이고 `db/schema.sql` 에 29개 중 하나로 들어 있다. 다섯 브랜치 전부에 있다.
+**행이 0인 것도 정상이다** — 관리자 만료 연장·단축(`POST /hub/blacklist-entries/{id}/expiry`)을
+아직 아무도 쓰지 않았을 뿐이다. **지우지 않는다.**
+
+**왜 틀렸나 — 남겨 둘 값어치가 있다.** 검색을 돌린 시점의 작업 트리가 **PR #90 이전**이었다.
+`git pull --ff-only` 출력을 `tail -1` 로 삼켜 실패를 못 보고, 그 상태에서 「전수 검색 0건」이라고 단정했다.
+브랜치를 따로 보지도 않았다(`git grep <ref>` 로 다섯 브랜치를 봤으면 바로 나왔다).
+**교훈**: 「저장소에 없다」를 말하기 전에 ① 트리가 최신인지 ② 다른 브랜치는 봤는지 둘을 먼저 확인한다.
+드리프트 방향이 「운영에만 있다」로 보일 때는 대개 **내 트리가 낡은 것**이다.
+
