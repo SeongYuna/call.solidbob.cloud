@@ -1,5 +1,4 @@
 import { useEffect, useId, useState, type ReactElement } from "react";
-import { ThemeToggle } from "./ThemeToggle";
 
 const LINKS = [
   { href: "#realtime-assist", label: "실시간 어시스트" },
@@ -78,7 +77,6 @@ export function Nav(): ReactElement {
           >
             <MenuIcon open={open} />
           </button>
-          <ThemeToggle />
           <a
             href="#cta"
             className="rounded-full bg-amber-fill px-4 py-2 text-[13px] font-semibold text-[#1a1408]"
