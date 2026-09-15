@@ -17,6 +17,8 @@ ADMIN_PATHS = [
     ("get", "/hub/blacklist-requests"),
     ("get", "/hub/blacklist-entries"),
     ("get", "/hub/call-guard-flags"),
+    ("post", "/hub/blacklist-entries/1/expiry"),
+    ("get", "/hub/blacklist-entries/1/expiry-changes"),
 ]
 
 
