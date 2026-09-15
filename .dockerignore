@@ -34,3 +34,18 @@ infra
 **/*.pyc
 **/.pytest_cache
 **/.DS_Store
+
+# 테스트·검증 장치 — 런타임이 쓰지 않는다 (2026-09-15, `_project/decisions/114`).
+# `COPY server/` · `COPY ai/apps/` 가 넓어서 tests/ 하위 .py 86개(디렉터리 9개)가 운영 이미지에
+# 실리고 있었다. pytest 가 이미지에 없어 **동작 위험은 없었지만**, 머리말이 적은
+# 「이미지에 들어갈 것은 server/ 와 ai/apps 뿐」이라는 의도와 어긋났다.
+**/tests
+**/conftest.py
+**/pytest.ini
+**/.importlinter
+
+# 평가 하네스 — 배치로만 돈다(`scripts/run_eval.py`, E-1~E-4). 요청 경로에 들어오지 않는다.
+# ⚠ `ai/apps/call_guard`·`voice_signal` 은 빼지 않는다 — C-6·D-5 가 꽂힐 자리다.
+#   지금 배선이 없을 뿐이고(`/health` 의 spokes 는 넷), 빼면 나중에 꽂는 사람이
+#   **로컬에선 되는데 운영에서만 ImportError** 로 헤맨다.
+ai/apps/evaluation

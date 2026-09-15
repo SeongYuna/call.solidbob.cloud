@@ -60,6 +60,16 @@ IMAGES = {
         ),
         "output": "gateway_build",
     },
+    # ES(nori 포함). 2026-09-15 추가 — 전에는 CI 가 이 이미지를 아예 몰라서 갈래 둘이 뚫려 있었다:
+    #  ① Dockerfile 을 고쳐도 release.yml 의 paths 에 없어 워크플로가 깨어나지 않았다
+    #  ② newTag 만 올리면 워크플로는 도는데 **굽는 잡이 없어** 없는 태그를 적용 → ImagePullBackOff.
+    #     server 스모크는 통과하므로 늦게 발견된다.
+    # 태그는 ES 버전을 따라간다(Dockerfile 의 ARG ES_VERSION) — 버전을 올릴 때만 굽는다.
+    "es": {
+        "image": "seongyuna/callguard-es",
+        "paths": re.compile(r"^infra/elasticsearch/"),
+        "output": "es_build",
+    },
 }
 
 DEFAULT_KUSTOMIZATION = "infra/k8s/base/kustomization.yaml"
@@ -184,15 +194,19 @@ def warn_tag_taken_elsewhere(tags: dict[str, str]) -> None:
             )
             if not m or m.group(1) != tags[key]:
                 continue
-            # 그 브랜치에서 그 값을 만든 커밋이 우리 쪽 계보 안이면 **같은 주장**이다 —
-            # 머지를 타고 따라온 값이지 충돌이 아니다.
-            theirs = _git("rev-list", "-1", branch, "--", DEFAULT_KUSTOMIZATION)
-            if theirs and here:
-                t_, h_ = theirs.strip(), here.strip()
-                if _git("merge-base", "--is-ancestor", t_, h_) is not None:
-                    continue
-                if _git("merge-base", "--is-ancestor", h_, t_) is not None:
-                    continue
+            # **저쪽이 그 값을 실제로 «집었는가»** 를 본다. 갈라진 지점(merge-base)의 값과 같으면
+            # 그냥 물려받은 것이라 경쟁이 아니다 — 이 필터가 없으면 모두가 공유하는 값
+            # (`es` 9.5.1 처럼)마다 경고가 떠서 아무도 안 읽게 된다.
+            base = _git("merge-base", "HEAD", branch)
+            if base:
+                base_blob = _git("show", f"{base.strip()}:{DEFAULT_KUSTOMIZATION}")
+                if base_blob:
+                    bm = re.search(
+                        r"-\s*name:\s*" + re.escape(spec["image"]) + r'\s*\n\s*newTag:\s*"?([^"\s]+)"?',
+                        base_blob,
+                    )
+                    if bm and bm.group(1) == m.group(1):
+                        continue  # 저쪽은 안 바꿨다 — 물려받은 값이다
             who = (
                 _git("log", "-1", "--format=%an · %ad · %h", "--date=format:%m-%d %H:%M",
                      branch, "--", DEFAULT_KUSTOMIZATION) or ""
@@ -240,7 +254,8 @@ def main() -> int:
         with open(out, "a", encoding="utf-8") as fh:
             fh.write(f"tag={tags['server']}\n")
             fh.write(f"gateway_tag={tags['gateway']}\n")
-    print(f"배포할 태그: server={tags['server']} gateway={tags['gateway']}")
+            fh.write(f"es_tag={tags['es']}\n")
+    print(f"배포할 태그: server={tags['server']} gateway={tags['gateway']} es={tags['es']}")
 
     changed = [line.strip() for line in sys.stdin if line.strip()]
     if not changed:

@@ -1,11 +1,7 @@
 # Requirement: 관리자 로그인(구글)
-"""POST /admin/auth/google · /refresh · /logout · GET /admin/auth/me · GET /admin/auth/test.
+"""POST /admin/auth/google · /refresh · /logout · GET /admin/auth/me.
 
-회원가입 라우트가 없다 — admin_account 행이 없으면 구글 인증을 통과해도 403이다.
-
-`/test` 는 **배포 확인용 프로브**다(2026-09-15, 정성윤). 인증도 DB 도 Redis 도 타지 않아서,
-「코드를 고쳐 머지하면 운영의 `/docs`·`/openapi.json` 이 실제로 바뀌는가」만 본다.
-확인이 끝나면 걷어낸다 — [미결 항목](/open-items/)에 그 조건을 적어 두었다."""
+회원가입 라우트가 없다 — admin_account 행이 없으면 구글 인증을 통과해도 403이다."""
 
 from __future__ import annotations
 
@@ -14,7 +10,6 @@ from fastapi import APIRouter, Depends, Header, HTTPException
 from admin_auth.adapter.inbound.api.admin_guard import require_admin
 from admin_auth.adapter.inbound.api.schemas.auth_schema import (
     AdminMeResponse,
-    AuthProbeResponse,
     GoogleLoginRequest,
     LogoutRequest,
     RefreshRequest,
@@ -86,24 +81,3 @@ async def logout(
 async def me(admin: AdminAccount = Depends(require_admin)) -> AdminMeResponse:
     return AdminMeResponse(email=admin.email, name=admin.name)
 
-
-# `PROBE_MARKER` 는 손으로 올린다 — 이미지에 자동으로 박히는 값이 아니다. 새 이미지가 실제로
-# 떴는지 보려면 `infra/k8s/base/kustomization.yaml` 의 `newTag` 와 **같은 PR 안에서** 같이 올린다.
-# (태그를 안 올리면 `imagePullPolicy: IfNotPresent` 라 노드가 옛 이미지를 계속 쓴다 —
-#  `scripts/check_release_tags.py` 가 그 조합을 빨간불로 만든다.)
-PROBE_MARKER = "0.1.7"
-
-
-@auth_router.get(
-    "/test",
-    response_model=AuthProbeResponse,
-    summary="배포 확인용 프로브",
-    description="인증·DB·Redis 를 타지 않는다. 머지한 코드가 운영에 실제로 떴는지, "
-                "그리고 `/openapi.json` 이 따라 바뀌는지만 확인한다.",
-)
-async def probe() -> AuthProbeResponse:
-    """토큰을 요구하지 않는다 — 요구하면 「배포가 됐는지」와 「로그인이 되는지」가 섞인다.
-
-    비밀을 하나도 싣지 않는다(SEC-2). 설정 여부조차 싣지 않는다 — 그건 `/health` 의 일이다.
-    """
-    return AuthProbeResponse(status="ok", router="admin_auth", marker=PROBE_MARKER)

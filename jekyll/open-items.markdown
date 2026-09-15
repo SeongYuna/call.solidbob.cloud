@@ -220,9 +220,12 @@ rev.5의 C-6은 **자동 탐지**(고객 욕설·폭언, 재현율 우선 분류
 - [ ] **`agent.role` 은 컬럼만 있고 서버에 인증이 없다 (신규, 2026-09-09)** — `transitions.py` 가 `role="admin"` 일 때만 승인을 허용하는데, **그 역할을 호출자가 주장한다.** `server/apps/hub/adapter/inbound` 에 인증·권한 확인 코드가 0건이라 상담원이 `role: "admin"` 을 보내면 통과한다 — `decisions/204` 의 핵심 보장(「승인은 관리자 몫」)이 끝에서 끝까지 강제되지 않는다. **정할 것**: ① 인증을 언제 붙일지 ② 그 전까지 **J-4 승인 API 를 열지 않을지**(권고). 스키마에 `agent.role` 은 이미 넣어 뒀다. ⚠ **2026-09-14 추가**: 관리자 로그인(`admin_auth`, `decisions/403`)이 생기면서 재사용 가능한 `require_admin` 가드가 생겼다 — J-4 승인 API 를 만들 때 이걸 붙이면 이 항목이 풀린다. 다만 `admin_account`(구글 로그인 허용 목록)와 `agent.role='admin'`(상담원 마스터의 역할 구분)은 **서로 다른 테이블**이라, 매핑을 어떻게 할지는 별도로 정해야 한다
 - [ ] **원문 열람 기능이 SEC-1 과 모순된다 (신규, 2026-09-09)** — `_project/STATE.md` 가 *"권한 확인 후 스팬 클릭으로 원문 토글"* 을 대시보드 **기능**으로 적고 있고 `contract.ts` 의 두 타입에 `plain_text?` 가 있다. 그런데 **「원문 토글」이 정식 기능이 되려면 서버가 원문을 돌려줘야 하고, 돌려주려면 어딘가에 저장해야 한다** — 그 순간 SEC-1(마스킹 전 원문 미보관)이 깨진다. 지금은 mock 만 채우므로 실제 유출은 없다. **정할 것**: ① 기능을 폐기하고 `contract.ts` 의 `plain_text` 를 mock 내부 타입으로 내릴지(권고) ② 「열람」의 뜻을 재정의할지. 함께: `server/` 테스트에 「응답 스키마에 `plain_text`·`raw_text` 필드가 없다」를 고정하는 단언을 두면 회귀가 막힌다
 
-- [ ] **구글 OAuth 클라이언트 ID가 아직 없다 (신규, 2026-09-14)** — 관리자 로그인(`decisions/403`)을 만들었지만 Google Cloud Console에서 OAuth 클라이언트 ID를 발급한 사람이 아직 없다. `GOOGLE_OAUTH_CLIENT_ID`(서버)·`VITE_GOOGLE_OAUTH_CLIENT_ID`(프론트)에 같은 값을 넣어야 실제로 로그인이 된다. **정할 것**: 어느 GCP 프로젝트에 만들지(`callguard-506606`을 재사용할지 새로 팔지) — STT 키와 계정이 갈리면 청구가 흩어진다
-- [ ] **`admin_account`에 첫 행을 아무도 안 넣었다 (신규, 2026-09-14)** — 회원가입이 없으므로 이 테이블이 비어 있으면 구글 인증을 통과해도 전원 403이다. 운영 RDS에 관리자로 둘 이메일을 SQL로 직접 넣어야 한다(`INSERT INTO admin_account (email, name, created_at) VALUES (...)`). **정할 것**: 누구를 첫 관리자로 넣을지, 그리고 이후 등록·해제 절차(운영자가 직접 SQL — 지금은 이 방법뿐)를 문서화할지
-- [ ] **운영(k3s)에 Redis를 어떻게 띄울지 정하지 않았다 (신규, 2026-09-14)** — `decisions/403`은 로컬 스코프(`docker run redis:7-alpine`)만 다뤘다. **ElastiCache(관리형)는 만들지 않기로 이미 정해져 있다**(`infra/CLAUDE.md` §1-2). k3s 안에 컨테이너로 띄우는 선택지가 남는데, 퍼시스턴스(재시작 시 전체 로그아웃 허용 여부)·리소스 요청량을 정성윤과 정해야 한다. 그 전까지는 로컬 개발에서만 관리자 로그인이 동작한다
+- [x] **구글 OAuth 클라이언트 ID가 아직 없다 (신규, 2026-09-14)** — 관리자 로그인(`decisions/403`)을 만들었지만 Google Cloud Console에서 OAuth 클라이언트 ID를 발급한 사람이 아직 없다. `GOOGLE_OAUTH_CLIENT_ID`(서버)·`VITE_GOOGLE_OAUTH_CLIENT_ID`(프론트)에 같은 값을 넣어야 실제로 로그인이 된다. **정할 것**: 어느 GCP 프로젝트에 만들지(`callguard-506606`을 재사용할지 새로 팔지) — STT 키와 계정이 갈리면 청구가 흩어진다
+  → **닫힘 (2026-09-15)** — 구글 클라우드 콘솔에 웹 OAuth 클라이언트를 만들어 `GOOGLE_OAUTH_CLIENT_ID`(server-env)·`VITE_GOOGLE_OAUTH_CLIENT_ID`(Vercel) 양쪽에 넣었다. 절차는 런북 18-3.
+- [x] **`admin_account`에 첫 행을 아무도 안 넣었다 (신규, 2026-09-14)** — 회원가입이 없으므로 이 테이블이 비어 있으면 구글 인증을 통과해도 전원 403이다. 운영 RDS에 관리자로 둘 이메일을 SQL로 직접 넣어야 한다(`INSERT INTO admin_account (email, name, created_at) VALUES (...)`). **정할 것**: 누구를 첫 관리자로 넣을지, 그리고 이후 등록·해제 절차(운영자가 직접 SQL — 지금은 이 방법뿐)를 문서화할지
+  → **닫힘 (2026-09-15)** — 운영 `admin_account` 에 행 1건을 넣었고 실제 로그인이 됐다. 절차는 런북 17-4. ⚠ 그 행의 `agent_id` 는 여전히 NULL 이다 — 아래 295행 항목이 이어받는다.
+- [x] **운영(k3s)에 Redis를 어떻게 띄울지 정하지 않았다 (신규, 2026-09-14)** — `decisions/403`은 로컬 스코프(`docker run redis:7-alpine`)만 다뤘다. **ElastiCache(관리형)는 만들지 않기로 이미 정해져 있다**(`infra/CLAUDE.md` §1-2). k3s 안에 컨테이너로 띄우는 선택지가 남는데, 퍼시스턴스(재시작 시 전체 로그아웃 허용 여부)·리소스 요청량을 정성윤과 정해야 한다. 그 전까지는 로컬 개발에서만 관리자 로그인이 동작한다
+  → **닫힘 (2026-09-15)** — `decisions/112` — 클러스터 안 Redis 파드(`infra/k8s/base/redis.yaml`), **볼륨 없음**(5분짜리 세션만 담고 refresh 는 RDS 에 있다). ElastiCache 는 만들지 않았다. 런북 16-3.
 - [ ] **access 5분·refresh 10분은 테스트 값이다 — 운영 값을 따로 정해야 한다 (신규, 2026-09-14)** — 사용자가 "테스트만 진행할 것"이라는 전제로 준 값을 그대로 코드 기본값(`.env.example`)에 넣었다. 실제로 운영에 올리기 전에 이 두 숫자(그리고 리프레시 회전 주기가 사용성에 미치는 영향)를 다시 정해야 한다
 
 ### 게이트웨이를 붙이며 남은 것 (2026-09-11)
@@ -289,14 +292,26 @@ Google STT → 로컬 server 마스킹 → 대시보드 WS 까지 관통했다. 
   자막 `GET /hub/calls/{id}/transcript` · 블랙리스트 요청 `POST /hub/blacklist-requests` · 카드 피드백·「못 찾았다」 신고(이미 있음)
   ③ **관리자(`apps/admin`, 로그인 필요)** — `GET /hub/blacklist-requests` · `POST /hub/blacklist-requests/{id}/decision`(만료 일수 필수) ·
   `GET /hub/blacklist-entries` · `POST /hub/blacklist-entries/{id}/release` · `GET /hub/call-guard-flags` · `GET /hub/knowledge-gaps`(이미 있음)
-- [ ] **`CUSTOMER_REF_HMAC_KEY` 를 `.env.example` 과 운영 `server-env` 에 넣어야 한다 (신규, 2026-09-14)** — 보호 훅이 `.env.example`
+- [x] **`CUSTOMER_REF_HMAC_KEY` 를 `.env.example` 과 운영 `server-env` 에 넣어야 한다 (신규, 2026-09-14)** — 보호 훅이 `.env.example`
+  → **닫힘 (2026-09-15)** — 운영 `server-env` 에 **이미 있었다**(2026-09-15 키 이름 조회로 확인). `.env.example:81`·`secret.example.yaml:110` 도 되어 있다. ⚠ **있는 키를 새로 만들지 않는다** — HMAC 이라 바뀌면 기존 식별자를 못 찾는다(`decisions/304`).
   편집을 막아 사람이 넣는다(키 이름만). 운영 시크릿에는 값을 넣고 **보관한다** — 잃으면 기존 고객 식별자·블랙리스트 등록을 다시 찾을 수 없다.
   없으면 통화는 열리고 고객 연결만 꺼진다(`decisions/304`). `secret.example.yaml` 에는 적었다
 - [ ] **`admin_account.agent_id` 를 채워야 블랙리스트 승인·해제가 된다 (신규, 2026-09-14)** — 비어 있으면 409. 회원가입 화면이 없어 운영자가 SQL 로 넣는다
-- [ ] **운영·Neon DB 에 2026-09-14 스키마를 넣어야 한다 (신규, 2026-09-14)** — `customer_id` 64자 · `admin_account.agent_id` · `closure` 재정의 +
+  **막히는 범위를 코드로 확인했다 (2026-09-15, 정성윤)** — `hub/dependencies/blacklist_decider_provider.py:16`
+  의 `if not admin.agent_id: 409` 하나가 전부다. **쓰기 경로만** 막힌다(승인·해제 · `decisions/309` 만료 연장·단축).
+  **조회와 로그인은 멀쩡하다** — 관리자 화면을 열고 둘러보는 데는 지장이 없고, `decisions/113` 의 보존 정리
+  버튼도 `require_admin` 만 보므로 이 결정을 기다리지 않아도 된다.
+  **정할 것 — 관리자의 결정을 어느 상담원 마스터 ID 로 기록할지.** 선택지 셋:
+  ① 관리자마다 대응하는 `agent` 행을 만들어 잇는다(사람 = 행 하나, 감사 추적이 자연스럽다)
+  ② 운영용 공용 `agent` 행 하나(`admin-console` 같은)로 전부 기록한다(누가 눌렀는지는 감사 로그로 본다)
+  ③ 스키마를 바꿔 `decided_by` 가 `admin_account` 도 가리키게 한다(마이그레이션 필요, 되돌리기 어렵다)
+  **정할 사람**: 장민석(스키마·서버) · 정성윤(운영). J-4/J-5 를 실제로 쓰기 전까지는 막히지 않는다
+- [x] **운영·Neon DB 에 2026-09-14 스키마를 넣어야 한다 (신규, 2026-09-14)** — `customer_id` 64자 · `admin_account.agent_id` · `closure` 재정의 +
+  → **닫힘 (2026-09-15)** — 적용돼 있었다(`db/migrations/2026-09-14-…sql`, 09-15 26 테이블 이름 일치 확인). **Neon 은 진작 없앴으므로**(`decisions/108`) 「Neon DB」 부분은 항목 자체가 낡은 것이었다.
   `closure_item`. **운영 확인(같은 날): 테이블 22개 · `admin_account` 없음 · `closure` 0건** → 넣을 파일은 `db/migrations/2026-09-14-customer-ref-admin-closure.sql`
   (옛 스키마 `fd96adc` 에 적용 → 새 `schema.sql` 과 컬럼·제약·인덱스·주석 333항목 일치, integration 10 통과로 로컬 검증). 이미지 `0.1.5` 를 올리기 전에 넣는다(런북 17·19장). Neon 은 그 전 스키마 차이(`transcript_segment` 복합키)도 남아 있다
-- [ ] **`document` 테이블을 채우는 경로가 없다 (신규, 2026-09-14)** — 조항 본문은 ES 에만 적재된다. 그런데 `call_guard_flag`·`recommendation_card` 등이
+- [x] **`document` 테이블을 채우는 경로가 없다 (신규, 2026-09-14)** — 조항 본문은 ES 에만 적재된다. 그런데 `call_guard_flag`·`recommendation_card` 등이
+  → **닫힘 (2026-09-15)** — 경로는 `scripts/seed_documents.py` 이고 2026-09-15 운영에 돌렸다 — `document` 0행 → **98행**. 런북 17-3.
   `document` 를 외래키로 참조해 **근거 조항을 넣으면 23503** 이었다(E2E 로 재현 — 콜 가드 저장이 통째로 실패). 콜 가드는 조항이 있을 때만 잇도록 고쳤고,
   새 `closure.source_doc_id` 는 FK 를 걸지 않았다. **정할 것**: `index_knowledge_base.py` 가 `document` 도 채울지, FK 를 걷을지
 - [ ] **F-2 자동 판정·규칙표를 측정할 골든셋 케이스가 0건이다 — 류준 님께 (신규, 2026-09-14)** — `decisions/305` 로 필요서류 조항 25개가 규칙이 됐고
@@ -313,7 +328,8 @@ Google STT → 로컬 server 마스킹 → 대시보드 WS 까지 관통했다. 
 
 ### C-6 저장 배선 · 오류 주입기에서 남은 것 (2026-09-14, 류준)
 
-- [ ] **운영 RDS 에 `document` 행이 없다 (신규, 2026-09-14 · 같은 날 정정)** — 콜 가드 기록·추천 카드의 근거 조항이 이 테이블을 외래키로
+- [x] **운영 RDS 에 `document` 행이 없다 (신규, 2026-09-14 · 같은 날 정정)** — 콜 가드 기록·추천 카드의 근거 조항이 이 테이블을 외래키로
+  → **닫힘 (2026-09-15)** — 2026-09-15 적재 완료(98행). 돌리기 전 쌓인 `call_guard_flag` 1건은 `source_doc_id` 가 NULL 로 남는다 — **적재는 과거 행을 소급하지 않는다.**
   가리킨다. 비어 있으면 **근거가 NULL 로 저장된다**(장민석 님 콜 가드 저장소가 FK 위반 대신 NULL 로 떨어뜨린다). ~~500 이 난다~~ 는
   걷어낸 류준 배선 기준의 서술이었다. 절차는 런북 17-3 — `scripts/seed_documents.py`. **정할 것**: 누가 언제 돌리는가(정성윤 님 vs 류준)
 - [x] **C-6 배선이 두 벌이었다 (2026-09-14 해결)** — 류준(PR #76, 전사 수신 안에서 탐지)과 장민석 님(`server` 브랜치, 게이트웨이가
@@ -406,47 +422,64 @@ Environment Variables → **Production 만** → Deployments → Redeploy(`VITE_
 
 ### 릴리스 태그 게이트를 고치며 남은 것 (2026-09-14, `decisions/111`)
 
-- [ ] **룰셋에 `tag-check` 를 필수 통과 검사로 등록** — `.github/workflows/tag-check.yml` 을 만들었지만
-  룰셋(`21538648`)의 필수 검사는 아직 `jekyll`·`ai`·`server` 셋뿐이다. 등록해야 「태그를 안 올린 PR」이
-  실제로 **머지 전에** 막힌다. 지금은 빨간 X 만 뜨고 머지는 된다. 저장소 admin(정성윤) 콘솔 작업.
-  같이 볼 것: **`gateway` job 도 아직 필수가 아니다**(2026-09-11부터 미등록). 게이트웨이는 운영 경로인데
-  테스트가 빨개도 머지된다.
-- [ ] **⚠ `.github/branch-protection.json` 이 라이브 룰셋과 어긋난다** — 파일은
-  `required_approving_review_count: 1`, 라이브는 `0`(혼자 관리라 0이 맞다). 파일에는 `gateway`·`tag-check` 도 없다.
-  **그 파일로 룰셋을 복원하면 승인 1건 필수가 생겨 지금 흐름이 막힌다.** 라이브에 맞추거나, 참고용임을 파일에 적는다.
-- [ ] **OIDC 신뢰 정책을 아직 못 봤다** — `release.yml` 주석 ④ 는 `callguard-deploy-role` 의 신뢰 정책이
-  `refs/heads/main` 한정이라고 적지만 **실물을 확인한 사람이 없다**(네 세션 모두 AWS 자격증명 없음).
-  `#54`·`#55` 가 그 스텝에서 거부당한 이력이 있어 한 번 어긋난 적이 있다.
-  확인: IAM → 역할 → `callguard-deploy-role` → **「신뢰 관계」 탭**(자격증명 불필요, 30초) 또는 CloudShell 에서
-  `aws iam get-role --role-name callguard-deploy-role --query 'Role.AssumeRolePolicyDocument'`.
-  **`sub` 가 `repo:SeongYuna/call.solidbob.cloud:ref:refs/heads/main` 으로 좁혀져 있는지**가 핵심이다 —
-  넓게 열려 있으면 PR 에서도 역할을 빌릴 수 있어 위험도가 한 단계 올라간다.
-- [ ] **ES 이미지(`seongyuna/callguard-es`)는 CI 가 굽지 않는다** — 갈래가 둘이다.
-  ① `infra/elasticsearch/Dockerfile` 을 고쳐도 `release.yml` 의 `paths` 에 없어 **워크플로가 깨어나지 않는다**
-  ② ES `newTag` 만 올리면 워크플로는 도는데 **굽는 잡이 없어** `deploy` 가 없는 태그를 적용 → **ImagePullBackOff**.
-  server 스모크는 통과하므로 늦게 발견된다. 지금 정본은 손으로 굽는 것이다(`infra/README.md:34`).
-  자동화할지, 「손으로 굽는다」를 규칙으로 못박을지 정한다.
-- [ ] **`converge.sh:55` 가 게이트웨이 롤아웃을 보지 않는다** — `rollout status deploy/callguard-server` 만
-  기다린다. 부팅 시 게이트웨이가 못 떠도 「완료」를 찍는다(`release.yml` 의 배포는 둘 다 본다).
-  09-11 게이트웨이 도입 때 갱신이 누락된 것으로 보인다. 한 줄 추가면 된다.
-- [ ] **`test.yml` 이 같은 SHA 에 검사를 2벌 단다** — 브랜치 push 런과 main PR 런이 **같은 커밋**을 헤드로 쓴다
-  (실측: `61a3d35d69` 에 `push frontend` · `pull_request frontend` 둘). 러너 분과 checks 목록 소음 문제다.
-  **⚠ 싼 수정(`concurrency` group 을 `head_ref || ref_name` 으로 통합)은 위험하다** — 두 런이 같은 SHA 에
-  **같은 이름**(`server`·`ai`·`jekyll`)으로 check-run 을 보고하므로, 한쪽을 취소하면 필수 검사가 `cancelled` 로
-  남아 **머지가 막힐 수 있다**(경합이라 재현이 들쭉날쭉하다). 실제 해결은 push 트리거 정책을 바꾸는 것인데
-  `CLAUDE.md` §7 이 네 브랜치 push 에서 돈다고 적고 있어 **정책 결정**이 필요하다.
-- [ ] **운영 이미지에 테스트가 실린다** — `server.Dockerfile` 의 `COPY server/` · `COPY ai/apps/` 가 넓어
-  `tests/` 하위 `.py` **86개**(디렉터리 9개, `__pycache__` 제외)와 `ai/apps/evaluation/`(336K)이 들어간다.
-  `pytest` 가 이미지에 없어 **동작 위험은 없다** — 결함이 아니라 사실 기록이다.
-  줄이려면 `.dockerignore` 에 `**/tests`·`**/conftest.py`·`**/pytest.ini`·`**/.importlinter` + `ai/apps/evaluation`.
-  **⚠ 그때까지는 `ai/apps/evaluation/` 만 고친 PR 도 태그를 올려야 한다** — server 경로 정규식이
-  `^(server/|ai/|…)` 라 평가 하네스만 손대도 게이트가 걸린다(2026-09-14부터는 **머지 전에** 걸린다).
-  버그가 아니라 「이미지에 들어갈 필요 없는 것이 들어가 있다」의 증상이다 — 위 두 곳을 좁히면 같이 사라진다.
-
-  **⚠ `ai/apps/call_guard`·`voice_signal` 은 빼지 않는다** — C-6·D-5 가 꽂힐 자리다. 지금 배선이 없을 뿐이고
-  (`/health` 의 `spokes` 와 `release.yml` 의 `EXPECTED` 둘 다 넷뿐), 빼면 나중에 꽂는 사람이
-  **로컬에선 되는데 운영에서만 ImportError** 로 헤맨다. `server/tests/test_image_layout.py` 가 안전망이지만
-  **지금 `main.py` 가 import 하는 것**(`ai/provider.py`·`ai/apps/retrieval`)만 보므로 이 경우는 못 잡는다.
+- [x] ~~룰셋에 `tag-check`·`gateway` 를 필수 통과 검사로 등록~~ — **2026-09-15 완료.**
+  룰셋(`21538648`)의 필수 검사가 `jekyll`·`ai`·`server` **→ + `gateway`·`tag-check`** 로 다섯이 됐다.
+  나머지 규칙(`deletion`·`non_fast_forward`·`pull_request`·`strict: true`·승인 0건)은 그대로다.
+  이제 `server/`·`ai/` 를 고치면서 `newTag` 를 안 올리면 **머지 버튼이 잠긴다**(전에는 빨간 X 만 떴다).
+- [x] **`.github/branch-protection.json` 을 라이브 룰셋에 맞췄다** (2026-09-15, 정성윤) —
+  값 셋을 고쳤다: `contexts` 셋 → **다섯**(`gateway`·`tag-check` 추가) · 승인 `1` → **`0`** ·
+  `enforce_admins` `false` → **`true`**(라이브 `bypass_actors: []` = 우회 없음에 대응).
+  **파일을 지우지 않은 이유**: `decisions/011` 이 «룰셋을 걷어내고 클래식으로 돌아갈 때를 위해 남겨 둔다»로
+  정해뒀다. 목적이 대비본이므로 **값이 어긋나 있으면 되돌리는 순간 정책이 조용히 바뀐다** — 그게 이 항목의 위험이었다.
+  ⚠ **형식이 다르다는 건 남는다** — 이 파일은 클래식 보호 API(`branches/main/protection`) 형식이고
+  라이브는 룰셋 API(`21538648`)다. 클래식에 대응물이 없는 라이브 설정 둘은 못 담았다:
+  `require_extra_approval_for_unattributed_changes: true` · `allowed_merge_methods`.
+  **룰셋 백업은 이미 있었고, 그것도 어긋나 있었다** — `.github/ruleset-main.json` 은 `22c7983` 에 들어와
+  있었는데 `contexts` 가 **셋**인 옛 판이었다(같은 병). 2026-09-15 에 라이브 룰셋(`21538648`)에서
+  읽기 전용 필드 8개를 걷어낸 복원본이다(`PUT --input` 으로 그대로 되살아난다). 쓰기 가능 필드
+  여섯이 라이브와 한 글자도 다르지 않음을 대조 확인했다. 뜨고 되살리는 명령은 `CLAUDE.md` §7.
+  ⚠ **룰셋을 고칠 때 이 파일을 같이 갱신하지 않으면 다시 어긋난다** — 그게 이 항목이 생긴 경위다.
+- [x] **OIDC 신뢰 정책 — 확인했다. 유효하다** (2026-09-15, 정성윤) — `callguard-deploy-role` 의 신뢰
+  정책은 실제로 **`main` 한정**이다. `release.yml` 주석 ④ 가 맞았다.
+  `sub` = `repo:SeongYuna@280208914/call.solidbob.cloud@1344602683:ref:refs/heads/main` —
+  이름이 아니라 **계정·저장소의 숫자 ID 가 박힌 형태**다(`gh api repos/...` 로 `owner_id`·`repo_id` 대조 확인).
+  저장소 이름을 바꾸거나 같은 이름으로 새로 만들어도 사칭되지 않아 이름만 쓰는 것보다 강하다.
+  함께 본 것 — ① `StringLike` 지만 값에 `*` 가 없어 사실상 정확 일치 ② `aud` 는 `sts.amazonaws.com` 고정
+  ③ **GitHub OIDC 공급자를 신뢰하는 역할은 이것 하나뿐**이다(전 역할 전수 조사)
+  ④ 오늘 05:33 에 실제로 쓰였다 — 릴리스 #90 의 `k3s-deploy` → 「AWS 자격증명(OIDC)」 success.
+  `#54`·`#55` 의 거부는 역할 생성(09-09 04:37) 직후 과도기였다.
+  **그래서 「`release.yml` 에 `pull_request` 를 더하면 머지 안 된 코드가 운영에 배포된다」는 성립하지 않는다** —
+  OIDC 스텝에서 죽는다. 다만 **이미지 push 는 AWS 를 거치지 않아 그대로 남는다**(`DOCKERHUB_*` 만 쓴다).
+  그쪽은 판정만 하는 `tag-check.yml` 을 따로 뗀 것으로 이미 닫혀 있다(`decisions/111`).
+  ⑤ **왜 ID 형태인지 확인했다 (덧붙임, 2026-09-15)** — 커스텀 템플릿이 아니라 **GitHub 기본값**이다:
+  `gh api repos/SeongYuna/call.solidbob.cloud/actions/oidc/customization/sub` →
+  `{"use_default": true, "use_immutable_subject": true, "sub_claim_prefix": "repo:SeongYuna@…/call.solidbob.cloud@…"}`.
+  `use_immutable_subject` 가 켜져 있어 이름 대신 ID 가 박힌다.
+  ⚠ **그래서 이 토글을 끄면 배포가 전부 깨진다** — `sub` 가 이름 형태(`repo:SeongYuna/call.solidbob.cloud:ref:…`)로
+  돌아가는데 신뢰 정책은 ID 형태로 고정돼 있어 더는 일치하지 않는다. 증상은 `#54`·`#55` 와 똑같은
+  `Not authorized to perform sts:AssumeRoleWithWebIdentity` 라 원인을 찾기 어렵다. **끄지 않는다.**
+  덧붙여 **신뢰 정책은 저장소 어디에도 코드로 없다**(terraform 포함 — 전수 확인). AWS 콘솔에만 있으므로
+  역할을 잃으면 정책 원문도 같이 사라진다.
+- [x] ~~ES 이미지는 CI 가 굽지 않는다~~ — **2026-09-15 자동화했다** (`decisions/114`).
+  `release.yml` 의 `paths` 에 `infra/elasticsearch/**` 를 넣고 `es-image` 잡을 만들었고, 태그 게이트
+  (`check_release_tags.py` 의 `IMAGES`)에도 `es` 를 추가했다. 두 갈래가 다 닫혔다.
+  ⚠ **ES 태그는 ES 버전을 따라간다**(`Dockerfile` 의 `ARG ES_VERSION`). Dockerfile 만 고치고 버전은
+  그대로일 때는 빌드 접미사를 붙인다 — 예: `9.5.1-2`. 같은 태그로 다시 구우면 노드가 캐시를 계속 쓴다.
+- [x] ~~`converge.sh` 가 게이트웨이 롤아웃을 보지 않는다~~ — **2026-09-15 한 줄 추가했다** (`decisions/114`).
+  `rollout status deploy/callguard-gateway` 를 더해 부팅 경로도 릴리스 배포와 같은 것을 본다.
+- [x] ~~`test.yml` 이 같은 SHA 에 검사를 2벌 단다~~ — **2026-09-15 트리거를 좁혔다** (`decisions/114`).
+  `push.branches` 를 `[main]` 으로 바꿨다. **`concurrency` 를 합치는 「싼 수정」은 쓰지 않았다** —
+  두 런이 같은 SHA 에 같은 이름으로 check-run 을 보고해서, 취소된 쪽이 나중에 기록되면 필수 검사가
+  `cancelled` 로 남아 **머지가 막힌다**(필수 검사가 다섯이 된 지금은 더 위험하다).
+  ⚠ **잃은 것 하나** — 「PR 없이 브랜치에만 push 했을 때」는 CI 가 돌지 않는다. PR 이 열려 있으면
+  push 마다 `pull_request` 가 돈다. 일찍 보고 싶으면 **초안 PR**을 연다. 불편하면 되돌릴 수 있다(중복도 같이 돌아온다).
+- [x] ~~운영 이미지에 테스트가 실린다~~ — **2026-09-15 `.dockerignore` 로 뺐다** (`decisions/114`).
+  `**/tests` · `**/conftest.py` · `**/pytest.ini` · `**/.importlinter` · `ai/apps/evaluation` 추가.
+  **`ai/apps/call_guard`·`voice_signal` 은 남겼다** — C-6·D-5 가 꽂힐 자리라 빼면 나중에 꽂는 사람이
+  로컬에선 되는데 운영에서만 ImportError 로 헤맨다.
+  같이 한 것: **안전망을 넓혔다.** `server/tests/test_image_layout.py` 는 Dockerfile 의 `COPY` 만 읽어서
+  `COPY ai/apps/` 가 그대로여도 `.dockerignore` 가 그 안을 빼면 **테스트는 초록인데 이미지엔 없다.**
+  `_ignored_by()` 를 더해 `.dockerignore` 도 함께 보게 했다.
 
 ### 운영 스키마가 배포보다 늦게 따라간다 (신규, 2026-09-14)
 
@@ -459,7 +492,8 @@ Environment Variables → **Production 만** → Deployments → Redeploy(`VITE_
   붙인다면 무엇으로 보나 — ① `db/migrations/` 에 새 파일이 있으면 「적용했는가」를 묻는 체크박스 ②
   `schema.sql` 의 `CREATE TABLE` 수와 운영 조회값 비교(운영 접근이 CI 에 필요해진다 — 반대급부가 크다).
   ①이 싸고, ②는 자격증명을 CI 에 들이는 값이 든다.
-- [ ] **`admin_account` 행이 비어 있다 (2026-09-14)** — 넣기 전까지 블랙리스트 승인·해제가 409.
+- [x] **`admin_account` 행이 비어 있다 (2026-09-14)** — 넣기 전까지 블랙리스트 승인·해제가 409.
+  → **닫힘 (2026-09-15)** — 행 1건을 넣었다(2026-09-15). `agent_id` 는 아직 NULL 이라 승인·해제 409 는 그대로다 — 295행 항목이 이어받는다.
   회원가입 화면이 없어 운영자가 SQL 로 넣고 `agent_id` 를 채운다. `CUSTOMER_REF_HMAC_KEY` 는 09-14 에 넣었다.
 - [ ] **런북 8장의 SSH 키 이름이 실물과 다르다 (2026-09-14)** — 런북은 `~/.ssh/assist-key.pem` 인데
   그런 파일이 없다(있는 것은 `callguard-key.pem`·`admin-keypair.pem`). 09-14 에 고친 IAM 역할·S3 버킷
@@ -479,18 +513,19 @@ Environment Variables → **Production 만** → Deployments → Redeploy(`VITE_
   **정할 것**: 로드맵을 실제 진행에 맞춰 고칠지(`docs/08` 수정), 아니면 4주차 검색 품질을 5주차로 미룰지.
   지금은 **티켓만 만들어 두고 주차는 로드맵 그대로 뒀다** — 미루는 판단은 팀 몫이다.
 
-### 배포 확인용 프로브를 언제 걷어내나 (신규, 2026-09-15)
+### 배포 확인용 프로브 — 걷어냈다 (2026-09-15 닫음)
 
-- [ ] **`GET /admin/auth/test` 는 임시다** ([티켓](/backlog/w4-swagger-deploy-probe/)). 「server 를 고쳐
-  머지하면 운영 `/openapi.json` 이 실제로 바뀌는가」를 한 번 완주해 보려고 넣은 프로브이고,
-  인증·DB·Redis 를 타지 않는다. **확인이 끝나면 걷어낸다** — 걷어낼 다섯 곳은 티켓에 적어 두었다.
-  **정할 것**: ① 그냥 지울지 ② `/health` 처럼 상시 유지할지. ②로 간다면 «무엇을 보는 엔드포인트인지»를
-  정해야 한다 — 지금은 이름이 `test` 라 **무엇을 보장하는지 이름이 말해 주지 않는다.**
-  ⚠ 이름이 `/test` 인 채로 남으면 다음 사람이 「지워도 되는 것」인지 판단할 수 없다.
-- [ ] **배포됐다는 것을 «태그» 로 확인할 방법이 없다.** 프로브의 `marker` 는 사람이 손으로 올리는 문자열이라
-  올리는 걸 잊으면 옛 값이 그대로 나간다(FastAPI `app.version` 도 `0.1.0` 에 고정돼 있다 —
-  `kustomization.yaml` 의 `newTag` 와 무관하다). **정할 것**: 빌드 시점에 이미지 태그를 넣어
-  (`--build-arg` → 환경변수 → `/health`) 어느 이미지가 도는지 응답으로 알 수 있게 할지.
+- [x] ~~`GET /admin/auth/test` 를 언제 걷어내나~~ — **09-15 지웠다. ① 그냥 지우기를 택했다**
+  ([티켓](/backlog/w4-swagger-deploy-probe/)). 넣은 목적(「server 를 고쳐 머지하면 운영
+  `/openapi.json` 이 실제로 바뀌는가」)은 같은 날 완주해서 **다 썼고**, ②(상시 유지)로 가려면
+  «무엇을 보장하는 엔드포인트인지»를 먼저 정해야 하는데 그 답이 `/health` 와 겹친다.
+  **이름이 `test` 인 채로 남기지 않는다**는 것이 이 항목을 연 이유였다.
+- [ ] **배포됐다는 것을 «태그» 로 확인할 방법이 없다** — 프로브를 걷어내면서 **다시 열린 채로 남는다.**
+  프로브의 `marker` 는 사람이 손으로 올리는 문자열이라 애초에 못 미더웠고(올리는 걸 잊으면 옛 값이
+  그대로 나간다), 그마저 없어졌다. FastAPI `app.version` 도 `0.1.0` 에 고정돼 `kustomization.yaml` 의
+  `newTag` 와 무관하다. **지금 어느 이미지가 도는지는 클러스터 안에서만 알 수 있다**
+  (`kubectl -n callguard get deploy/callguard-server -o jsonpath='{..image}'`).
+  **정할 것**: 빌드 시점에 이미지 태그를 넣어(`--build-arg` → 환경변수 → `/health`) 응답으로 알 수 있게 할지.
   그러면 `server/core/config.py` 와 `secret.example.yaml` 이 같이 움직인다(런북 16-1).
 
 ### `w4-dashboard-live-contract` 로 드러난 계약 구멍 셋 (신규, 2026-09-15)
@@ -608,7 +643,12 @@ Environment Variables → **Production 만** → Deployments → Redeploy(`VITE_
   `SettingsTab.tsx` 입력 상한을 서버 값(0.5~40)에 맞추고 «연결 안 됨» 문구 걷어냄. 배정 판정을 실제로 부르는 쪽(아래 항목)은 그대로 미결.
 - [ ] **J-5 배정 판정을 부르는 곳이 없다 (2026-09-15, `decisions/313`)** — 교환기가 없고 게이트웨이도 부르지 않는다. 판정 API 는 인증도 없다(통화 시작과 같은 한계).
   **정할 것**: 데모에서 게이트웨이 `/dev` 테스트 콜이 통화 시작 직후 부르게 할지 · `routing_log.fell_back` 집계를 관리자 현황판에 올릴지
-- [ ] **블랙리스트 보존 정리를 누가 언제 부르나 (2026-09-15, `decisions/312`)** — 관리자 API 만 있고 주기 실행이 없다. 부르지 않으면 비워지지 않는다.
+  **2026-09-15 정성윤 확인** — 게이트웨이가 서버로 보내는 것은 `POST /hub/calls` 하나뿐이다(`adapters/hub_http.ts:33`).
+  배정 판정 호출은 코드에 없다. 프론트는 관여하지 않는다(화면이 부르는 API 가 아니다).
+  **정할 것**: ① 데모에서 `/dev` 테스트 콜이 통화 시작 직후 이어서 부를지, 아니면 「엔드포인트는 있다」로 남길지
+  ② 부르기로 하면 **인증도 같이** — 지금 토큰 없이 열려 있고, 통화 시작 API 와 묶어서 보는 게 맞다. **정성윤(게이트웨이 코드)**
+- [x] **블랙리스트 보존 정리를 누가 언제 부르나 (2026-09-15, `decisions/312`)** — 관리자 API 만 있고 주기 실행이 없다. 부르지 않으면 비워지지 않는다.
+  → **닫힘 (2026-09-15)** — `decisions/113` — **관리자 화면 버튼으로 사람이 부른다. CronJob 을 만들지 않는다.** 그 라우터가 `require_admin` 이라 CronJob 이 들 장기 토큰이 설계에 없다.
   **정할 것**: 관리자가 주기적으로 누를지 · CronJob 으로 부를지(운영 인스턴스 02시 자동 중지와 겹치지 않게). 대상 밖으로 남긴 것 — 승인 요청 사유·자막, 해제 사유·승인 메모, 요약 재수정 사유
 - [ ] **저장한 통화 후 초안을 읽는 경로가 없다 (2026-09-15)** — `POST /hub/calls/{id}/close` 가 이제 `call.summary_text`·`follow_up_action`(draft)에 남기지만
   `GET /hub/calls` 는 `inquiry_type`·`summary_confirmed` 만 준다. 상담원이 초안을 **확정**하는 API(`summary_confirmed_at` 채우기)도 없다.
@@ -622,21 +662,6 @@ Environment Variables → **Production 만** → Deployments → Redeploy(`VITE_
 - [ ] **골든셋의 C-4 라벨이 기획서 C-4 와 뜻이 다르다 (신규, 2026-09-15, 류준)** — 기획서 2.4절의 C-4 는 「권장 대체 표현 제시」(기능)인데 골든셋 GS-312·GS-318 은 **「의학적 안심 발언」(위반 갈래)** 에 C-4 를 붙였다. 컴플라이언스 규칙 v1 은 채점 기준(골든셋)을 따라 `rule_code="C-4"` 로 낸다. `compliance_rule` 카탈로그(C-1~C-4)에 들어갈 라벨이 둘 중 무엇인지 **정할 것** — 기획서를 고칠지(결정 기록) 골든셋 라벨을 C-1(확정적 표현)로 옮길지
 - [ ] **STT 일 캡 600초면 하루 약 4통화다 — 시연 리허설에 걸린다 (신규, 2026-09-15, 류준)** — `scripts/estimate_call_cost.py` **추정**: AI Hub 다산 대화셋 턴 수 × 다산콜DB 발화 길이로 통화 1건 STT 약 146초(발화 합이라 **하한**). `gateway.yaml` 캡(일 600s · 월 3,600s)으로는 하루 4건 · 한 달 25건이다(`w7-token-cost`). **정할 것**: 시연·리허설 일정에 맞춰 캡을 조정할지 — COST-1 이중 가드라 GCP 쿼터와 함께 정성윤 님이 정한다
 
-### 관리자 계정의 `agent_id` 를 무엇으로 둘지 (신규, 2026-09-15, 정성윤)
-
-2026-09-15 에 운영 관리자 로그인이 열렸다(`decisions/112`, 런북 18-3). 그런데 `admin_account` 에 넣은
-행의 **`agent_id` 가 `NULL`** 이다 — 로그인·조회는 되지만 **블랙리스트 승인·해제가 409** 다.
-
-`blacklist_request.decided_by` 와 `blacklist_entry.released_by` 가 `agent` 를 참조하기 때문이고,
-스키마 주석이 *"NULL 이면 로그인은 되지만 블랙리스트 결정은 못 한다 — 누구로 기록할지 지어내지 않는다"*
-라고 못박고 있다(`decisions/304`). **일부러 비워 둔 자리이지 빠뜨린 값이 아니다.**
-
-- [ ] **관리자의 결정을 어느 상담원 마스터 ID 로 기록할지** — 선택지 셋:
-  ① 관리자 각자에게 대응하는 `agent` 행을 만들어 잇는다(사람 = 행 하나, 감사 추적이 자연스럽다)
-  ② 운영용 공용 `agent` 행 하나(`admin-console` 같은)를 만들어 전부 그리로 기록한다(누가 눌렀는지는 감사 로그로 본다)
-  ③ 스키마를 바꿔 `decided_by` 가 `admin_account` 도 가리킬 수 있게 한다(마이그레이션 필요, 되돌리기 어렵다)
-  **정할 사람**: 장민석(스키마·서버) · 정성윤(운영). J-4 승인 흐름을 실제로 쓰기 전까지는 막히지 않는다
-
 ### ~~운영 DB 에 저장소에 없는 테이블이 하나 있다~~ — **오인이었다. 닫는다** (2026-09-15, 정성윤)
 
 `blacklist_entry_expiry_change` 가 저장소에 없다고 적었으나 **틀렸다.** `decisions/309`(장민석, 09-15)가
@@ -649,4 +674,3 @@ Environment Variables → **Production 만** → Deployments → Redeploy(`VITE_
 브랜치를 따로 보지도 않았다(`git grep <ref>` 로 다섯 브랜치를 봤으면 바로 나왔다).
 **교훈**: 「저장소에 없다」를 말하기 전에 ① 트리가 최신인지 ② 다른 브랜치는 봤는지 둘을 먼저 확인한다.
 드리프트 방향이 「운영에만 있다」로 보일 때는 대개 **내 트리가 낡은 것**이다.
-
