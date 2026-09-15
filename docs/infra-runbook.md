@@ -1511,6 +1511,10 @@ curl -fsS $B/hub/calls/$C/transcript
 > ⚠ **`0.1.9` 도 스키마가 바뀐다**(`decisions/309`) — `blacklist_entry_expiry_change` 신설(26 → 27). **이미지를 올리기 전에**
 > `db/migrations/2026-09-15-blacklist-expiry-change.sql` 을 넣는다(`agent_token` 마이그레이션이 먼저여야 한다 — 파일이 확인하고 멈춘다).
 > 안 넣으면 만료 연장·단축(`…/expiry`·`…/expiry-changes`)만 500 이고 다른 경로는 영향 없다. 6번 기대값은 27.
+>
+> ⚠ **`0.1.10` 도 스키마가 바뀐다**(`decisions/311`·`313`) — `call_summary_revision` · `app_setting` 신설(27 → 29). **이미지를 올리기 전에**
+> `db/migrations/2026-09-15-summary-revision-app-setting.sql` 을 넣는다(`blacklist_entry_expiry_change` 가 먼저여야 한다 — 파일이 확인하고 멈춘다).
+> 안 넣으면 요약 재수정(`…/summary-revision(s)`)·배정(`/hub/routing-decisions`·`/hub/routing-settings`)만 500. 6번 기대값은 29. `0.1.10` 은 게이트웨이 `0.1.4` 와 같이 나간다.
 
 > ⚠ **`0.1.5` 는 DB 스키마가 바뀐다**(2026-09-14, `decisions/304`·`305`) — `customer_id` 길이 64 · `admin_account.agent_id` ·
 > `closure` 재정의 + `closure_item`. 17장대로 **이미지를 올리기 전에** 스키마를 넣는다. **데이터가 있는 운영 DB 에는 `schema.sql` 이 아니라
