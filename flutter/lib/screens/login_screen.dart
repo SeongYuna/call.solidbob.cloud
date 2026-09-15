@@ -16,7 +16,7 @@ class LoginScreen extends StatelessWidget {
     return Scaffold(
       body: Center(
         child: Padding(
-          padding: const EdgeInsets.all(24),
+          padding: const EdgeInsets.all(AppSpacing.cardPadding),
           child: Card(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 36),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 
 import '../../models/blacklist_models.dart';
@@ -45,14 +46,14 @@ class AuditTab extends StatelessWidget {
 
     if (rows.isEmpty) {
       return Padding(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(AppSpacing.cardPadding),
         child: Text('아직 승인·반려·해제 이력이 없습니다.', style: TextStyle(color: c.muted)),
       );
     }
 
     final fmt = DateFormat('yyyy.MM.dd HH:mm');
     return ListView(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(AppSpacing.cardPadding),
       children: [
         for (final row in rows)
           ListTile(
@@ -62,7 +63,7 @@ class AuditTab extends StatelessWidget {
               child: Text(row.action[0], style: TextStyle(color: row.action == '승인' ? c.okFg : c.text)),
             ),
             title: Text('${row.detail} · ${row.actor}'),
-            subtitle: Text(fmt.format(row.at)),
+            subtitle: Text(fmt.format(row.at), style: GoogleFonts.jetBrainsMono()),
           ),
       ],
     );
