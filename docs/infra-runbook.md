@@ -1371,7 +1371,12 @@ curl -fsSL https://codeload.github.com/SeongYuna/call.solidbob.cloud/tar.gz/main
 sudo k3s kubectl -n callguard exec deploy/callguard-server -- python /app/scripts/seed_documents.py   # 조항 98개 → 적재 완료 98개
 ```
 
-⚠ **운영에서 아직 돌리지 않았다**(2026-09-14). 로컬 `postgres:17` + 현재 `schema.sql` 에서만 확인했다.
+✅ **운영에서 돌렸다 (2026-09-15)** — `조항 98개 / 적재 완료 98개`, 운영 RDS `document` 98행 확인.
+돌리기 전 상태는 **0행**이었고 그동안 쌓인 `call_guard_flag` 1건은 `source_doc_id` 가 NULL 이다 —
+**적재는 과거 행을 소급해 채우지 않는다.** 앞으로 쌓이는 것부터 근거 조항이 이어진다.
+
+⚠ `/app/scripts`·`/app/knowledge-base` 는 **이미지에 없는 파일**이라 파드가 다시 뜨면 사라진다.
+DB 에 들어간 98행은 남으므로 문제없고, 다시 돌릴 일이 생기면 위 tar 부터 한다.
 
 ---
 
@@ -1433,6 +1438,75 @@ DNS 가 퍼지면(보통 1분 안) Caddy 가 알아서 인증서를 받습니다
 ```bash
 kubectl logs -n assist deploy/caddy | tail -20   # certificate obtained
 ```
+
+---
+
+### 18-3. 관리자 화면(Vercel) · 구글 OAuth (2026-09-15 추가 — 운영에서 완주 확인)
+
+관리자 화면 `apps/admin` 은 **AWS 가 아니라 Vercel** 에 있다(`decisions/112`). 서버·게이트웨이와
+배포 경로가 다르므로 여기 따로 적는다. 아래는 2026-09-15 에 실제로 끝까지 돌려 본 순서다.
+
+**① 구글 OAuth 클라이언트** — 콘솔 → API 및 서비스 → 사용자 인증 정보
+
+| 항목 | 값 |
+|---|---|
+| 유형 | **웹 애플리케이션** |
+| 승인된 JavaScript 원본 | `https://admin.solidbob.cloud` · `http://localhost:5174` |
+| 승인된 리디렉션 URI | **비운다** — GIS 는 id_token 방식이라 콜백 라우트가 없다(`decisions/403` §2) |
+
+> 동의 화면이 **「테스트」 모드**면 등록한 테스트 사용자만 통과한다. 클라이언트 **보안 비밀번호는 쓰지 않는다.**
+> 원본 주소 끝에 슬래시를 붙이지 않는다 — 문자열 비교다.
+
+**② `server-env` 에 키 4개 — patch 는 한 번이다**(12-2 절차). `CORS_ALLOWED_ORIGINS` 도 같은 시크릿의
+키라 따로 손댈 곳이 없다. **덮지 말고 덧붙인다** — 통째로 바꾸면 상담원 화면이 막힌다.
+
+```
+GOOGLE_OAUTH_CLIENT_ID   ....apps.googleusercontent.com   (비밀 아님 — 서버가 audience 검증에 쓴다)
+ADMIN_JWT_SECRET         openssl rand -hex 32             (인스턴스 안에서 만든다 — 값이 밖에 안 나간다)
+REDIS_URL                redis://redis:6379/0             (16-3)
+CORS_ALLOWED_ORIGINS     https://call.solidbob.cloud,https://admin.solidbob.cloud
+```
+
+**패치 뒤 반드시 `rollout restart`** — 시크릿은 파드가 뜰 때만 읽힌다. **머지 배포는 재시작하지 않는다**
+(Deployment 스펙이 안 바뀌면 `kubectl apply` 가 no-op 이다). 09-15 에 여기서 한 번 걸렸다.
+
+**③ 허용 목록 행 1건** — 17-4.
+
+**④ Vercel 프로젝트** — Add New → Project → 같은 저장소를 다시 Import(세 번째다)
+
+| 항목 | 값 |
+|---|---|
+| Root Directory | **`apps/admin`** (기본값은 저장소 루트다 — `Edit` 로 바꾼다) |
+| Framework / Build / Output | Vite · `npm run build` · `dist` |
+| 환경변수(Production) | `VITE_API_BASE_URL=https://server.solidbob.cloud` · `VITE_GOOGLE_OAUTH_CLIENT_ID=<①>` |
+
+> ⚠ **환경변수를 Import 화면에서 넣는다.** `VITE_` 는 빌드 때 번들에 문자열로 박히므로, 나중에 넣으면
+> **Redeploy 를 한 번 더** 해야 한다. 들어갔는지는 번들을 직접 본다:
+> `curl -s https://admin.solidbob.cloud/assets/index-*.js | grep -o server.solidbob.cloud`
+
+**⑤ DNS** — Cloudflare `admin` CNAME → Vercel 이 준 값, **회색 구름**(`decisions/103`).
+
+**확인** — 이 넷이 다 되어야 완료다. 하나라도 빠지면 증상이 다르게 나온다:
+
+```bash
+curl -s -o /dev/null -w '%{http_code}\n' https://admin.solidbob.cloud            # 200
+curl -s -o /dev/null -D - -X OPTIONS https://server.solidbob.cloud/admin/auth/google \
+  -H 'Origin: https://admin.solidbob.cloud' -H 'Access-Control-Request-Method: POST' \
+  | grep -i 'allow-origin'                                                        # 에코돼야 한다
+$K exec deploy/callguard-server -- python -c "
+import os, redis; print(redis.from_url(os.environ['REDIS_URL']).ping())"          # True
+# 그리고 브라우저에서 실제 로그인 — /health 는 이 중 무엇이 빠져도 계속 ok 다
+```
+
+| 증상 | 원인 |
+|---|---|
+| 구글 버튼이 안 뜬다 | `VITE_GOOGLE_OAUTH_CLIENT_ID` 없음 → 재배포 |
+| 「승인되지 않은 원본」 | ① JavaScript 원본 미등록 (`*.vercel.app` 주소로 열면 정상적으로 이게 뜬다) |
+| 브라우저 콘솔에 CORS 오류 | `CORS_ALLOWED_ORIGINS` 또는 재시작 누락 |
+| **401** | 콘솔 클라이언트 ID ≠ `GOOGLE_OAUTH_CLIENT_ID` (audience 불일치) |
+| **403** | 허용 목록 행 없음 — **인증은 성공한 것이다** |
+| **500** | `REDIS_URL`·`ADMIN_JWT_SECRET` 없음 (요청 스코프 RuntimeError) |
+| 요청이 Vercel 로 가서 **404** | `VITE_API_BASE_URL` 없음 → 재배포 |
 
 ---
 
