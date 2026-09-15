@@ -36,6 +36,7 @@ sys.path[:0] = [str(ROOT / "ai" / "apps"), str(ROOT / "server" / "apps")]
 from call_guard.adapter.outbound.rule_call_guard_adapter import (  # noqa: E402
     RuleCallGuardAdapter,
 )
+from compliance.adapter.outbound.rule_compliance_adapter import RuleComplianceAdapter  # noqa: E402
 from closure_gate.adapter.outbound.rule_closure_gate_adapter import (  # noqa: E402
     RuleClosureGateAdapter,
 )
@@ -51,11 +52,15 @@ from masking.adapter.outbound.rule_masking_adapter import (  # noqa: E402
     SUPPORTED_PATTERNS,
     RuleMaskingAdapter,
 )
+from pii_ner.adapter.outbound.layered_masking_adapter import (  # noqa: E402
+    NER_PATTERNS,
+    LayeredMaskingAdapter,
+)
 from retrieval.adapter.outbound.es_bm25_retriever import EsBm25Retriever  # noqa: E402
 from retrieval.adapter.outbound.es_index import SINGLE_INDEX  # noqa: E402
 
 
-def masking_coverage(items) -> dict[str, list[str]]:
+def masking_coverage(items, *, ner_enabled: bool = False) -> dict[str, list[str]]:
     """어댑터가 **지원한다고 선언한 패턴**과 **골든셋이 실제로 재는 패턴**을 대조한다.
 
     **여기서 하는 이유**: 어댑터의 선언(`SUPPORTED_PATTERNS`·`PARTIAL_PATTERNS`)은
@@ -68,10 +73,13 @@ def masking_coverage(items) -> dict[str, list[str]]:
     (`ai/` 에서 grep 0건) 2026-08-28 에 이었다.
     """
     measured = {p.pattern for it in items for p in it.pii_patterns}
+    # NER 이 켜져 있으면 P6·P7 은 「규칙 폴백만」이 아니라 「NER + 규칙 두 겹」이다(w5-ner-p6-p7).
+    ner = sorted(set(NER_PATTERNS) & measured) if ner_enabled else []
     return {
         "measured": sorted(measured),
         "uncovered": sorted(set(SUPPORTED_PATTERNS) - measured),
-        "rule_fallback": sorted(set(PARTIAL_PATTERNS) & measured),
+        "rule_fallback": [] if ner_enabled else sorted(set(PARTIAL_PATTERNS) & measured),
+        "ner_layered": ner,
     }
 
 
@@ -96,7 +104,50 @@ def _es_client(url: str | None):
     return client
 
 
-def build_ports(client, *, index: str) -> Ports:
+def build_masking(ner_model_dir: Path | None) -> LayeredMaskingAdapter:
+    """C-5 — 규칙(server/apps/masking) 위에 NER(ai/apps/pii_ner)을 얹는다.
+
+    모델 디렉터리가 없거나 `--no-ner` 면 규칙만 도는 어댑터가 된다. **어느 쪽으로 쟀는지는
+    리포트의 커버리지 줄이 찍는다** — 같은 「누락 0건」이라도 방식이 다르면 다른 수치다.
+    """
+    tagger = None
+    if ner_model_dir is not None and (ner_model_dir / "config.json").exists():
+        from pii_ner.adapter.outbound.koelectra_ner_tagger import KoElectraNerTagger
+
+        tagger = KoElectraNerTagger(ner_model_dir)
+    return LayeredMaskingAdapter(RuleMaskingAdapter(), tagger)
+
+
+RETRIEVERS = ("bm25", "dense", "rerank-dense", "hybrid")
+
+
+def build_retriever(client, *, index: str, kind: str, device: str | None = None):
+    """검색 구성. 기본은 **운영과 같은 BM25** 다 — 운영에 임베딩이 켜지기 전까지 하네스 기본값이 운영을 앞서가면
+    기록된 수치가 운영 품질로 읽힌다. 나머지는 `decisions/206` 의 비교 대상이다(`scripts/compare_retrievers.py`)."""
+    if kind == "bm25":
+        return EsBm25Retriever(client, index=index)
+    sys.path.insert(0, str(ROOT / "ai"))
+    from provider import build_model_retriever
+
+    if kind in ("dense", "rerank-dense"):
+        port, layers = build_model_retriever(
+            client, index=index, device=device,
+            embed_model_dir=ROOT / "models" / "koe5",
+            rerank_model_dir=ROOT / "models" / "bge-reranker-v2-m3" if kind == "rerank-dense" else None,
+        )
+        expected = ["retrieval_dense"] + (["rerank"] if kind == "rerank-dense" else []) + ["retrieval_cache"]
+        if layers != expected:
+            raise SystemExit(f"{kind} 를 못 띄웠다(켜진 층 {layers}) — models/ 와 torch 를 확인한다. BM25 로 몰래 재지 않는다")
+        return port
+    from retrieval.adapter.outbound.es_dense_retriever import EsDenseRetriever
+    from retrieval.adapter.outbound.hybrid_retriever import HybridRetriever
+    from retrieval.adapter.outbound.koe5_embedder import KoE5Embedder
+
+    dense = EsDenseRetriever(client, KoE5Embedder(ROOT / "models" / "koe5", device=device), index=index)
+    return HybridRetriever([EsBm25Retriever(client, index=index), dense])
+
+
+def build_ports(client, *, index: str, masking=None, retriever=None) -> Ports:
     """구현된 스포크만 꽂는다. 나머지는 None — 하네스가 "미구현"으로 보고한다.
 
     `masking`·`closure_gate` 는 `server/apps/` 에 산다. 규칙 기반 판정이라 요청 경로에서
@@ -111,17 +162,19 @@ def build_ports(client, *, index: str) -> Ports:
         # ES 가 없을 때도 순수 규칙 두 개는 꽂는다 — 여기서 Ports() 를 비워 돌려주면
         # 이미 구현된 C-5·F-2 가 "미구현"으로 보고돼 측정 가능한 것을 못 재게 된다.
         return Ports(
-            masking=RuleMaskingAdapter(),           # C-5 (server/apps/masking)
+            masking=masking or RuleMaskingAdapter(),  # C-5 (server/apps/masking [+ ai/apps/pii_ner])
             closure_gate=RuleClosureGateAdapter(),  # F-2 (server/apps/closure_gate)
             call_guard=RuleCallGuardAdapter(),      # C-6 (ai/apps/call_guard)
+            compliance=RuleComplianceAdapter(),     # C-1~C-4 (ai/apps/compliance) — 규칙 v1, 수치는 상한
         )
 
-    retriever = EsBm25Retriever(client, index=index)
+    retriever = retriever or EsBm25Retriever(client, index=index)
     return Ports(
         retrieval=retriever,
-        masking=RuleMaskingAdapter(),           # C-5 (server/apps/masking)
+        masking=masking or RuleMaskingAdapter(),  # C-5 (server/apps/masking [+ ai/apps/pii_ner])
         closure_gate=RuleClosureGateAdapter(),  # F-2 (server/apps/closure_gate)
         call_guard=RuleCallGuardAdapter(),      # C-6 (ai/apps/call_guard) — 규칙 기반, 외부 의존 없음
+        compliance=RuleComplianceAdapter(),     # C-1~C-4 (ai/apps/compliance) — 규칙 v1, 골든셋을 본 뒤 썼으므로 수치는 상한
         # ⚠ trigger 는 **구현이 있는데도 일부러 꽂지 않는다**(IsFinalTrigger, B-1).
         #   TranscriptEvent 에 이벤트 도착 시각이 없어서 발동 시각을 "발화 종료 + STT 지연
         #   상수(346ms)"로 모형화하고 있다. 그대로 채점하면 지연 분포가 상수 하나로 수렴해
@@ -129,7 +182,7 @@ def build_ports(client, *, index: str) -> Ports:
         #   측정할 수 없는 것을 측정한 것처럼 쓰지 않는다(절대 원칙 10). 게이트웨이가 도착
         #   시각을 실어 보내게 되면 그때 꽂는다. 서버 경로에는 꽂는다(발동 여부는 진짜 판정이다).
         #
-        # 아직 구현이 없는 것: compliance(6주차) · postcall D-1~D-3(7주차)
+        # 아직 구현이 없는 것: postcall D-1~D-3(7주차)
         #
         # B-0 도메인 라우팅은 2026-08-28 단일 도메인 전환으로 사라졌다(`decisions/201`).
         # 허브 포트는 계약으로 남아 있고 구현체가 없어 계속 "측정 불가"로 보고된다.
@@ -143,6 +196,12 @@ def main() -> int:
     ap.add_argument("--runs", type=int, default=1, help="N 번 돌려 최저치를 함께 낸다 (절대 원칙 4)")
     ap.add_argument("--record", action="store_true",
                     help="결과를 PostgreSQL 의 eval_run/eval_result 에 남긴다 (CLAUDE.md §5)")
+    ap.add_argument("--ner-model", type=Path, default=ROOT / "models" / "koelectra-ner",
+                    help="C-5 P6·P7 NER 모델 디렉터리 (없으면 규칙만)")
+    ap.add_argument("--no-ner", action="store_true", help="NER 을 끄고 규칙 마스킹만 잰다 (전/후 대조용)")
+    ap.add_argument("--retriever", choices=RETRIEVERS, default="bm25",
+                    help="검색 구성 (기본 bm25 = 지금 운영). decisions/206")
+    ap.add_argument("--device", default=None, help="임베딩·리랭커 장치 (기본 cpu)")
     args = ap.parse_args()
 
     golden_path = args.golden_set or (ROOT / "golden-set" / "v1-150.json")
@@ -151,12 +210,16 @@ def main() -> int:
     if client is None:
         print("⚠ ELASTICSEARCH_URL 이 없다 — 검색은 '측정 불가'로 보고된다.\n")
 
-    ports = build_ports(client, index=args.index)
+    masking = build_masking(None if args.no_ner else args.ner_model)
+    retriever = build_retriever(client, index=args.index, kind=args.retriever, device=args.device) if client else None
+    if client is not None:
+        print(f"검색 구성: {args.retriever}")
+    ports = build_ports(client, index=args.index, masking=masking, retriever=retriever)
     reports = [run_eval(items, ports) for _ in range(args.runs)]
     print_report(
         reports[0],
         golden_set_path=golden_path,
-        masking_coverage=masking_coverage(items),
+        masking_coverage=masking_coverage(items, ner_enabled=masking.ner_enabled),
     )
 
     if args.runs > 1:

@@ -82,6 +82,23 @@ class Settings:
     # ⚠ 키를 바꾸거나 잃으면 기존 customer_id·블랙리스트 등록을 다시 찾을 수 없다(`decisions/205` ③)
     customer_ref_hmac_key: str | None
 
+    # --- C-5 P6·P7 NER (2026-09-15, `w5-ner-p6-p7`) — `ai/apps/pii_ner` 가 규칙 마스킹 위에 한 겹 더 얹는다 ---
+    # 모델 디렉터리(`scripts/download_models.py` → `models/koelectra-ner`). **비우면 규칙 마스킹만 돈다** — 지금 운영과 같다.
+    # 서버 이미지에 torch·모델이 없으면 값을 넣어도 규칙으로 내려간다. 켜졌는지는 `/health` 의 `pii_ner` 로 본다.
+    pii_ner_model_dir: str | None = None
+
+    # --- B-2·B-3 임베딩·리랭킹 검색 (2026-09-15, `decisions/206`) — 비우면 BM25 단독(지금 운영과 같다) ---
+    # 임베딩 모델 디렉터리(`models/koe5`)가 있어야 켜진다. 리랭커(`models/bge-reranker-v2-m3`)는 선택.
+    # ⚠ 인덱스에 벡터가 없으면(torch 없이 적재) 검색이 0건이 되는데, 그때는 BM25 로 내려간다.
+    retrieval_embed_model_dir: str | None = None
+    retrieval_rerank_model_dir: str | None = None
+
+    # --- B-4 서류 목록 카드 생성 (2026-09-15, `decisions/207`) — **둘 다 있어야** 켜진다. 비우면 스니펫 카드(지금 운영) ---
+    # OLLAMA_URL 은 런북 16-1 이 이미 주입한다(`http://ollama:11434`). 그것만으로 켜지면 다음 배포에서 조용히 생성이
+    # 붙어 추천 지연이 늘어난다 — 그래서 모델 이름을 따로 넣어야 켠다.
+    ollama_url: str | None = None
+    generation_model: str | None = None
+
     @property
     def postgres_configured(self) -> bool:
         return bool(self.database_url) or all(
@@ -122,4 +139,9 @@ def load_settings() -> Settings:
         admin_refresh_token_ttl_seconds=_env_int("ADMIN_REFRESH_TOKEN_TTL_SECONDS", 600) or 600,
         redis_url=_env("REDIS_URL"),
         customer_ref_hmac_key=_env("CUSTOMER_REF_HMAC_KEY"),
+        pii_ner_model_dir=_env("PII_NER_MODEL_DIR"),
+        retrieval_embed_model_dir=_env("RETRIEVAL_EMBED_MODEL_DIR"),
+        retrieval_rerank_model_dir=_env("RETRIEVAL_RERANK_MODEL_DIR"),
+        ollama_url=_env("OLLAMA_URL"),
+        generation_model=_env("GENERATION_MODEL"),
     )

@@ -34,6 +34,7 @@ from .metrics import compliance as compliance_metrics
 from .metrics import domain_routing as domain_routing_metrics
 from .metrics import latency as latency_metrics
 from .metrics import masking as masking_metrics
+from .metrics import masking_robustness
 from .metrics import retrieval as retrieval_metrics
 from .metrics import trigger as trigger_metrics
 
@@ -215,12 +216,17 @@ def run_eval(items: list[GoldenItem], ports: Ports) -> dict:
             predicted_patterns = {s.type for s in spans}
             for pii in it.pii_patterns:
                 pattern_matched = pii.pattern in predicted_patterns
-                # 「가려졌는가」는 **원문 조각이 결과에 남아 있는지**로 본다. 패턴 이름이
+                # 「가려졌는가」는 **개인정보가 결과에 읽을 수 있게 남았는지**로 본다. 패턴 이름이
                 # 달라도 값이 사라졌으면 노출은 없었다 — 절대 규칙이 지키려는 것은 그쪽이다.
                 # `raw_span` 이 비어 있는 항목(음성 케이스·문맥 한계 케이스)은 가릴 글자를
                 # 특정하지 않은 것이므로 예전처럼 패턴 등장 여부로 본다.
+                #
+                # ⚠ 2026-09-15 까지는 `raw_span not in masked_text` 였다 — **조각 하나만 가려져도 통과**였다.
+                #   `"성북구 정릉로 77길 12"` 를 규칙이 `"******* 77길 12"` 로 가려 **번지가 그대로 보이는데**
+                #   통과로 셌다(GS-415, 오류 내성 곡선을 재다 발견). 부분 마스킹이 절대 규칙을 가짜로 통과시키는
+                #   구조라 `masking_robustness.survives`(번호 연속 4자리 · 이름 2글자 · 주소 3글자)로 바꿨다.
                 was_masked = (
-                    pii.raw_span not in masked_text
+                    not masking_robustness.survives(pii.pattern, pii.raw_span, masked_text)
                     if pii.raw_span
                     else pattern_matched
                 )

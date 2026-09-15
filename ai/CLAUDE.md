@@ -70,12 +70,21 @@ ai/
 서로를 import 할 수 없다(`.importlinter` 계약 2 — **테스트도 계약 대상이다**). 두 모듈을
 동시에 아는 코드는 계약 밖에 둔다. `server/main.py`·`server/tests/` 와 같은 자리다.
 
+**2026-09-15 에 생긴 모듈** — 전부 `.importlinter` 3계약에 등록했다. 서버에는 **설정이 있을 때만** 꽂힌다(`server/main.py`).
+
+| 모듈 | 내용 | 요구 ID | 이름 주의 |
+|---|---|---|---|
+| `generation` | 서류 목록 카드 — 모델이 이름을 고르고 규칙이 근거 대조(`decisions/207`) | B-4~B-6 | |
+| `compliance` | 상담원 발화 규칙 v1(명세는 분류기 — 학습 데이터 없음) | C-1~C-4 | |
+| `pii_ner` | 규칙 마스킹 위에 얹는 NER 겹 | C-5 P6·P7 | `server/apps/masking` 과 경로가 겹쳐 `masking` 이 아니다 |
+| `postcall_summary` | 규칙 발췌 초안 위에 모델 요약·유형 제안 | D-1·D-2 | `server/apps/postcall` 과 같은 이유 |
+
+`retrieval` 에는 임베딩(KoE5)·리랭커·하이브리드(비채택)·폴백·결과 캐시가 붙었다(`decisions/206`).
+
 **예정 모듈** — 실제로 만들 때 `.importlinter` 의 `root_packages` 와 계약 1·2 목록에 추가한다.
 
 | 모듈 | 내용 | 요구 ID |
 |---|---|---|
-| `generation` | 근거 기반 카드 생성 · 출처 표시 | B-4~B-6 |
-| `compliance` | 컴플라이언스 탐지 분류기 | C-1~C-4 |
 | `orchestration` | 랭그래프 파이프라인 | — |
 
 ~~`training` 은 2026-08-27 에 만들어졌다(B-0 분류기).~~
