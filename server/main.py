@@ -98,6 +98,22 @@ def _wire_retrieval(app: FastAPI, settings: Settings) -> str | None:
         else Elasticsearch(settings.elasticsearch_url)
     )
     port = EsBm25Retriever(client, index=SINGLE_INDEX)
+    # 임베딩·리랭킹(decisions/206)은 모델 디렉터리가 설정됐을 때만. 못 뜨면 BM25 그대로다.
+    # 켜진 층은 `/health` 에 따로 싣는다 — 같은 "retrieval" 이라도 BM25 인지 dense+rerank 인지 밖에서 보여야 한다.
+    app.state.retrieval_layers = []
+    if settings.retrieval_embed_model_dir:
+        sys.path.insert(0, str(AI_APPS.parent))
+        try:
+            from provider import build_model_retriever  # noqa: PLC0415
+
+            port, app.state.retrieval_layers = build_model_retriever(
+                client,
+                index=SINGLE_INDEX,
+                embed_model_dir=settings.retrieval_embed_model_dir,
+                rerank_model_dir=settings.retrieval_rerank_model_dir,
+            )
+        except (ModuleNotFoundError, ImportError):
+            pass
     # 기동 전에 이미 꽂힌 것(테스트 스텁 등)은 덮지 않는다 — lifespan 은 빈 자리만 채운다.
     app.dependency_overrides.setdefault(get_retrieval_port, lambda: port)
     return "retrieval"
@@ -174,6 +190,113 @@ def _wire_call_guard(app: FastAPI) -> str | None:
     return "call_guard"
 
 
+def _wire_pii_ner(app: FastAPI, settings: Settings) -> str | None:
+    """C-5 — 규칙 마스킹(`server/apps/masking`) 위에 `ai/` 의 NER(P6·P7)을 **한 겹 더** 얹는다.
+
+    **규칙을 대체하지 않는다.** `ai/provider.py` 가 규칙 어댑터를 폴백으로 받아 두 결과의 합집합을
+    가린다 — 모델이 추론 중 실패해도 규칙 결과는 나간다. `PII_NER_MODEL_DIR` 이 비었거나 torch·모델이
+    없으면 **아무것도 바꾸지 않고** 기본 프로바이더(규칙)가 그대로 돈다. 그래서 켜졌을 때만 이름을 돌려준다 —
+    `/health` 에 `pii_ner` 가 없으면 P6·P7 은 규칙 폴백뿐이라는 뜻이다.
+
+    ⚠ 모델 로드·예열이 기동 시간에 1초 남짓 더해진다(2026-09-15 로컬 CPU 실측). 요청당 추론은 10ms 대다.
+    """
+    if not settings.pii_ner_model_dir:
+        return None
+
+    sys.path.insert(0, str(AI_APPS))
+    sys.path.insert(0, str(AI_APPS.parent))
+    try:
+        from provider import build_masking_provider  # noqa: PLC0415
+    except (ModuleNotFoundError, ImportError):
+        return None
+
+    from hub.dependencies.masking_provider import get_masking_port  # noqa: PLC0415
+    from masking.adapter.outbound.rule_masking_adapter import RuleMaskingAdapter  # noqa: PLC0415
+
+    provider, ner_enabled = build_masking_provider(
+        RuleMaskingAdapter(), ner_model_dir=settings.pii_ner_model_dir
+    )
+    if not ner_enabled:
+        return None
+    app.dependency_overrides.setdefault(get_masking_port, provider)
+    return "pii_ner"
+
+
+def _wire_generation(app: FastAPI, settings: Settings) -> str | None:
+    """B-4 — `ai/` 의 서류 목록 카드 생성을 꽂는다(`decisions/207`). 꽂았으면 이름을, 아니면 None.
+
+    **`OLLAMA_URL` 과 `GENERATION_MODEL` 이 둘 다 있어야** 켠다. 안 켜면 기본 프로바이더(스니펫 카드)가 그대로 돈다 —
+    지어내지 않는 정식 폴백이다. 기동 시 Ollama 에 붙어 보지 않는다: 생성이 실패하면 카드마다 스니펫으로 내려가므로
+    추천이 멈추지 않는다(`DocumentListCardAdapter`). ⚠ 켜면 추천 한 번에 모델 호출 1회(상위 1건)만큼 지연이 는다 —
+    로컬 실측 p95 0.9~1.0초(2026-09-15), 운영 T4 미측정.
+    """
+    if not (settings.ollama_url and settings.generation_model):
+        return None
+    sys.path.insert(0, str(AI_APPS))
+    sys.path.insert(0, str(AI_APPS.parent))
+    try:
+        from provider import build_generation_provider  # noqa: PLC0415
+    except (ModuleNotFoundError, ImportError):
+        return None
+
+    from hub.dependencies.generation_provider import get_generation_port  # noqa: PLC0415
+
+    app.dependency_overrides.setdefault(
+        get_generation_port, build_generation_provider(settings.ollama_url, model=settings.generation_model)
+    )
+    return "generation"
+
+
+def _wire_postcall_model(app: FastAPI, settings: Settings) -> str | None:
+    """D-1 모델 요약 · D-2 유형 제안을 규칙 발췌 초안(`decisions/306`) **위에** 얹는다(`w7-postcall-spoke`).
+
+    **생성과 같은 스위치다** — `OLLAMA_URL` 과 `GENERATION_MODEL` 이 둘 다 있어야 켠다. 검색 스포크가 꽂혀 있으면 D-2 에 쓴다.
+    안 켜면 규칙 초안(유형 None)이 그대로다. 요약·유형은 전부 **초안**이고 `confirmed` 는 False 다.
+    """
+    if not (settings.ollama_url and settings.generation_model):
+        return None
+    sys.path.insert(0, str(AI_APPS))
+    sys.path.insert(0, str(AI_APPS.parent))
+    try:
+        from provider import build_postcall_provider  # noqa: PLC0415
+    except (ModuleNotFoundError, ImportError):
+        return None
+
+    from hub.dependencies.postcall_provider import get_postcall_port  # noqa: PLC0415
+    from hub.dependencies.retrieval_provider import get_retrieval_port  # noqa: PLC0415
+    from postcall.adapter.outbound.rule_postcall_adapter import RulePostcallAdapter  # noqa: PLC0415
+
+    retrieval_factory = app.dependency_overrides.get(get_retrieval_port)
+    app.dependency_overrides.setdefault(
+        get_postcall_port,
+        build_postcall_provider(
+            RulePostcallAdapter(),
+            ollama_url=settings.ollama_url,
+            model=settings.generation_model,
+            retrieval=retrieval_factory() if retrieval_factory else None,
+        ),
+    )
+    return "postcall_model"
+
+
+def _wire_compliance(app: FastAPI) -> str | None:
+    """`ai/` 의 컴플라이언스 탐지(C-1~C-4)를 꽂는다. 콜 가드와 같다 — 규칙표뿐이라 설정 조건이 없다.
+
+    못 꽂으면 `POST /hub/compliance-checks` 가 501 로 남는다(빈 목록을 「위반 없음」으로 돌려주지 않는다).
+    """
+    sys.path.insert(0, str(AI_APPS))
+    sys.path.insert(0, str(AI_APPS.parent))
+    try:
+        from provider import build_compliance_provider  # noqa: PLC0415
+    except (ModuleNotFoundError, ImportError):
+        return None
+
+    from hub.dependencies.compliance_provider import get_compliance_port  # noqa: PLC0415
+
+    app.dependency_overrides.setdefault(get_compliance_port, build_compliance_provider())
+    return "compliance"
+
+
 def _install_missing_index_handler(app: FastAPI) -> None:
     """ES 인덱스가 없거나 ES 에 연결하지 못할 때 500 대신 **503 + 이유**를 돌려준다.
 
@@ -228,10 +351,15 @@ async def lifespan(app: FastAPI):
         _wire_retrieval(app, settings),
         _wire_trigger(app),
         _wire_call_guard(app),
+        _wire_compliance(app),
+        _wire_pii_ner(app, settings),
+        _wire_generation(app, settings),
+        _wire_postcall_model(app, settings),
         _wire_uploads(app, settings),
     ):
         if wired:
             SPOKES.append(wired)
+    SPOKES.extend(getattr(app.state, "retrieval_layers", ()))
     yield
 
 
