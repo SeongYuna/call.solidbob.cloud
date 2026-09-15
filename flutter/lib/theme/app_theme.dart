@@ -2,6 +2,22 @@
 library;
 
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
+
+/// apps/admin/src/index.css 의 치수 토큰(--radius-card·--pad-card·--radius-chip)을
+/// 그대로 옮겼다. 색은 [AppColors]가 담당하고 이쪽은 라운드·여백만 다룬다.
+class AppSpacing {
+  const AppSpacing._();
+
+  /// --radius-card (24px)
+  static const double cardRadius = 24.0;
+
+  /// --pad-card (24px)
+  static const double cardPadding = 24.0;
+
+  /// --radius-chip (10px)
+  static const double chipRadius = 10.0;
+}
 
 class AppColors extends ThemeExtension<AppColors> {
   final Color bg;
@@ -88,6 +104,10 @@ ThemeData buildAppTheme(AppColors c, Brightness brightness) {
   return ThemeData(
     brightness: brightness,
     scaffoldBackgroundColor: c.bg,
+    // apps/admin의 --font: "Inter" 대응. 밝기별 기본 TextTheme 위에 Inter를 입힌다.
+    textTheme: GoogleFonts.interTextTheme(
+      brightness == Brightness.dark ? ThemeData.dark().textTheme : ThemeData.light().textTheme,
+    ),
     colorScheme: ColorScheme.fromSeed(
       seedColor: c.accent,
       brightness: brightness,
@@ -104,7 +124,7 @@ ThemeData buildAppTheme(AppColors c, Brightness brightness) {
       color: c.shell,
       elevation: 0,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
         side: BorderSide(color: c.line),
       ),
     ),
