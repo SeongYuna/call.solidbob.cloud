@@ -495,7 +495,7 @@ Environment Variables → **Production 만** → Deployments → Redeploy(`VITE_
 
 ### 통화 후 초안 · 상담원 토큰에서 남은 것 (신규, 2026-09-15, 장민석)
 
-- [ ] **운영 적용 순서 — 정성윤 님께** — `db/migrations/2026-09-15-agent-token.sql`(25 → 26 테이블)을 **서버 이미지 태그를 올리기 전에** 넣는다.
+- [ ] **운영 적용 순서 — 정성윤 님께** — **2026-09-15 적용했다는 보고를 받았다. 테이블 수·`agent_token` 컬럼 출력은 아직 못 봤다**(측정값으로 인용하지 않는다) — 이 머신에는 운영 DB 경로가 없다. 배포 뒤 블랙리스트 요청이 500 이 아니면 간접 확인이다. 원문 — `db/migrations/2026-09-15-agent-token.sql`(25 → 26 테이블)을 **서버 이미지 태그를 올리기 전에** 넣는다.
   09-14 마이그레이션이 먼저 들어가 있어야 한다(파일이 확인하고 멈춘다). 안 넣으면 `POST /hub/blacklist-requests`·`/admin/agent-tokens` 가 500(`42P01`).
   ⚠ **09-14 마이그레이션 적용 후 출력도 아직 아무도 찍지 않았다** — 같은 SSM 세션에서 런북 19장 6번(테이블 수)으로 둘 다 확인한다.
   `server` 브랜치는 이미지 태그를 **일부러** 안 올렸다 — 머지 = 배포라 순서가 뒤집히지 않게
@@ -504,6 +504,12 @@ Environment Variables → **Production 만** → Deployments → Redeploy(`VITE_
   **정할 것**: ① `apps/call` 이 토큰을 어디에 두는지(입력 · sessionStorage) ② `apps/admin` 에 발급·목록·폐기 화면을 둘지
 - [ ] **상담원 토큰을 어디까지 걸지** — 지금 가드가 달린 곳은 블랙리스트 요청 하나다. 카드 피드백·수동 검색·통화 목록·전사 조회 등은 인증이 없다.
   모두 걸면 게이트웨이(`services/gateway`)가 부르는 허브 API 와 겹치는 것부터 갈라야 한다. **토큰 만료도 없다** — 폐기로만 끊는다
+  ⚠ **카드 피드백(`POST /hub/cards/{id}/feedback`)은 걸면 안 된다** — 상담원 ID 를 **일부러** 받지 않는 API 다(부록 A-1, 상담원 단위 집계 금지).
+  토큰을 달면 요청마다 상담원이 식별돼 그 설계를 뒷문으로 무너뜨린다
+- [ ] **§7.3 정본은 「응답 전부 문자열」 로 고쳤다 — 조서희 님 `contract.ts` 가 남았다 (2026-09-15)** — `_project/plan.md` 7.3 절 머리에 규칙을 올리고 예시를 실제 응답으로 바꿨다.
+  프론트 `apps/call/src/types/contract.ts` 는 아직 `is_final: boolean`·`utterance_end_ms: number` 다. 공개 사이트 `docs/07` 7.3 은 v2 기록이라 경고만 달았다
+- [ ] **PR #86 머지 순서 — `tag-check` 가 실패한 채 머지 가능으로 뜬다 (2026-09-15)** — 필수 검사가 아니라서다. 운영 DB 에 `agent_token` 마이그레이션 → `newTag` 올리기 → 머지 순서를 지킨다.
+  태그 없이 먼저 머지되면 `release.yml` 이 «코드 변경 + 태그 그대로» 로 실패해 배포되지 않는다(깨지진 않지만 릴리스가 빨갛다). 로컬 `origin` 은 옛 주소(`solidbob02/…`)라 바꿔야 한다
 - [ ] **통화 후 초안은 규칙 발췌다 — 류준 님께**(`decisions/306`) — `POST /hub/calls/{id}/close` 가 501 대신 발췌 초안을 준다(유형은 null).
   [w7-postcall-spoke](/backlog/w7-postcall-spoke/)의 «501 이 사라진다» 조건은 이것으로 먼저 채워졌지만 **LLM 요약·D-2 분류·품질 측정은 그대로 류준 님 몫**이다.
   LLM 이 들어오면 규칙 어댑터를 폴백으로 남길지 함께 정한다. 초안 저장은 [w7-postcall-persistence](/backlog/w7-postcall-persistence/)
