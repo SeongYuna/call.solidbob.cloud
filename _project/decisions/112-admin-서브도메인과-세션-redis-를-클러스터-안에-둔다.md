@@ -12,7 +12,10 @@
 
 `server/apps/admin_auth/`(구글 로그인 · JWT+Redis · refresh 회전)는 **코드가 운영에 이미 배포돼 있다** —
 2026-09-15 확인: `/admin/auth/test` 가 `{"router":"admin_auth","marker":"0.1.7"}` 를 돌려주고
-`/openapi.json` 에 `google`·`refresh`·`logout`·`me` 넷이 있다. 관리자 화면(`apps/admin`)도 로그인 게이트까지
+`/openapi.json` 에 `google`·`refresh`·`logout`·`me` 넷이 있다.
+⚠ **`/admin/auth/test` 는 같은 날 걷어냈다** — 배포 확인용 임시 프로브였다(`w4-swagger-deploy-probe`).
+위 문장은 **그때의 확인 기록이라 고치지 않는다.** 지금 같은 확인을 하려면 `/openapi.json` 의
+`admin/auth` 넷을 본다. 관리자 화면(`apps/admin`)도 로그인 게이트까지
 붙어 있다. **그런데 실제로 눌러 보면 안 된다** — 붙을 곳이 없기 때문이다:
 
 - **Redis 가 없다.** `403` §5 가 "테스트 스코프 — 운영 매니페스트를 만들지 않았다"로 남겼다.
