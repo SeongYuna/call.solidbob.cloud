@@ -8,7 +8,7 @@ from admin_auth.adapter.inbound.api.admin_guard import require_admin
 from admin_auth.app.dtos.admin_identity_dto import AdminAccount
 from admin_auth.app.ports.input.current_admin_use_case import CurrentAdminUseCase
 from admin_auth.dependencies.use_case_providers import get_current_admin_use_case
-from hub.app.ports.output.blacklist_port import BlacklistConflict, BlacklistNotFound
+from hub.app.ports.output.blacklist_port import BlacklistConflict, BlacklistNotFound, ExpiryBeyondCap
 from hub.dependencies.blacklist_provider import get_blacklist_port
 from hub.tests.app.use_cases._blacklist_stubs import StubBlacklist
 from main import app
@@ -112,4 +112,27 @@ def test_만료_변경_검증_422_해제된_등록_409_없는_등록_404(client)
     app.dependency_overrides[get_blacklist_port] = lambda: _Missing()
     assert client.post("/hub/blacklist-entries/3/expiry", json={"expires_in_days": 30, "reason": "x"}).status_code == 404
     assert client.get("/hub/blacklist-entries/3/expiry-changes").status_code == 404
+
+
+def test_누적_상한을_넘는_연장은_422다(client):
+    """상태 충돌(409)이 아니라 입력이 정책을 넘은 것이다 — 응답에 언제까지 가능한지가 실린다."""
+    from datetime import datetime, timezone
+
+    app.dependency_overrides[require_admin] = lambda: ADMIN
+
+    class _Capped(StubBlacklist):
+        async def change_expiry(self, *a, **kw):
+            raise ExpiryBeyondCap(datetime(2027, 9, 15, tzinfo=timezone.utc))
+
+    app.dependency_overrides[get_blacklist_port] = lambda: _Capped()
+    r = client.post("/hub/blacklist-entries/3/expiry", json={"expires_in_days": 300, "reason": "연장"})
+    assert r.status_code == 422 and "2027-09-15" in r.json()["detail"]
+
+
+def test_보존_기간_정리는_비운_건수를_문자열로_돌려준다(client):
+    app.dependency_overrides[require_admin] = lambda: ADMIN
+    r = client.post("/hub/blacklist-retention/purge")
+    assert r.status_code == 200
+    assert r.json() == {"retention_days": "180", "cutoff": "2026-09-14T03:00:00+00:00",
+                        "expiry_change_reasons_purged": "2", "rejected_requests_purged": "1"}
 

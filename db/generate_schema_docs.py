@@ -279,9 +279,24 @@ TABLES: list[Table] = [
             Column("id", "BIGINT", "PK", nullable=False, auto_increment=True),
             Column("call_id", "VARCHAR(40)", "FK", "call.call_id", nullable=False, identifying=True),
             Column("action_text", "VARCHAR(200)", nullable=False),
-            Column("status", "VARCHAR(20)", nullable=False),
+            Column("status", "VARCHAR(20)", nullable=False,
+                   note="draft(규칙·모델 초안) · confirmed(상담원 확정, `decisions/310`) · superseded(재수정으로 대체 — 지우지 않는다, `decisions/311`)"),
             Column("created_at", "DATETIME", nullable=False),
         ],
+    ),
+    Table(
+        "call_summary_revision", "D-1~D-3 확정된 요약의 재수정 이력 — 고치기 **전** 값 한 벌 + 사유(`decisions/311`). "
+        "새 값은 `call` 에 있다. 누가 고쳤는지는 두지 않는다(부록 A-1 — 상담원 단위 집계 금지). 갱신·삭제하지 않는다",
+        cluster="후속처리",
+        columns=[
+            Column("revision_id", "BIGINT", "PK", nullable=False, auto_increment=True),
+            Column("call_id", "VARCHAR(40)", "FK", "call.call_id", nullable=False, identifying=True),
+            Column("previous_summary_text", "TEXT", nullable=False, note="고치기 전 요약 — 마스킹본"),
+            Column("previous_inquiry_type", "VARCHAR(30)"),
+            Column("reason", "VARCHAR(500)", nullable=False, note="왜 고쳤는가 — 저장 전 마스킹"),
+            Column("revised_at", "DATETIME", nullable=False),
+        ],
+        indexes=[(('"call_id"',), None)],
     ),
     Table(
         "knowledge_gap", "D-4 공백 리포트 — B/C/F 세 모듈의 실패 사례를 한 곳에 누적. "
@@ -553,6 +568,17 @@ TABLES: list[Table] = [
             Column("revoked_at", "DATETIME", note="폐기 시각. NULL 이면 유효"),
         ],
         indexes=[(('"agent_id"',), None)],
+    ),
+    Table(
+        "app_setting", "관리자가 바꾸는 운영 설정 — 키 1개 = 1행(`decisions/313`). 지금은 `veteran_years`(J-5 베테랑 근속 기준) 하나다. "
+        "행이 없으면 코드의 기본값을 쓴다 — 기본값을 여기 미리 넣지 않는다(두 곳에 적지 않는다)",
+        cluster="J(콜 라우팅 보호)",
+        columns=[
+            Column("setting_key", "VARCHAR(50)", "PK", nullable=False),
+            Column("value", "VARCHAR(200)", nullable=False, note="문자열로 저장한다 — 해석은 그 키를 쓰는 코드가 한다"),
+            Column("updated_at", "DATETIME", nullable=False),
+            Column("updated_by", "BIGINT", "FK", "admin_account.id", note="마지막으로 바꾼 관리자"),
+        ],
     ),
 ]
 
