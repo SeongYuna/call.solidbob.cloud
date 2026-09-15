@@ -29,6 +29,16 @@ function toNum(value: unknown): number {
   return n;
 }
 
+function toBool(value: unknown): boolean {
+  if (value === "true" || value === true) {
+    return true;
+  }
+  if (value === "false" || value === false || value === undefined || value === null) {
+    return false;
+  }
+  throw new HubApiError(`불리언 필드에 예상 밖 값이 왔다: ${JSON.stringify(value)}`, null);
+}
+
 async function authedRequest<T>(path: string, accessToken: string, init?: RequestInit): Promise<T> {
   let response: Response;
   try {
@@ -64,6 +74,10 @@ function authedGet<T>(path: string, accessToken: string): Promise<T> {
 
 function authedPost<T>(path: string, accessToken: string, body: unknown): Promise<T> {
   return authedRequest<T>(path, accessToken, { method: "POST", body: JSON.stringify(body) });
+}
+
+function authedPut<T>(path: string, accessToken: string, body: unknown): Promise<T> {
+  return authedRequest<T>(path, accessToken, { method: "PUT", body: JSON.stringify(body) });
 }
 
 // ── 블랙리스트 요청·등록 wire 모양 (둘 다 `_types.StrField` 규칙) ──────────
@@ -399,4 +413,69 @@ export async function revokeAgentToken(accessToken: string, tokenId: string): Pr
     {},
   );
   return toAgentTokenItem(wire);
+}
+
+// ── /hub/routing-settings — J-5 베테랑 배정 기준 (`decisions/313`) ──────────
+
+export interface RoutingSetting {
+  veteranYears: number;
+  /** false면 저장값이 없어 기본값(도메인이 갖는 `DEFAULT_VETERAN_YEARS`)이다. */
+  saved: boolean;
+  updatedAt: string | null;
+  updatedBy: string | null;
+}
+
+interface RoutingSettingWire {
+  veteran_years: string;
+  saved: string;
+  updated_at: string | null;
+  updated_by: string | null;
+}
+
+function toRoutingSetting(wire: RoutingSettingWire): RoutingSetting {
+  return {
+    veteranYears: toNum(wire.veteran_years),
+    saved: toBool(wire.saved),
+    updatedAt: wire.updated_at,
+    updatedBy: wire.updated_by,
+  };
+}
+
+export async function fetchRoutingSetting(accessToken: string): Promise<RoutingSetting> {
+  const wire = await authedGet<RoutingSettingWire>("/hub/routing-settings", accessToken);
+  return toRoutingSetting(wire);
+}
+
+export async function saveRoutingSetting(accessToken: string, veteranYears: number): Promise<RoutingSetting> {
+  const wire = await authedPut<RoutingSettingWire>("/hub/routing-settings", accessToken, {
+    veteran_years: veteranYears,
+  });
+  return toRoutingSetting(wire);
+}
+
+// ── POST /hub/blacklist-retention/purge — 보존 정리 (`decisions/312`) ──────
+
+export interface RetentionPurgeResult {
+  retentionDays: number;
+  cutoff: string;
+  expiryChangeReasonsPurged: number;
+  rejectedRequestsPurged: number;
+}
+
+interface RetentionPurgeResponseWire {
+  retention_days: string;
+  cutoff: string;
+  expiry_change_reasons_purged: string;
+  rejected_requests_purged: string;
+}
+
+/** 몇 번을 불러도 결과가 같다 — 확인 다이얼로그 이상의 되돌리기 방지 장치는 서버가 갖는다. */
+export async function purgeBlacklistRetention(accessToken: string): Promise<RetentionPurgeResult> {
+  const wire = await authedPost<RetentionPurgeResponseWire>("/hub/blacklist-retention/purge", accessToken, {});
+  return {
+    retentionDays: toNum(wire.retention_days),
+    cutoff: wire.cutoff,
+    expiryChangeReasonsPurged: toNum(wire.expiry_change_reasons_purged),
+    rejectedRequestsPurged: toNum(wire.rejected_requests_purged),
+  };
 }

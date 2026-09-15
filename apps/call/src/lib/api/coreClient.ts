@@ -346,6 +346,304 @@ export async function submitCardFeedback(
   return { feedbackId: wire.feedback_id, cardId: wire.card_id, action: wire.action };
 }
 
+// ── POST /hub/calls/{call_id}/close ──────────────────────────────────────
+
+export interface ClosureSegmentInput {
+  segmentId: string;
+  speaker: "customer" | "agent";
+  text: string;
+  isFinal: boolean;
+  utteranceEndMs: number | null;
+}
+
+interface FollowUpActionWire {
+  action_text: string;
+}
+
+interface CallSummaryResponseWire {
+  call_id: string;
+  summary_text: string;
+  inquiry_type: string | null;
+  follow_up_actions: FollowUpActionWire[];
+  confirmed: string;
+}
+
+export interface CallSummaryDraft {
+  callId: string;
+  summaryText: string;
+  inquiryType: string | null;
+  followUpActions: string[];
+  confirmed: boolean;
+}
+
+/**
+ * `decisions/306` — 통화가 끝난 뒤 규칙 기반 초안을 만든다(생성 모델 아님, 유형은 늘 null).
+ * ⚠ SEC-1 — `segments`에는 마스킹된 자막만 싣는다(원문 필드가 서버 스키마에 아예 없다).
+ */
+export async function closeCall(
+  callId: string,
+  segments: ClosureSegmentInput[],
+): Promise<CallSummaryDraft> {
+  const wire = await post<CallSummaryResponseWire>(`/hub/calls/${encodeURIComponent(callId)}/close`, {
+    call_id: callId,
+    segments: segments.map((s) => ({
+      segment_id: Number(s.segmentId),
+      speaker: s.speaker,
+      text: s.text,
+      is_final: s.isFinal,
+      utterance_end_ms: s.utteranceEndMs,
+    })),
+  });
+  return {
+    callId: wire.call_id,
+    summaryText: wire.summary_text,
+    inquiryType: wire.inquiry_type,
+    followUpActions: wire.follow_up_actions.map((a) => a.action_text),
+    confirmed: toBool(wire.confirmed),
+  };
+}
+
+// ── POST /hub/calls/{call_id}/summary-confirmation ───────────────────────
+
+interface SummaryConfirmedResponseWire {
+  call_id: string;
+  summary_text: string;
+  inquiry_type: string | null;
+  follow_up_actions: string[];
+  confirmed: string;
+  confirmed_at: string;
+}
+
+export interface SummaryConfirmed extends CallSummaryDraft {
+  confirmedAt: string;
+}
+
+/**
+ * 상담원 토큰이 필요하다(`decisions/307`) — 확정은 사람이 했다는 표시라 익명으로 안 받는다.
+ * 이미 확정된 통화는 409, 없는 통화는 404 — 여기서는 메시지 그대로 올려보낸다.
+ */
+export async function confirmSummary(
+  callId: string,
+  input: { summaryText: string; inquiryType: string | null; followUpActions: string[] },
+): Promise<SummaryConfirmed> {
+  const token = readAgentToken();
+  if (token === null) {
+    throw new CoreApiError(
+      "상담원 토큰이 없다 — 관리자가 보낸 링크(?agent_token=...)로 다시 접속해야 한다.",
+      null,
+    );
+  }
+  const wire = await post<SummaryConfirmedResponseWire>(
+    `/hub/calls/${encodeURIComponent(callId)}/summary-confirmation`,
+    {
+      summary_text: input.summaryText,
+      inquiry_type: input.inquiryType,
+      follow_up_actions: input.followUpActions,
+    },
+    { Authorization: `Bearer ${token}` },
+  );
+  return {
+    callId: wire.call_id,
+    summaryText: wire.summary_text,
+    inquiryType: wire.inquiry_type,
+    followUpActions: wire.follow_up_actions,
+    confirmed: toBool(wire.confirmed),
+    confirmedAt: wire.confirmed_at,
+  };
+}
+
+// ── POST /hub/calls/{call_id}/summary-revision ───────────────────────────
+
+interface SummaryRevisedResponseWire {
+  call_id: string;
+  summary_text: string;
+  inquiry_type: string | null;
+  follow_up_actions: string[];
+  revision: { revision_id: string; revised_at: string };
+}
+
+export interface SummaryRevised {
+  callId: string;
+  summaryText: string;
+  inquiryType: string | null;
+  followUpActions: string[];
+  revisedAt: string;
+}
+
+/**
+ * 확정된 요약을 사유와 함께 고친다(`decisions/311`). 확정 전이면 409 — 상담원 토큰 필요.
+ * 고치기 전 값은 서버가 이력으로 남긴다. 누가 고쳤는지는 저장하지 않는다.
+ */
+export async function reviseSummary(
+  callId: string,
+  input: { summaryText: string; reason: string; inquiryType: string | null; followUpActions: string[] },
+): Promise<SummaryRevised> {
+  const token = readAgentToken();
+  if (token === null) {
+    throw new CoreApiError(
+      "상담원 토큰이 없다 — 관리자가 보낸 링크(?agent_token=...)로 다시 접속해야 한다.",
+      null,
+    );
+  }
+  const wire = await post<SummaryRevisedResponseWire>(
+    `/hub/calls/${encodeURIComponent(callId)}/summary-revision`,
+    {
+      summary_text: input.summaryText,
+      reason: input.reason,
+      inquiry_type: input.inquiryType,
+      follow_up_actions: input.followUpActions,
+    },
+    { Authorization: `Bearer ${token}` },
+  );
+  return {
+    callId: wire.call_id,
+    summaryText: wire.summary_text,
+    inquiryType: wire.inquiry_type,
+    followUpActions: wire.follow_up_actions,
+    revisedAt: wire.revision.revised_at,
+  };
+}
+
+// ── GET /hub/calls/{call_id}/record ──────────────────────────────────────
+
+interface SavedCardWire {
+  card_id: string;
+  rank: string;
+  title: string;
+  summary: string;
+  source_doc_id: string | null;
+  similarity_score: string | null;
+}
+
+interface SavedRecommendationWire {
+  recommendation_id: string;
+  trigger_at_ms: string;
+  internal_latency_ms: string | null;
+  created_at: string;
+  cards: SavedCardWire[];
+}
+
+interface SavedClosureItemWire {
+  rank: string;
+  document_name: string;
+  informed: string;
+}
+
+interface SavedClosureWire {
+  closure_id: string;
+  procedure: string;
+  verdict: string;
+  detected: string;
+  reason: string | null;
+  source_doc_id: string | null;
+  decided_at: string;
+  items: SavedClosureItemWire[];
+}
+
+interface CallRecordResponseWire {
+  call_id: string;
+  status: string;
+  started_at: string;
+  ended_at: string | null;
+  summary_text: string | null;
+  inquiry_type: string | null;
+  summary_confirmed: string;
+  follow_up_actions: { action_text: string; status: string }[];
+  recommendations: SavedRecommendationWire[];
+  closures: SavedClosureWire[];
+}
+
+export interface SavedCard {
+  cardId: string;
+  rank: number;
+  title: string;
+  summary: string;
+  sourceDocId: string | null;
+  similarityScore: number | null;
+}
+
+export interface SavedRecommendation {
+  recommendationId: string;
+  triggerAtMs: number;
+  createdAt: string;
+  cards: SavedCard[];
+}
+
+export interface SavedClosureItem {
+  rank: number;
+  documentName: string;
+  informed: boolean;
+}
+
+export interface SavedClosure {
+  closureId: string;
+  procedure: string;
+  verdict: "complete" | "incomplete";
+  detected: boolean;
+  reason: string | null;
+  sourceDocId: string | null;
+  decidedAt: string;
+  items: SavedClosureItem[];
+}
+
+export interface CallRecord {
+  callId: string;
+  status: string;
+  startedAt: string;
+  endedAt: string | null;
+  summaryText: string | null;
+  inquiryType: string | null;
+  summaryConfirmed: boolean;
+  followUpActions: { text: string; status: string }[];
+  recommendations: SavedRecommendation[];
+  closures: SavedClosure[];
+}
+
+/**
+ * `decisions/310`~`313` — 상담기록 재생 화면 전용. 전사는 싣지 않는다
+ * (`fetchCallTranscript`가 따로 준다). 감정분석·통번역은 저장되지 않아 없다.
+ */
+export async function fetchCallRecord(callId: string): Promise<CallRecord> {
+  const wire = await get<CallRecordResponseWire>(`/hub/calls/${encodeURIComponent(callId)}/record`);
+  return {
+    callId: wire.call_id,
+    status: wire.status,
+    startedAt: wire.started_at,
+    endedAt: wire.ended_at,
+    summaryText: wire.summary_text,
+    inquiryType: wire.inquiry_type,
+    summaryConfirmed: toBool(wire.summary_confirmed),
+    followUpActions: wire.follow_up_actions.map((f) => ({ text: f.action_text, status: f.status })),
+    recommendations: wire.recommendations.map((rec) => ({
+      recommendationId: rec.recommendation_id,
+      triggerAtMs: toNum(rec.trigger_at_ms),
+      createdAt: rec.created_at,
+      cards: rec.cards.map((c) => ({
+        cardId: c.card_id,
+        rank: toNum(c.rank),
+        title: c.title,
+        summary: c.summary,
+        sourceDocId: c.source_doc_id,
+        similarityScore: c.similarity_score === null ? null : toNum(c.similarity_score),
+      })),
+    })),
+    closures: wire.closures.map((cl) => ({
+      closureId: cl.closure_id,
+      procedure: cl.procedure,
+      verdict: cl.verdict as "complete" | "incomplete",
+      detected: toBool(cl.detected),
+      reason: cl.reason,
+      sourceDocId: cl.source_doc_id,
+      decidedAt: cl.decided_at,
+      items: cl.items.map((i) => ({
+        rank: toNum(i.rank),
+        documentName: i.document_name,
+        informed: toBool(i.informed),
+      })),
+    })),
+  };
+}
+
 /**
  * GET /hub/calls 목록 API 연결 전 임시 mock. `isCoreApiConfigured()`가 false일 때
  * (또는 상담기록 "예시 재생" 화면에서) 화면이 이걸 그대로 쓴다 — 실제 API에는

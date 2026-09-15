@@ -3,8 +3,10 @@ import {
   fetchAgentTokens,
   HubApiError,
   issueAgentToken,
+  purgeBlacklistRetention,
   revokeAgentToken,
   type AgentTokenItem,
+  type RetentionPurgeResult,
 } from "../../lib/api/hubClient";
 import { useAuthStore } from "../../lib/auth/authStore";
 
@@ -12,10 +14,11 @@ import { useAuthStore } from "../../lib/auth/authStore";
  * 설정. Twilio Flex의 "라우팅 설정"류를 본떴다 — 코드에 상수로 굳히지 않고
  * 화면에서 조정하게 뺀 값을 노출한다. J-5 베테랑 배정 기준(근속 연차)은
  * `_project/decisions/204`가 "조직마다 다르고 3년이 옳다는 근거가 없어
- * 설정으로 뺀다"고 정한 값인데, 실제 UI는 지금까지 없었다.
+ * 설정으로 뺀다"고 정한 값이다.
  *
- * ⚠ `server/apps/blacklist/domain/services/routing.py`(J-5 배정 로직)에는
- * 아직 안 꽂혀 있다 — 화면 표시·조정만 먼저 만들고, 서버 연동은 별도다.
+ * `decisions/313` — `GET/PUT /hub/routing-settings`에 연결됐다(`adminStore.ts`).
+ * 실제 배정 판정(`POST /hub/routing-decisions`)을 누가 부르는지는 별도 문제다 —
+ * 여기서 저장한 값은 그 판정이 호출될 때부터 쓰인다.
  */
 export function SettingsTab({
   veteranThresholdYears,
@@ -38,20 +41,20 @@ export function SettingsTab({
           <span>근속 연차 (년) 이상이면 베테랑으로 배정</span>
           <input
             type="number"
-            min={0}
-            max={30}
+            min={0.5}
+            max={40}
+            step={0.5}
             value={veteranThresholdYears}
             onChange={(event) => {
               const next = Number(event.target.value);
-              if (Number.isFinite(next) && next >= 0) {
-                onChangeVeteranThresholdYears(next);
+              if (Number.isFinite(next) && next >= 0.5) {
+                void onChangeVeteranThresholdYears(next);
               }
             }}
           />
         </label>
         <p className="admin-help">
-          이 화면에서 바꿔도 실제 배정 로직(서버)에는 아직 연결돼 있지 않습니다
-          — 값이 어떻게 보일지 먼저 확인하는 화면입니다.
+          저장하면 다음 배정 판정부터 이 기준이 쓰입니다(0.5~40년).
         </p>
       </div>
 
@@ -84,7 +87,72 @@ export function SettingsTab({
       </div>
 
       <AgentTokenIssuer />
+
+      <RetentionPurgeCard />
     </section>
+  );
+}
+
+/**
+ * `decisions/312` — 종결 뒤 180일 지난 블랙리스트 문장(만료 변경 사유·반려 요청 사유·자막)을
+ * 비운다(SEC-1). 행은 지우지 않고 문장만 비운다. 몇 번을 눌러도 결과가 같다 — 주기 실행이
+ * 생기면 같은 API를 그대로 부를 수 있다(관리자 버튼은 그때도 남겨 둔다).
+ */
+function RetentionPurgeCard(): ReactElement {
+  const accessToken = useAuthStore((s) => s.accessToken);
+  const [result, setResult] = useState<RetentionPurgeResult | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [running, setRunning] = useState(false);
+
+  async function handlePurge(): Promise<void> {
+    if (accessToken === null) {
+      return;
+    }
+    if (!window.confirm("종결 뒤 보존 기간이 지난 블랙리스트 사유·자막을 비웁니다. 되돌릴 수 없습니다. 계속할까요?")) {
+      return;
+    }
+    setError(null);
+    setRunning(true);
+    try {
+      setResult(await purgeBlacklistRetention(accessToken));
+    } catch (err) {
+      setError(err instanceof HubApiError || err instanceof Error ? err.message : "알 수 없는 오류");
+    } finally {
+      setRunning(false);
+    }
+  }
+
+  return (
+    <div className="wrapup-card admin-settings-card">
+      <div className="wrapup-card-head">
+        <h3>블랙리스트 보존 정리</h3>
+      </div>
+      <p className="admin-help">
+        종결된 지 오래된 만료 변경 사유·반려 요청 사유를 비웁니다. 등록·이력 행 자체는
+        지우지 않습니다 — 문장만 비웁니다.
+      </p>
+      {error !== null ? (
+        <p className="header-error" role="alert">
+          {error}
+        </p>
+      ) : null}
+      <button
+        type="button"
+        className="btn-outline"
+        disabled={running}
+        onClick={() => {
+          void handlePurge();
+        }}
+      >
+        {running ? "정리 중..." : "지금 정리하기"}
+      </button>
+      {result !== null ? (
+        <p className="admin-help" style={{ marginTop: 8 }}>
+          보존 기간 {result.retentionDays}일 — {new Date(result.cutoff).toLocaleString("ko-KR")} 이전 종결분 정리.
+          만료 변경 사유 {result.expiryChangeReasonsPurged}건 · 반려 요청 사유 {result.rejectedRequestsPurged}건 비움.
+        </p>
+      ) : null}
+    </div>
   );
 }
 

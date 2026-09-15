@@ -1,6 +1,7 @@
-import { searchDocuments } from "../api/coreClient";
+import { closeCall, searchDocuments } from "../api/coreClient";
 import type {
   CallGuardFlag,
+  CallWrapUp,
   ClosureEvent,
   ClosureVerdict,
   DemoDomain,
@@ -13,7 +14,7 @@ import type {
   Speaker,
   TranscriptEvent,
 } from "../../types/contract";
-import type { GatewayClient, GatewayListener } from "./types";
+import type { GatewayClient, GatewayListener, WrapUpSegment } from "./types";
 
 type ParsedMessage =
   | { kind: "transcript"; payload: TranscriptEvent }
@@ -83,11 +84,31 @@ export class RealGatewayClient implements GatewayClient {
     };
   }
 
-  /** §2.5 D 통화 후 처리도 계약이 없다. 지어내지 않고 없다고 말한다. */
-  wrapUp(): Promise<never> {
-    return Promise.reject(
-      new Error("통화 후 처리는 아직 게이트웨이에 연결되지 않았습니다."),
+  /**
+   * `decisions/306` — `POST /hub/calls/{id}/close`. D-2 분류는 규칙 기반이라 유형이
+   * 늘 `null`로 온다 — 카테고리를 지어내지 않고 빈 채로 둔다(`callSummaryFromWrapUp`가
+   * 빈 문자열이면 칩을 안 그린다). 감정분석·지역자원도 서버에 없어 비운다.
+   */
+  async wrapUp(callId: string, segments: WrapUpSegment[]): Promise<CallWrapUp> {
+    if (segments.length === 0) {
+      throw new Error("발화가 없어 통화 후 처리를 만들 수 없습니다.");
+    }
+    const draft = await closeCall(
+      callId,
+      segments.map((s) => ({
+        segmentId: s.segment_id,
+        speaker: s.speaker,
+        text: s.text,
+        isFinal: s.is_final,
+        utteranceEndMs: s.utterance_end_ms,
+      })),
     );
+    return {
+      call_id: draft.callId,
+      summary: [draft.summaryText],
+      category: draft.inquiryType ?? "",
+      follow_ups: draft.followUpActions,
+    };
   }
 
   private handleMessage(raw: string): void {

@@ -23,11 +23,14 @@ export function App(): ReactElement {
   const phase = useCallStore((state) => state.phase);
   const shell = useCallStore((state) => state.shell);
   const viewMode = useCallStore((state) => state.viewMode);
+  const historyView = useCallStore((state) => state.historyView);
   const summaryReturn = useCallStore((state) => state.summaryReturn);
   const resumeCall = useCallStore((state) => state.resumeCall);
   const resumeLive = useCallStore((state) => state.resumeLive);
   const enterStandby = useCallStore((state) => state.enterStandby);
-  const showSummary = phase === "wrapup" || viewMode === "history";
+  // 상담기록은 「요약 보기」・「자막 보기」 두 화면을 오갈 수 있다 — historyView가 고른다.
+  const showSummary =
+    phase === "wrapup" || (viewMode === "history" && historyView === "record");
   const agentName = getMockAgentAccount().name;
 
   function closeSummary(): void {

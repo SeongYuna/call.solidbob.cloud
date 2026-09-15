@@ -6,8 +6,10 @@ import {
   fetchBlacklistRequests,
   fetchCallGuardFlagTotal,
   fetchCallListTotal,
+  fetchRoutingSetting,
   HubApiError,
   releaseBlacklistEntryApi,
+  saveRoutingSetting,
 } from "../lib/api/hubClient";
 import { useAuthStore } from "../lib/auth/authStore";
 import { SEED_KNOWLEDGE_GAP_LOG } from "../mock/adminFixtures";
@@ -39,6 +41,7 @@ interface AdminState {
   knowledgeGapLog: KnowledgeGapEntry[];
   callGuardTotal: number;
   completedCallsTotal: number;
+  /** `decisions/313` — 서버 값(`GET /hub/routing-settings`). `loadAll` 전까지는 로컬 기본값. */
   veteranThresholdYears: number;
   /**
    * J-4 등록 만료 기간(개월) **기본값**. `decisions/205` ⑤가 "만료가 없으면
@@ -59,7 +62,7 @@ interface AdminState {
   releaseEntry: (entryId: string, releasedBy: string, reason: string) => Promise<void>;
   /** `decisions/309` — 연장·단축 실제 API. "지금부터 (개월) 뒤"로 다시 잡는다. 사유 필수. */
   extendEntry: (entryId: string, months: number, reason: string) => Promise<void>;
-  setVeteranThresholdYears: (years: number) => void;
+  setVeteranThresholdYears: (years: number) => Promise<void>;
   setBlacklistExpiryMonths: (months: number) => void;
 }
 
@@ -88,13 +91,22 @@ export const useAdminStore = create<AdminState>((set, get) => ({
     }
     set({ status: "loading", error: null });
     try {
-      const [requests, entries, callGuardTotal, completedCallsTotal] = await Promise.all([
+      const [requests, entries, callGuardTotal, completedCallsTotal, routingSetting] = await Promise.all([
         fetchBlacklistRequests(accessToken),
         fetchBlacklistEntries(accessToken),
         fetchCallGuardFlagTotal(accessToken),
         fetchCallListTotal(),
+        fetchRoutingSetting(accessToken),
       ]);
-      set({ status: "ready", error: null, requests, entries, callGuardTotal, completedCallsTotal });
+      set({
+        status: "ready",
+        error: null,
+        requests,
+        entries,
+        callGuardTotal,
+        completedCallsTotal,
+        veteranThresholdYears: routingSetting.veteranYears,
+      });
     } catch (error) {
       set({ status: "error", error: errorMessage(error) });
     }
@@ -181,8 +193,20 @@ export const useAdminStore = create<AdminState>((set, get) => ({
     }
   },
 
-  setVeteranThresholdYears: (years) => {
-    set({ veteranThresholdYears: years });
+  // `decisions/313` — 다음 배정 판정부터 쓰인다. 저장 성공 응답으로만 상태를 바꾼다
+  // (낙관적 갱신을 하면 422 실패 시 화면과 서버 값이 어긋난다).
+  setVeteranThresholdYears: async (years) => {
+    const accessToken = useAuthStore.getState().accessToken;
+    if (accessToken === null) {
+      set({ error: "로그인이 필요합니다." });
+      return;
+    }
+    try {
+      const saved = await saveRoutingSetting(accessToken, years);
+      set({ veteranThresholdYears: saved.veteranYears, error: null });
+    } catch (error) {
+      set({ error: errorMessage(error) });
+    }
   },
 
   setBlacklistExpiryMonths: (months) => {

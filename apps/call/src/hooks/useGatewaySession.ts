@@ -175,7 +175,15 @@ export function useGatewaySession(): GatewaySession {
     if (client === null) {
       throw new Error("게이트웨이에 연결되어 있지 않습니다.");
     }
-    return client.wrapUp(useCallStore.getState().callId ?? "");
+    const state = useCallStore.getState();
+    const segments = state.utterances.map((u) => ({
+      segment_id: u.segment_id,
+      speaker: u.speaker,
+      text: u.text,
+      is_final: u.is_final,
+      utterance_end_ms: u.utterance_end_ms,
+    }));
+    return client.wrapUp(state.callId ?? "", segments);
   }, []);
 
   return { startCall, replay, leaveToStandby, manualSearch, endCall, wrapUp };

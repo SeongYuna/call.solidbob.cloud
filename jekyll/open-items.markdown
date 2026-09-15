@@ -499,12 +499,34 @@ Environment Variables → **Production 만** → Deployments → Redeploy(`VITE_
   장민석이 풀었다**(`decisions/308` — 추천 카드에 `card_id` 추가, 아래 섹션 참고).
   → **2026-09-15 조서희가 마저 처리** — `coreClient.ts`의 `submitCardFeedback`을 문자열
   타입으로 정정(아래 「프론트 수정 5건」 ③과 같은 항목). 화면(`TermsPanel`)에는 아직 연결 안 함.
-- [ ] **상담기록(통화 재생) 화면을 실제 API로 못 바꾼다** — `apps/call`의 "상담기록"은 지금
+- [x] **상담기록(통화 재생) 화면을 실제 API로 못 바꾼다** — `apps/call`의 "상담기록"은 지금
   카드·종결·감정분석까지 통째로 재생하는 mock 시나리오(`mock/callHistory.ts`) 기반인데,
   실제 API(`GET /hub/calls`·`GET /hub/calls/{id}/transcript`)는 통화 목록+자막만 준다 —
   카드·종결·감정분석 재조회 엔드포인트가 없다. REST 함수(`fetchCallList`·
   `fetchCallTranscript`)는 만들어 뒀다. → **같은 날 장민석이 `GET /hub/calls/{id}/record`를
   만들었다**(아래 섹션 참고, 감정분석은 모델이 없어 빈 채로). 화면 연결은 아직.
+  → **2026-09-15 조서희가 재설계·연결** — 코드를 보다가 `historyCards`·`historySegments`
+  등 인라인 자막 재생용 상태가 `TranscriptPanel`·`TermsPanel`에 이미 있는데 `App.tsx`의
+  `showSummary`(`viewMode === "history"`면 무조건 요약 화면으로 이동)에 가려 **실제로는
+  절대 렌더링되지 않는 죽은 코드**였던 걸 발견했다(`.claude/rules/call.md`가 적어 둔
+  "왼쪽 자막 패널이 그 기록을 보여준다"는 설계와 실제 동작이 어긋나 있었다). 사용자 지시
+  ("둘 다 살리는 방향으로")에 따라 죽이지 않고 **요약 보기·자막 보기 두 화면을 오가는
+  토글**로 되살렸다 — `historyView: "record" | "transcript"`(신규) 상태를 추가하고
+  `App.tsx`의 `showSummary`를 `phase === "wrapup" || (viewMode === "history" && historyView
+  === "record")`로 좁혔다. `openHistory`가 실 API 설정 시 `fetchCallTranscript` +
+  `fetchCallRecord`(신규, `coreClient.ts`)를 병렬로 불러 `historySegments`·`historyCards`를
+  채운다 — 카드/판정은 실제 계약이 서로 다른 배열(`recommendations[].cards[]` vs
+  `closures[]`)이라 mock처럼 "카드 하나에 판정 하나"가 아니다: 실 카드는 판정 없이
+  그대로, 판정마다 표시용 카드를 하나 따로 만든다(`panelCardsFromRecord`). 번역·TTS·
+  콜가드·악센트 힌트 재생은 실서버에 애초에 없어 항상 빈 채로 둔다(정직하게 — 지어내지
+  않는다). `CallHistoryPanel`(목록)도 실 API 분기 추가(`GET /hub/calls`, "다시 재생"은
+  mock 전용이라 뺐다). 카드 채택 토글은 상담기록 조회 중엔 숨김(채택 기록이 `state.callId`
+  — 실시간 통화 — 에 귀속돼 엉뚱한 통화에 붙는 걸 막는다). 확정된 요약이면 "요약 확정"
+  폼이 잠긴 채 열려 곧바로 재수정할 수 있다(`historyConfirmed` prop). **버그 하나 잡음**:
+  대기화면의 「최근 상담기록」에서 열면 `shell`이 `standby`로 남아 있어 자막 보기로
+  전환하는 순간 대기화면이 대신 떴다 — `openHistory`가 `shell: "assist"`도 같이 정하도록
+  고쳤다. 헤드리스 크롬 + CDP로 mock 모드 왕복(목록→요약→자막→요약→실시간 복귀) 스크린샷
+  확인, 콘솔 에러 없음. `apps/call` `tsc --noEmit`·`vite build` 클린.
 - [ ] **관리자 "지식베이스 갭" 화면이 실제 계약과 모양이 다르다** — 화면(`KnowledgeGapTab.tsx`)은
   지금 `{call_id, query, found}`(상담원이 직접 검색해 못 찾은 질의) 기준으로 묶어 세는데,
   실제 `GET /hub/knowledge-gaps` 계약은 `{module: B|C|F, description, status: open|resolved}`
@@ -553,7 +575,7 @@ Environment Variables → **Production 만** → Deployments → Redeploy(`VITE_
   상한 24→12개월 ③ `card_id`/`feedback_id` 문자열로 정정(`coreClient.ts`·`types/contract.ts`·`realGatewayClient.ts`) ④ `EntriesTab.tsx`에
   사유 입력창 추가, `AdminPanel.tsx`가 하드코딩 대신 실제 사유를 넘긴다(연장도 같이). **⑤는 아직 안 고쳤다** — 남겨 둔다.
   `apps/call`·`apps/admin` 둘 다 `tsc --noEmit`·`vite build` 클린
-- [ ] **조서희 님께 — 상담기록 재생·블랙리스트 연장 API 가 생겼다 (2026-09-15, 장민석)** — 조서희 님 쪽 보고 「끝까지 못 한 것」 3·4번의 서버 몫이다.
+- [x] **조서희 님께 — 상담기록 재생·블랙리스트 연장 API 가 생겼다 (2026-09-15, 장민석)** — 조서희 님 쪽 보고 「끝까지 못 한 것」 3·4번의 서버 몫이다.
   ③ **`GET /hub/calls/{call_id}/record`** — 한 통화의 요약 초안·후속조치·추천(카드 `card_id` 포함)·필요서류 판정(서류별)을 한 번에. 전사는 기존 `…/transcript`.
   **감정분석은 저장되지 않아 없다**(모델 없음) — 재생 화면의 그 칸은 비워 둔다. `0.1.9` 전 통화는 추천이 저장되지 않아 `recommendations: []`
   ④ **`POST /hub/blacklist-entries/{id}/expiry {expires_in_days, reason}`** + **`GET …/expiry-changes`** — 연장·단축 모두 «지금부터 N일 뒤»(1~365), 사유 필수.
@@ -561,19 +583,29 @@ Environment Variables → **Production 만** → Deployments → Redeploy(`VITE_
   ✅ **2026-09-15 운영 반영**(서버 `0.1.9`, 운영 DB 27 테이블 확인) — 붙여도 된다
   → **2026-09-15 조서희가 ④ 처리** — `adminStore.ts`의 `extendEntry`를 로컬 날짜계산 mock에서
   `POST .../expiry`(사유 필수) 실호출로 바꿨다. `GET …/expiry-changes`(이력 조회 화면)는 아직 안 만들었다 — 요청받으면 착수.
-  **③(상담기록 재생 화면)은 그대로 남아 있다** — mock 시나리오 재생(카드·종결·감정분석 통짜)을 실제 API 조합으로
-  바꾸려면 화면 흐름을 다시 설계해야 해서 이번 스코프에서 뺐다(조서희 판단, 별도 요청 시 착수)
+  **③(상담기록 재생 화면)도 2026-09-15 나중에 처리** — 위 "`w4-dashboard-live-contract`
+  로 드러난 계약 구멍 셋" 섹션에 처리 내역을 적었다(요약 보기·자막 보기 토글로 재설계).
 - [x] **블랙리스트 연장을 되풀이하면 사실상 영구 표시가 된다 (2026-09-15, `decisions/309`)** **→ 같은 날 누적 상한 «승인일 + 365일» 로 막았다(사용자 선택, 넘으면 422). 이력 사유 보존 기간은 아직 안 정했다.** 원문 — — 365일 상한은 변경 1회에만 걸린다. 이력으로 드러날 뿐 막지 않는다.
   **정할 것**: 등록 1건의 누적 상한(예: 승인일로부터 N일)을 둘지. 이력 테이블의 사유 보존 기간도 함께
-- [ ] **조서희 님께 — 요약 확정 API · 연장 누적 상한 (2026-09-15, 장민석)** — ① `POST /hub/calls/{id}/summary-confirmation {summary_text, inquiry_type?, follow_up_actions[]}`
+- [x] **조서희 님께 — 요약 확정 API · 연장 누적 상한 (2026-09-15, 장민석)** — ① `POST /hub/calls/{id}/summary-confirmation {summary_text, inquiry_type?, follow_up_actions[]}`
   (상담원 토큰 필수) — 통화 후 화면에서 초안을 고쳐 확정한다. 확정은 한 번(409). `GET /hub/calls/{id}/record` 의 `summary_confirmed` 가 `"true"` 가 된다(`decisions/310`)
   ② 연장·단축은 **승인일 + 365일** 을 넘으면 422 — 응답 `detail` 에 언제까지 가능한지가 있다. ③ 게이트웨이가 `recommendation_pending`·`call_guard`·`closure` 를 이제 실제로 보낸다(`0.1.4` 배포 뒤)
   ④ `POST /hub/calls/{id}/summary-revision {summary_text, reason, …}` + `GET …/summary-revisions`(상담원 토큰) — 확정된 요약을 사유와 함께 고친다. 확정 전 409(`decisions/311`)
   ⑤ 관리자 `POST /hub/blacklist-retention/purge` — 끝난 뒤 180일 지난 문장을 비운다(`decisions/312`). 관리자 화면에 버튼이 필요하다
   ✅ **2026-09-15 운영 반영**(서버 `0.1.10` · 게이트웨이 `0.1.4`, 운영 DB 29 테이블 확인) — 붙여도 된다. 게이트웨이가 알림 3종을 이제 실제로 보낸다
-- [ ] **조서희 님께 — J-5 베테랑 기준 설정이 서버에 생겼다 (2026-09-15, 장민석)** — 설정 탭 「근속 연차」 를 `GET /hub/routing-settings`(현재값, `saved:"false"` 면 기본 3년) ·
+  → **2026-09-15 조서희가 ①·④·⑤ 처리** — ① `RealGatewayClient.wrapUp()`이 그동안 "계약 없음"으로 늘 실패하던 것을 고쳐
+  `POST /hub/calls/{id}/close`(초안 생성)를 실제로 부르게 했고, `CallSummaryPanel`에 요약·유형·후속조치 편집 + 확정
+  버튼(`SummaryConfirmationForm`)을 추가했다. ④ 같은 폼에 "재수정" 버튼을 더해 확정 후에도 사유와 함께
+  고칠 수 있게 했다(취소 가능, 재수정 시각 표시) — `GET …/summary-revisions`(이력 목록)는 화면에서 안 씀, 필요하면
+  추가. ⑤ `SettingsTab.tsx`에 "지금 정리하기" 버튼 추가(`purgeBlacklistRetention`, 확인 다이얼로그 있음,
+  `apps/admin`의 `RetentionPurgeCard`). ②·③은 프론트 몫 아님(②는 서버 규칙, ③은 게이트웨이).
+  `apps/call`·`apps/admin` `tsc --noEmit`·`vite build` 클린
+- [x] **조서희 님께 — J-5 베테랑 기준 설정이 서버에 생겼다 (2026-09-15, 장민석)** — 설정 탭 「근속 연차」 를 `GET /hub/routing-settings`(현재값, `saved:"false"` 면 기본 3년) ·
   `PUT /hub/routing-settings {veteran_years: 0.5~40}` 에 붙이면 된다(관리자 로그인). 화면의 «서버에 연결 안 됨» 문구는 운영 반영 뒤 걷어도 된다.
   배정 판정 자체(`POST /hub/routing-decisions`)는 교환기가 부르는 것이라 화면이 부를 일은 없다. `fell_back` 집계 화면이 필요하면 조회 API 를 따로 만든다
+  → **2026-09-15 조서희가 처리** — `hubClient.ts`에 `fetchRoutingSetting`·`saveRoutingSetting` 추가,
+  `adminStore.ts`의 `loadAll`이 로그인 직후 현재값을 받고 `setVeteranThresholdYears`가 `PUT`으로 저장(저장 성공 응답으로만 상태 갱신 — 실패해도 화면 값이 서버와 어긋나지 않는다).
+  `SettingsTab.tsx` 입력 상한을 서버 값(0.5~40)에 맞추고 «연결 안 됨» 문구 걷어냄. 배정 판정을 실제로 부르는 쪽(아래 항목)은 그대로 미결.
 - [ ] **J-5 배정 판정을 부르는 곳이 없다 (2026-09-15, `decisions/313`)** — 교환기가 없고 게이트웨이도 부르지 않는다. 판정 API 는 인증도 없다(통화 시작과 같은 한계).
   **정할 것**: 데모에서 게이트웨이 `/dev` 테스트 콜이 통화 시작 직후 부르게 할지 · `routing_log.fell_back` 집계를 관리자 현황판에 올릴지
 - [ ] **블랙리스트 보존 정리를 누가 언제 부르나 (2026-09-15, `decisions/312`)** — 관리자 API 만 있고 주기 실행이 없다. 부르지 않으면 비워지지 않는다.
