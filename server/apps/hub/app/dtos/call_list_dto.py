@@ -12,7 +12,7 @@ MAX_LIMIT = 200
 class CallListQuery:
     limit: int = DEFAULT_LIMIT
     offset: int = 0
-    # 재상담 고객 이력 — ⚠ `call.customer_id` 를 채우는 경로가 아직 없다(F-3). 주면 지금은 늘 빈 목록이다
+    # 재상담 고객 이력 — `call.customer_id` 는 통화 시작에 발신 번호가 넘어온 통화만 채워진다(decisions/304)
     customer_id: str | None = None
 
 

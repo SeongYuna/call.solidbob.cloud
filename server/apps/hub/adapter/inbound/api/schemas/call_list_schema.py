@@ -16,7 +16,7 @@ class CallListItemSchema(BaseModel):
     status: str
     stt_engine: str = Field(description="`+diarize` 가 붙으면 화자가 추측이다(decisions/303)")
     channel_count: StrField
-    customer_id: str | None = Field(default=None, description="⚠ 채우는 경로가 아직 없다(F-3) — 지금은 늘 null")
+    customer_id: str | None = Field(default=None, description="발신 번호의 HMAC(decisions/304) — 게이트웨이가 X-Caller-Phone 을 넘기고 서버에 HMAC 키가 있을 때만 채워진다. 아니면 null")
     inquiry_type: str | None = Field(default=None, description="D-2 — 통화 후 처리 전이면 null")
     summary_confirmed: StrField = Field(description="D-1~D-3 초안을 상담원이 확정했는가. false 면 초안이거나 아직 없다")
 

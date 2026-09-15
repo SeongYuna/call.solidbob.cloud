@@ -1,5 +1,5 @@
 # Requirement: D-1, D-2, D-3, QUA-1
-"""HTTP 표면: 스포크가 없으면 501, 있으면 초안 형태로 응답."""
+"""HTTP 표면: 기본은 규칙 발췌 초안(decisions/306), 스포크를 바꿔 꽂아도 초안 형태로 응답."""
 
 from fastapi.testclient import TestClient
 
@@ -21,10 +21,16 @@ class _Stub(PostcallPort):
                                 confirmed=True)  # 모델이 확정을 주장해도 서버가 무시한다
 
 
-def test_스포크가_없으면_501이다():
+def test_기본은_규칙_발췌_초안이다():
+    """501 이 아니다 — 자막에서 고른 문장과 발화 건수가 나가고, 유형은 만들지 않는다(decisions/306)."""
     with TestClient(app) as client:
         r = client.post("/hub/calls/c_001/close", json=BODY)
-    assert r.status_code == 501
+    b = r.json()
+    assert r.status_code == 200
+    assert b["summary_text"].startswith("고객 문의: 카드를 잃어버렸어요 / 상담원 안내: 분실 신고 도와드리겠습니다")
+    assert b["inquiry_type"] is None
+    assert b["follow_up_actions"] == []  # 통화 안에서 끝나는 약속은 후속조치가 아니다
+    assert b["confirmed"] == "false"
 
 
 def test_초안을_계약_형태로_돌려준다():

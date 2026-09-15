@@ -23,7 +23,7 @@ def test_health_reports_configured_flags_without_values(monkeypatch):
     assert body["postgres_configured"] is True and body["elasticsearch_configured"] is True
     # 규칙 기반 스포크는 언제나 붙는다. 검색은 `elasticsearch` 패키지가 있을 때만 —
     # 없으면 조용히 501 로 남는 것이 설계다(`_project/decisions/024`).
-    assert body["spokes"][:2] == ["masking", "closure_gate"]
+    assert body["spokes"][:3] == ["masking", "closure_gate", "postcall"]
     dumped = str(body)
     assert "secret-pw" not in dumped and "db.internal" not in dumped and "es.internal" not in dumped
 
@@ -35,8 +35,8 @@ def test_health_when_nothing_configured(monkeypatch):
         body = client.get("/health").json()
     assert body["postgres_configured"] is False and body["elasticsearch_configured"] is False
     # 규칙 기반 스포크는 외부 자원이 없어도 붙는다. 검색은 ES 가 없으면 안 붙고 501 로 남는다.
-    # 트리거(B-1)는 외부 자원이 없어 `ai/` 만 있으면 붙는다 — 그래서 앞 둘만 고정한다.
-    assert body["spokes"][:2] == ["masking", "closure_gate"]
+    # 트리거(B-1)는 외부 자원이 없어 `ai/` 만 있으면 붙는다 — 그래서 앞 셋(규칙 기반)만 고정한다.
+    assert body["spokes"][:3] == ["masking", "closure_gate", "postcall"]
     assert "retrieval" not in body["spokes"]
 
 
