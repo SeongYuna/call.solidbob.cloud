@@ -8,6 +8,7 @@
 - `distress_count` 는 저장하지 않는다(`decisions/205` ④) — 컬럼이 없다
 - 해제는 행을 지우지 않고 `released_at`·`released_by`·`release_reason` 을 찍는다
 - **만료 변경(연장·단축)은 `blacklist_entry_expiry_change` 에 쌓는다**(`decisions/309`) — `expires_at` 만 덮으면 누가 왜 늘렸는지가 사라진다
+- **보존 기간 정리**(`decisions/312`) — 끝난 지 180일이 지난 만료 변경 사유 · 반려 요청의 사유·자막을 표시로 바꾼다. 행은 지우지 않는다
 - 승인할 때 같은 고객의 **만료됐지만 해제되지 않은** 등록을 먼저 «만료» 로 닫는다 — 부분 유니크(`released_at IS NULL`)가
   만료된 행도 자리로 세서, 만료 뒤 새 승인이 늘 23505 였다(2026-09-15 발견)
 """
@@ -17,6 +18,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 
 from hub.adapter.outbound.postgres.connection import ConnectionFactory
+from hub.app.dtos.blacklist_retention_dto import RetentionPurgeResult
 from hub.app.dtos.blacklist_dto import (
     STATUS_APPROVED,
     STATUS_REJECTED,
@@ -25,8 +27,16 @@ from hub.app.dtos.blacklist_dto import (
     ExpiryChange,
     RequestEvidence,
 )
-from hub.app.ports.output.blacklist_port import BlacklistConflict, BlacklistNotFound, BlacklistPort, UnknownAgent
+from hub.app.ports.output.blacklist_port import (
+    BlacklistConflict,
+    BlacklistNotFound,
+    BlacklistPort,
+    ExpiryBeyondCap,
+    UnknownAgent,
+)
 
+from ...domain.services.expiry import latest_allowed_expiry, within_cap
+from ...domain.services.retention import PURGED_TEXT, RETENTION_DAYS, purge_cutoff
 from ...domain.services.transitions import ROLE_ADMIN, TransitionNotAllowed, transition
 
 _UNIQUE_VIOLATION = "23505"
@@ -77,6 +87,18 @@ _CHANGE_COLUMNS = '"change_id", "entry_id", "previous_expires_at", "new_expires_
 _INSERT_CHANGE = f"""
 INSERT INTO "blacklist_entry_expiry_change" ("entry_id", "previous_expires_at", "new_expires_at", "changed_by", "reason", "changed_at")
 VALUES (%s, %s, %s, %s, %s, %s) RETURNING {_CHANGE_COLUMNS}
+"""
+# 등록이 «끝난» 시각 = 해제 시각, 해제가 없으면 만료 시각. 그 시각이 기준선보다 앞이면 비운다
+_PURGE_CHANGE_REASONS = """
+UPDATE "blacklist_entry_expiry_change" c SET "reason" = %s
+FROM "blacklist_entry" e
+WHERE c."entry_id" = e."entry_id" AND c."reason" <> %s AND COALESCE(e."released_at", e."expires_at") <= %s
+RETURNING c."change_id"
+"""
+_PURGE_REJECTED_REQUESTS = """
+UPDATE "blacklist_request" SET "reason" = %s, "context_excerpt" = %s
+WHERE "status" = 'rejected' AND "decided_at" <= %s AND ("reason" <> %s OR "context_excerpt" <> %s)
+RETURNING "request_id"
 """
 _LIST_CHANGES = f'SELECT {_CHANGE_COLUMNS} FROM "blacklist_entry_expiry_change" WHERE "entry_id" = %s ORDER BY "changed_at", "change_id"'
 
@@ -222,6 +244,8 @@ class PostgresBlacklistRepository(BlacklistPort):
                 current = _entry(row)
                 if current.released_at is not None:
                     raise BlacklistConflict("이미 해제된 등록입니다 — 만료를 바꿀 수 없습니다")
+                if not within_cap(current.approved_at, expires_at):  # 판정은 도메인 규칙이 한다
+                    raise ExpiryBeyondCap(latest_allowed_expiry(current.approved_at))
                 await cur.execute(_UPDATE_EXPIRY, (expires_at, entry_id))
                 updated = await cur.fetchone()
                 try:
@@ -243,3 +267,15 @@ class PostgresBlacklistRepository(BlacklistPort):
                 await cur.execute(_LIST_CHANGES, (entry_id,))
                 rows = await cur.fetchall()
         return [_change(r) for r in rows]
+
+    async def purge_retained_texts(self) -> RetentionPurgeResult:
+        cutoff = purge_cutoff(self._now())  # 기준은 도메인 규칙이 정한다
+        async with self._connect() as conn:
+            async with conn.cursor() as cur:
+                await cur.execute(_PURGE_CHANGE_REASONS, (PURGED_TEXT, PURGED_TEXT, cutoff))
+                changes = len(await cur.fetchall())
+                await cur.execute(_PURGE_REJECTED_REQUESTS, (PURGED_TEXT, PURGED_TEXT, cutoff, PURGED_TEXT, PURGED_TEXT))
+                requests = len(await cur.fetchall())
+            await conn.commit()
+        return RetentionPurgeResult(retention_days=RETENTION_DAYS, cutoff=cutoff,
+                                    expiry_change_reasons_purged=changes, rejected_requests_purged=requests)

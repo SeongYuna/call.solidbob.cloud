@@ -19,6 +19,9 @@ ADMIN_PATHS = [
     ("get", "/hub/call-guard-flags"),
     ("post", "/hub/blacklist-entries/1/expiry"),
     ("get", "/hub/blacklist-entries/1/expiry-changes"),
+    ("post", "/hub/blacklist-retention/purge"),
+    ("get", "/hub/routing-settings"),
+    ("put", "/hub/routing-settings"),
 ]
 
 
@@ -39,3 +42,10 @@ def test_헤더가_없으면_Redis가_없어도_401이다(client, method, path):
 @pytest.mark.parametrize("method,path", ADMIN_PATHS)
 def test_Bearer가_아닌_헤더도_401이다(client, method, path):
     assert getattr(client, method)(path, headers={"Authorization": "Basic abc"}).status_code == 401
+
+
+def test_상담원_토큰_경로도_헤더가_없으면_401이다(client):
+    """상담원 가드도 저장소(DB 없음 501)보다 헤더를 먼저 본다."""
+    assert client.post("/hub/calls/c1/summary-confirmation", json={"summary_text": "x"}).status_code == 401
+    assert client.post("/hub/blacklist-requests", json={"call_id": "c1", "reason": "x"}).status_code == 401
+
