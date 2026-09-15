@@ -1067,9 +1067,8 @@ F-2(필요서류 체크리스트)가 참조하는 필수 항목 정의도 이 �
 {"type": "closure", "payload": { /* 필요서류 체크리스트 판정 */ }}
 ```
 
-> ⚠ **「검색 중」 · `call_guard` · `closure` 셋 다 게이트웨이에서 대시보드 전송을 꺼 두었다**(`announcePending`·`announceCallGuard`·`announceClosure`).
-> `apps/call` 의 실서버 파서가 앞의 둘은 모르는 `type` 으로, `closure` 는 옛 형식(`closure_type`·`approved/blocked`)만 받아
-> 오류 배너를 띄운다. **검사·판정·저장은 끄지 않았다** — 수신 코드가 들어가면 켠다.
+> ✅ **「검색 중」 · `call_guard` · `closure` 셋 다 2026-09-15 켰다**(게이트웨이 `0.1.4` — `announcePending`·`announceCallGuard`·`announceClosure`).
+> `apps/call` 실서버 파서가 main 에 들어와(PR #88) 세 `type` 과 새 `closure` 형식을 받는다. 그 전에는 모르는 `type` 으로 오류 배너가 떴다.
 > `category` 는 DDL 정본(`insult·threat·sexual·distress`)이다 — 프론트 mock 의 `폭언·욕설·위협` 과 다르다.
 
 **허브 HTTP 표면 (2026-09-14)** — 게이트웨이가 아니라 화면이 직접 부르는 것. 값은 전부 문자열이다.
@@ -1082,12 +1081,17 @@ F-2(필요서류 체크리스트)가 참조하는 필수 항목 정의도 이 �
 | `GET /hub/calls/{id}/record` | 상담기록 재생 | `{call_id, status, started_at, ended_at, summary_text, inquiry_type, summary_confirmed, follow_up_actions[{action_text, status}], recommendations[{recommendation_id, trigger_at_ms, internal_latency_ms, created_at, cards[{card_id, rank, title, summary, source_doc_id, similarity_score}]}], closures[{closure_id, procedure, verdict, detected, reason, source_doc_id, decided_at, items[{rank, document_name, informed}]}]}` — 저장된 것만. 감정분석·통번역은 저장되지 않아 없다. 없는 통화 404 |
 | `POST /hub/closure-checks` `{call_id, procedure, evidence, reason}` | 체크리스트를 사람이 채울 때 | 위 판정 JSON(`detected: "false"`) |
 | `POST /hub/calls/{id}/close` `{call_id, segments: [{segment_id, speaker, text}]}` | 통화 후 화면 | `{call_id, summary_text, inquiry_type, follow_up_actions: [{action_text}], confirmed: "false"}` — **규칙 발췌 초안**(`decisions/306`). `inquiry_type` 은 늘 `null`, 저장하지 않는다(아직) |
+| `POST /hub/calls/{id}/summary-confirmation` `{summary_text, inquiry_type?, follow_up_actions[]}` + **`Authorization: Bearer cga_…`** | **상담원 토큰** | 상담원이 고친 요약으로 확정 — 마스킹 후 저장 · `summary_confirmed_at` · 후속조치 draft → confirmed. 확정은 한 번(409) · 누가 했는지는 저장 안 함(`decisions/310`) |
+| `POST /hub/calls/{id}/summary-revision` `{summary_text, reason, inquiry_type?, follow_up_actions[]}` · `GET …/summary-revisions` + **`Authorization: Bearer cga_…`** | **상담원 토큰** | 확정된 요약만 사유와 함께 고친다(확정 전 409). 이전 요약·유형은 이력으로, 이전 후속조치는 `superseded` 로 남는다 · 누가 고쳤는지 저장 안 함(`decisions/311`) |
 | `POST /hub/cards/{card_id}/feedback` `{action: adopted\|ignored}` | 상담원 | `{feedback_id, card_id, action}`. `card_id` 는 추천 카드 응답의 값(`decisions/308`). 상담원 ID 를 받지 않는다(부록 A-1 — 상담원 단위 집계 금지) |
 | `POST /hub/blacklist-requests` `{call_id, reason}` + 헤더 **`Authorization: Bearer cga_…`** | **상담원 토큰** | `pending` 요청. **요청자는 토큰에서 온다** — 본문 `requested_by` 는 없다(실어도 무시, `decisions/307`). 토큰 없음·폐기 401 · 근거·고객·자막은 서버가 모은다 · `has_distress` |
 | `GET /hub/blacklist-requests?status` · `POST …/{id}/decision {approve, expires_in_days, note}` | **관리자 로그인** | 승인 시 등록 에피소드. 결정자는 `admin_account.agent_id` |
 | `GET /hub/blacklist-entries?active_only` · `POST …/{id}/release {reason}` | **관리자 로그인** | 해제는 지우지 않고 기록 |
-| `POST /hub/blacklist-entries/{id}/expiry {expires_in_days, reason}` · `GET …/{id}/expiry-changes` | **관리자 로그인** | 만료를 «지금부터 N일 뒤»(1~365)로 — 연장·단축 모두. 사유 필수(마스킹) · 이력이 쌓인다 · 해제된 등록 409(`decisions/309`) |
+| `POST /hub/blacklist-entries/{id}/expiry {expires_in_days, reason}` · `GET …/{id}/expiry-changes` | **관리자 로그인** | 만료를 «지금부터 N일 뒤»(1~365)로 — 연장·단축 모두. **누적 상한 승인일 + 365일**(넘으면 422) · 사유 필수(마스킹) · 이력이 쌓인다 · 해제된 등록 409(`decisions/309`) |
 | `GET /hub/call-guard-flags?call_id&category&limit&offset` | **관리자 로그인** | 콜 가드 로그 |
+| `POST /hub/routing-decisions` `{call_id, candidates[]}` | 교환기·게이트웨이(인증 없음) | J-5 인입 전 배정 판정 — 적용 중 블랙리스트 고객이면 근속 기준 이상 후보를 고른다. `{assigned_agent_id, is_blacklisted, fell_back, reason, customer_identified, veteran_years, unknown_candidates}` · `routing_log` 기록 · 통화 없음 404(`decisions/313`) |
+| `GET·PUT /hub/routing-settings` `{veteran_years}` | **관리자 로그인** | 베테랑 근속 기준(0.5~40년). 저장값 없으면 기본 3년 `saved: "false"`(`decisions/313`) |
+| `POST /hub/blacklist-retention/purge` | **관리자 로그인** | 끝난 뒤 180일 지난 만료 변경 사유 · 반려 요청 사유·자막을 표시로 비운다. 행은 남는다 · 멱등 · `{retention_days, cutoff, expiry_change_reasons_purged, rejected_requests_purged}`(`decisions/312`) |
 | `POST /admin/agent-tokens` `{agent_id}` · `GET /admin/agent-tokens?agent_id` · `POST /admin/agent-tokens/{id}/revoke` | **관리자 로그인** | 상담원 토큰 발급·목록·폐기. **원문 `token` 은 발급 응답에만 한 번** — 목록·폐기 응답에는 없다. 만료 없음(폐기로만 끊는다) |
 
 > 관리자·상담원 가드는 **헤더가 없으면 인프라(Redis·DB)를 보기 전에 401** 이다(2026-09-15). 전에는 운영에서 500 이었다.

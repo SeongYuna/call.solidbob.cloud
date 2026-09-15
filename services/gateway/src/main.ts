@@ -46,12 +46,14 @@ const registry = new CallRegistry({
   broadcaster: dashboards,
   log,
   nowMs: () => Date.now(),
-  // 「검색 중」 신호 — apps/call 이 recommendation_pending 을 받게 되면 true 로 켠다(w4-recommendation-pending-contract)
-  announcePending: false,
-  // C-6 콜 가드 메시지 — 검사·저장은 늘 돈다. apps/call 이 call_guard 를 받게 되면 true 로 켠다(w4-call-guard-wiring)
-  announceCallGuard: false,
-  // F-2 필요서류 판정 메시지 — 판정·저장은 늘 돈다. apps/call 이 새 closure 형식(procedure·complete/incomplete)을 받게 되면 켠다
-  announceClosure: false,
+  // 세 메시지 모두 2026-09-15 켰다 — apps/call 실서버 파서가 main 에 들어왔다(PR #88 에 실린 frontend 69508ae,
+  // realGatewayClient.ts 의 parseRecommendationPending·parseCallGuard·새 parseClosure). 끄려면 false 로 되돌린다
+  // 「검색 중」 신호(w4-recommendation-pending-contract)
+  announcePending: true,
+  // C-6 콜 가드 메시지 — 검사·저장은 늘 돈다(w4-call-guard-wiring)
+  announceCallGuard: true,
+  // F-2 필요서류 판정 메시지 — 판정·저장은 늘 돈다. 새 closure 형식(procedure·complete/incomplete)
+  announceClosure: true,
 });
 
 const server = createGatewayServer({
