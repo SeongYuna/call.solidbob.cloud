@@ -1510,6 +1510,51 @@ import os, redis; print(redis.from_url(os.environ['REDIS_URL']).ping())"        
 
 ---
 
+### 18-4. 프론트 3종 Vercel 프로젝트 — 대조표 · Ignored Build Step (2026-09-15 추가)
+
+프론트는 셋 다 Vercel 이고 **정성윤 계정**에 있다. 같은 저장소를 세 번 Import 해서
+**프로젝트 이름이 도메인과 어긋난다** — 콘솔에서 고를 때 이름이 아니라 **도메인을 본다.**
+
+| Vercel 프로젝트 | 도메인 | Root Directory | 비고 |
+|---|---|---|---|
+| `call-solidbob-cloud` | **www**.solidbob.cloud | `apps/platform` | 가장 먼저 만든 것. 이름만 보면 상담원 화면 같지만 **랜딩**이다 |
+| `call-solidbob-cloud-kxu6` | **call**.solidbob.cloud | `apps/call` | 상담원 데모. 옛 `apps/dashboard` — 2026-09-14 개명 |
+| `call-solidbob-cloud-admin` | **admin**.solidbob.cloud | `apps/admin` | 18-3 에서 만든 것 |
+
+**Ignored Build Step — 세 프로젝트 전부 같은 값** (Settings → Git → Ignored Build Step):
+
+| 항목 | 값 |
+|---|---|
+| Behavior | `Custom` |
+| Command | `git diff --quiet HEAD^ HEAD -- ./` |
+| Production Overrides | **비워 둔다** (비우면 Project Settings 값을 쓴다) |
+
+종료 코드가 **0 이면 건너뛰고 1 이면 빌드한다** — 즉 「이 앱 폴더가 안 바뀌었으면 배포하지 않는다」.
+
+**왜 거는가 — 2026-09-15 에 실제로 걸렸다.** 기본값은 **어느 브랜치든 push 하면 프로젝트마다
+미리보기 배포가 하나씩** 생긴다. 셋이니 3배이고, `apps/` 를 한 줄도 안 고친 커밋(CI·문서·`server/`)까지
+전부 배포를 만든다. 그날 다섯 브랜치에 push·머지가 몰리면서 **계정 하루 배포 한도**에 닿았다 —
+PR #94 에서 `admin`·`kxu6` 가 `Deployment rate limited — retry in 24 hours` 로 빨간 X 가 됐다.
+그때 랜딩(`call-solidbob-cloud`)만 통과한 이유가 **이 설정이 거기만 걸려 있었기 때문**이다. 같은 날 셋 다 걸었다.
+
+> ⚠ **`./` 는 Root Directory 기준이다.** Root Directory 가 실제 폴더와 어긋나면 `git diff` 가
+> **항상 비어** 빌드가 **영원히 건너뛰어진다** — 빨간불이 아니라 조용한 초록이라 늦게 발견된다.
+> 폴더를 옮기거나 이름을 바꿀 때(09-14 `apps/dashboard` → `apps/call` 같은 일) **위 표를 함께 고친다.**
+>
+> **확인은 다음 PR 에서 저절로 된다** — `server/`·CI 만 고친 PR 이면 Vercel 체크 **셋 다**
+> `Canceled by Ignored Build Step` 이어야 한다. 하나라도 빌드가 돌면 그 프로젝트의 Root Directory 가 어긋난 것이다.
+
+> ⚠ **Vercel 체크는 main 룰셋의 필수 통과 검사가 아니다** (필수는 다섯 — `CLAUDE.md` §7).
+> 빨간 X 가 떠도 **머지는 막히지 않는다.** 머지 버튼이 잠겼다면 Vercel 이 아니라
+> `server`·`ai`·`jekyll`·`gateway`·`tag-check` 중 무엇이 걸렸는지 본다.
+
+**이 설정은 콘솔에만 있다.** 저장소에 `vercel.json` 이 없어 **이 표가 유일한 기록**이다 —
+같은 날 `branch-protection.json`·`ruleset-main.json` 이 어긋나 있던 것과 같은 구조다.
+코드로 옮기려면 `apps/<앱>/vercel.json` 의 `ignoreCommand` 인데, `apps/` 는 조서희 전담이라
+[미결](/open-items/)로 올려 두고 함께 정한다.
+
+---
+
 ## 19. 검증 체크리스트
 
 > **2026-09-11 실물 기준으로 고쳤다** — 네임스페이스 `callguard` · ES 는 StatefulSet(`elasticsearch-0`) ·

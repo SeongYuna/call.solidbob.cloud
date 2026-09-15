@@ -396,7 +396,7 @@ Google STT → 로컬 server 마스킹 → 대시보드 WS 까지 관통했다. 
 
 **B 를 고르면 할 일** (정성윤 — Vercel 계정):
 뷰 토큰 꺼내기(`sudo k3s kubectl -n callguard get secret gateway-tokens -o jsonpath='{.data.GATEWAY_VIEW_TOKEN}' | base64 -d`, 32자 — 48자인
-`INGEST` 는 **절대 넣지 않는다**) → `call.solidbob.cloud` 가 붙은 Vercel 프로젝트(Root Directory `apps/dashboard`) → Settings →
+`INGEST` 는 **절대 넣지 않는다**) → `call.solidbob.cloud` 가 붙은 Vercel 프로젝트(`call-solidbob-cloud-kxu6`, Root Directory `apps/call` — 09-14 개명 반영) → Settings →
 Environment Variables → **Production 만** → Deployments → Redeploy(`VITE_` 는 빌드 때 박힌다) → 확인: 번들에 `gateway/ws` 가 들어갔는지 ·
 대시보드를 연 동안 `/gateway/health` 의 `dashboards` 가 1 이 되는지.
 
@@ -674,3 +674,16 @@ Environment Variables → **Production 만** → Deployments → Redeploy(`VITE_
 브랜치를 따로 보지도 않았다(`git grep <ref>` 로 다섯 브랜치를 봤으면 바로 나왔다).
 **교훈**: 「저장소에 없다」를 말하기 전에 ① 트리가 최신인지 ② 다른 브랜치는 봤는지 둘을 먼저 확인한다.
 드리프트 방향이 「운영에만 있다」로 보일 때는 대개 **내 트리가 낡은 것**이다.
+
+### Vercel 설정이 콘솔에만 있다 (신규, 2026-09-15, 정성윤)
+
+- [ ] **프론트 3종의 Vercel 설정을 `vercel.json` 으로 저장소에 옮길지** — 지금은 Root Directory ·
+  빌드 명령 · 환경변수 · **Ignored Build Step** 이 전부 콘솔에만 있고, 저장소 쪽 기록은 런북 18-4 표 하나다.
+  같은 날 `branch-protection.json`·`ruleset-main.json` 이 어긋나 있던 것과 **같은 구조**다 —
+  콘솔만 바뀌고 저장소는 모른다. 옮기면 `apps/<앱>/vercel.json` 의 `ignoreCommand` 인데
+  **`apps/` 는 조서희 전담**이라 혼자 정할 수 없다(`CLAUDE.md` §1 — 전담이 남는 유일한 영역).
+  정할 것: ① 콘솔 유지 + 런북 18-4 를 정본으로(지금) ② `vercel.json` 으로 옮기고 런북은 가리키기만.
+  ⚠ ② 를 고르면 **Root Directory 는 여전히 콘솔에만 남는다**(vercel.json 이 그 안에 있어서 읽히는 구조다).
+- [ ] **Root Directory 셋이 실제 폴더와 맞는지 눈으로 확인** — 어긋나면 Ignored Build Step 의 `git diff` 가
+  항상 비어 **빌드가 영원히 건너뛰어진다**(빨간불이 아니라 조용한 초록). 09-14 `apps/dashboard` → `apps/call`
+  개명이 있었고 위 뷰 토큰 항목에도 옛 경로가 적혀 있었다(이번에 고쳤다). 확인법은 런북 18-4.
