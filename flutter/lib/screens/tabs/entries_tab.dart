@@ -1,5 +1,6 @@
 // apps/admin의 EntriesTab.tsx 모바일판 — 오늘 만든 "신규/기존(재범)" 필터를 그대로 옮겼다.
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 
 import '../../models/blacklist_models.dart';
@@ -56,7 +57,7 @@ class _EntriesTabState extends State<EntriesTab> {
     final dateFmt = DateFormat('yyyy.MM.dd');
 
     return ListView(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(AppSpacing.cardPadding),
       children: [
         Text(
           '등록된 고객의 전화도 정상적으로 받습니다. 바뀌는 것은 근속 3년 이상 상담사에게 배정된다는 점 하나입니다.',
@@ -104,7 +105,7 @@ class _EntriesTabState extends State<EntriesTab> {
               opacity: 0.6,
               child: ListTile(
                 contentPadding: EdgeInsets.zero,
-                title: Text(_displayHint(e)),
+                title: Text(_displayHint(e), style: GoogleFonts.jetBrainsMono()),
                 subtitle: Text('${e.releasedBy ?? ''} · ${e.releaseReason ?? '사유 없음'}'),
               ),
             ),
@@ -164,13 +165,13 @@ class _EntryRowState extends State<_EntryRow> {
     return Card(
       margin: const EdgeInsets.only(bottom: 10),
       child: Padding(
-        padding: const EdgeInsets.all(14),
+        padding: const EdgeInsets.all(AppSpacing.cardPadding),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               children: [
-                Text(widget.displayHint, style: const TextStyle(fontWeight: FontWeight.w700)),
+                Text(widget.displayHint, style: GoogleFonts.jetBrainsMono(fontWeight: FontWeight.w700)),
                 const SizedBox(width: 8),
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
@@ -184,11 +185,17 @@ class _EntryRowState extends State<_EntryRow> {
                   ),
                 ),
                 const Spacer(),
-                Text('${widget.dateFmt.format(widget.entry.approvedAt)} 등록', style: TextStyle(color: c.muted, fontSize: 11)),
+                Text(
+                  '${widget.dateFmt.format(widget.entry.approvedAt)} 등록',
+                  style: GoogleFonts.jetBrainsMono(color: c.muted, fontSize: 11),
+                ),
               ],
             ),
             const SizedBox(height: 4),
-            Text('${widget.dateFmt.format(widget.entry.expiresAt)} 만료', style: TextStyle(color: c.muted, fontSize: 12)),
+            Text(
+              '${widget.dateFmt.format(widget.entry.expiresAt)} 만료',
+              style: GoogleFonts.jetBrainsMono(color: c.muted, fontSize: 12),
+            ),
             const SizedBox(height: 10),
             Row(
               children: [

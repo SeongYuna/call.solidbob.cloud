@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import '../../models/blacklist_models.dart';
 import '../../theme/app_theme.dart';
@@ -24,7 +25,7 @@ class RequestsTab extends StatelessWidget {
     final decided = requests.where((r) => r.status != BlacklistStatus.pending).toList();
 
     return ListView(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(AppSpacing.cardPadding),
       children: [
         if (pending.isEmpty)
           Text('대기 중인 요청이 없습니다.', style: TextStyle(color: c.muted))
@@ -48,7 +49,7 @@ class RequestsTab extends StatelessWidget {
                 r.status == BlacklistStatus.approved ? Icons.check_circle : Icons.cancel,
                 color: r.status == BlacklistStatus.approved ? c.okFg : c.muted,
               ),
-              title: Text(r.displayHint),
+              title: Text(r.displayHint, style: GoogleFonts.jetBrainsMono()),
               subtitle: Text('${r.status == BlacklistStatus.approved ? '승인' : '반려'} · ${r.decidedBy ?? ''}'),
             ),
         ],
@@ -87,14 +88,14 @@ class _RequestCardState extends State<_RequestCard> {
     return Card(
       margin: const EdgeInsets.only(bottom: 16),
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(AppSpacing.cardPadding),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(r.displayHint, style: const TextStyle(fontWeight: FontWeight.w700)),
+                Text(r.displayHint, style: GoogleFonts.jetBrainsMono(fontWeight: FontWeight.w700)),
                 Text('${r.requestedBy} · 통화 $minutes분', style: TextStyle(color: c.muted, fontSize: 12)),
               ],
             ),

@@ -1,6 +1,7 @@
 // "상담원 계정 생성" 탭 — requests_tab.dart 의 폼+목록 패턴을 그대로 따른다.
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 
 import '../../models/account_models.dart';
@@ -22,7 +23,7 @@ class AccountsTab extends StatelessWidget {
     final sorted = List.of(accounts)..sort((a, b) => b.createdAt.compareTo(a.createdAt));
 
     return ListView(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(AppSpacing.cardPadding),
       children: [
         _CreateAccountForm(onCreateAccount: onCreateAccount),
         const SizedBox(height: 20),
@@ -79,7 +80,7 @@ class _CreateAccountFormState extends State<_CreateAccountForm> {
               Expanded(
                 child: SelectableText(
                   password,
-                  style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
+                  style: GoogleFonts.jetBrainsMono(fontWeight: FontWeight.w700, fontSize: 16),
                 ),
               ),
               IconButton(
@@ -108,7 +109,7 @@ class _CreateAccountFormState extends State<_CreateAccountForm> {
     final c = context.colors;
     return Card(
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(AppSpacing.cardPadding),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -149,7 +150,7 @@ class _AccountCard extends StatelessWidget {
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(AppSpacing.cardPadding),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -159,9 +160,12 @@ class _AccountCard extends StatelessWidget {
                 children: [
                   Text(account.name, style: const TextStyle(fontWeight: FontWeight.w700)),
                   const SizedBox(height: 4),
-                  Text(account.loginId, style: TextStyle(color: c.muted, fontSize: 12)),
+                  Text(account.loginId, style: GoogleFonts.jetBrainsMono(color: c.muted, fontSize: 12)),
                   const SizedBox(height: 4),
-                  Text('생성 ${fmt.format(account.createdAt)}', style: TextStyle(color: c.muted, fontSize: 11)),
+                  Text(
+                    '생성 ${fmt.format(account.createdAt)}',
+                    style: GoogleFonts.jetBrainsMono(color: c.muted, fontSize: 11),
+                  ),
                 ],
               ),
             ),

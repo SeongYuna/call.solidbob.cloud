@@ -37,13 +37,13 @@ class GapsTab extends StatelessWidget {
 
     if (rows.isEmpty) {
       return Padding(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(AppSpacing.cardPadding),
         child: Text('아직 검색 실패로 기록된 질의가 없습니다.', style: TextStyle(color: c.muted)),
       );
     }
 
     return ListView(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(AppSpacing.cardPadding),
       children: [
         Text(
           '상담원이 직접 검색했는데 문서를 못 찾은 질의를 모은 것입니다. '
