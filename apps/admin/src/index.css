@@ -2921,14 +2921,22 @@ button {
   background: color-mix(in srgb, var(--accent) 12%, transparent);
 }
 
-.admin-sidebar-item.is-active::before {
+/* 좌측 포인트 바 — 배경 강조는 그대로 두고 덧붙이는 것이지 대체가 아니다.
+   비활성 탭에서도 항상 그려 두고 투명하게만 둬서(::before 자체는 유지)
+   활성화될 때 색만 부드럽게 전환되게 한다. */
+.admin-sidebar-item::before {
   content: "";
   position: absolute;
-  left: -8px;
-  top: 6px;
-  bottom: 6px;
+  left: 0;
+  top: 0;
+  bottom: 0;
   width: 3px;
   border-radius: 0 3px 3px 0;
+  background: transparent;
+  transition: background-color 0.15s ease;
+}
+
+.admin-sidebar-item.is-active::before {
   background: var(--accent);
 }
 
@@ -3028,10 +3036,63 @@ button {
 }
 
 /* 현황판 — .standby-kpi 카드와 같은 무게감(큰 숫자 + 배지)을 쓴다. */
+/* 2026-09-15 — 좌측 통계 카드 + 우측 비율 도넛. 데스크톱 기준, 반응형은 신경 안 쓴다. */
+.wallboard-layout {
+  display: grid;
+  grid-template-columns: 1fr 300px;
+  gap: 20px;
+  align-items: start;
+}
+
 .wallboard-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   gap: 16px;
+}
+
+.wallboard-donut {
+  padding: 18px 20px;
+  border-radius: var(--radius-card);
+  background: var(--paper);
+  box-shadow:
+    0 1px 2px rgba(20, 20, 18, 0.04),
+    0 10px 28px rgba(20, 20, 18, 0.06);
+}
+
+.wallboard-donut-title {
+  margin: 0 0 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.wallboard-donut-legend {
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  font-size: 12.5px;
+  color: var(--text);
+}
+
+.wallboard-donut-legend li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.wallboard-donut-legend strong {
+  margin-left: auto;
+  font-variant-numeric: tabular-nums;
+}
+
+.wallboard-donut-swatch {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  flex-shrink: 0;
 }
 .wallboard-tile {
   display: flex;
