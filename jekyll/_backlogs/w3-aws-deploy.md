@@ -61,10 +61,14 @@ RRF 는 어차피 basic 라이선스에서 막혀 우리 코드가 계산한다(
 - [x] `infra/docker/server.Dockerfile` — `server/` + `ai/apps` 를 한 이미지로
 - [x] `infra/docker/compose.prod.yml` · `Caddyfile` — HTTPS 종단(Let's Encrypt 자동 갱신)
 - [x] `infra/docker/env.prod.example` — 운영 키 **이름만** (SEC-2)
-- [ ] `aws configure --profile callguard` → `terraform apply`
-- [ ] 클라우드플레어 `server` 레코드를 EIP 로 · 자리표시자 `ai` 레코드 삭제
-- [ ] `db/schema.sql` 을 RDS 에 적용
-- [ ] `/health` 가 `spokes` 에 `retrieval` 을 보고하는지 확인
+- [x] ~~`terraform apply`~~ — **폐기.** 콘솔로 세웠다(위 09-03 방향 변경). `infra/terraform/` 은 설계서로만 남는다.
+      ⚠ 그래서 **`destroy` → `apply` 로 같은 상태를 다시 세울 수 없다** — 아래 완료 조건을 그만큼 고쳤다
+- [x] 클라우드플레어 `server` 레코드 — 운영 EC2 를 가리킨다(2026-09-14 확인: `server.solidbob.cloud` → `54.116.46.228`).
+      탄력적 IP 는 붙이지 않기로 했고 켤 때마다 손으로 갱신한다([w3-cicd-release-pipeline](/backlog/w3-cicd-release-pipeline/))
+- [ ] **자리표시자 `ai` 레코드 삭제 — 아직 살아 있다.** 2026-09-14 확인: `ai.solidbob.cloud` → `216.198.79.1`(apex·Vercel).
+      `_project/decisions/105` 로 `ai` 도메인은 없어졌는데 **레코드만 남았다.** 문서에서 서술을 지운 것과 DNS 를 지운 것은 다르다
+- [x] `db/schema.sql` 을 RDS 에 적용 — `callguard-pg`(2026-09-11, `_project/decisions/108`)
+- [x] `/health` 가 `spokes` 보고 — 4종(`masking`·`closure_gate`·`retrieval`·`trigger`), 2026-09-14 재확인
 
 ## 2026-09-03 — 설계에서 갈린 것 둘
 
@@ -80,8 +84,14 @@ RRF 는 어차피 basic 라이선스에서 막혀 우리 코드가 계산한다(
 
 ## 완료 조건
 
-`https://server.solidbob.cloud/health` 가 `spokes` 를 실제로 보고하고,
-`terraform destroy` → `apply` 로 같은 상태가 다시 선다.
+`https://server.solidbob.cloud/health` 가 `spokes` 를 실제로 보고한다 — **2026-09-11 달성, 09-14 재확인.**
+
+> ⚠ **뒤쪽 절반(`terraform destroy` → `apply` 재현)은 콘솔 전환으로 없어졌다.** 지금 운영 구성은
+> **EC2 안과 콘솔에만** 있고 코드로 다시 세울 수 없다. 대체물은 AMI 스냅샷이고
+> ([w3-k3s-image-and-manifests](/backlog/w3-k3s-image-and-manifests/)) 그것도 아직 안 떴다.
+> **되돌릴 수 없다는 사실을 완료 조건에서 지우지 않고 여기 남긴다**(절대 원칙 8).
+
+남은 것은 자리표시자 `ai` 레코드 삭제 하나다.
 
 ## 하지 않는 것
 

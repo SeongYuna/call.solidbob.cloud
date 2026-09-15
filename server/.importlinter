@@ -95,6 +95,7 @@ forbidden_modules =
     psycopg
     elasticsearch
     google
+    boto3
     jwt
     redis
 

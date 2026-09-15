@@ -40,7 +40,7 @@
    k3s API(6443)와 SSH(22)는 **내 IP 로만** 연다.
 5. **자격증명을 커밋하지 않는다**(SEC-2, 루트 §8). RDS 암호·엔드포인트는 k8s 시크릿 `server-env` 로만 들어가고
    (`DATABASE_URL`·`POSTGRES_*` 둘 다 같은 값 — 런북 12-2, `decisions/108`),
-   EC2 는 액세스 키가 아니라 IAM 역할(`assist-ec2-role`)로 S3 에 접근한다.
+   EC2 는 액세스 키가 아니라 IAM 역할(`callguard-ec2-role`)로 S3 버킷 `assist-apne2` 에 접근한다.
 6. **19장을 통과하면 즉시 AMI 를 만든다**(20장). 재세팅에 반나절이 든다.
 
 ---

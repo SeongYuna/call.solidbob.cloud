@@ -18,8 +18,14 @@
 #     gateway(`services/gateway/`). 태그도 kustomization 에 따로 있고, «코드가 바뀌었는데 태그 그대로면 실패»도
 #     이미지마다 건다. 게이트웨이 토큰 시크릿은 **인스턴스 안에서 없을 때만 무작위로 만든다** —
 #     값이 GitHub·SSM 명령·로그 어디에도 실리지 않는다(`infra/k8s/base/secret.example.yaml` ③).
+#  ⑥ **판정은 `scripts/check_release_tags.py` 가 한다** (2026-09-14, `_project/decisions/111`).
+#     같은 판정을 PR 에서 먼저 돌리는 `tag-check.yml` 과 **한 벌을 공유하기 위해서다.**
+#     그리고 레지스트리 조회가 실패하면 「태그 없음」이 아니라 **「판정 불가」로 죽는다** — 전에는
+#     모든 오류를 「없음」으로 접어서, 레이트 리밋 한 번이면 게이트가 조용히 사라졌다.
 #
 # ⚠ 이 워크플로를 main 룰셋의 **필수 통과 검사에 넣지 않는다.** 넣으면 배포가 PR 머지를 막는다.
+#   머지 **전에** 걸어야 하는 태그 검사는 `tag-check.yml`(job `tag-check`)이 따로 맡는다 —
+#   그쪽은 이미지를 굽지도, AWS 를 건드리지도 않는다.
 
 name: 릴리스 — 이미지 빌드 · k3s 배포
 
@@ -65,73 +71,55 @@ jobs:
     name: plan
     runs-on: ubuntu-latest
     outputs:
-      tag: ${{ steps.read.outputs.tag }}
+      # 넷 다 `changed` 스텝(= check_release_tags.py)이 낸다. 태그를 여기서 따로 파싱하지 않는다 —
+      # 같은 정규식이 두 벌이 되면 kustomization 형식이 바뀔 때 한쪽만 고치게 된다.
+      tag: ${{ steps.changed.outputs.tag }}
       build: ${{ steps.changed.outputs.build }}
-      gateway_tag: ${{ steps.read.outputs.gateway_tag }}
+      gateway_tag: ${{ steps.changed.outputs.gateway_tag }}
       gateway_build: ${{ steps.changed.outputs.gateway_build }}
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 2 # 직전 커밋과 비교해야 한다
-
-      - name: kustomization 에서 이미지 태그를 읽는다
-        id: read
-        run: |
-          python3 - <<'PY' >> "$GITHUB_OUTPUT"
-          import re, pathlib, sys
-          text = pathlib.Path("infra/k8s/base/kustomization.yaml").read_text(encoding="utf-8")
-          # 출력 이름 `tag` 는 server 것이다(예전 이름 그대로 — 아래 참조가 많다).
-          for key, image in (("tag", "seongyuna/callguard-server"), ("gateway_tag", "seongyuna/callguard-gateway")):
-              m = re.search(r'-\s*name:\s*' + re.escape(image) + r'\s*\n\s*newTag:\s*"?([^"\s]+)"?', text)
-              if not m:
-                  sys.exit(f"kustomization.yaml 에서 {image} 의 newTag 를 찾지 못했습니다.")
-              print(f"{key}={m.group(1)}")
-          PY
-          echo "배포할 태그: $(grep -E '^(tag|gateway_tag)=' "$GITHUB_OUTPUT" | tr '\n' ' ')"
+          # 전체를 받는다. `fetch-depth: 2` 로는 **rebase 머지**에서 `github.event.before` 가
+          # 얕은 클론에 없어 비교가 실패하고, 예전 폴백이 그걸 삼켜 «마지막 커밋 1개»만 보고
+          # 지나갔다(2026-09-14 재현: 없는 sha 로 diff → exit 128, 폴백 → exit 0). 앞 커밋에
+          # `server/` 변경이 몰려 있으면 게이트가 통째로 무력화된다. 룰셋이 rebase 를 허용한다.
+          # 비용: `.git` 19MB · main 352커밋 — 무시할 수준이다.
+          fetch-depth: 0
 
       - name: 이미지를 다시 구워야 하는지 본다
         id: changed
         env:
-          SERVER_TAG: ${{ steps.read.outputs.tag }}
-          GATEWAY_TAG: ${{ steps.read.outputs.gateway_tag }}
           FORCE: ${{ inputs.force_build }}
+          # 익명 조회는 Docker Hub 레이트 리밋(러너 IP 공유)에 쉽게 걸리고, 저장소가 비공개면
+          # **항상** 실패한다(2026-09-11 게이트웨이가 실제로 그랬다). 인증해서 빈도를 낮춘다 —
+          # 다만 근본 처방은 fail-closed 쪽이고 이건 그 위에 얹는 완화책이다.
+          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+          DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
         run: |
           BEFORE="${{ github.event.before }}"
           if [ -z "$BEFORE" ] || [ "$BEFORE" = "0000000000000000000000000000000000000000" ]; then
+            # workflow_dispatch 나 첫 push. 이때 판정 범위는 «마지막 커밋 하나»뿐이므로,
+            # 수동 실행으로 다시 굽고 싶으면 force_build 와 함께 쓴다.
+            echo "::notice::직전 커밋이 없다(수동 실행 등) — HEAD~1 과 비교한다. 판정 범위가 커밋 1개다."
             BEFORE="HEAD~1"
           fi
-          CHANGED=$(git diff --name-only "$BEFORE" "${{ github.sha }}" 2>/dev/null || git diff --name-only HEAD~1 HEAD)
-          echo "$CHANGED"
+          # 폴백을 두지 않는다. 비교가 실패하면 **여기서 죽는 게** 조용히 좁은 범위로 지나가는 것보다 낫다.
+          # ⚠ `-c core.quotePath=false` — 기본값이면 비ASCII 경로를 `"…\352\264\200…"` 로 이스케이프해서
+          #   내보낸다. 그러면 `^(server/|ai/|…)` 정규식이 안 맞아 «코드 변경 없음» 으로 읽힌다 —
+          #   ①과 같은 부류의 fail-open 이다. 지금 server/·ai/ 에 비ASCII 파일은 없지만, 그걸 막는 규칙도 없다.
+          git -c core.quotePath=false diff --name-only "$BEFORE" "${{ github.sha }}" | tee changed.txt
 
-          # 이미지 하나를 판단한다. $1=출력 접두어(없으면 server) $2=이미지 $3=태그 $4=이미지에 들어가는 경로(정규식)
-          decide() {
-            local out="$1" image="$2" tag="$3" paths="$4" exists code
-            # ① 레지스트리에 그 태그가 있는가. 없으면 반드시 굽는다 — 없는 이미지를 적용하면 ImagePullBackOff 다.
-            #    매니페스트만 바꿔 newTag 를 올린 PR 이 정확히 이 경우다.
-            if docker manifest inspect "$image:$tag" > /dev/null 2>&1; then exists=true; else exists=false; fi
-            # ② 이미지에 들어가는 코드가 바뀌었는가.
-            if echo "$CHANGED" | grep -qE "$paths"; then code=true; else code=false; fi
-            echo "[$image] 태그 $tag — 레지스트리에 있음: $exists · 코드 변경: $code"
-            # ③ 코드가 바뀌었는데 태그가 그대로면 **조용히 옛 이미지가 계속 돈다.** imagePullPolicy: IfNotPresent 라
-            #    노드가 캐시를 재사용한다 — rollout restart 를 해도 새 이미지를 안 받아오고 명령은 성공한 것처럼 보인다.
-            if [ "$code" = "true" ] && [ "$exists" = "true" ] && [ "$FORCE" != "true" ]; then
-              echo "::error::$image 에 들어가는 코드가 바뀌었는데 newTag 가 '$tag' 그대로입니다."
-              echo "같은 태그로 다시 구워도 노드는 캐시된 옛 이미지를 계속 씁니다(IfNotPresent)."
-              echo "infra/k8s/base/kustomization.yaml 의 newTag 를 올려 PR 로 넣으세요."
-              exit 1
-            fi
-            if [ "$exists" = "false" ] || [ "$FORCE" = "true" ]; then
-              echo "${out}build=true" >> "$GITHUB_OUTPUT"
-            else
-              echo "${out}build=false" >> "$GITHUB_OUTPUT"
-            fi
-          }
-
-          # 경로는 **그 이미지에 실제로 들어가는 것만** 본다. 예전엔 server 가 `infra/docker/` 전체를 봐서,
-          # gateway.Dockerfile 을 고쳐도 «server 코드 변경» 으로 잡혔다. `.dockerignore` 는 둘 다에 걸린다.
-          decide "" "$SERVER_IMAGE" "$SERVER_TAG" '^(server/|ai/|infra/docker/server\.Dockerfile|\.dockerignore)'
-          # 게이트웨이 이미지는 src/ 와 package*.json 만 담는다(gateway.Dockerfile) — test/·README 는 태그를 올릴 일이 아니다.
-          decide "gateway_" "$GATEWAY_IMAGE" "$GATEWAY_TAG" '^(services/gateway/(src/|package(-lock)?\.json)|infra/docker/gateway\.Dockerfile|\.dockerignore)'
+          # 판정은 tag-check.yml 과 같은 스크립트가 한다(한 벌만 유지한다).
+          # 레지스트리 조회가 실패하면 종료 코드 2 로 죽는다 — 「없음」으로 접지 않는다.
+          # ⚠ `${FORCE:+…}` 를 쓰지 않는다 — push 에서 FORCE 는 "false" 라는 **비어 있지 않은 문자열**이라
+          #   그대로 켜진다. 값이 "true" 일 때만 켠다.
+          #   그리고 `[ … ] && …` 대신 if 를 쓴다 — bash -e 에서 오해를 부르지 않게.
+          if [ "$FORCE" = "true" ]; then
+            python3 scripts/check_release_tags.py --emit-build --force-build < changed.txt
+          else
+            python3 scripts/check_release_tags.py --emit-build < changed.txt
+          fi
 
   # ── 이미지를 굽고 Docker Hub 에 올린다 ────────────────────────────────────
   image:
@@ -192,8 +180,12 @@ jobs:
           cache-to: type=gha,mode=max,scope=gateway
 
   # ── k3s 에 적용한다 ──────────────────────────────────────────────────────
-  deploy:
-    name: deploy
+  # ⚠ job 이름이 `deploy` 였다 — pages.yml 의 deploy 와 **체크 이름이 겹쳤다**(한 커밋에 `deploy` 둘).
+  #   룰셋은 context 이름으로만 매칭해서 워크플로를 구분하지 못한다. 지금은 둘 다 필수 검사가 아니라
+  #   무해하지만, 나중에 필수로 걸면 구분이 안 되고 이쪽은 paths 로 안 도는 머지가 많아 영원히 pending 이 된다.
+  #   필수로 걸 일이 생기기 전에 미리 갈라 둔다(2026-09-14, `_project/decisions/111`).
+  k3s-deploy:
+    name: k3s-deploy
     needs: [plan, image, gateway-image]
     # plan 이 성공했을 때만 — plan 이 실패하면 두 image 는 skipped 가 되는데, 그걸 «구울 게 없었다» 로 읽고
     # 배포가 돌았다(2026-09-10 #61 — 태그 검사에 걸렸는데도 deploy 가 초록). 이미지는 구웠거나 건너뛰었어야 한다.
