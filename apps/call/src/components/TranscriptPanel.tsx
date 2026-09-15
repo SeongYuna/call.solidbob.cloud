@@ -33,6 +33,7 @@ import {
 } from "../lib/customerRisk/supervisorAlert";
 import type { ManualSearchOutcome } from "../hooks/useGatewaySession";
 import { useCallStore, type Utterance } from "../store/callStore";
+import { isCallGuardDistress } from "../types/contract";
 import type { TranscriptQuerySegment } from "../types/contract";
 
 /** 이 거리 안이면 맨 아래에 있는 것으로 본다. */
@@ -818,14 +819,16 @@ export function TranscriptPanel({
                       ) : null}
                     </div>
                     {guard !== undefined && !hideLegacyGuard ? (
-                      <div className="callguard-row">
-                        <span
-                          className={`callguard-pill${guard.severity === "high" ? " is-high" : ""}`}
-                        >
-                          🚫 콜가드
+                      <div
+                        className={`callguard-row${isCallGuardDistress(guard) ? " is-distress" : ""}`}
+                      >
+                        <span className="callguard-pill">
+                          {isCallGuardDistress(guard) ? "🆘 위기 신호" : "🚫 콜가드"}
                         </span>
                         <span className="callguard-hint">
-                          고객이 흥분한 상태입니다. 안내는 이어가시면 됩니다.
+                          {isCallGuardDistress(guard)
+                            ? "통화를 끊지 말고 전문 상담 기관 연결을 안내하세요(DASAN-MANUAL-5.4)."
+                            : "고객이 흥분한 상태입니다. 안내는 이어가시면 됩니다."}
                         </span>
                       </div>
                     ) : null}

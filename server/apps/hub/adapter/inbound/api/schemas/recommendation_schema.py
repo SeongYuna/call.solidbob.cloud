@@ -35,6 +35,9 @@ class CardSchema(BaseModel):
     summary: str
     source: SourceSchema  # 필수 — 출처 없는 카드는 만들지 않는다 (B-5)
     similarity_score: StrField  # 7.3절 계약 필드명. DB recommendation_card.similarity_score 와 같다 (decisions/003)
+    card_id: StrField | None = Field(
+        default=None, description="db recommendation_card.card_id — 카드 피드백(POST /hub/cards/{card_id}/feedback)에 쓴다. DB 가 없으면 null"
+    )
 
 
 class RecommendResponse(BaseModel):

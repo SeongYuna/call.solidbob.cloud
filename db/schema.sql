@@ -354,11 +354,29 @@ CREATE TABLE "blacklist_entry" (
 );
 COMMENT ON COLUMN "blacklist_entry"."customer_ref" IS '전화번호의 HMAC. blacklist_request 와 같은 체계다(`decisions/205` ③)';
 COMMENT ON COLUMN "blacklist_entry"."approved_at" IS '등록 시작. 에피소드의 고유 사실이다. 승인자는 request.decided_by 로 따라간다';
-COMMENT ON COLUMN "blacklist_entry"."expires_at" IS '**만료가 없으면 영구 표시가 된다**(`decisions/205` ⑤). J-5 는 released_at IS NULL AND expires_at > now() 만 본다. 연장은 새 요청 + 새 근거로만';
+COMMENT ON COLUMN "blacklist_entry"."expires_at" IS '**만료가 없으면 영구 표시가 된다**(`decisions/205` ⑤). J-5 는 released_at IS NULL AND expires_at > now() 만 본다. 관리자가 연장·단축할 수 있고 그때마다 blacklist_entry_expiry_change 에 쌓인다(`decisions/309` — 205 「새 요청으로만」 철회)';
 COMMENT ON COLUMN "blacklist_entry"."released_at" IS '해제 시각. **행을 지우지 않는다** — 지우면 「왜 풀렸는지」가 사라진다(절대 원칙 8)';
 COMMENT ON COLUMN "blacklist_entry"."released_by" IS '⚠ 행만 남기고 이 컬럼이 없어서 **어차피 「왜 풀렸는지」가 기록되지 않았다**';
 COMMENT ON COLUMN "blacklist_entry"."note" IS '**관리자 승인 메모**다. 요청 사유의 사본이 아니다 — 사본을 두면 같은 개인정보가 두 벌이 된다(`decisions/205` ⑤)';
 CREATE UNIQUE INDEX "blacklist_entry_uq0" ON "blacklist_entry" ("customer_ref") WHERE "released_at" IS NULL;
+
+-- J-4 등록 만료 변경 이력 — 관리자 연장·단축 1건 = 1행(`decisions/309`). `blacklist_entry.expires_at` 만 덮으면 누가 왜 늘리거나 줄였는지가 사라진다. 갱신·삭제하지 않는다
+CREATE TABLE "blacklist_entry_expiry_change" (
+    "change_id" BIGINT GENERATED ALWAYS AS IDENTITY NOT NULL,
+    "entry_id" BIGINT NOT NULL,
+    "previous_expires_at" TIMESTAMPTZ NOT NULL,
+    "new_expires_at" TIMESTAMPTZ NOT NULL,
+    "changed_by" VARCHAR(20) NOT NULL,
+    "reason" VARCHAR(500) NOT NULL,
+    "changed_at" TIMESTAMPTZ NOT NULL,
+    PRIMARY KEY ("change_id"),
+    FOREIGN KEY ("entry_id") REFERENCES "blacklist_entry"("entry_id"),
+    FOREIGN KEY ("changed_by") REFERENCES "agent"("agent_id")
+);
+COMMENT ON COLUMN "blacklist_entry_expiry_change"."new_expires_at" IS '이전보다 뒤면 연장, 앞이면 단축이다 — 방향을 따로 저장하지 않는다';
+COMMENT ON COLUMN "blacklist_entry_expiry_change"."changed_by" IS '로그인한 관리자에 연결된 agent_id(`decisions/304`) — released_by 와 같은 체계';
+COMMENT ON COLUMN "blacklist_entry_expiry_change"."reason" IS '저장 전 마스킹(`decisions/205` ⑤)';
+CREATE INDEX "blacklist_entry_expiry_change_idx0" ON "blacklist_entry_expiry_change" ("entry_id");
 
 -- J-5 배정 결과. **떨어뜨린 경우를 세는 것**이 이 테이블의 목적이다 — 「베테랑이 부족하다」가 fell_back 의 집계다
 CREATE TABLE "routing_log" (

@@ -109,3 +109,50 @@ def test_게이트웨이_도착_시각을_트리거까지_그대로_넘긴다():
         assert seen == [3020, None]
     finally:
         app.dependency_overrides.clear()
+
+
+class _Record:
+    def __init__(self, exc=None):
+        self.exc = exc
+
+    async def record(self, cards):
+        if self.exc is not None:
+            raise self.exc
+        return tuple(range(7, 7 + len(cards.cards)))
+
+
+def test_카드에_card_id가_문자열로_붙는다():
+    from hub.dependencies.recommendation_record_provider import get_recommendation_record_port
+
+    _wire()
+    app.dependency_overrides[get_recommendation_record_port] = lambda: _Record()
+    try:
+        with TestClient(app) as client:
+            cards = client.post("/hub/recommendations", json=BODY).json()["cards"]
+        assert [c["card_id"] for c in cards] == ["7"]
+    finally:
+        app.dependency_overrides.clear()
+
+
+def test_DB가_없으면_card_id는_null이다():
+    """id 를 지어내지 않는다 — 피드백을 못 받는다는 것이 응답에 그대로 드러난다."""
+    _wire()
+    try:
+        with TestClient(app) as client:
+            cards = client.post("/hub/recommendations", json=BODY).json()["cards"]
+        assert cards and all(c["card_id"] is None for c in cards)
+    finally:
+        app.dependency_overrides.clear()
+
+
+def test_통화가_없으면_404다():
+    from hub.app.ports.output import CallNotStartedError
+    from hub.dependencies.recommendation_record_provider import get_recommendation_record_port
+
+    _wire()
+    app.dependency_overrides[get_recommendation_record_port] = lambda: _Record(CallNotStartedError("c_001"))
+    try:
+        with TestClient(app) as client:
+            assert client.post("/hub/recommendations", json=BODY).status_code == 404
+    finally:
+        app.dependency_overrides.clear()

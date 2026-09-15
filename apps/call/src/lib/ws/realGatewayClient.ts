@@ -1,9 +1,11 @@
+import { searchDocuments } from "../api/coreClient";
 import type {
+  CallGuardFlag,
   ClosureEvent,
-  ClosureType,
   ClosureVerdict,
   DemoDomain,
   DocumentSource,
+  ManualSearchRequest,
   MaskedSpan,
   MaskType,
   RecommendationBatch,
@@ -16,6 +18,8 @@ import type { GatewayClient, GatewayListener } from "./types";
 type ParsedMessage =
   | { kind: "transcript"; payload: TranscriptEvent }
   | { kind: "recommendation"; payload: RecommendationBatch }
+  | { kind: "recommendation_pending"; payload: { call_id: string } }
+  | { kind: "call_guard"; payload: { segment_id: string; flags: CallGuardFlag[] } }
   | { kind: "closure"; payload: ClosureEvent };
 
 export class RealGatewayClient implements GatewayClient {
@@ -63,13 +67,20 @@ export class RealGatewayClient implements GatewayClient {
   }
 
   /**
-   * 수동 검색 메시지는 7.3절 계약에 아직 없다. 임의의 형식을 보내면 서버가
-   * 모르는 메시지로 버리고 화면은 결과를 기다리게 되므로, 안 된다고 말한다.
+   * B-6 수동 검색 — `POST /hub/search`(REST). 웹소켓 계약이 아니라 별도 REST
+   * 호출이라 게이트웨이 연결 여부와 무관하게 바로 부른다(`w4-dashboard-live-contract`).
+   * `call_id`는 검색 자체에는 쓰이지 않는다(서버 계약에 없음) — 결과를 그
+   * 통화에 붙이는 것은 호출부(스토어) 몫이다.
    */
-  manualSearch(): Promise<never> {
-    return Promise.reject(
-      new Error("수동 검색은 아직 게이트웨이에 연결되지 않았습니다."),
-    );
+  async manualSearch(request: ManualSearchRequest): Promise<RecommendationBatch> {
+    const cards = await searchDocuments(request.query);
+    return {
+      fired: true,
+      call_id: request.call_id,
+      trigger_at_ms: 0,
+      cards,
+      internal_latency_ms: 0,
+    };
   }
 
   /** §2.5 D 통화 후 처리도 계약이 없다. 지어내지 않고 없다고 말한다. */
@@ -107,6 +118,16 @@ export class RealGatewayClient implements GatewayClient {
       listeners.onRecommendation(message.payload);
       return;
     }
+    if (message.kind === "recommendation_pending") {
+      listeners.onRecommendationPending?.(message.payload.call_id);
+      return;
+    }
+    if (message.kind === "call_guard") {
+      for (const flag of message.payload.flags) {
+        listeners.onCallGuard?.(message.payload.segment_id, flag);
+      }
+      return;
+    }
     listeners.onClosure(message.payload);
   }
 }
@@ -118,7 +139,13 @@ export function parseGatewayMessage(value: unknown): ParsedMessage | null {
   }
 
   const tagged = readString(body, "type");
-  if (tagged === "transcript" || tagged === "recommendation" || tagged === "closure") {
+  if (
+    tagged === "transcript" ||
+    tagged === "recommendation" ||
+    tagged === "recommendation_pending" ||
+    tagged === "call_guard" ||
+    tagged === "closure"
+  ) {
     const inner = isRecord(body.payload) ? body.payload : body;
     return parseByKind(tagged, inner);
   }
@@ -137,7 +164,7 @@ export function parseGatewayMessage(value: unknown): ParsedMessage | null {
 }
 
 function parseByKind(
-  kind: "transcript" | "recommendation" | "closure",
+  kind: "transcript" | "recommendation" | "recommendation_pending" | "call_guard" | "closure",
   body: Record<string, unknown>,
 ): ParsedMessage | null {
   if (kind === "transcript") {
@@ -148,8 +175,53 @@ function parseByKind(
     const payload = parseRecommendation(body);
     return payload === null ? null : { kind, payload };
   }
+  if (kind === "recommendation_pending") {
+    const payload = parseRecommendationPending(body);
+    return payload === null ? null : { kind, payload };
+  }
+  if (kind === "call_guard") {
+    const payload = parseCallGuard(body);
+    return payload === null ? null : { kind, payload };
+  }
   const payload = parseClosure(body);
   return payload === null ? null : { kind, payload };
+}
+
+/** `services/gateway`의 `RecommendationPending` — 「검색 중」 신호. 값은 문자열(7.3절). */
+function parseRecommendationPending(body: Record<string, unknown>): { call_id: string } | null {
+  const call_id = readString(body, "call_id");
+  return call_id === null ? null : { call_id };
+}
+
+/** `CallGuardCheckResponse` 그대로 — 한 세그먼트에 잡힌 갈래 여러 건. */
+function parseCallGuard(
+  body: Record<string, unknown>,
+): { segment_id: string; flags: CallGuardFlag[] } | null {
+  const segment_id = readString(body, "segment_id");
+  if (segment_id === null || !Array.isArray(body.flags)) {
+    return null;
+  }
+  const segmentIdNum = Number(segment_id);
+  const flags: CallGuardFlag[] = [];
+  for (const item of body.flags) {
+    if (!isRecord(item)) {
+      return null;
+    }
+    const category = readCallGuardCategory(item.category);
+    if (category === null) {
+      return null;
+    }
+    flags.push({ segment_id: segmentIdNum, category });
+  }
+  return { segment_id, flags };
+}
+
+function readCallGuardCategory(value: unknown): CallGuardFlag["category"] | null {
+  const str = readStringValue(value);
+  if (str === "insult" || str === "threat" || str === "sexual" || str === "distress") {
+    return str;
+  }
+  return null;
 }
 
 function unwrapPayload(value: unknown): Record<string, unknown> | null {
@@ -273,34 +345,58 @@ function parseCard(body: Record<string, unknown>): RecommendationCard | null {
   return card;
 }
 
+/**
+ * `_project/decisions/305` — `closure_type`·`approved`/`blocked`를 걷어내고
+ * `procedure`·`verdict: complete/incomplete`·`detected`로 바꿨다. `reason`·`source`·
+ * `conditional`은 서버 DTO에서도 선택 필드다(`closure_verdict_dto.py`).
+ */
 function parseClosure(body: Record<string, unknown>): ClosureEvent | null {
   const call_id = readString(body, "call_id");
-  const closure_type = readClosureType(body.closure_type);
-  const reason = readString(body, "reason");
+  const procedure = readString(body, "procedure");
   const verdict = readVerdict(body.verdict);
-  const source = parseSource(body.source);
   const missing = parseStringList(body.missing);
   const evidence = parseEvidence(body.evidence);
+  const detected = readBoolean(body, "detected");
   if (
     call_id === null ||
-    closure_type === null ||
-    reason === null ||
+    procedure === null ||
     verdict === null ||
-    source === null ||
     missing === null ||
-    evidence === null
+    evidence === null ||
+    detected === null
   ) {
     return null;
   }
   const event: ClosureEvent = {
     call_id,
-    closure_type,
-    reason,
+    procedure,
     evidence,
     verdict,
     missing,
-    source,
+    detected,
   };
+  const procedureTitle = readStringValue(body.procedure_title);
+  if (procedureTitle !== null) {
+    event.procedure_title = procedureTitle;
+  }
+  const reason = readStringValue(body.reason);
+  if (reason !== null) {
+    event.reason = reason;
+  }
+  if (body.source !== undefined && body.source !== null) {
+    const source = parseSource(body.source);
+    if (source === null) {
+      return null;
+    }
+    event.source = source;
+  }
+  if (body.conditional !== undefined && body.conditional !== null) {
+    const conditional = parseStringList(body.conditional);
+    if (conditional === null) {
+      return null;
+    }
+    event.conditional = conditional;
+  }
   const domain = readDomain(body.domain);
   if (domain !== undefined) {
     event.domain = domain;
@@ -400,20 +496,9 @@ function readSpeaker(value: unknown): Speaker | null {
   return null;
 }
 
-function readClosureType(value: unknown): ClosureType | string | null {
-  const str = readStringValue(value);
-  if (str === null || str.length === 0) {
-    return null;
-  }
-  // 금융·쇼핑 ClosureType — 4도메인 시절 코드, decisions/201로 다산 단일화되며
-  // 신규 시나리오에는 쓰지 않는다. 파서는 그대로 받는다.
-  // 다산 RequiredDocsType 도 서비스명 문자열이라 검증 없이 그대로 통과시킨다.
-  return str;
-}
-
 function readVerdict(value: unknown): ClosureVerdict | null {
   const str = readStringValue(value);
-  if (str === "approved" || str === "blocked") {
+  if (str === "complete" || str === "incomplete") {
     return str;
   }
   return null;

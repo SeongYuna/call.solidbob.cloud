@@ -1,4 +1,14 @@
-import { useState, type ReactElement } from "react";
+import {
+  ClipboardCheck,
+  History,
+  Inbox,
+  LayoutDashboard,
+  SearchX,
+  Settings as SettingsIcon,
+  ShieldBan,
+  type LucideIcon,
+} from "lucide-react";
+import { useEffect, useState, type ReactElement } from "react";
 import { AuditLogTab } from "./admin/AuditLogTab";
 import { EntriesTab } from "./admin/EntriesTab";
 import { KnowledgeGapTab } from "./admin/KnowledgeGapTab";
@@ -29,6 +39,17 @@ const TABS: { id: Tab; label: string }[] = [
   { id: "settings", label: "설정" },
 ];
 
+/** 좌측 사이드바 아이콘 — 2026-09-15 상단 탭 → 좌측 아이콘 사이드바 전환. */
+const TAB_ICONS: Record<Tab, LucideIcon> = {
+  wallboard: LayoutDashboard,
+  requests: Inbox,
+  entries: ShieldBan,
+  qa: ClipboardCheck,
+  gaps: SearchX,
+  audit: History,
+  settings: SettingsIcon,
+};
+
 /**
  * 관리자 화면. J-3(승인요청창·블랙리스트 관리창, `_project/decisions/204`)에서
  * 출발했지만, 그 둘만으로는 "관리자가 볼 화면"이 아니라는 지적을 반영해
@@ -53,13 +74,16 @@ export function AdminPanel({
   adminName: string;
   onLogout: () => void;
 }): ReactElement {
+  const status = useAdminStore((s) => s.status);
+  const loadError = useAdminStore((s) => s.error);
+  const loadAll = useAdminStore((s) => s.loadAll);
   const requests = useAdminStore((s) => s.requests);
   const entries = useAdminStore((s) => s.entries);
   const decide = useAdminStore((s) => s.decideRequest);
   const release = useAdminStore((s) => s.releaseEntry);
   const extend = useAdminStore((s) => s.extendEntry);
   const knowledgeGapLog = useAdminStore((s) => s.knowledgeGapLog);
-  const callGuardLog = useAdminStore((s) => s.callGuardLog);
+  const callGuardTotal = useAdminStore((s) => s.callGuardTotal);
   const completedCallsTotal = useAdminStore((s) => s.completedCallsTotal);
   const veteranThresholdYears = useAdminStore((s) => s.veteranThresholdYears);
   const setVeteranThresholdYears = useAdminStore((s) => s.setVeteranThresholdYears);
@@ -67,6 +91,11 @@ export function AdminPanel({
   const setBlacklistExpiryMonths = useAdminStore((s) => s.setBlacklistExpiryMonths);
   const [tab, setTab] = useState<Tab>("wallboard");
   const admin = adminName;
+
+  useEffect(() => {
+    void loadAll();
+    // 로그인 직후 한 번만 — adminName이 바뀌는 것은 재로그인뿐이라 그때 다시 받는다.
+  }, [loadAll, adminName]);
 
   const pendingRequests = requests.filter((r) => r.status === "pending");
   const pendingCount = pendingRequests.length;
@@ -77,6 +106,21 @@ export function AdminPanel({
       <header className="admin-page-header">
         <div>
           <h2>관리자 화면</h2>
+          {status === "error" ? (
+            <p className="header-error" role="alert">
+              데이터를 불러오지 못했습니다: {loadError}
+              <button
+                type="button"
+                className="btn-outline"
+                style={{ marginLeft: 8 }}
+                onClick={() => {
+                  void loadAll();
+                }}
+              >
+                다시 시도
+              </button>
+            </p>
+          ) : null}
         </div>
         <div className="wrapup-actions">
           <NotificationBell
@@ -92,75 +136,80 @@ export function AdminPanel({
         </div>
       </header>
 
-      <nav className="admin-tabs-row admin-tabs" aria-label="관리자 화면 전환">
-        {TABS.map(({ id, label }) => (
-          <button
-            key={id}
-            type="button"
-            className={tab === id ? "admin-tab is-active" : "admin-tab"}
-            onClick={() => {
-              setTab(id);
-            }}
-          >
-            {label}
-            {id === "requests" && pendingCount > 0 ? (
-              <span className="admin-count">{pendingCount}</span>
-            ) : null}
-            {id === "entries" && activeEntryCount > 0 ? (
-              <span className="admin-count">{activeEntryCount}</span>
-            ) : null}
-          </button>
-        ))}
-      </nav>
+      <div className="admin-body">
+        <nav className="admin-sidebar" aria-label="관리자 화면 전환">
+          {TABS.map(({ id, label }) => {
+            const Icon = TAB_ICONS[id];
+            const count =
+              id === "requests" ? pendingCount : id === "entries" ? activeEntryCount : 0;
+            return (
+              <button
+                key={id}
+                type="button"
+                className={tab === id ? "admin-sidebar-item is-active" : "admin-sidebar-item"}
+                onClick={() => {
+                  setTab(id);
+                }}
+              >
+                <span className="admin-sidebar-icon">
+                  <Icon size={20} strokeWidth={2} aria-hidden="true" />
+                  {count > 0 ? <span className="admin-sidebar-badge">{count}</span> : null}
+                </span>
+                <span className="admin-sidebar-label">{label}</span>
+              </button>
+            );
+          })}
+        </nav>
 
-      <div className="admin-scroll">
-        <div className="admin-content">
-          {tab === "wallboard" ? (
-            <WallboardTab
-              completedCallsTotal={completedCallsTotal}
-              callGuardTotal={callGuardLog.length}
-              pendingRequestCount={pendingCount}
-              activeEntryCount={activeEntryCount}
-            />
-          ) : null}
-          {tab === "requests" ? (
-            <RequestsTab
-              requests={requests}
-              defaultExpiryMonths={blacklistExpiryMonths}
-              onApprove={(requestId, expiryMonths) => {
-                decide(requestId, true, admin, expiryMonths);
-              }}
-              onReject={(requestId) => {
-                decide(requestId, false, admin);
-              }}
-            />
-          ) : null}
-          {tab === "entries" ? (
-            <EntriesTab
-              entries={entries}
-              requests={requests}
-              defaultExpiryMonths={blacklistExpiryMonths}
-              onRelease={(entryId) => {
-                release(entryId, admin, "관리자 해제");
-              }}
-              onExtend={(entryId, months) => {
-                extend(entryId, months);
-              }}
-            />
-          ) : null}
-          {tab === "qa" ? <QaReviewTab /> : null}
-          {tab === "gaps" ? <KnowledgeGapTab log={knowledgeGapLog} /> : null}
-          {tab === "audit" ? (
-            <AuditLogTab requests={requests} entries={entries} />
-          ) : null}
-          {tab === "settings" ? (
-            <SettingsTab
-              veteranThresholdYears={veteranThresholdYears}
-              onChangeVeteranThresholdYears={setVeteranThresholdYears}
-              blacklistExpiryMonths={blacklistExpiryMonths}
-              onChangeBlacklistExpiryMonths={setBlacklistExpiryMonths}
-            />
-          ) : null}
+        <div className="admin-scroll">
+          <div className="admin-content">
+            {tab === "wallboard" ? (
+              <WallboardTab
+                completedCallsTotal={completedCallsTotal}
+                callGuardTotal={callGuardTotal}
+                pendingRequestCount={pendingCount}
+                activeEntryCount={activeEntryCount}
+              />
+            ) : null}
+            {tab === "requests" ? (
+              <RequestsTab
+                requests={requests}
+                defaultExpiryMonths={blacklistExpiryMonths}
+                onApprove={(requestId, expiryMonths) => {
+                  void decide(requestId, true, admin, expiryMonths);
+                }}
+                onReject={(requestId) => {
+                  void decide(requestId, false, admin);
+                }}
+              />
+            ) : null}
+            {tab === "entries" ? (
+              <EntriesTab
+                entries={entries}
+                requests={requests}
+                defaultExpiryMonths={blacklistExpiryMonths}
+                onRelease={(entryId) => {
+                  void release(entryId, admin, "관리자 해제");
+                }}
+                onExtend={(entryId, months) => {
+                  extend(entryId, months);
+                }}
+              />
+            ) : null}
+            {tab === "qa" ? <QaReviewTab /> : null}
+            {tab === "gaps" ? <KnowledgeGapTab log={knowledgeGapLog} /> : null}
+            {tab === "audit" ? (
+              <AuditLogTab requests={requests} entries={entries} />
+            ) : null}
+            {tab === "settings" ? (
+              <SettingsTab
+                veteranThresholdYears={veteranThresholdYears}
+                onChangeVeteranThresholdYears={setVeteranThresholdYears}
+                blacklistExpiryMonths={blacklistExpiryMonths}
+                onChangeBlacklistExpiryMonths={setBlacklistExpiryMonths}
+              />
+            ) : null}
+          </div>
         </div>
       </div>
     </main>

@@ -30,6 +30,9 @@ class Card:
     summary: str
     source: Source
     similarity_score: float  # 유사도/RRF 점수. 화면에 그대로 표시 (B-5). "위험도"가 아니다.
+    # db `recommendation_card.card_id` — 저장한 뒤에만 생긴다. 카드 피드백(E-1)이 이 값으로 카드를 가리킨다.
+    # 생성 스포크는 채우지 않는다(None). 저장소가 없으면 None 그대로 나간다 — id 를 지어내지 않는다
+    card_id: int | None = None
 
 
 @dataclass(frozen=True)

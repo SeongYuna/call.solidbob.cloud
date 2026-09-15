@@ -2826,6 +2826,8 @@ button {
 }
 
 .admin-scroll {
+  flex: 1;
+  min-width: 0;
   min-height: 0;
   overflow: auto;
   padding: 24px 32px 32px;
@@ -2865,6 +2867,94 @@ button {
   border-radius: var(--radius-pill);
   background: color-mix(in srgb, currentColor 16%, transparent);
   font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* 좌측 아이콘 사이드바 (2026-09-15) — 상단 탭(.admin-tabs-row/.admin-tab)을
+   대체한다. 콜브릿지 어드민 패턴: 아이콘 위, 라벨 아래, 활성 탭은 배경+좌측
+   포인트 바. 색은 기존 토큰(--accent·--bg·--paper·--line)만 쓴다. */
+.admin-body {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+
+.admin-sidebar {
+  flex-shrink: 0;
+  width: 88px;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 4px;
+  padding: 16px 8px;
+  overflow-y: auto;
+  background: var(--paper);
+  border-right: 1px solid var(--line);
+}
+
+.admin-sidebar-item {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 4px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.3;
+  text-align: center;
+  cursor: pointer;
+}
+
+.admin-sidebar-item:hover {
+  color: var(--text);
+  background: var(--hover);
+}
+
+.admin-sidebar-item.is-active {
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+}
+
+.admin-sidebar-item.is-active::before {
+  content: "";
+  position: absolute;
+  left: -8px;
+  top: 6px;
+  bottom: 6px;
+  width: 3px;
+  border-radius: 0 3px 3px 0;
+  background: var(--accent);
+}
+
+.admin-sidebar-icon {
+  position: relative;
+  display: flex;
+}
+
+.admin-sidebar-label {
+  word-break: keep-all;
+}
+
+.admin-sidebar-badge {
+  position: absolute;
+  top: -6px;
+  right: -8px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: var(--radius-pill);
+  background: var(--accent);
+  color: var(--bg);
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 16px;
+  text-align: center;
   font-variant-numeric: tabular-nums;
 }
 .admin-empty, .admin-help { opacity: 0.75; font-size: 0.9rem; }

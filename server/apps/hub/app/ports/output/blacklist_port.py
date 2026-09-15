@@ -5,7 +5,7 @@ from abc import ABC, abstractmethod
 
 from datetime import datetime
 
-from hub.app.dtos.blacklist_dto import BlacklistEntry, BlacklistRequest
+from hub.app.dtos.blacklist_dto import BlacklistEntry, BlacklistRequest, ExpiryChange
 
 
 class BlacklistNotFound(LookupError):
@@ -57,3 +57,14 @@ class BlacklistPort(ABC):
     @abstractmethod
     async def release_entry(self, entry_id: int, *, released_by: str, reason: str) -> BlacklistEntry:
         """등록을 해제한다. **행을 지우지 않는다** — 왜 풀렸는지가 남아야 한다(`decisions/205`)."""
+
+    @abstractmethod
+    async def change_expiry(
+        self, entry_id: int, *, changed_by: str, expires_at: datetime, reason: str
+    ) -> tuple[BlacklistEntry, ExpiryChange]:
+        """등록의 만료 시각을 바꾸고 변경 1건을 쌓는다(`decisions/309`). 연장·단축 모두.
+        없으면 `BlacklistNotFound`, 이미 해제된 등록이면 `BlacklistConflict`."""
+
+    @abstractmethod
+    async def list_expiry_changes(self, entry_id: int) -> list[ExpiryChange]:
+        """만료 변경 이력, 오래된 순. 등록이 없으면 `BlacklistNotFound`."""

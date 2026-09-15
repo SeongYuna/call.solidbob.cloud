@@ -137,3 +137,16 @@ class RoutingDecision:
     is_blacklisted: bool
     fell_back: bool
     reason: str
+
+
+@dataclass(frozen=True)
+class ExpiryChange:
+    """등록 만료 시각 변경 1건 — 연장·단축(`decisions/309`). **덮어쓰지 않고 쌓는다** — 누가 왜 늘리거나 줄였는지가 남아야 한다."""
+
+    change_id: int | None
+    entry_id: int
+    previous_expires_at: datetime
+    new_expires_at: datetime
+    changed_by: str  # 로그인한 관리자에 연결된 agent_id (`decisions/304`)
+    reason: str  # 마스킹된 사유
+    changed_at: datetime | None = None
