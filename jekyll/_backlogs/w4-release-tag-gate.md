@@ -32,4 +32,4 @@ paths:
 - [x] `deploy` → `k3s-deploy` 개명
 - [x] 판정을 `scripts/check_release_tags.py` 한 벌로
 - [x] `#73` 재현 · 새 태그 · 문서만 · 조회 불가(401) 네 경우 확인
-- [ ] 룰셋에 `tag-check` 를 필수 통과 검사로 등록 — **저장소 admin(콘솔)**, 미결
+- [x] 룰셋에 `tag-check` 를 필수 통과 검사로 등록 (2026-09-15, `gateway` 도 함께 — 셋 → 다섯)
