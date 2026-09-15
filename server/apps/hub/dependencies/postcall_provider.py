@@ -15,12 +15,17 @@ from postcall.adapter.outbound.rule_postcall_adapter import RulePostcallAdapter
 
 from hub.app.ports.input.postcall_use_case import PostcallUseCase
 from hub.app.ports.output.postcall_port import PostcallPort
+from hub.app.ports.output.postcall_record_port import PostcallRecordPort
 from hub.app.use_cases.postcall_interactor import PostcallInteractor
+from hub.dependencies.postcall_record_provider import get_postcall_record_port
 
 
 def get_postcall_port() -> PostcallPort:
     return RulePostcallAdapter()
 
 
-def get_postcall_use_case(postcall: PostcallPort = Depends(get_postcall_port)) -> PostcallUseCase:
-    return PostcallInteractor(postcall=postcall)
+def get_postcall_use_case(
+    postcall: PostcallPort = Depends(get_postcall_port),
+    record: PostcallRecordPort = Depends(get_postcall_record_port),
+) -> PostcallUseCase:
+    return PostcallInteractor(postcall=postcall, record=record)

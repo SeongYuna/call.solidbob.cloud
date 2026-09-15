@@ -4,8 +4,9 @@
 from fastapi.testclient import TestClient
 
 from hub.app.dtos import CallSummaryDraft, FollowUpAction
-from hub.app.ports.output import PostcallPort
+from hub.app.ports.output import CallNotStartedError, PostcallPort, PostcallRecordPort, SummaryAlreadyConfirmedError
 from hub.dependencies.postcall_provider import get_postcall_port
+from hub.dependencies.postcall_record_provider import get_postcall_record_port
 from main import app
 
 BODY = {"call_id": "c_001", "segments": [
@@ -74,5 +75,24 @@ def test_전사가_비면_422다():
         with TestClient(app) as client:
             r = client.post("/hub/calls/c_001/close", json={"call_id": "c_001", "segments": []})
         assert r.status_code == 422
+    finally:
+        app.dependency_overrides.clear()
+
+
+class _Raising(PostcallRecordPort):
+    def __init__(self, exc):
+        self.exc = exc
+
+    async def record(self, draft):
+        raise self.exc
+
+
+def test_통화가_없으면_404_이미_확정된_요약이면_409다():
+    """확정된 요약을 초안으로 덮지 않는다 — 사람이 정한 것을 모델 출력이 되돌리면 안 된다(부록 A-1)."""
+    try:
+        for exc, code in ((CallNotStartedError("c_001"), 404), (SummaryAlreadyConfirmedError("c_001"), 409)):
+            app.dependency_overrides[get_postcall_record_port] = lambda exc=exc: _Raising(exc)
+            with TestClient(app) as client:
+                assert client.post("/hub/calls/c_001/close", json=BODY).status_code == code
     finally:
         app.dependency_overrides.clear()
