@@ -342,6 +342,8 @@ function parseCard(body: Record<string, unknown>): RecommendationCard | null {
   if (sourceType === "manual" || sourceType === "auto") {
     card.source_type = sourceType;
   }
+  // `decisions/308` — DB 미연결 카드는 null 로 온다. 카드 피드백을 보낼 수 없다는 뜻이다.
+  card.card_id = readStringValue(body.card_id);
   return card;
 }
 

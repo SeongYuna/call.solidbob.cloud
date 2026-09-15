@@ -43,8 +43,8 @@ export function EntriesTab({
   entries: BlacklistEntryItem[];
   requests: BlacklistRequestItem[];
   defaultExpiryMonths: number;
-  onRelease: (entryId: string) => void;
-  onExtend: (entryId: string, months: number) => void;
+  onRelease: (entryId: string, reason: string) => void;
+  onExtend: (entryId: string, months: number, reason: string) => void;
 }): ReactElement {
   const [filter, setFilter] = useState<EntryFilter>("all");
   const active = entries.filter((e) => e.released_at === null);
@@ -86,11 +86,11 @@ export function EntriesTab({
               displayHint={entryDisplayHint(entry, requests)}
               isRepeat={isRepeatOffender(entry, entries)}
               defaultExpiryMonths={defaultExpiryMonths}
-              onRelease={() => {
-                onRelease(entry.entry_id);
+              onRelease={(reason) => {
+                onRelease(entry.entry_id, reason);
               }}
-              onExtend={(months) => {
-                onExtend(entry.entry_id, months);
+              onExtend={(months, reason) => {
+                onExtend(entry.entry_id, months, reason);
               }}
             />
           ))}
@@ -157,12 +157,16 @@ function EntryRow({
   displayHint: string;
   isRepeat: boolean;
   defaultExpiryMonths: number;
-  onRelease: () => void;
-  onExtend: (months: number) => void;
+  onRelease: (reason: string) => void;
+  onExtend: (months: number, reason: string) => void;
 }): ReactElement {
   // 등록 하나하나 심각도가 다르다 — 연장·단축 기간을 건마다 따로 잡는다
   // (2026-09-10, "고객 각각으로는 안 되나" 피드백).
   const [months, setMonths] = useState(defaultExpiryMonths);
+  // `decisions/309` — 연장·단축·해제 모두 사유가 서버 필수값이다. 버튼을
+  // 하드코딩 문자열("관리자 해제")로 채우는 대신 실제 입력을 받는다.
+  const [reason, setReason] = useState("");
+  const reasonFilled = reason.trim().length > 0;
 
   return (
     <li className="admin-entry-row">
@@ -182,9 +186,19 @@ function EntryRow({
       </div>
       <div className="admin-entry-row-actions">
         <input
+          type="text"
+          className="admin-entry-reason-input"
+          aria-label="연장·단축·해제 사유"
+          placeholder="사유 입력(필수)"
+          value={reason}
+          onChange={(event) => {
+            setReason(event.target.value);
+          }}
+        />
+        <input
           type="number"
           min={1}
-          max={24}
+          max={12}
           className="admin-entry-extend-input"
           aria-label="연장·단축할 기간 (개월)"
           value={months}
@@ -198,13 +212,23 @@ function EntryRow({
         <button
           type="button"
           className="btn-outline admin-release"
+          disabled={!reasonFilled}
           onClick={() => {
-            onExtend(months);
+            onExtend(months, reason.trim());
+            setReason("");
           }}
         >
           재설정
         </button>
-        <button type="button" className="btn-outline admin-release" onClick={onRelease}>
+        <button
+          type="button"
+          className="btn-outline admin-release"
+          disabled={!reasonFilled}
+          onClick={() => {
+            onRelease(reason.trim());
+            setReason("");
+          }}
+        >
           해제
         </button>
       </div>

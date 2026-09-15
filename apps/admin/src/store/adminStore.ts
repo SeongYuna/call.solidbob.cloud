@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import {
+  changeBlacklistEntryExpiry,
   decideBlacklistRequestApi,
   fetchBlacklistEntries,
   fetchBlacklistRequests,
@@ -56,11 +57,8 @@ interface AdminState {
     expiryMonths?: number,
   ) => Promise<void>;
   releaseEntry: (entryId: string, releasedBy: string, reason: string) => Promise<void>;
-  /**
-   * ⚠ 서버에 "연장" 엔드포인트가 아직 없다 — `POST .../release`뿐이다. 그때까지는
-   * 로컬에서만 바뀌고 새로고침하면 사라진다(티켓 범위 밖, 화면에는 그대로 둔다).
-   */
-  extendEntry: (entryId: string, months: number) => void;
+  /** `decisions/309` — 연장·단축 실제 API. "지금부터 (개월) 뒤"로 다시 잡는다. 사유 필수. */
+  extendEntry: (entryId: string, months: number, reason: string) => Promise<void>;
   setVeteranThresholdYears: (years: number) => void;
   setBlacklistExpiryMonths: (months: number) => void;
 }
@@ -160,20 +158,27 @@ export const useAdminStore = create<AdminState>((set, get) => ({
 
   // 연장·단축 둘 다 이걸로 한다 — "지금부터 (개월) 뒤" 로 다시 잡는 것이지
   // 기존 만료일에 더하는 것이 아니다. 그래야 관리자가 화면에서 결과 날짜를
-  // 바로 예상할 수 있다.
-  extendEntry: (entryId, months) => {
-    set((state) => ({
-      entries: state.entries.map((e) =>
-        e.entry_id === entryId && e.released_at === null
-          ? {
-              ...e,
-              expires_at: new Date(
-                Date.now() + Math.round(months * 30) * 24 * 60 * 60 * 1000,
-              ).toISOString(),
-            }
-          : e,
-      ),
-    }));
+  // 바로 예상할 수 있다. 서버가 1~365일(`MAX_EXPIRES_IN_DAYS`)로 제한한다.
+  extendEntry: async (entryId, months, reason) => {
+    const accessToken = useAuthStore.getState().accessToken;
+    if (accessToken === null) {
+      set({ error: "로그인이 필요합니다." });
+      return;
+    }
+    try {
+      const { entry } = await changeBlacklistEntryExpiry(
+        accessToken,
+        entryId,
+        Math.round(months * 30),
+        reason,
+      );
+      set((state) => ({
+        entries: state.entries.map((e) => (e.entry_id === entryId ? entry : e)),
+        error: null,
+      }));
+    } catch (error) {
+      set({ error: errorMessage(error) });
+    }
   },
 
   setVeteranThresholdYears: (years) => {

@@ -600,7 +600,6 @@ export const useCallStore = create<CallState>((set) => ({
     if (isCoreApiConfigured()) {
       const { request } = await createBlacklistRequest({
         callId: input.callId,
-        requestedBy: input.requestedBy,
         reason: input.reason,
       });
       set((state) => ({

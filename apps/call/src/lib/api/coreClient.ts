@@ -10,6 +10,7 @@
  * number/boolean으로 되돌린다. 서버가 타입을 어기면(문자열이 아니면) 그 사실을
  * 감추지 않고 던진다.
  */
+import { readAgentToken } from "../agentToken";
 import type {
   BlacklistEvidence,
   BlacklistRequestItem,
@@ -90,8 +91,8 @@ function get<T>(path: string): Promise<T> {
   return request<T>(path, { method: "GET" });
 }
 
-function post<T>(path: string, body: unknown): Promise<T> {
-  return request<T>(path, { method: "POST", body: JSON.stringify(body) });
+function post<T>(path: string, body: unknown, headers?: Record<string, string>): Promise<T> {
+  return request<T>(path, { method: "POST", body: JSON.stringify(body), headers });
 }
 
 // ── GET /hub/calls ────────────────────────────────────────────────────────
@@ -302,16 +303,24 @@ function toBlacklistRequestItem(wire: BlacklistRequestItemWire): BlacklistReques
   };
 }
 
+/**
+ * ⚠ 상담원 토큰이 필요하다(`decisions/307`) — 누가 요청했는지를 더 이상 본문
+ * (`requested_by`)으로 안 받는다. 토큰은 `agentToken.ts`가 `?agent_token=` URL 쿼리로
+ * 받아 sessionStorage에 둔 값을 그대로 쓴다. 토큰이 없으면 서버를 부르지 않고 바로 던진다.
+ */
 export async function createBlacklistRequest(input: {
   callId: string;
-  requestedBy: string;
   reason: string;
 }): Promise<{ request: BlacklistRequestItem; hasDistress: boolean }> {
-  const wire = await post<BlacklistRequestCreatedResponseWire>("/hub/blacklist-requests", {
-    call_id: input.callId,
-    requested_by: input.requestedBy,
-    reason: input.reason,
-  });
+  const token = readAgentToken();
+  if (token === null) {
+    throw new CoreApiError("상담원 토큰이 없다 — 관리자가 보낸 링크(?agent_token=...)로 다시 접속해야 한다.", null);
+  }
+  const wire = await post<BlacklistRequestCreatedResponseWire>(
+    "/hub/blacklist-requests",
+    { call_id: input.callId, reason: input.reason },
+    { Authorization: `Bearer ${token}` },
+  );
   return {
     request: toBlacklistRequestItem(wire.request),
     hasDistress: toBool(wire.has_distress),
@@ -321,16 +330,16 @@ export async function createBlacklistRequest(input: {
 // ── POST /hub/cards/{card_id}/feedback ───────────────────────────────────
 
 /**
- * ⚠ **아직 어디서도 부르지 않는다.** `RecommendResponse.cards[]`(7.3절)에
- * `card_id`가 없어 여기 넣을 값이 없다 — 카드 하나를 가리킬 방법이 계약에
- * 없는 채로 이 엔드포인트만 먼저 생겼다(2026-09-11 open-items에도 같은 지적이
- * 있다). 계약에 `card_id`가 추가되면 `TermsPanel`의 「사용 표시」 토글에 연결한다.
+ * ⚠ `card_id`는 `decisions/308`로 `RecommendResponse.cards[]`에 추가됐지만
+ * 문자열이다(`card_feedback_schema.py` — 2026-09-15 정정, StrField). null일 수 있는
+ * 카드(DB 미연결)는 호출하는 쪽에서 애초에 걸러야 한다. 아직 `TermsPanel`의
+ * 「사용 표시」 토글에는 연결하지 않았다.
  */
 export async function submitCardFeedback(
-  cardId: number,
+  cardId: string,
   action: "adopted" | "ignored",
-): Promise<{ feedbackId: number; cardId: number; action: "adopted" | "ignored" }> {
-  const wire = await post<{ feedback_id: number; card_id: number; action: "adopted" | "ignored" }>(
+): Promise<{ feedbackId: string; cardId: string; action: "adopted" | "ignored" }> {
+  const wire = await post<{ feedback_id: string; card_id: string; action: "adopted" | "ignored" }>(
     `/hub/cards/${cardId}/feedback`,
     { action },
   );

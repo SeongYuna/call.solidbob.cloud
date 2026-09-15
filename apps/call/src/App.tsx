@@ -1,4 +1,4 @@
-import { useState, type ReactElement } from "react";
+import { useEffect, useState, type ReactElement } from "react";
 import { AgentCallBox } from "./components/AgentCallBox";
 import { AgentStandbyScreen } from "./components/AgentStandbyScreen";
 import { AppHeader } from "./components/AppHeader";
@@ -8,6 +8,7 @@ import { GatewayOverrideBanner } from "./components/GatewayOverrideBanner";
 import { TermsPanel } from "./components/TermsPanel";
 import { TranscriptPanel } from "./components/TranscriptPanel";
 import { useGatewaySession } from "./hooks/useGatewaySession";
+import { captureAgentTokenFromUrl } from "./lib/agentToken";
 import { getMockAgentAccount } from "./mock/agentAuth";
 import { useCallStore } from "./store/callStore";
 
@@ -15,6 +16,10 @@ export function App(): ReactElement {
   const { startCall, replay, leaveToStandby, manualSearch, endCall, wrapUp } =
     useGatewaySession();
   const [voluntaryPassword, setVoluntaryPassword] = useState(false);
+
+  useEffect(() => {
+    captureAgentTokenFromUrl();
+  }, []);
   const phase = useCallStore((state) => state.phase);
   const shell = useCallStore((state) => state.shell);
   const viewMode = useCallStore((state) => state.viewMode);

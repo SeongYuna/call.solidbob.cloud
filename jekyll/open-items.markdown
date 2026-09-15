@@ -497,8 +497,8 @@ Environment Variables → **Production 만** → Deployments → Redeploy(`VITE_
 
 - [x] **카드 피드백(`POST /hub/cards/{id}/feedback`)을 부를 방법이 없다** → **같은 날
   장민석이 풀었다**(`decisions/308` — 추천 카드에 `card_id` 추가, 아래 섹션 참고).
-  ⚠ 남은 것: `card_id`가 **문자열**로 온다 — `coreClient.ts`의 `submitCardFeedback`은
-  숫자를 기대한다(아래 「프론트 수정 5건」 ③과 같은 지적).
+  → **2026-09-15 조서희가 마저 처리** — `coreClient.ts`의 `submitCardFeedback`을 문자열
+  타입으로 정정(아래 「프론트 수정 5건」 ③과 같은 항목). 화면(`TermsPanel`)에는 아직 연결 안 함.
 - [ ] **상담기록(통화 재생) 화면을 실제 API로 못 바꾼다** — `apps/call`의 "상담기록"은 지금
   카드·종결·감정분석까지 통째로 재생하는 mock 시나리오(`mock/callHistory.ts`) 기반인데,
   실제 API(`GET /hub/calls`·`GET /hub/calls/{id}/transcript`)는 통화 목록+자막만 준다 —
@@ -519,9 +519,11 @@ Environment Variables → **Production 만** → Deployments → Redeploy(`VITE_
   09-14 마이그레이션이 먼저 들어가 있어야 한다(파일이 확인하고 멈춘다). 안 넣으면 `POST /hub/blacklist-requests`·`/admin/agent-tokens` 가 500(`42P01`).
   ⚠ **09-14 마이그레이션 적용 후 출력도 아직 아무도 찍지 않았다** — 같은 SSM 세션에서 런북 19장 6번(테이블 수)으로 둘 다 확인한다.
   `server` 브랜치는 이미지 태그를 **일부러** 안 올렸다 — 머지 = 배포라 순서가 뒤집히지 않게
-- [ ] **조서희 님께 — 블랙리스트 요청 계약이 바뀌었다**(`decisions/307`) — `POST /hub/blacklist-requests` 는 `Authorization: Bearer cga_…`(상담원 토큰)이 필요하고
+- [x] **조서희 님께 — 블랙리스트 요청 계약이 바뀌었다**(`decisions/307`) — `POST /hub/blacklist-requests` 는 `Authorization: Bearer cga_…`(상담원 토큰)이 필요하고
   본문에서 `requested_by` 가 빠졌다(실어도 무시). 토큰은 관리자가 `POST /admin/agent-tokens {agent_id}` 로 발급하며 **응답에서 한 번만 보인다.**
-  **정할 것**: ① `apps/call` 이 토큰을 어디에 두는지(입력 · sessionStorage) ② `apps/admin` 에 발급·목록·폐기 화면을 둘지
+  → **2026-09-15 조서희가 처리** — ① `apps/call`은 기존 `liveCallToken.ts`(`apps/platform`)와 같은 패턴으로
+  `?agent_token=` URL 쿼리 한 번 → sessionStorage(`lib/agentToken.ts`) ② `apps/admin`의 `SettingsTab.tsx`에
+  발급·목록·폐기 화면을 새로 뒀다(원문 1회 노출 + 복사 버튼)
 - [ ] **상담원 토큰을 어디까지 걸지** — 지금 가드가 달린 곳은 블랙리스트 요청 하나다. 카드 피드백·수동 검색·통화 목록·전사 조회 등은 인증이 없다.
   모두 걸면 게이트웨이(`services/gateway`)가 부르는 허브 API 와 겹치는 것부터 갈라야 한다. **토큰 만료도 없다** — 폐기로만 끊는다
   ⚠ **카드 피드백(`POST /hub/cards/{id}/feedback`)은 걸면 안 된다** — 상담원 ID 를 **일부러** 받지 않는 API 다(부록 A-1, 상담원 단위 집계 금지).
@@ -538,7 +540,7 @@ Environment Variables → **Production 만** → Deployments → Redeploy(`VITE_
 - [ ] **관리자 가드가 «헤더 없음» 에도 500 이다 — 운영에서 확인 (2026-09-15)** — `0.1.8` 배포 뒤 `GET /admin/agent-tokens`·`GET /hub/blacklist-requests`·`/admin/auth/me` 가 로그인 없이 **401 이 아니라 500**.
   `require_admin` 이 `Authorization` 을 보기 전에 `get_current_admin_use_case` → Redis 프로바이더를 먼저 풀어, Redis 가 없으면 `RuntimeError` 가 난다. 운영 Redis(`w4-admin-auth-runtime`, 정성윤 님)가 붙으면 증상은 사라지지만
   **헤더가 없으면 인프라를 타기 전에 401** 이 맞다 — 가드에서 헤더 검사를 의존성 해석보다 앞에 두는 수정은 `server/` 몫(장민석). 이 상태로는 운영에서 상담원 토큰을 발급할 수 없다
-- [ ] **조서희 님께 — `frontend` 병합분 대조에서 나온 프론트 수정 5건 (2026-09-15, 장민석)** — `apps/` 는 전담 영역이라 서버 쪽만 고치고 여기 모은다.
+- [x] **조서희 님께 — `frontend` 병합분 대조에서 나온 프론트 수정 5건 (2026-09-15, 장민석)** — `apps/` 는 전담 영역이라 서버 쪽만 고치고 여기 모은다.
   서버 쪽은 같은 날 고쳤다: 관리자·상담원 가드가 헤더 없으면 401 · 추천 카드에 `card_id`(`decisions/308`).
   ① **막힘 — 블랙리스트 요청**(`apps/call/src/lib/api/coreClient.ts` `createBlacklistRequest`): 헤더 없이 본문 `requested_by` 를 보낸다 → 운영 `0.1.8` 에서 **늘 401**.
   `Authorization: Bearer cga_…`(관리자가 `/admin/agent-tokens` 로 발급) 를 붙이고 `requested_by` 를 뺀다. 토큰을 어디에 두고 누가 넣을지는 화면이 정한다(`decisions/307`)
@@ -547,12 +549,20 @@ Environment Variables → **Production 만** → Deployments → Redeploy(`VITE_
   ④ 해제 사유가 `"관리자 해제"` 고정(`AdminPanel.tsx`) — 동작은 하지만 왜 풀었는지가 남지 않는다
   ⑤ `fetchCallList` 주석 「`customer_id` 늘 null」 은 낡았다 — 발신 번호가 넘어온 통화는 채워진다
   ✅ 맞는 것: 관리자 `hubClient.ts` 경로·필드 전부 · 통화 목록·자막·수동 검색 · WS `closure`(procedure·complete/incomplete)·`call_guard`(영어 4종)·`recommendation_pending` 파서. `apps/call` `tsc --noEmit` 통과
+  → **2026-09-15 조서희가 ①~④ 처리** — ① 토큰 인증으로 교체(위 항목 참고) ② `RequestsTab.tsx`·`EntriesTab.tsx`·`SettingsTab.tsx`
+  상한 24→12개월 ③ `card_id`/`feedback_id` 문자열로 정정(`coreClient.ts`·`types/contract.ts`·`realGatewayClient.ts`) ④ `EntriesTab.tsx`에
+  사유 입력창 추가, `AdminPanel.tsx`가 하드코딩 대신 실제 사유를 넘긴다(연장도 같이). **⑤는 아직 안 고쳤다** — 남겨 둔다.
+  `apps/call`·`apps/admin` 둘 다 `tsc --noEmit`·`vite build` 클린
 - [ ] **조서희 님께 — 상담기록 재생·블랙리스트 연장 API 가 생겼다 (2026-09-15, 장민석)** — 조서희 님 쪽 보고 「끝까지 못 한 것」 3·4번의 서버 몫이다.
   ③ **`GET /hub/calls/{call_id}/record`** — 한 통화의 요약 초안·후속조치·추천(카드 `card_id` 포함)·필요서류 판정(서류별)을 한 번에. 전사는 기존 `…/transcript`.
   **감정분석은 저장되지 않아 없다**(모델 없음) — 재생 화면의 그 칸은 비워 둔다. `0.1.9` 전 통화는 추천이 저장되지 않아 `recommendations: []`
   ④ **`POST /hub/blacklist-entries/{id}/expiry {expires_in_days, reason}`** + **`GET …/expiry-changes`** — 연장·단축 모두 «지금부터 N일 뒤»(1~365), 사유 필수.
   `decisions/205` 「연장은 새 요청으로만」 을 **철회**했다(`decisions/309`). 관리자 화면 `extendEntry`(개월 × 30, 로컬)를 이 API 로 바꾸고 사유 입력을 받는다
   ✅ **2026-09-15 운영 반영**(서버 `0.1.9`, 운영 DB 27 테이블 확인) — 붙여도 된다
+  → **2026-09-15 조서희가 ④ 처리** — `adminStore.ts`의 `extendEntry`를 로컬 날짜계산 mock에서
+  `POST .../expiry`(사유 필수) 실호출로 바꿨다. `GET …/expiry-changes`(이력 조회 화면)는 아직 안 만들었다 — 요청받으면 착수.
+  **③(상담기록 재생 화면)은 그대로 남아 있다** — mock 시나리오 재생(카드·종결·감정분석 통짜)을 실제 API 조합으로
+  바꾸려면 화면 흐름을 다시 설계해야 해서 이번 스코프에서 뺐다(조서희 판단, 별도 요청 시 착수)
 - [ ] **블랙리스트 연장을 되풀이하면 사실상 영구 표시가 된다 (2026-09-15, `decisions/309`)** — 365일 상한은 변경 1회에만 걸린다. 이력으로 드러날 뿐 막지 않는다.
   **정할 것**: 등록 1건의 누적 상한(예: 승인일로부터 N일)을 둘지. 이력 테이블의 사유 보존 기간도 함께
 - [ ] **저장한 통화 후 초안을 읽는 경로가 없다 (2026-09-15)** — `POST /hub/calls/{id}/close` 가 이제 `call.summary_text`·`follow_up_action`(draft)에 남기지만
