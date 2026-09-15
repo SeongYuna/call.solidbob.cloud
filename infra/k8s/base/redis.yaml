@@ -1,0 +1,79 @@
+# Requirement: 관리자 로그인(구글) — access token 세션 저장소
+#
+# `server/apps/admin_auth/` 가 access token(JWT, 5분)을 발급할 때 `jti` 를 여기에 심고,
+# 검증할 때 서명 다음에 그 키가 살아 있는지 함께 본다. **로그아웃이 exp 전에 반영되게
+# 하는 것이 유일한 목적**이다(`_project/decisions/403` §3).
+#
+# ── 왜 클러스터 안인가 ────────────────────────────────────────────────────────
+# **ElastiCache 를 만들지 않는다**(`infra/CLAUDE.md` §1-2 · 런북 「만들지 말 것」).
+# 세션 하나가 5분 살다 사라지는 용도에 관리형 Redis 를 붙일 이유가 없다.
+# `403` §5 가 "운영에 필요해지면 그때 별도로 정한다"로 남겨둔 그 자리다(`decisions/112`).
+#
+# ── 왜 볼륨이 없는가 ──────────────────────────────────────────────────────────
+# **일부러 휘발시킨다.** 저장하는 것은 5분짜리 access token 세션뿐이고, 파드가 다시 뜨면
+# 그 세션은 어차피 곧 만료된다. 사용자는 **refresh token(RDS `admin_refresh_token`)으로
+# 조용히 복구**되므로 다시 로그인할 필요가 없다 — 영속이 필요한 쪽은 이미 RDS 에 있다.
+# 그래서 PVC 도 emptyDir 도 없고, `--save ""` · `--appendonly no` 로 디스크를 아예 안 쓴다.
+#
+# ── 왜 인터넷에 열지 않는가 ──────────────────────────────────────────────────
+# **암호가 없다.** Ollama(11434)·Elasticsearch(9200)와 같은 규칙으로 ClusterIP 로만 둔다
+# (`infra/CLAUDE.md` §1-4). Ingress 에 얹지 않는다 — 얹는 순간 세션 저장소가 공개된다.
+# 서버가 부르는 주소는 `redis://redis:6379/0` 이고 `server-env` 의 `REDIS_URL` 이 그 값이다.
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: redis
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: redis }
+  strategy:
+    # 세션 저장소가 잠깐 둘이 되면 「방금 로그아웃한 토큰이 다른 파드에서는 살아 있는」
+    # 상태가 생긴다. 잠깐 끊기는 쪽이 낫다 — 끊겨도 refresh 로 복구된다.
+    type: Recreate
+  template:
+    metadata:
+      labels: { app: redis }
+    spec:
+      containers:
+        - name: redis
+          image: redis:7.4-alpine
+          imagePullPolicy: IfNotPresent
+          args:
+            - "--save"
+            - "" # RDB 스냅샷 끔 — 쓸 디스크가 없다
+            - "--appendonly"
+            - "no"
+            - "--maxmemory"
+            - "128mb"
+            - "--maxmemory-policy"
+            - "noeviction"
+            # ⚠ `noeviction` 이다. 가득 차면 조용히 세션을 버리는 대신 **쓰기가 실패**해
+            #   로그인이 눈에 띄게 깨진다. 5분 TTL 세션에 128mb 는 남아도는 크기라
+            #   가득 찬다면 그건 용량 문제가 아니라 버그다 — 조용히 넘어가면 안 된다.
+          ports:
+            - { containerPort: 6379, protocol: TCP }
+          readinessProbe:
+            exec: { command: ["redis-cli", "ping"] }
+            initialDelaySeconds: 3
+            periodSeconds: 10
+          livenessProbe:
+            exec: { command: ["redis-cli", "ping"] }
+            initialDelaySeconds: 10
+            periodSeconds: 30
+          resources:
+            # GPU 노드 하나를 여럿이 나눠 쓴다(런북 11장). 세션 저장소가 메모리를 크게
+            # 잡으면 ES·서버가 밀린다.
+            requests: { cpu: 20m, memory: 32Mi }
+            limits: { memory: 192Mi }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis
+spec:
+  type: ClusterIP
+  selector: { app: redis }
+  ports:
+    - { port: 6379, targetPort: 6379 }
