@@ -31,7 +31,7 @@ paths:
 - [x] `GET /admin/auth/test` — 200 · 응답 말단 전부 문자열 · 비밀 없음(SEC-2)
 - [x] `/openapi.json` 공표까지 검증하는 테스트 3건 (`test_auth_probe_router.py`)
 - [x] `kustomization.yaml` `newTag` 0.1.6 → 0.1.7 (`check_release_tags.py` 통과)
-- [ ] main 머지 후 `curl https://server.solidbob.cloud/openapi.json` 에 경로가 **보인다**
+- [x] main 머지 후 `curl https://server.solidbob.cloud/openapi.json` 에 경로가 **보인다** — 09-15 확인. 경로 집합 차이가 **`/admin/auth/test` 하나뿐**이고(28 → 29, 사라진 것 0), `/admin/auth/test` 가 `{"status":"ok","router":"admin_auth","marker":"0.1.7"}` 를 돌려준다
 - [ ] 확인이 끝나면 프로브를 걷어낸다 (아래)
 
 ## 걷어낼 때
