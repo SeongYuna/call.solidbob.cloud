@@ -560,7 +560,7 @@ Environment Variables → **Production 만** → Deployments → Redeploy(`VITE_
   ② 연장·단축은 **승인일 + 365일** 을 넘으면 422 — 응답 `detail` 에 언제까지 가능한지가 있다. ③ 게이트웨이가 `recommendation_pending`·`call_guard`·`closure` 를 이제 실제로 보낸다(`0.1.4` 배포 뒤)
   ④ `POST /hub/calls/{id}/summary-revision {summary_text, reason, …}` + `GET …/summary-revisions`(상담원 토큰) — 확정된 요약을 사유와 함께 고친다. 확정 전 409(`decisions/311`)
   ⑤ 관리자 `POST /hub/blacklist-retention/purge` — 끝난 뒤 180일 지난 문장을 비운다(`decisions/312`). 관리자 화면에 버튼이 필요하다
-  ⚠ 전부 **운영 반영 전**(서버 `0.1.10` · 게이트웨이 `0.1.4`). **`0.1.10` 은 운영 DB 마이그레이션이 먼저다**(`2026-09-15-summary-revision-app-setting.sql`, 27 → 28)
+  ✅ **2026-09-15 운영 반영**(서버 `0.1.10` · 게이트웨이 `0.1.4`, 운영 DB 29 테이블 확인) — 붙여도 된다. 게이트웨이가 알림 3종을 이제 실제로 보낸다
 - [ ] **조서희 님께 — J-5 베테랑 기준 설정이 서버에 생겼다 (2026-09-15, 장민석)** — 설정 탭 「근속 연차」 를 `GET /hub/routing-settings`(현재값, `saved:"false"` 면 기본 3년) ·
   `PUT /hub/routing-settings {veteran_years: 0.5~40}` 에 붙이면 된다(관리자 로그인). 화면의 «서버에 연결 안 됨» 문구는 운영 반영 뒤 걷어도 된다.
   배정 판정 자체(`POST /hub/routing-decisions`)는 교환기가 부르는 것이라 화면이 부를 일은 없다. `fell_back` 집계 화면이 필요하면 조회 API 를 따로 만든다
