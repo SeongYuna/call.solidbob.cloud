@@ -527,6 +527,14 @@ Environment Variables → **Production 만** → Deployments → Redeploy(`VITE_
   ④ 해제 사유가 `"관리자 해제"` 고정(`AdminPanel.tsx`) — 동작은 하지만 왜 풀었는지가 남지 않는다
   ⑤ `fetchCallList` 주석 「`customer_id` 늘 null」 은 낡았다 — 발신 번호가 넘어온 통화는 채워진다
   ✅ 맞는 것: 관리자 `hubClient.ts` 경로·필드 전부 · 통화 목록·자막·수동 검색 · WS `closure`(procedure·complete/incomplete)·`call_guard`(영어 4종)·`recommendation_pending` 파서. `apps/call` `tsc --noEmit` 통과
+- [ ] **조서희 님께 — 상담기록 재생·블랙리스트 연장 API 가 생겼다 (2026-09-15, 장민석)** — 조서희 님 쪽 보고 「끝까지 못 한 것」 3·4번의 서버 몫이다.
+  ③ **`GET /hub/calls/{call_id}/record`** — 한 통화의 요약 초안·후속조치·추천(카드 `card_id` 포함)·필요서류 판정(서류별)을 한 번에. 전사는 기존 `…/transcript`.
+  **감정분석은 저장되지 않아 없다**(모델 없음) — 재생 화면의 그 칸은 비워 둔다. `0.1.9` 전 통화는 추천이 저장되지 않아 `recommendations: []`
+  ④ **`POST /hub/blacklist-entries/{id}/expiry {expires_in_days, reason}`** + **`GET …/expiry-changes`** — 연장·단축 모두 «지금부터 N일 뒤»(1~365), 사유 필수.
+  `decisions/205` 「연장은 새 요청으로만」 을 **철회**했다(`decisions/309`). 관리자 화면 `extendEntry`(개월 × 30, 로컬)를 이 API 로 바꾸고 사유 입력을 받는다
+  ⚠ 둘 다 **운영 반영 전**이다. ④는 운영 DB 마이그레이션이 먼저다(`db/migrations/2026-09-15-blacklist-expiry-change.sql`)
+- [ ] **블랙리스트 연장을 되풀이하면 사실상 영구 표시가 된다 (2026-09-15, `decisions/309`)** — 365일 상한은 변경 1회에만 걸린다. 이력으로 드러날 뿐 막지 않는다.
+  **정할 것**: 등록 1건의 누적 상한(예: 승인일로부터 N일)을 둘지. 이력 테이블의 사유 보존 기간도 함께
 - [ ] **저장한 통화 후 초안을 읽는 경로가 없다 (2026-09-15)** — `POST /hub/calls/{id}/close` 가 이제 `call.summary_text`·`follow_up_action`(draft)에 남기지만
   `GET /hub/calls` 는 `inquiry_type`·`summary_confirmed` 만 준다. 상담원이 초안을 **확정**하는 API(`summary_confirmed_at` 채우기)도 없다.
   **정할 것**: 상담기록 화면이 목록에서 요약을 보여줄지(목록 응답에 `summary_text` 추가) 상세 조회를 따로 둘지 — 조서희 님 화면 흐름에 달렸다
