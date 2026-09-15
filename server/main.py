@@ -30,6 +30,7 @@ from hub.adapter.inbound.api.v1.blacklist_entry_list_router import blacklist_ent
 from hub.adapter.inbound.api.v1.blacklist_expiry_change_list_router import blacklist_expiry_change_list_router  # noqa: E402
 from hub.adapter.inbound.api.v1.blacklist_expiry_change_router import blacklist_expiry_change_router  # noqa: E402
 from hub.adapter.inbound.api.v1.blacklist_release_router import blacklist_release_router  # noqa: E402
+from hub.adapter.inbound.api.v1.blacklist_retention_purge_router import blacklist_retention_purge_router  # noqa: E402
 from hub.adapter.inbound.api.v1.blacklist_request_create_router import blacklist_request_create_router  # noqa: E402
 from hub.adapter.inbound.api.v1.blacklist_request_list_router import blacklist_request_list_router  # noqa: E402
 from hub.adapter.inbound.api.v1.call_guard_check_router import call_guard_check_router  # noqa: E402
@@ -48,7 +49,13 @@ from hub.adapter.inbound.api.v1.myself_router import myself_router  # noqa: E402
 from hub.adapter.inbound.api.v1.postcall_router import postcall_router  # noqa: E402
 from hub.adapter.inbound.api.v1.recommendation_router import recommendation_router  # noqa: E402
 from hub.adapter.inbound.api.v1.required_docs_detection_router import required_docs_detection_router  # noqa: E402
+from hub.adapter.inbound.api.v1.routing_decision_router import routing_decision_router  # noqa: E402
+from hub.adapter.inbound.api.v1.routing_setting_query_router import routing_setting_query_router  # noqa: E402
+from hub.adapter.inbound.api.v1.routing_setting_router import routing_setting_router  # noqa: E402
 from hub.adapter.inbound.api.v1.search_router import search_router  # noqa: E402
+from hub.adapter.inbound.api.v1.summary_confirmation_router import summary_confirmation_router  # noqa: E402
+from hub.adapter.inbound.api.v1.summary_revision_list_router import summary_revision_list_router  # noqa: E402
+from hub.adapter.inbound.api.v1.summary_revision_router import summary_revision_router  # noqa: E402
 from hub.adapter.inbound.api.v1.transcript_ingest_router import transcript_ingest_router  # noqa: E402
 from hub.adapter.inbound.api.v1.transcript_query_router import transcript_query_router  # noqa: E402
 from hub.adapter.inbound.api.v1.upload_router import upload_router  # noqa: E402
@@ -387,6 +394,7 @@ app.include_router(blacklist_entry_list_router)
 app.include_router(blacklist_expiry_change_router)
 app.include_router(blacklist_expiry_change_list_router)
 app.include_router(blacklist_release_router)
+app.include_router(blacklist_retention_purge_router)
 app.include_router(blacklist_request_create_router)
 app.include_router(blacklist_request_list_router)
 app.include_router(call_guard_check_router)
@@ -401,8 +409,14 @@ app.include_router(knowledge_gap_query_router)
 app.include_router(knowledge_gap_router)
 app.include_router(myself_router)
 app.include_router(postcall_router)
+app.include_router(summary_confirmation_router)
+app.include_router(summary_revision_router)
+app.include_router(summary_revision_list_router)
 app.include_router(recommendation_router)
 app.include_router(required_docs_detection_router)
+app.include_router(routing_decision_router)
+app.include_router(routing_setting_router)
+app.include_router(routing_setting_query_router)
 app.include_router(search_router)
 app.include_router(transcript_ingest_router)
 app.include_router(transcript_query_router)

@@ -11,7 +11,7 @@ import pytest
 
 from blacklist.adapter.outbound.postgres_blacklist_repository import EXPIRED_RELEASE_REASON, PostgresBlacklistRepository
 from hub.app.dtos.blacklist_dto import BlacklistRequest, RequestEvidence
-from hub.app.ports.output.blacklist_port import BlacklistConflict, BlacklistNotFound
+from hub.app.ports.output.blacklist_port import BlacklistConflict, BlacklistNotFound, ExpiryBeyondCap
 
 REF = "e" * 64
 CALLS = ("it_exp_1", "it_exp_2")
@@ -67,6 +67,12 @@ def test_실제_DB_만료_연장_단축_이력과_만료_뒤_재승인(integrati
             assert (c1.previous_expires_at, c1.new_expires_at) == (now + timedelta(days=30), now + timedelta(days=180))
             assert (c2.previous_expires_at, c2.new_expires_at) == (now + timedelta(days=180), now + timedelta(days=7))
             assert [c.change_id for c in await repo.list_expiry_changes(entry.entry_id)] == [c1.change_id, c2.change_id]
+
+            # 누적 상한: 승인일 + 365일까지만 — 넘으면 거부되고 만료·이력은 그대로다
+            with pytest.raises(ExpiryBeyondCap):
+                await repo.change_expiry(entry.entry_id, changed_by="it-exp-admin", expires_at=now + timedelta(days=366), reason="과한 연장")
+            assert len(await repo.list_expiry_changes(entry.entry_id)) == 2
+            assert [e for e in await repo.list_entries() if e.entry_id == entry.entry_id][0].expires_at == now + timedelta(days=7)
 
             with pytest.raises(BlacklistNotFound):
                 await repo.change_expiry(999999999, changed_by="it-exp-admin", expires_at=now, reason="x")

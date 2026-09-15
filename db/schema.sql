@@ -203,6 +203,22 @@ CREATE TABLE "follow_up_action" (
     PRIMARY KEY ("id"),
     FOREIGN KEY ("call_id") REFERENCES "call"("call_id")
 );
+COMMENT ON COLUMN "follow_up_action"."status" IS 'draft(규칙·모델 초안) · confirmed(상담원 확정, `decisions/310`) · superseded(재수정으로 대체 — 지우지 않는다, `decisions/311`)';
+
+-- D-1~D-3 확정된 요약의 재수정 이력 — 고치기 **전** 값 한 벌 + 사유(`decisions/311`). 새 값은 `call` 에 있다. 누가 고쳤는지는 두지 않는다(부록 A-1 — 상담원 단위 집계 금지). 갱신·삭제하지 않는다
+CREATE TABLE "call_summary_revision" (
+    "revision_id" BIGINT GENERATED ALWAYS AS IDENTITY NOT NULL,
+    "call_id" VARCHAR(40) NOT NULL,
+    "previous_summary_text" TEXT NOT NULL,
+    "previous_inquiry_type" VARCHAR(30) NULL,
+    "reason" VARCHAR(500) NOT NULL,
+    "revised_at" TIMESTAMPTZ NOT NULL,
+    PRIMARY KEY ("revision_id"),
+    FOREIGN KEY ("call_id") REFERENCES "call"("call_id")
+);
+COMMENT ON COLUMN "call_summary_revision"."previous_summary_text" IS '고치기 전 요약 — 마스킹본';
+COMMENT ON COLUMN "call_summary_revision"."reason" IS '왜 고쳤는가 — 저장 전 마스킹';
+CREATE INDEX "call_summary_revision_idx0" ON "call_summary_revision" ("call_id");
 
 -- D-4 공백 리포트 — B/C/F 세 모듈의 실패 사례를 한 곳에 누적. ⚠ `description` 은 자유 입력이라 **저장 전에 마스킹을 통과시킨다**(`decisions/205` ⑤)
 CREATE TABLE "knowledge_gap" (
@@ -441,3 +457,15 @@ COMMENT ON COLUMN "agent_token"."token_hash" IS 'SHA-256 hex — 원문(`cga_…
 COMMENT ON COLUMN "agent_token"."issued_by" IS '발급한 관리자';
 COMMENT ON COLUMN "agent_token"."revoked_at" IS '폐기 시각. NULL 이면 유효';
 CREATE INDEX "agent_token_idx0" ON "agent_token" ("agent_id");
+
+-- 관리자가 바꾸는 운영 설정 — 키 1개 = 1행(`decisions/313`). 지금은 `veteran_years`(J-5 베테랑 근속 기준) 하나다. 행이 없으면 코드의 기본값을 쓴다 — 기본값을 여기 미리 넣지 않는다(두 곳에 적지 않는다)
+CREATE TABLE "app_setting" (
+    "setting_key" VARCHAR(50) NOT NULL,
+    "value" VARCHAR(200) NOT NULL,
+    "updated_at" TIMESTAMPTZ NOT NULL,
+    "updated_by" BIGINT NULL,
+    PRIMARY KEY ("setting_key"),
+    FOREIGN KEY ("updated_by") REFERENCES "admin_account"("id")
+);
+COMMENT ON COLUMN "app_setting"."value" IS '문자열로 저장한다 — 해석은 그 키를 쓰는 코드가 한다';
+COMMENT ON COLUMN "app_setting"."updated_by" IS '마지막으로 바꾼 관리자';
