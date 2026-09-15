@@ -123,6 +123,7 @@ export function TranscriptPanel({
     [isHistory, historySegments, liveUtterances],
   );
   const historyCallId = useCallStore((state) => state.historyCallId);
+  const setHistoryView = useCallStore((state) => state.setHistoryView);
   const callId = useCallStore((state) => state.callId);
   const targetLanguage = useCallStore((state) =>
     state.viewMode === "history"
@@ -497,6 +498,15 @@ export function TranscriptPanel({
           <span>
             지난 통화 보는 중 · {formatCallStartedAt(historyStartedAt)}
           </span>
+          <button
+            type="button"
+            className="history-banner-back"
+            onClick={() => {
+              setHistoryView("record");
+            }}
+          >
+            요약 보기
+          </button>
           <button type="button" className="history-banner-back" onClick={resumeLive}>
             실시간으로 돌아가기
           </button>

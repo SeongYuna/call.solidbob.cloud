@@ -38,6 +38,15 @@ export interface GatewayListener {
 
 export type GatewayMode = "mock" | "live";
 
+/** `wrapUp`에 실어 보낼 자막 한 줄. `store/callStore.ts`의 `Utterance`와 같은 모양이다. */
+export interface WrapUpSegment {
+  segment_id: string;
+  speaker: "customer" | "agent";
+  text: string;
+  is_final: boolean;
+  utterance_end_ms: number;
+}
+
 export interface GatewayStatus {
   mode: GatewayMode;
   connected: boolean;
@@ -53,8 +62,11 @@ export interface GatewayClient {
    * 없는 것을 채워 보내지 않는다.
    */
   manualSearch(request: ManualSearchRequest): Promise<RecommendationBatch>;
-  /** §2.5 D-1~D-3 통화 후 처리. 계약 미정 — manualSearch 와 같은 이유로 Promise 다. */
-  wrapUp(callId: string): Promise<CallWrapUp>;
+  /**
+   * §2.5 D-1~D-3 통화 후 처리. `decisions/306` — `POST /hub/calls/{id}/close`.
+   * `segments`는 이번 통화에서 쌓인 자막 전부(마스킹 완료본, SEC-1)다.
+   */
+  wrapUp(callId: string, segments: WrapUpSegment[]): Promise<CallWrapUp>;
 }
 
 const GATEWAY_URL_STORAGE_KEY = "callguard:gatewayUrlOverride";

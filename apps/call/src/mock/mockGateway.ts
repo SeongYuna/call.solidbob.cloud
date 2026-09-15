@@ -5,7 +5,7 @@ import type {
   RecommendationCard,
   TranscriptEvent,
 } from "../types/contract";
-import type { GatewayClient, GatewayListener } from "../lib/ws/types";
+import type { GatewayClient, GatewayListener, WrapUpSegment } from "../lib/ws/types";
 import { getScenario } from "./scenarios";
 import { DEFAULT_LOCAL_RESOURCES } from "./localResources";
 import { sentimentFromScenario } from "./sentiment";
@@ -130,8 +130,11 @@ export class MockGatewayClient implements GatewayClient {
     });
   }
 
-  /** 요약·분류·감정분석 모델이 없어 시나리오 문장과 C-6 건수만 돌려준다. */
-  wrapUp(callId: string): Promise<CallWrapUp> {
+  /**
+   * 요약·분류·감정분석 모델이 없어 시나리오 문장과 C-6 건수만 돌려준다.
+   * `segments`는 실서버 전용(`RealGatewayClient`) — mock은 시나리오 데이터를 그대로 쓴다.
+   */
+  wrapUp(callId: string, _segments: WrapUpSegment[]): Promise<CallWrapUp> {
     return new Promise((resolve) => {
       window.setTimeout(() => {
         resolve({

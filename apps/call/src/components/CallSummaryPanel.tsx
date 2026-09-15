@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, type ReactElement, type ReactNode } from "react";
 import type { CallWrapUp, SentimentSummary } from "../types/contract";
-import { getHistoryPlayback } from "../lib/api/coreClient";
+import { confirmSummary, getHistoryPlayback, isCoreApiConfigured, reviseSummary, type CallRecord } from "../lib/api/coreClient";
 import { DEFAULT_LOCAL_RESOURCES } from "../mock/localResources";
 import { cardId, useCallStore, type Utterance } from "../store/callStore";
 import { BlackConsumerAction } from "./BlackConsumerAction";
@@ -21,22 +21,42 @@ interface CallSummaryPanelProps {
   call: CallSummaryModel;
   onClose: () => void;
   onStartNewCall: () => void;
+  /** 상담기록 조회 전용 — `GET .../record`의 `summary_confirmed`. 이미 확정된 통화면 폼이 잠긴 채 열린다. */
+  historyConfirmed?: boolean;
 }
 
 export function callSummaryFromWrapUp(wrapUp: CallWrapUp): CallSummaryModel {
   return {
     callId: wrapUp.call_id,
     summary: wrapUp.summary.join(" "),
+    // D-2 분류가 규칙 기반이라 아직 유형이 없을 수 있다(`decisions/306`, 늘 null) —
+    // 빈 문자열이면 빈 칩을 그리지 않고 태그 자체를 비운다.
     tags:
       wrapUp.tags !== undefined && wrapUp.tags.length > 0
         ? wrapUp.tags
-        : [wrapUp.category],
+        : wrapUp.category.length > 0
+          ? [wrapUp.category]
+          : [],
     followUps: wrapUp.follow_ups,
     resources:
       wrapUp.local_resources !== undefined && wrapUp.local_resources.length > 0
         ? wrapUp.local_resources
         : [...DEFAULT_LOCAL_RESOURCES],
     sentiment: wrapUp.sentiment,
+  };
+}
+
+/**
+ * `GET /hub/calls/{id}/record` → `CallWrapUp` 모양으로 바꿔서 `callSummaryFromWrapUp`을
+ * 그대로 재사용한다(태그·지역자원 기본값 처리가 라이브와 같아야 한다).
+ * 감정분석은 저장되지 않아 없다(모델 없음) — `sentiment`는 항상 비운다.
+ */
+function wrapUpFromRecord(record: CallRecord): CallWrapUp {
+  return {
+    call_id: record.callId,
+    summary: record.summaryText !== null ? [record.summaryText] : [],
+    category: record.inquiryType ?? "",
+    follow_ups: record.followUpActions.map((f) => f.text),
   };
 }
 
@@ -54,6 +74,7 @@ export function CallSummaryHost({
 }: CallSummaryHostProps): ReactElement {
   const viewMode = useCallStore((state) => state.viewMode);
   const historyCallId = useCallStore((state) => state.historyCallId);
+  const historyRecord = useCallStore((state) => state.historyRecord);
   const [live, setLive] = useState<CallWrapUp | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -85,6 +106,36 @@ export function CallSummaryHost({
   }, [onWrapUp, viewMode]);
 
   if (viewMode === "history") {
+    if (isCoreApiConfigured()) {
+      if (historyRecord === null) {
+        return (
+          <CallSummaryShell onClose={onClose} onStartNewCall={onStartNewCall}>
+            <section className="wrapup-card">
+              <p className="wrapup-error">이 통화의 기록을 불러오지 못했습니다.</p>
+            </section>
+          </CallSummaryShell>
+        );
+      }
+      if (historyRecord.summaryText === null) {
+        return (
+          <CallSummaryShell onClose={onClose} onStartNewCall={onStartNewCall}>
+            <section className="wrapup-card">
+              <p className="wrapup-error">
+                이 통화는 아직 통화 후 처리가 되지 않았습니다 — 요약 초안이 없습니다.
+              </p>
+            </section>
+          </CallSummaryShell>
+        );
+      }
+      return (
+        <CallSummaryPanel
+          call={callSummaryFromWrapUp(wrapUpFromRecord(historyRecord))}
+          onClose={onClose}
+          onStartNewCall={onStartNewCall}
+          historyConfirmed={historyRecord.summaryConfirmed}
+        />
+      );
+    }
     const playback =
       historyCallId === null ? null : getHistoryPlayback(historyCallId);
     if (playback?.wrapUp === undefined) {
@@ -141,10 +192,10 @@ export function CallSummaryPanel({
   call,
   onClose,
   onStartNewCall,
+  historyConfirmed,
 }: CallSummaryPanelProps): ReactElement {
   const mode = useCallStore((state) => state.mode);
   const utterances = useCallStore((state) => state.utterances);
-  const callId = useCallStore((state) => state.callId);
   const viewMode = useCallStore((state) => state.viewMode);
   const manualSearches = useCallStore((state) => state.manualSearches);
   const cards = useCallStore((state) => state.cards);
@@ -181,6 +232,16 @@ export function CallSummaryPanel({
           </p>
         ) : null}
       </section>
+
+      {mode !== "mock" && call.callId.length > 0 ? (
+        <SummaryConfirmationForm
+          callId={call.callId}
+          initialSummary={call.summary}
+          initialInquiryType={call.tags[0] ?? ""}
+          initialFollowUps={call.followUps}
+          initiallyConfirmed={historyConfirmed ?? false}
+        />
+      ) : null}
 
       {showLiveExtras ? <BlackConsumerAction callId={call.callId} /> : null}
 
@@ -272,15 +333,15 @@ export function CallSummaryPanel({
 
       {/* J-1 — 실시간 통화에서만 띄운다. 상담기록 조회 화면에서는 이미 지난 통화라
           전환 요청의 대상이 아니다(`_project/decisions/204`). */}
-      {showLiveExtras && callId !== null ? (
+      {showLiveExtras && call.callId.length > 0 ? (
         <section className="wrapup-card">
           <div className="wrapup-card-head">
             <h3>콜 라우팅 보호</h3>
           </div>
           <BlacklistRequestButton
-            callId={callId}
-            customerRef={customerRef(callId)}
-            displayHint={displayHint(callId)}
+            callId={call.callId}
+            customerRef={customerRef(call.callId)}
+            displayHint={displayHint(call.callId)}
             callDurationS={callDurationS(utterances)}
             contextExcerpt={maskedExcerpt(utterances)}
           />
@@ -331,6 +392,215 @@ function maskedExcerpt(utterances: Utterance[]): string {
     .join("\n");
 }
 
+/**
+ * `decisions/310`·`decisions/311` — 규칙 기반 초안을 상담원이 고쳐서 확정한다
+ * (`POST .../summary-confirmation`), 확정 뒤에는 사유와 함께 재수정할 수 있다
+ * (`POST .../summary-revision`, 확정 전이면 409). 둘 다 상담원 토큰이 필요하다.
+ */
+function SummaryConfirmationForm({
+  callId,
+  initialSummary,
+  initialInquiryType,
+  initialFollowUps,
+  initiallyConfirmed = false,
+}: {
+  callId: string;
+  initialSummary: string;
+  initialInquiryType: string;
+  initialFollowUps: readonly string[];
+  /** 상담기록 조회 전용 — 이미 확정된 통화를 열면 잠긴 상태로 시작한다(정확한 확정 시각은 모른다). */
+  initiallyConfirmed?: boolean;
+}): ReactElement {
+  const [summaryText, setSummaryText] = useState(initialSummary);
+  const [inquiryType, setInquiryType] = useState(initialInquiryType);
+  const [followUpsText, setFollowUpsText] = useState(initialFollowUps.join("\n"));
+  const [reviseReason, setReviseReason] = useState("");
+  const [confirmed, setConfirmed] = useState(initiallyConfirmed);
+  const [confirmedAt, setConfirmedAt] = useState<string | null>(null);
+  const [lastRevisedAt, setLastRevisedAt] = useState<string | null>(null);
+  const [revising, setRevising] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+
+  function collectFollowUps(): string[] {
+    return followUpsText
+      .split("\n")
+      .map((line) => line.trim())
+      .filter((line) => line.length > 0);
+  }
+
+  async function handleConfirm(): Promise<void> {
+    if (summaryText.trim().length === 0) {
+      return;
+    }
+    setError(null);
+    setSaving(true);
+    try {
+      const result = await confirmSummary(callId, {
+        summaryText: summaryText.trim(),
+        inquiryType: inquiryType.trim().length > 0 ? inquiryType.trim() : null,
+        followUpActions: collectFollowUps(),
+      });
+      setConfirmed(true);
+      setConfirmedAt(result.confirmedAt);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "요약 확정에 실패했습니다.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleRevise(): Promise<void> {
+    if (summaryText.trim().length === 0 || reviseReason.trim().length === 0) {
+      return;
+    }
+    setError(null);
+    setSaving(true);
+    try {
+      const result = await reviseSummary(callId, {
+        summaryText: summaryText.trim(),
+        reason: reviseReason.trim(),
+        inquiryType: inquiryType.trim().length > 0 ? inquiryType.trim() : null,
+        followUpActions: collectFollowUps(),
+      });
+      setLastRevisedAt(result.revisedAt);
+      setReviseReason("");
+      setRevising(false);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "요약 재수정에 실패했습니다.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  const locked = confirmed && !revising;
+
+  if (locked) {
+    return (
+      <section className="wrapup-card">
+        <div className="wrapup-card-head">
+          <h3>요약 확정</h3>
+        </div>
+        <p className="wrapup-note">
+          {confirmedAt !== null
+            ? `${new Date(confirmedAt).toLocaleString("ko-KR")}에 확정했습니다.`
+            : "이미 확정된 요약입니다."}
+          {lastRevisedAt !== null
+            ? ` 최근 재수정: ${new Date(lastRevisedAt).toLocaleString("ko-KR")}.`
+            : ""}
+        </p>
+        {error !== null ? (
+          <p className="wrapup-error" role="alert">
+            {error}
+          </p>
+        ) : null}
+        <button
+          type="button"
+          className="btn-outline"
+          onClick={() => {
+            setError(null);
+            setRevising(true);
+          }}
+        >
+          재수정
+        </button>
+      </section>
+    );
+  }
+
+  const isRevision = confirmed;
+
+  return (
+    <section className="wrapup-card">
+      <div className="wrapup-card-head">
+        <h3>{isRevision ? "요약 재수정" : "요약 확정"}</h3>
+      </div>
+      <p className="wrapup-note">
+        {isRevision
+          ? "확정된 요약을 고칩니다 — 사유가 필수이고, 고치기 전 값은 이력으로 남습니다."
+          : "위 요약은 규칙 기반 초안입니다. 고친 뒤 확정하면 상담기록에 저장됩니다 — 확정은 한 번뿐이고, 이 통화로 다시 초안을 만들 수 없습니다."}
+      </p>
+      {error !== null ? (
+        <p className="wrapup-error" role="alert">
+          {error}
+        </p>
+      ) : null}
+      <label className="admin-settings-field">
+        <span>요약</span>
+        <textarea
+          value={summaryText}
+          rows={4}
+          onChange={(event) => {
+            setSummaryText(event.target.value);
+          }}
+        />
+      </label>
+      <label className="admin-settings-field">
+        <span>문의 유형 (선택)</span>
+        <input
+          type="text"
+          value={inquiryType}
+          onChange={(event) => {
+            setInquiryType(event.target.value);
+          }}
+        />
+      </label>
+      <label className="admin-settings-field">
+        <span>후속조치 (한 줄에 하나씩)</span>
+        <textarea
+          value={followUpsText}
+          rows={3}
+          onChange={(event) => {
+            setFollowUpsText(event.target.value);
+          }}
+        />
+      </label>
+      {isRevision ? (
+        <label className="admin-settings-field">
+          <span>재수정 사유 (필수)</span>
+          <textarea
+            value={reviseReason}
+            rows={2}
+            onChange={(event) => {
+              setReviseReason(event.target.value);
+            }}
+          />
+        </label>
+      ) : null}
+      <div style={{ display: "flex", gap: 8 }}>
+        <button
+          type="button"
+          className="btn-outline"
+          disabled={
+            saving ||
+            summaryText.trim().length === 0 ||
+            (isRevision && reviseReason.trim().length === 0)
+          }
+          onClick={() => {
+            void (isRevision ? handleRevise() : handleConfirm());
+          }}
+        >
+          {saving ? "저장 중..." : isRevision ? "재수정 확정" : "요약 확정"}
+        </button>
+        {isRevision ? (
+          <button
+            type="button"
+            className="btn-outline"
+            disabled={saving}
+            onClick={() => {
+              setRevising(false);
+              setError(null);
+              setReviseReason("");
+            }}
+          >
+            취소
+          </button>
+        ) : null}
+      </div>
+    </section>
+  );
+}
+
 function CallSummaryShell({
   onClose,
   onStartNewCall,
@@ -340,13 +610,16 @@ function CallSummaryShell({
   onStartNewCall: () => void;
   children: ReactNode;
 }): ReactElement {
+  const viewMode = useCallStore((state) => state.viewMode);
+  const setHistoryView = useCallStore((state) => state.setHistoryView);
+  const isHistory = viewMode === "history";
   return (
     <main className="wrapup call-summary">
       <div className="wrapup-topbar">
         <header className="wrapup-inner wrapup-head">
           <div>
-            <p className="wrapup-eyebrow">통화 종료</p>
-            <h2>통화 후 처리</h2>
+            <p className="wrapup-eyebrow">{isHistory ? "상담기록" : "통화 종료"}</p>
+            <h2>{isHistory ? "지난 통화 요약" : "통화 후 처리"}</h2>
           </div>
           <div className="wrapup-actions">
             <button
@@ -357,12 +630,25 @@ function CallSummaryShell({
             >
               <DismissIcon />
             </button>
+            {isHistory ? (
+              <button
+                type="button"
+                className="btn-outline"
+                onClick={() => {
+                  setHistoryView("transcript");
+                }}
+              >
+                자막 보기
+              </button>
+            ) : null}
             <button type="button" className="btn-outline" onClick={onClose}>
               돌아가기
             </button>
-            <button type="button" className="btn-replay" onClick={onStartNewCall}>
-              새 통화 시작
-            </button>
+            {isHistory ? null : (
+              <button type="button" className="btn-replay" onClick={onStartNewCall}>
+                새 통화 시작
+              </button>
+            )}
           </div>
         </header>
       </div>

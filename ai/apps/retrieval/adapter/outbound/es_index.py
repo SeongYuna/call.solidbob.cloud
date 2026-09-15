@@ -119,34 +119,58 @@ def build_settings() -> dict[str, Any]:
     }
 
 
-def build_mapping() -> dict[str, Any]:
+# 임베딩 필드. KoE5 1024차원(`decisions/010`) — **바꾸면 재적재다**(ES 는 dims 변경을 허용하지 않는다).
+EMBEDDING_FIELD = "embedding"
+EMBEDDING_DIMS = 1024
+
+
+def build_mapping(*, embedding_dims: int | None = None) -> dict[str, Any]:
     """지금 적재하는 것만 넣는다.
 
     `doc_id` 는 반드시 `keyword` 다 — 평가 하네스가 이 값을 **정확 일치**로 대조한다
     (`evaluation/metrics/retrieval.py`). `text` 로 분석되면 채점이 조용히 깨진다.
 
-    임베딩(`dense_vector`, KoE5 1024차원)은 아직 넣지 않는다. 4주차에 임베딩을 실제로 만들 때
-    매핑을 늘리고 재적재한다 — 102건 재적재는 순식간이라 미리 잡아둘 이유가 없다.
+    임베딩(`dense_vector`)은 `embedding_dims` 를 줄 때만 넣는다(2026-09-15, `w4-dense-vector-index`).
+    **임베딩 없이도 BM25 인덱스는 그대로 만들어진다** — 운영 서버 파드처럼 torch·모델이 없는 곳에서
+    적재할 때(런북 15-1) 검색이 통째로 못 뜨면 안 된다. 유사도는 `cosine` 이다 — KoE5 출력을
+    정규화해서 넣으므로 `dot_product` 와 순위가 같지만, 정규화를 빠뜨린 벡터가 들어와도 틀린 값을 내지 않는다.
     """
-    return {
-        "properties": {
-            "chunk_id": {"type": "keyword"},
-            "doc_id": {"type": "keyword"},
-            "domain": {"type": "keyword"},
-            "doc_type": {"type": "keyword"},
-            "title": {"type": "text", "analyzer": "korean"},
-            "text": {"type": "text", "analyzer": "korean"},
-            "part": {"type": "integer"},
-        },
+    properties: dict[str, Any] = {
+        "chunk_id": {"type": "keyword"},
+        "doc_id": {"type": "keyword"},
+        "domain": {"type": "keyword"},
+        "doc_type": {"type": "keyword"},
+        "title": {"type": "text", "analyzer": "korean"},
+        "text": {"type": "text", "analyzer": "korean"},
+        "part": {"type": "integer"},
     }
+    if embedding_dims is not None:
+        properties[EMBEDDING_FIELD] = {
+            "type": "dense_vector",
+            "dims": embedding_dims,
+            "index": True,
+            "similarity": "cosine",
+        }
+    return {"properties": properties}
 
 
-def to_source(chunk: Chunk) -> dict[str, Any]:
+def embedding_input(chunk: Chunk) -> str:
+    """청크 → 임베딩에 넣을 문자열. **제목을 앞에 붙인다** — BM25 가 `title`·`text` 두 필드를 보는 것과
+    같은 정보를 쓰게 한다. 한쪽만 제목을 보면 비교가 «검색 방식» 이 아니라 «입력» 차이가 된다."""
+    return f"{chunk.title}\n{chunk.text}"
+
+
+def to_source(chunk: Chunk, embedding: list[float] | None = None) -> dict[str, Any]:
     """청크 → 색인 문서 본문. 두 레이아웃이 같은 문서를 쓴다."""
-    return {f: getattr(chunk, f) for f in _SOURCE_FIELDS}
+    doc = {f: getattr(chunk, f) for f in _SOURCE_FIELDS}
+    if embedding is not None:
+        doc[EMBEDDING_FIELD] = embedding
+    return doc
 
 
-def create_indices(client: Any, layout: Layout, *, recreate: bool = False) -> list[str]:
+def create_indices(
+    client: Any, layout: Layout, *, recreate: bool = False, embedding_dims: int | None = None
+) -> list[str]:
     """레이아웃의 인덱스를 만든다. 이미 있으면 건너뛴다(`recreate=True` 면 지우고 다시).
 
     client 는 주입받는다 — `elasticsearch` 를 이 모듈이 직접 import 하지 않으므로 패키지가
@@ -158,12 +182,20 @@ def create_indices(client: Any, layout: Layout, *, recreate: bool = False) -> li
         if recreate:
             client.indices.delete(index=name, ignore_unavailable=True)
         if not client.indices.exists(index=name):
-            client.indices.create(index=name, settings=build_settings(), mappings=build_mapping())
+            client.indices.create(
+                index=name, settings=build_settings(), mappings=build_mapping(embedding_dims=embedding_dims)
+            )
             created.append(name)
     return created
 
 
-def index_chunks(client: Any, chunks: list[Chunk], layout: Layout) -> dict[str, int]:
+def index_chunks(
+    client: Any,
+    chunks: list[Chunk],
+    layout: Layout,
+    *,
+    embeddings: dict[str, list[float]] | None = None,
+) -> dict[str, int]:
     """청크를 적재하고 인덱스별 문서 수를 돌려준다.
 
     **재적재가 재현된다** — `_id` 를 `chunk_id` 로 고정한 `index` 연산(upsert)이라 같은 입력을
@@ -177,10 +209,16 @@ def index_chunks(client: Any, chunks: list[Chunk], layout: Layout) -> dict[str, 
     if not chunks:
         raise ValueError("적재할 청크가 없다")
 
+    if embeddings is not None:
+        missing = [c.chunk_id for c in chunks if c.chunk_id not in embeddings]
+        if missing:
+            # 일부만 벡터가 있으면 kNN 이 그 조항을 **아예 못 찾는다** — 점수가 낮은 게 아니라 후보에서 빠진다.
+            raise ValueError(f"임베딩이 없는 청크 {len(missing)}건 — 첫 건: {missing[0]}")
+
     operations: list[dict[str, Any]] = []
     for c in chunks:
         operations.append({"index": {"_index": index_name_for(c, layout), "_id": c.chunk_id}})
-        operations.append(to_source(c))
+        operations.append(to_source(c, embeddings.get(c.chunk_id) if embeddings else None))
 
     resp = client.bulk(operations=operations, refresh=True)
     if resp.get("errors"):
@@ -192,3 +230,36 @@ def index_chunks(client: Any, chunks: list[Chunk], layout: Layout) -> dict[str, 
         raise RuntimeError(f"색인 실패 {len(failed)}건 — 첫 건: {failed[0] if failed else '?'}")
 
     return {name: client.count(index=name)["count"] for name in index_names(layout)}
+
+
+def create_named_index(
+    client: Any, name: str, *, recreate: bool = False, embedding_dims: int | None = None
+) -> bool:
+    """레이아웃과 무관한 이름으로 인덱스 하나를 만든다 — **실험용**(청킹 비교 `w4-chunking-compare`).
+
+    ⚠ 이름이 `callguard-kb-` 로 시작하면 운영 레이아웃의 와일드카드(`callguard-kb-*`)에 섞인다. 막는다.
+    """
+    if name.startswith(INDEX_PREFIX + "-"):
+        raise ValueError(f"실험 인덱스는 {INDEX_PREFIX}- 로 시작할 수 없다: {name}")
+    if recreate:
+        client.indices.delete(index=name, ignore_unavailable=True)
+    if client.indices.exists(index=name):
+        return False
+    client.indices.create(index=name, settings=build_settings(), mappings=build_mapping(embedding_dims=embedding_dims))
+    return True
+
+
+def index_into(
+    client: Any, name: str, chunks: list[Chunk], *, embeddings: dict[str, list[float]] | None = None
+) -> int:
+    """`index_chunks` 와 같되 인덱스 이름을 직접 받는다. 적재 후 문서 수."""
+    if not chunks:
+        raise ValueError("적재할 청크가 없다")
+    operations: list[dict[str, Any]] = []
+    for c in chunks:
+        operations.append({"index": {"_index": name, "_id": c.chunk_id}})
+        operations.append(to_source(c, embeddings.get(c.chunk_id) if embeddings else None))
+    resp = client.bulk(operations=operations, refresh=True)
+    if resp.get("errors"):
+        raise RuntimeError("색인 실패 — bulk 응답의 errors 가 true")
+    return client.count(index=name)["count"]

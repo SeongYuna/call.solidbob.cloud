@@ -110,3 +110,22 @@ def test_콜_가드_프로바이더는_포트를_만족하고_위치를_채운�
     flags = asyncio.run(port.detect("이런 병신 같은"))
     assert flags, "사전에 있는 욕설을 못 잡았다"
     assert all(f.span is not None and "이런 병신 같은"[f.span[0]:f.span[1]] == f.phrase for f in flags)
+
+
+def test_model_retriever_without_embed_model_is_bm25():
+    from provider import build_model_retriever
+    from retrieval.adapter.outbound.es_bm25_retriever import EsBm25Retriever
+
+    port, layers = build_model_retriever(FakeClient(), embed_model_dir=None)
+    assert isinstance(port, EsBm25Retriever) and layers == []
+
+
+def test_model_retriever_missing_model_falls_back_to_bm25(tmp_path):
+    """모델 디렉터리가 틀려도 서버는 뜬다 — 검색이 통째로 못 뜨는 것보다 BM25 가 낫다(decisions/206)."""
+    from provider import build_model_retriever
+    from retrieval.adapter.outbound.es_bm25_retriever import EsBm25Retriever
+
+    port, layers = build_model_retriever(
+        FakeClient(), embed_model_dir=tmp_path / "없음", rerank_model_dir=tmp_path / "없음"
+    )
+    assert isinstance(port, EsBm25Retriever) and layers == []

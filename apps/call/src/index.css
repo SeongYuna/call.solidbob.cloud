@@ -2919,6 +2919,16 @@ button {
   color: inherit;
   font: inherit;
 }
+.admin-settings-field textarea {
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border, rgba(127, 127, 127, 0.35));
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  resize: vertical;
+}
 
 /* --- ?gateway= 런타임 오버라이드 배너 (2026-09-14) — 눈에 띄게, 해제 가능하게 --- */
 .gateway-override-banner {

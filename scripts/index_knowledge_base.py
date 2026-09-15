@@ -21,6 +21,13 @@ ES 적재(2026-08-27 추가). 기본은 `single` — 인덱스 하나 + `domain`
     .venv/bin/python scripts/index_knowledge_base.py --to-es --layout per-domain --recreate
 
 `--to-es` 없이 돌리면 예전과 똑같이 요약(과 `--out` 덤프)만 낸다.
+
+**임베딩(2026-09-15, `w4-dense-vector-index`)** — `--to-es` 가 본문과 KoE5 임베딩을 **한 번에** 넣는다.
+모델(`models/koe5`)이나 torch 가 없으면 **BM25 만 적재하고 그 사실을 찍는다** — 운영 서버 파드(런북 15-1)는
+torch 가 없어 이 경로로 간다. 벡터 없는 인덱스에서 dense·하이브리드 검색은 결과가 0건이다.
+
+    .venv/bin/python scripts/index_knowledge_base.py --to-es --recreate               # 본문 + 임베딩
+    .venv/bin/python scripts/index_knowledge_base.py --to-es --recreate --no-embed    # BM25 만
 """
 
 from __future__ import annotations
@@ -77,6 +84,10 @@ def main() -> int:
         help="single(기본): 한 인덱스 + domain 필터 / per-domain: 도메인별 인덱스 4개 (전환 대비)",
     )
     ap.add_argument("--recreate", action="store_true", help="인덱스를 지우고 다시 만든다")
+    ap.add_argument("--embed-model", type=Path, default=ROOT / "models" / "koe5",
+                    help="KoE5 모델 디렉터리 (decisions/010). 없으면 BM25 만 적재한다")
+    ap.add_argument("--no-embed", action="store_true", help="임베딩 없이 BM25 필드만 적재한다")
+    ap.add_argument("--device", default=None, help="임베딩 장치 (기본 cpu — mps·cuda 는 명시)")
     args = ap.parse_args()
 
     if (args.recreate or args.layout != "single") and not args.to_es:
@@ -105,8 +116,12 @@ def main() -> int:
 
     if args.to_es:
         client = _es_client()
-        created = es_index.create_indices(client, args.layout, recreate=args.recreate)
-        counts = es_index.index_chunks(client, chunks, args.layout)
+        embeddings = None if args.no_embed else _embed(chunks, args.embed_model, args.device)
+        dims = es_index.EMBEDDING_DIMS if embeddings is not None else None
+        if embeddings is not None and not args.recreate:
+            _check_existing_mapping(client, args.layout)
+        created = es_index.create_indices(client, args.layout, recreate=args.recreate, embedding_dims=dims)
+        counts = es_index.index_chunks(client, chunks, args.layout, embeddings=embeddings)
         print(f"\nES 적재 — 레이아웃 {args.layout}")
         if created:
             print(f"  생성된 인덱스: {', '.join(created)}")
@@ -117,6 +132,43 @@ def main() -> int:
             print(f"  ⚠ 청크 {len(chunks)}개인데 색인 문서는 {total}건이다")
             return 1
     return 0
+
+
+def _embed(chunks, model_dir: Path, device: str | None) -> dict[str, list[float]] | None:
+    """청크 전부를 임베딩한다. 모델·torch 가 없으면 None — 호출부가 BM25 만 적재한다."""
+    if not (model_dir / "config.json").exists():
+        print(f"\n⚠ 임베딩 모델이 없다({model_dir}) — BM25 필드만 적재한다. dense·하이브리드 검색은 0건이 된다")
+        return None
+    try:
+        from retrieval.adapter.outbound.koe5_embedder import KoE5Embedder
+        embedder = KoE5Embedder(model_dir, device=device)
+    except ModuleNotFoundError as e:
+        print(f"\n⚠ 임베딩 의존성이 없다({e.name}) — BM25 필드만 적재한다")
+        return None
+
+    texts = [es_index.embedding_input(c) for c in chunks]
+    lengths = embedder.token_lengths(texts)
+    # ⚠ 128 은 KoE5 의 상한이 아니다 — decisions/010 이 옛 후보(ko-sroberta, max_seq_length 128)에 적은 값이다.
+    #   티켓이 그 숫자로 적어 둬서 둘 다 센다. KoE5 에서 실제로 잘리는 것은 512 초과분뿐이다.
+    over128 = sum(1 for n in lengths if n > 128)
+    over512 = sum(1 for n in lengths if n > 512)
+    vectors = embedder.embed_passages(texts)
+    print(f"\n임베딩 {embedder.model_name} · {len(vectors)}건 · {len(vectors[0])}차원 · 장치 {embedder.device}")
+    print(f"  토큰 수(접두어 포함): 최대 {max(lengths)} · 128 초과 {over128}건 · 512 초과(실제 잘림) {over512}건")
+    return {c.chunk_id: v for c, v in zip(chunks, vectors)}
+
+
+def _check_existing_mapping(client, layout) -> None:
+    """이미 있는 인덱스에 벡터를 넣으려면 매핑에 `dense_vector` 가 있어야 한다.
+
+    없는 채로 넣으면 ES 가 `embedding` 을 **float 배열로 동적 매핑**해 적재는 성공하고 kNN 만 조용히 실패한다.
+    """
+    for name in es_index.index_names(layout):
+        if not client.indices.exists(index=name):
+            continue
+        props = client.indices.get_mapping(index=name)[name]["mappings"].get("properties", {})
+        if props.get(es_index.EMBEDDING_FIELD, {}).get("type") != "dense_vector":
+            raise SystemExit(f"{name} 에 dense_vector 매핑이 없다 — --recreate 로 다시 만든다")
 
 
 if __name__ == "__main__":
