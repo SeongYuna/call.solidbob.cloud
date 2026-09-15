@@ -16,7 +16,7 @@ import type {
   BlacklistEvidence,
   BlacklistRequestItem,
 } from "../types/contract";
-import { getHistoryPlayback } from "../lib/api/coreClient";
+import { createBlacklistRequest, getHistoryPlayback, isCoreApiConfigured } from "../lib/api/coreClient";
 import { getScenarioById } from "../mock/scenarios";
 import type { GatewayMode } from "../lib/ws";
 import { sliceByCodepoints } from "../lib/text/codepoints";
@@ -149,7 +149,7 @@ export interface CallState {
   endCall: () => void;
   resumeCall: () => void;
   applyClosure: (event: ClosureEvent) => void;
-  settleClosure: (closureType: ClosureEvent["closure_type"]) => void;
+  settleClosure: (procedure: ClosureEvent["procedure"]) => void;
   setStatus: (mode: GatewayMode, connected: boolean) => void;
   setError: (message: string) => void;
   applyTranslation: (
@@ -169,7 +169,12 @@ export interface CallState {
     options?: { returnTo?: SummaryReturn },
   ) => void;
   resumeLive: () => void;
-  /** J-1 — 상담원이 전환 요청을 올린다. **항상 `pending` 으로 들어간다.** */
+  /**
+   * J-1 — 상담원이 전환 요청을 올린다. **항상 `pending` 으로 들어간다.**
+   * `VITE_CORE_API_URL`이 있으면 `POST /hub/blacklist-requests`(실제)를 부르고,
+   * 없으면 로컬에서 합성한다(mock). 실패하면 상태를 바꾸지 않고 그대로 던진다 —
+   * 호출부(`BlacklistRequestButton`)가 화면에 실패를 보여준다(빈 성공으로 위장하지 않는다).
+   */
   submitBlacklistRequest: (input: {
     callId: string;
     customerRef: string;
@@ -178,7 +183,7 @@ export interface CallState {
     reason: string;
     contextExcerpt: string;
     evidence: BlacklistEvidence;
-  }) => void;
+  }) => Promise<void>;
   /** J-4 — 관리자 판단. 승인이면 등록까지 이어진다. */
   decideBlacklistRequest: (
     requestId: string,
@@ -237,7 +242,7 @@ function isAuto(item: PanelCard): boolean {
  */
 function attachIndex(cards: PanelCard[], event: ClosureEvent): number {
   const sameType = cards.findIndex(
-    (item) => item.closure?.closure_type === event.closure_type,
+    (item) => item.closure?.procedure === event.procedure,
   );
   if (sameType !== -1) {
     return sameType;
@@ -393,7 +398,7 @@ export const useCallStore = create<CallState>((set) => ({
       ];
       if (state.closure !== null) {
         const attached = cards.some(
-          (item) => item.closure?.closure_type === state.closure?.closure_type,
+          (item) => item.closure?.procedure === state.closure?.procedure,
         );
         if (!attached) {
           cards = withClosure(cards, state.closure);
@@ -443,10 +448,10 @@ export const useCallStore = create<CallState>((set) => ({
     }));
   },
 
-  settleClosure: (closureType) => {
+  settleClosure: (procedure) => {
     set((state) => ({
       cards: state.cards.map((item) =>
-        item.closure?.closure_type === closureType
+        item.closure?.procedure === procedure
           ? { ...item, settled: true }
           : item,
       ),
@@ -591,7 +596,18 @@ export const useCallStore = create<CallState>((set) => ({
   //    두지 않는다 — 기분 상한 통화 한 건으로 고객이 영구히 표시되고, 그 판단을
   //    검토한 사람이 아무도 없게 된다. 서버 쪽에서도 도메인 규칙이 같은 것을 막는다
   //    (`server/apps/blacklist/domain/services/transitions.py`).
-  submitBlacklistRequest: (input) => {
+  submitBlacklistRequest: async (input) => {
+    if (isCoreApiConfigured()) {
+      const { request } = await createBlacklistRequest({
+        callId: input.callId,
+        requestedBy: input.requestedBy,
+        reason: input.reason,
+      });
+      set((state) => ({
+        blacklistRequests: [request, ...state.blacklistRequests],
+      }));
+      return;
+    }
     const now = new Date().toISOString();
     set((state) => ({
       blacklistRequests: [

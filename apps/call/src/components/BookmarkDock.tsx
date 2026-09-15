@@ -20,7 +20,7 @@ export function BookmarkDock({ onJump }: BookmarkDockProps): ReactElement | null
   return (
     <div className="progress-tabs" role="tablist" aria-label="진행 중인 필요서류">
       {tabs.map(({ item, index }) => {
-        const type = item.closure?.closure_type ?? "";
+        const type = item.closure?.procedure_title ?? item.closure?.procedure ?? "";
         return (
           <button
             key={`${type}-${index}`}

@@ -6,7 +6,6 @@
 import type {
   BlacklistEntryItem,
   BlacklistRequestItem,
-  CallGuardLogEntry,
   KnowledgeGapEntry,
 } from "../types/blacklist";
 
@@ -83,10 +82,3 @@ export const SEED_KNOWLEDGE_GAP_LOG: KnowledgeGapEntry[] = [
   { call_id: "c_seed_6", query: "주민등록등본 발급 수수료", found: true, logged_at: "2026-09-09T12:00:00+09:00" },
 ];
 
-export const SEED_CALL_GUARD_LOG: CallGuardLogEntry[] = [
-  { call_id: "c_seed_1", category: "욕설", detected_at: "2026-09-10T09:05:00+09:00" },
-  { call_id: "c_seed_1", category: "위협", detected_at: "2026-09-10T09:08:00+09:00" },
-  { call_id: "c_seed_7", category: "폭언", detected_at: "2026-09-08T16:00:00+09:00" },
-];
-
-export const SEED_COMPLETED_CALLS_TOTAL = 24;

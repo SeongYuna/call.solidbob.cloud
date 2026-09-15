@@ -33,16 +33,14 @@ export const SECTION_73_RECOMMENDATION: RecommendationBatch = {
   internal_latency_ms: 780,
 };
 
+/** `server/apps/hub/app/dtos/closure_verdict_dto.py`의 7.3절 rev.5 예시를 그대로 옮겼다(`decisions/305`). */
 export const SECTION_73_CLOSURE: ClosureEvent = {
   call_id: "c_001",
-  closure_type: "상품해지",
-  reason: "고지 완료",
-  evidence: {
-    중도해지수수료_안내: true,
-    약정혜택소멸_안내: false,
-    고객확인_기록: false,
-  },
-  verdict: "blocked",
-  missing: ["약정혜택소멸_안내", "고객확인_기록"],
-  source: { doc_id: "POLICY-CANCEL-1", title: "응대매뉴얼 7장" },
+  procedure: "DASAN-TERM-4.3",
+  procedure_title: "주민등록초본 발급",
+  evidence: { 신분증: false },
+  verdict: "incomplete",
+  missing: ["신분증"],
+  source: { doc_id: "DASAN-TERM-4.3", title: "주민등록초본 발급 — 필요서류" },
+  detected: true,
 };

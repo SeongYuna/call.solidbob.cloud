@@ -10,17 +10,13 @@ import type {
 } from "../../types/contract";
 
 /**
- * C-6 갈래 → 근거 항목. 프론트 임시 계약은 한글 3종(`폭언`·`욕설`·`위협`)이고
- * 백엔드는 4종(`insult`·`threat`·`sexual`·`distress`)이다.
+ * C-6 갈래 → 근거 항목. `CallGuardFlag.category`가 백엔드 4종
+ * (`insult`·`threat`·`sexual`·`distress`)으로 통일됐다(2026-09-15, 옛 한글 3종 걷어냄).
  *
- * ⚠ **프론트에 `distress` 가 없다.** 위기 신호는 화면 대응이 반대라(끊지 않고 연결)
- * 그냥 매핑할 수 없다 — 계약을 맞출 때 정해야 한다([미결 항목](/open-items/)).
- * 지금은 백엔드 갈래가 들어오면 그대로 세고, 한글 3종은 아래 표로 옮긴다.
+ * `distress`는 `distress_count`로만 쌓인다 — `abuseTotal()`이 셋에서 뺀다.
+ * 위기 신호는 화면 대응이 반대라(끊지 않고 연결) 폭언과 합산하지 않는다.
  */
 const CATEGORY_TO_FIELD: Record<string, keyof BlacklistEvidence> = {
-  욕설: "insult_count",
-  폭언: "insult_count",
-  위협: "threat_count",
   insult: "insult_count",
   threat: "threat_count",
   sexual: "sexual_count",
