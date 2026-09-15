@@ -35,52 +35,62 @@ export function AgentCallBox(): ReactElement {
   }
 
   return (
-    <aside className="agent-call-box" role="complementary" aria-label="고객과 전화하기">
-      <header className="agent-call-head">
-        <p className="agent-call-title">
-          <span className={`agent-call-dot${active ? " live" : ""}`} aria-hidden="true" />
-          고객과 전화하기
+    // 2026-09-15 — 우하단 토스트에서 중앙 모달로 전환. 전화는 반드시 응답/거절해야 하는
+    // 이벤트라 배경을 눌러도 닫히지 않는다(ConfirmDialog와 달리 onClick으로 닫지 않음).
+    // 배경 전체를 덮는 것만으로 뒤 패널의 클릭·스크롤이 막힌다(포인터가 이 레이어에서 멎는다).
+    <div className="agent-call-backdrop" role="presentation">
+      <aside
+        className="agent-call-box"
+        role="dialog"
+        aria-modal="true"
+        aria-label="고객과 전화하기"
+      >
+        <header className="agent-call-head">
+          <p className="agent-call-title">
+            <span className={`agent-call-dot${active ? " live" : ""}`} aria-hidden="true" />
+            고객과 전화하기
+          </p>
+          <p className="agent-call-clock">{formatClock(elapsedSeconds)}</p>
+        </header>
+
+        <div className="agent-call-body">
+          {status === "idle" || status === "ended" ? (
+            <p className="agent-call-hint">
+              통화를 시작하면 마이크로 말하는 내용이 실시간 텍스트로 여기에 표시됩니다.
+            </p>
+          ) : status === "no-token" ? (
+            <p className="agent-call-hint">
+              이 기능은 팀 내부 테스트용입니다. 지금 이 브라우저는 테스트 권한(팀 전용
+              링크)이 없어 실제로 연결되지 않습니다.
+            </p>
+          ) : status === "unsupported" ? (
+            <p className="agent-call-hint">이 브라우저는 음성 인식을 지원하지 않습니다. 크롬으로 열어주세요.</p>
+          ) : status === "connecting" ? (
+            <p className="agent-call-hint">연결하는 중…</p>
+          ) : status === "error" ? (
+            <p className="agent-call-hint">{errorMessage ?? "연결에 실패했습니다."}</p>
+          ) : turns.length === 0 ? (
+            <p className="agent-call-hint">마이크에 대고 말씀하시면 여기에 표시됩니다.</p>
+          ) : (
+            <ul className="agent-call-turns">
+              {turns.map((turn) => (
+                <li key={turn.id} className={turn.interim ? "interim" : undefined}>
+                  {turn.interim ? `… ${turn.text}` : `“${turn.text}”`}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+
+        <p className="agent-call-note">
+          브라우저 내장 음성 인식만 사용합니다 — 원본 음성은 저장·전송되지 않고, 인식된
+          텍스트만 마스킹을 거쳐 처리됩니다.
         </p>
-        <p className="agent-call-clock">{formatClock(elapsedSeconds)}</p>
-      </header>
 
-      <div className="agent-call-body">
-        {status === "idle" || status === "ended" ? (
-          <p className="agent-call-hint">
-            통화를 시작하면 마이크로 말하는 내용이 실시간 텍스트로 여기에 표시됩니다.
-          </p>
-        ) : status === "no-token" ? (
-          <p className="agent-call-hint">
-            이 기능은 팀 내부 테스트용입니다. 지금 이 브라우저는 테스트 권한(팀 전용
-            링크)이 없어 실제로 연결되지 않습니다.
-          </p>
-        ) : status === "unsupported" ? (
-          <p className="agent-call-hint">이 브라우저는 음성 인식을 지원하지 않습니다. 크롬으로 열어주세요.</p>
-        ) : status === "connecting" ? (
-          <p className="agent-call-hint">연결하는 중…</p>
-        ) : status === "error" ? (
-          <p className="agent-call-hint">{errorMessage ?? "연결에 실패했습니다."}</p>
-        ) : turns.length === 0 ? (
-          <p className="agent-call-hint">마이크에 대고 말씀하시면 여기에 표시됩니다.</p>
-        ) : (
-          <ul className="agent-call-turns">
-            {turns.map((turn) => (
-              <li key={turn.id} className={turn.interim ? "interim" : undefined}>
-                {turn.interim ? `… ${turn.text}` : `“${turn.text}”`}
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
-
-      <p className="agent-call-note">
-        브라우저 내장 음성 인식만 사용합니다 — 원본 음성은 저장·전송되지 않고, 인식된
-        텍스트만 마스킹을 거쳐 처리됩니다.
-      </p>
-
-      <button type="button" className="agent-call-toggle" onClick={handleToggle}>
-        {active || status === "connecting" ? "통화 종료" : "통화 시작"}
-      </button>
-    </aside>
+        <button type="button" className="agent-call-toggle" onClick={handleToggle}>
+          {active || status === "connecting" ? "통화 종료" : "통화 시작"}
+        </button>
+      </aside>
+    </div>
   );
 }

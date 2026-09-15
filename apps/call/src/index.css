@@ -2972,21 +2972,30 @@ button {
 }
 
 /* --- "고객과 전화하기" 상담원 마이크 박스 (2026-09-14, AgentCallBox) — 대기화면을
-   지나면 화면 우하단에 고정된다. 팀 전용 테스트, 음성은 녹음·전송하지 않는다. --- */
-.agent-call-box {
+   지나면 화면 정중앙에 모달로 뜬다(2026-09-15, 우하단 토스트에서 전환 — 필요서류
+   카드·하단 상태바와 겹쳐 보이던 문제). 팀 전용 테스트, 음성은 녹음·전송하지 않는다. --- */
+.agent-call-backdrop {
   position: fixed;
-  right: 20px;
-  bottom: 20px;
+  inset: 0;
   z-index: 40;
-  width: min(320px, calc(100vw - 40px));
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(20, 20, 18, 0.5);
+  animation: agent-call-backdrop-in 180ms ease-out;
+}
+
+.agent-call-box {
+  width: min(440px, 100%);
   display: flex;
   flex-direction: column;
   gap: 10px;
-  padding: 16px;
+  padding: 20px;
   border-radius: var(--radius-card);
   background: var(--shell);
   border: 1px solid var(--line);
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.18);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.25);
+  animation: agent-call-box-in 180ms ease-out;
 }
 
 .agent-call-head {
@@ -3093,12 +3102,29 @@ button {
   }
 }
 
+@keyframes agent-call-backdrop-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes agent-call-box-in {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
 @media (max-width: 640px) {
-  .agent-call-box {
-    right: 12px;
-    bottom: 12px;
-    left: 12px;
-    width: auto;
+  .agent-call-backdrop {
+    padding: 16px;
   }
 }
 
