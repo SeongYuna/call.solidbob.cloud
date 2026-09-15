@@ -59,14 +59,44 @@ def test_DB가_없으면_로그_어댑터로_떨어져도_200이다(monkeypatch)
     assert r.status_code == 200 and r.json()["created"] == "true"
 
 
+# 응답에 실리는 필드 전부. 여기 없는 이름이 생기면 「번호를 담을 자리」가 하나 늘어난 것이라
+# 이 테스트가 먼저 깨진다 — 늘릴 때 SEC-1 을 한 번 더 보라는 뜻이다.
+_RESPONSE_FIELDS = {
+    "call_id", "domain", "stt_engine", "channel_count",
+    "started_at", "status", "created", "customer_linked",
+}
+
+
 def test_발신_번호는_식별자로만_남고_응답에_번호도_식별자도_없다(monkeypatch):
+    """SEC-1 · `decisions/304` — 평문 번호도, 그것으로 만든 식별자도 응답에 싣지 않는다.
+
+    ⚠ **`started_at` 을 고정해서 부른다.** 서버가 시각을 채우게 두면 마이크로초가 매번 달라지고,
+    번호 조각을 `r.text` 에서 찾는 검사가 **타임스탬프와 우연히 겹쳐** 깨진다 —
+    2026-09-15 CI 에서 실제로 났다(`...01:16:44.412342Z` 의 `412342` 안에 `1234` 가 있다).
+    """
     monkeypatch.setenv("CUSTOMER_REF_HMAC_KEY", "test-key")
     record = _SpyRecord()
-    r = _post({"call_id": "test-c7", "caller_phone": "010-1234-5678"}, record)
+    r = _post(
+        {"call_id": "test-c7", "caller_phone": "010-1234-5678",
+         "started_at": "2026-09-15T00:00:00Z"},
+        record,
+    )
     assert r.status_code == 200
-    assert r.json()["customer_linked"] == "true"
-    assert "1234" not in r.text and record.calls[0].customer_id not in r.text
-    assert len(record.calls[0].customer_id) == 64
+    body = r.json()
+    assert body["customer_linked"] == "true"
+
+    # ① 담을 자리가 늘지 않았는가
+    assert set(body) == _RESPONSE_FIELDS
+
+    # ② 번호가 **어떤 표기로도** 새지 않는가. 네 자리 조각(`1234`)이 아니라 번호 전체를 본다 —
+    #    조각 검사는 «번호가 샜다» 말고 **타임스탬프 같은 무관한 숫자에도 걸린다.**
+    #    탐지력이 약해서가 아니라 **거짓 양성** 때문에 바꿨다(조각 검사도 유출 자체는 잡았다).
+    customer_id = record.calls[0].customer_id
+    for leaked in ("010-1234-5678", "01012345678", "+821012345678", customer_id):
+        assert leaked not in r.text
+
+    # ③ 저장 쪽에는 식별자만 남는다
+    assert len(customer_id) == 64 and customer_id != "010-1234-5678"
 
 
 def test_HMAC_키가_없으면_통화는_열리고_고객만_잇지_않는다():
