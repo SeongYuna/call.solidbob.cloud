@@ -15,8 +15,13 @@
 # (../server/apps 를 올리는 이유: evaluation 이 hub 의 포트·DTO 를 import 한다.
 #  의존 방향은 ai → server 한쪽뿐이며, 반대는 server/.importlinter 계약 2 가 막는다.)
 # 모듈을 새로 만들면 root_packages 와 계약 1·2 의 목록에 이름을 추가한다.
-# 예정: generation(B-4~B-6) · compliance(C-1~C-4) · orchestration(랭그래프)
+# 예정: orchestration(랭그래프)
+# postcall_summary(D-1 모델 요약·D-2 유형 제안)는 2026-09-15 — server/apps/postcall(규칙 발췌) 위에 얹는다. 이름이 겹치지 않게 `postcall` 이 아니다
+# compliance(C-1~C-4)는 2026-09-15 — 규칙 v1(응대 매뉴얼 조항). 분류기(KcELECTRA)가 오면 어댑터를 갈아끼운다
+# generation(B-4 서류 목록)은 2026-09-15 — Ollama 를 urllib 로 부르고 규칙이 근거 대조한다. domain 은 순수 파이썬
 # call_guard(C-6)는 2026-09-09 에 추가됐다 — 고객 폭언·위기 신호. C-1~C-4 와 화자가 반대다
+# pii_ner(C-5 P6·P7 NER)는 2026-09-15 — 규칙 마스킹(server/apps/masking) 위에 얹는 두 번째 겹. 이름이 `masking` 이
+#   아닌 이유: server/main.py·run_eval.py 가 ai/apps 와 server/apps 를 함께 경로에 올려 같은 이름이면 서버 쪽이 가려진다
 # voice_signal(D-5)도 2026-09-09 — 통화 온도. numpy 만 쓰고 모델이 없어 계약 3 을 그대로 통과한다
 #       training(모델 학습)은 B-0 소멸로 2026-08-28 삭제 — 언어 판별을 시작할 때 git 이력에서 되살린다
 # =============================================================================
@@ -24,7 +29,11 @@
 [importlinter]
 root_packages =
     call_guard
+    compliance
     evaluation
+    generation
+    pii_ner
+    postcall_summary
     retrieval
     voice_signal
 include_external_packages = True
@@ -44,7 +53,11 @@ layers =
     (domain)
 containers =
     call_guard
+    compliance
     evaluation
+    generation
+    pii_ner
+    postcall_summary
     retrieval
     voice_signal
 
@@ -59,7 +72,11 @@ name = 모듈 상호 독립 (ai 모듈 ↔ 모듈 직접 참조 금지)
 type = independence
 modules =
     call_guard
+    compliance
     evaluation
+    generation
+    pii_ner
+    postcall_summary
     retrieval
     voice_signal
 
@@ -74,7 +91,11 @@ name = 도메인 순수성 (domain·evaluation → 프레임워크·모델 라�
 type = forbidden
 source_modules =
     call_guard.domain
+    compliance.domain
     evaluation
+    generation.domain
+    pii_ner.domain
+    postcall_summary.domain
     retrieval.domain
     voice_signal.domain
 forbidden_modules =
