@@ -1441,6 +1441,10 @@ curl -fsS $B/hub/calls/$C/transcript
 > ⚠ **같은 이미지는 DB 스키마도 바뀐다**(`decisions/307`) — `agent_token` 신설(25 → 26 테이블). **이미지를 올리기 전에**
 > `db/migrations/2026-09-15-agent-token.sql` 을 넣는다(09-14 마이그레이션이 먼저 들어가 있어야 한다 — 파일이 확인하고 멈춘다).
 > 안 넣으면 `POST /hub/blacklist-requests` 와 `/admin/agent-tokens` 가 500(`42P01`)이다. 6번 기대값도 26 이 된다.
+>
+> ⚠ **`0.1.9` 도 스키마가 바뀐다**(`decisions/309`) — `blacklist_entry_expiry_change` 신설(26 → 27). **이미지를 올리기 전에**
+> `db/migrations/2026-09-15-blacklist-expiry-change.sql` 을 넣는다(`agent_token` 마이그레이션이 먼저여야 한다 — 파일이 확인하고 멈춘다).
+> 안 넣으면 만료 연장·단축(`…/expiry`·`…/expiry-changes`)만 500 이고 다른 경로는 영향 없다. 6번 기대값은 27.
 
 > ⚠ **`0.1.5` 는 DB 스키마가 바뀐다**(2026-09-14, `decisions/304`·`305`) — `customer_id` 길이 64 · `admin_account.agent_id` ·
 > `closure` 재정의 + `closure_item`. 17장대로 **이미지를 올리기 전에** 스키마를 넣는다. **데이터가 있는 운영 DB 에는 `schema.sql` 이 아니라
