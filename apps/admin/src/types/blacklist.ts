@@ -29,7 +29,8 @@ export interface BlacklistRequestItem {
   call_id: string;
   /** ⚠ 전화번호의 HMAC. 평문이 아니다(`decisions/205` ③). */
   customer_ref: string;
-  display_hint: string;
+  /** ⚠ 채우는 경로가 아직 없다(F-3) — 서버는 지금 늘 null을 보낸다. */
+  display_hint: string | null;
   requested_by: string;
   reason: string;
   /** ⚠ 마스킹된 자막이다. 원문이 아니다 — DASAN-MANUAL-5.5 · C-5. */
@@ -59,17 +60,15 @@ export interface BlacklistEntryItem {
   note: string | null;
 }
 
-/** 지식베이스 갭 관리 뷰용. */
+/**
+ * ⚠ **실제 `GET /hub/knowledge-gaps` 계약과 모양이 다르다** — 저 쪽은
+ * `{module: B|C|F, description, status}`고 여기는 `{query, found}` 기준으로
+ * 묶어 센다. `KnowledgeGapTab.tsx`를 다시 설계하기 전까지는 mock 전용으로 남긴다
+ * (`lib/api/hubClient.ts`의 `KnowledgeGapItem`이 실제 계약 쪽).
+ */
 export interface KnowledgeGapEntry {
   call_id: string;
   query: string;
   found: boolean;
   logged_at: string;
-}
-
-/** 현황판 콜가드 누적 카운트용. */
-export interface CallGuardLogEntry {
-  call_id: string;
-  category: "폭언" | "욕설" | "위협";
-  detected_at: string;
 }

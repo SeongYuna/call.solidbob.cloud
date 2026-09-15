@@ -1260,8 +1260,12 @@ button {
   white-space: nowrap;
 }
 
-.callguard-pill.is-high {
-  background: #fff5f5;
+/* 위기 신호(distress)는 폭언과 반대로 다룬다(MANUAL-5.4) — 같은 파랑 톤을
+   customer-risk 배너의 is-distress 와 맞춘다(색은 새로 만들지 않는다). */
+.callguard-row.is-distress .callguard-pill {
+  border-color: #3d4bb8;
+  color: #3d4bb8;
+  background: #eef0fd;
 }
 
 .callguard-hint {

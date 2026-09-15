@@ -103,9 +103,9 @@ export const grantDelayKoScenario: MockScenario = {
     trajectory: ["불만", "격앙", "폭언", "위협"],
   },
   callGuard: {
-    seg_d003: { segment_id: 3, category: "폭언", severity: "high" },
-    seg_d005: { segment_id: 5, category: "욕설", severity: "high" },
-    seg_d007: { segment_id: 7, category: "위협", severity: "high" },
+    seg_d003: { segment_id: 3, category: "insult" },
+    seg_d005: { segment_id: 5, category: "insult" },
+    seg_d007: { segment_id: 7, category: "threat" },
   },
   closures: [],
 };

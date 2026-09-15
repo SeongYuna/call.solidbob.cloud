@@ -1,9 +1,13 @@
 // apps/admin의 AdminPanel.tsx 모바일판. 개인 실험(decisions/405).
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 
 import '../data/admin_fixtures.dart';
+import '../models/account_models.dart';
 import '../models/blacklist_models.dart';
 import '../theme/app_theme.dart';
+import 'tabs/accounts_tab.dart';
 import 'tabs/audit_tab.dart';
 import 'tabs/entries_tab.dart';
 import 'tabs/gaps_tab.dart';
@@ -12,11 +16,12 @@ import 'tabs/requests_tab.dart';
 import 'tabs/settings_tab.dart';
 import 'tabs/wallboard_tab.dart';
 
-enum AdminTab { wallboard, requests, entries, qa, gaps, audit, settings }
+enum AdminTab { wallboard, requests, accounts, entries, qa, gaps, audit, settings }
 
 const _tabLabels = {
   AdminTab.wallboard: '현황판',
   AdminTab.requests: '승인요청',
+  AdminTab.accounts: '계정 관리',
   AdminTab.entries: '블랙리스트',
   AdminTab.qa: 'QA 리뷰',
   AdminTab.gaps: '지식베이스 갭',
@@ -27,12 +32,20 @@ const _tabLabels = {
 const _tabIcons = {
   AdminTab.wallboard: Icons.dashboard_outlined,
   AdminTab.requests: Icons.inbox_outlined,
+  AdminTab.accounts: Icons.person_add_alt_1_outlined,
   AdminTab.entries: Icons.block_outlined,
   AdminTab.qa: Icons.fact_check_outlined,
   AdminTab.gaps: Icons.search_off_outlined,
   AdminTab.audit: Icons.history_outlined,
   AdminTab.settings: Icons.settings_outlined,
 };
+
+const _tempPasswordChars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789';
+
+String _generateTempPassword() {
+  final rand = Random();
+  return List.generate(8, (_) => _tempPasswordChars[rand.nextInt(_tempPasswordChars.length)]).join();
+}
 
 class AdminShell extends StatefulWidget {
   final String adminName;
@@ -57,6 +70,7 @@ class _AdminShellState extends State<AdminShell> {
 
   final List<BlacklistRequestItem> _requests = List.of(seedRequests);
   late List<BlacklistEntryItem> _entries = List.of(seedEntries);
+  late List<AgentAccountItem> _accounts = List.of(seedAgentAccounts);
   int _veteranThresholdYears = 3;
   int _blacklistExpiryMonths = 6;
 
@@ -100,6 +114,23 @@ class _AdminShellState extends State<AdminShell> {
         releaseReason: '관리자 해제',
       );
     });
+  }
+
+  String _createAccount(String name, String loginId) {
+    final password = _generateTempPassword();
+    setState(() {
+      _accounts = [
+        ..._accounts,
+        AgentAccountItem(
+          id: 'acc-${DateTime.now().millisecondsSinceEpoch}',
+          name: name,
+          loginId: loginId,
+          tempPassword: password,
+          createdAt: DateTime.now(),
+        ),
+      ];
+    });
+    return password;
   }
 
   void _extend(String entryId, int months) {
@@ -188,6 +219,10 @@ class _AdminShellState extends State<AdminShell> {
           defaultExpiryMonths: _blacklistExpiryMonths,
           onApprove: (id, months) => _decide(id, true, expiryMonths: months),
           onReject: (id) => _decide(id, false),
+        ),
+      AdminTab.accounts => AccountsTab(
+          accounts: _accounts,
+          onCreateAccount: _createAccount,
         ),
       AdminTab.entries => EntriesTab(
           entries: _entries,

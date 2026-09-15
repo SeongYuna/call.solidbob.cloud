@@ -36,6 +36,8 @@ export function BlacklistRequestButton({
   const submit = useCallStore((s) => s.submitBlacklistRequest);
   const [open, setOpen] = useState(false);
   const [reason, setReason] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   const evidence = useMemo(
     () =>
@@ -119,13 +121,21 @@ export function BlacklistRequestButton({
             />
           </label>
 
+          {submitError !== null ? (
+            <p className="blacklist-distress" role="alert">
+              요청을 보내지 못했습니다: {submitError}
+            </p>
+          ) : null}
+
           <div className="blacklist-actions">
             <button
               type="button"
               className="btn-outline"
+              disabled={submitting}
               onClick={() => {
                 setOpen(false);
                 setReason("");
+                setSubmitError(null);
               }}
             >
               취소
@@ -133,8 +143,10 @@ export function BlacklistRequestButton({
             <button
               type="button"
               className="btn-replay"
-              disabled={reason.trim().length === 0}
+              disabled={reason.trim().length === 0 || submitting}
               onClick={() => {
+                setSubmitting(true);
+                setSubmitError(null);
                 submit({
                   callId,
                   customerRef,
@@ -143,12 +155,20 @@ export function BlacklistRequestButton({
                   reason: reason.trim(),
                   contextExcerpt,
                   evidence,
-                });
-                setOpen(false);
-                setReason("");
+                })
+                  .then(() => {
+                    setOpen(false);
+                    setReason("");
+                  })
+                  .catch((error: unknown) => {
+                    setSubmitError(error instanceof Error ? error.message : "알 수 없는 오류");
+                  })
+                  .finally(() => {
+                    setSubmitting(false);
+                  });
               }}
             >
-              요청 보내기
+              {submitting ? "보내는 중…" : "요청 보내기"}
             </button>
           </div>
         </div>

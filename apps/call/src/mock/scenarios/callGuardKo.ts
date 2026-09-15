@@ -133,8 +133,8 @@ export const callGuardKoScenario: MockScenario = {
     trajectory: ["차분", "약간 격앙", "격앙", "차분"],
   },
   callGuard: {
-    seg_g005: { segment_id: 5, category: "폭언", severity: "high" },
-    seg_g007: { segment_id: 7, category: "폭언", severity: "low" },
+    seg_g005: { segment_id: 5, category: "insult" },
+    seg_g007: { segment_id: 7, category: "insult" },
   },
   closures: [],
 };
