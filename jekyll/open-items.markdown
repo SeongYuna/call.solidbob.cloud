@@ -422,14 +422,23 @@ Environment Variables → **Production 만** → Deployments → Redeploy(`VITE_
 
 ### 릴리스 태그 게이트를 고치며 남은 것 (2026-09-14, `decisions/111`)
 
-- [ ] **룰셋에 `tag-check` 를 필수 통과 검사로 등록** — `.github/workflows/tag-check.yml` 을 만들었지만
-  룰셋(`21538648`)의 필수 검사는 아직 `jekyll`·`ai`·`server` 셋뿐이다. 등록해야 「태그를 안 올린 PR」이
-  실제로 **머지 전에** 막힌다. 지금은 빨간 X 만 뜨고 머지는 된다. 저장소 admin(정성윤) 콘솔 작업.
-  같이 볼 것: **`gateway` job 도 아직 필수가 아니다**(2026-09-11부터 미등록). 게이트웨이는 운영 경로인데
-  테스트가 빨개도 머지된다.
-- [ ] **⚠ `.github/branch-protection.json` 이 라이브 룰셋과 어긋난다** — 파일은
-  `required_approving_review_count: 1`, 라이브는 `0`(혼자 관리라 0이 맞다). 파일에는 `gateway`·`tag-check` 도 없다.
-  **그 파일로 룰셋을 복원하면 승인 1건 필수가 생겨 지금 흐름이 막힌다.** 라이브에 맞추거나, 참고용임을 파일에 적는다.
+- [x] ~~룰셋에 `tag-check`·`gateway` 를 필수 통과 검사로 등록~~ — **2026-09-15 완료.**
+  룰셋(`21538648`)의 필수 검사가 `jekyll`·`ai`·`server` **→ + `gateway`·`tag-check`** 로 다섯이 됐다.
+  나머지 규칙(`deletion`·`non_fast_forward`·`pull_request`·`strict: true`·승인 0건)은 그대로다.
+  이제 `server/`·`ai/` 를 고치면서 `newTag` 를 안 올리면 **머지 버튼이 잠긴다**(전에는 빨간 X 만 떴다).
+- [x] **`.github/branch-protection.json` 을 라이브 룰셋에 맞췄다** (2026-09-15, 정성윤) —
+  값 셋을 고쳤다: `contexts` 셋 → **다섯**(`gateway`·`tag-check` 추가) · 승인 `1` → **`0`** ·
+  `enforce_admins` `false` → **`true`**(라이브 `bypass_actors: []` = 우회 없음에 대응).
+  **파일을 지우지 않은 이유**: `decisions/011` 이 «룰셋을 걷어내고 클래식으로 돌아갈 때를 위해 남겨 둔다»로
+  정해뒀다. 목적이 대비본이므로 **값이 어긋나 있으면 되돌리는 순간 정책이 조용히 바뀐다** — 그게 이 항목의 위험이었다.
+  ⚠ **형식이 다르다는 건 남는다** — 이 파일은 클래식 보호 API(`branches/main/protection`) 형식이고
+  라이브는 룰셋 API(`21538648`)다. 클래식에 대응물이 없는 라이브 설정 둘은 못 담았다:
+  `require_extra_approval_for_unattributed_changes: true` · `allowed_merge_methods`.
+  **룰셋 백업은 이미 있었고, 그것도 어긋나 있었다** — `.github/ruleset-main.json` 은 `22c7983` 에 들어와
+  있었는데 `contexts` 가 **셋**인 옛 판이었다(같은 병). 2026-09-15 에 라이브 룰셋(`21538648`)에서
+  읽기 전용 필드 8개를 걷어낸 복원본이다(`PUT --input` 으로 그대로 되살아난다). 쓰기 가능 필드
+  여섯이 라이브와 한 글자도 다르지 않음을 대조 확인했다. 뜨고 되살리는 명령은 `CLAUDE.md` §7.
+  ⚠ **룰셋을 고칠 때 이 파일을 같이 갱신하지 않으면 다시 어긋난다** — 그게 이 항목이 생긴 경위다.
 - [x] **OIDC 신뢰 정책 — 확인했다. 유효하다** (2026-09-15, 정성윤) — `callguard-deploy-role` 의 신뢰
   정책은 실제로 **`main` 한정**이다. `release.yml` 주석 ④ 가 맞았다.
   `sub` = `repo:SeongYuna@280208914/call.solidbob.cloud@1344602683:ref:refs/heads/main` —
@@ -442,32 +451,35 @@ Environment Variables → **Production 만** → Deployments → Redeploy(`VITE_
   **그래서 「`release.yml` 에 `pull_request` 를 더하면 머지 안 된 코드가 운영에 배포된다」는 성립하지 않는다** —
   OIDC 스텝에서 죽는다. 다만 **이미지 push 는 AWS 를 거치지 않아 그대로 남는다**(`DOCKERHUB_*` 만 쓴다).
   그쪽은 판정만 하는 `tag-check.yml` 을 따로 뗀 것으로 이미 닫혀 있다(`decisions/111`).
-- [ ] **ES 이미지(`seongyuna/callguard-es`)는 CI 가 굽지 않는다** — 갈래가 둘이다.
-  ① `infra/elasticsearch/Dockerfile` 을 고쳐도 `release.yml` 의 `paths` 에 없어 **워크플로가 깨어나지 않는다**
-  ② ES `newTag` 만 올리면 워크플로는 도는데 **굽는 잡이 없어** `deploy` 가 없는 태그를 적용 → **ImagePullBackOff**.
-  server 스모크는 통과하므로 늦게 발견된다. 지금 정본은 손으로 굽는 것이다(`infra/README.md:34`).
-  자동화할지, 「손으로 굽는다」를 규칙으로 못박을지 정한다.
-- [ ] **`converge.sh:55` 가 게이트웨이 롤아웃을 보지 않는다** — `rollout status deploy/callguard-server` 만
-  기다린다. 부팅 시 게이트웨이가 못 떠도 「완료」를 찍는다(`release.yml` 의 배포는 둘 다 본다).
-  09-11 게이트웨이 도입 때 갱신이 누락된 것으로 보인다. 한 줄 추가면 된다.
-- [ ] **`test.yml` 이 같은 SHA 에 검사를 2벌 단다** — 브랜치 push 런과 main PR 런이 **같은 커밋**을 헤드로 쓴다
-  (실측: `61a3d35d69` 에 `push frontend` · `pull_request frontend` 둘). 러너 분과 checks 목록 소음 문제다.
-  **⚠ 싼 수정(`concurrency` group 을 `head_ref || ref_name` 으로 통합)은 위험하다** — 두 런이 같은 SHA 에
-  **같은 이름**(`server`·`ai`·`jekyll`)으로 check-run 을 보고하므로, 한쪽을 취소하면 필수 검사가 `cancelled` 로
-  남아 **머지가 막힐 수 있다**(경합이라 재현이 들쭉날쭉하다). 실제 해결은 push 트리거 정책을 바꾸는 것인데
-  `CLAUDE.md` §7 이 네 브랜치 push 에서 돈다고 적고 있어 **정책 결정**이 필요하다.
-- [ ] **운영 이미지에 테스트가 실린다** — `server.Dockerfile` 의 `COPY server/` · `COPY ai/apps/` 가 넓어
-  `tests/` 하위 `.py` **86개**(디렉터리 9개, `__pycache__` 제외)와 `ai/apps/evaluation/`(336K)이 들어간다.
-  `pytest` 가 이미지에 없어 **동작 위험은 없다** — 결함이 아니라 사실 기록이다.
-  줄이려면 `.dockerignore` 에 `**/tests`·`**/conftest.py`·`**/pytest.ini`·`**/.importlinter` + `ai/apps/evaluation`.
-  **⚠ 그때까지는 `ai/apps/evaluation/` 만 고친 PR 도 태그를 올려야 한다** — server 경로 정규식이
-  `^(server/|ai/|…)` 라 평가 하네스만 손대도 게이트가 걸린다(2026-09-14부터는 **머지 전에** 걸린다).
-  버그가 아니라 「이미지에 들어갈 필요 없는 것이 들어가 있다」의 증상이다 — 위 두 곳을 좁히면 같이 사라진다.
-
-  **⚠ `ai/apps/call_guard`·`voice_signal` 은 빼지 않는다** — C-6·D-5 가 꽂힐 자리다. 지금 배선이 없을 뿐이고
-  (`/health` 의 `spokes` 와 `release.yml` 의 `EXPECTED` 둘 다 넷뿐), 빼면 나중에 꽂는 사람이
-  **로컬에선 되는데 운영에서만 ImportError** 로 헤맨다. `server/tests/test_image_layout.py` 가 안전망이지만
-  **지금 `main.py` 가 import 하는 것**(`ai/provider.py`·`ai/apps/retrieval`)만 보므로 이 경우는 못 잡는다.
+  ⑤ **왜 ID 형태인지 확인했다 (덧붙임, 2026-09-15)** — 커스텀 템플릿이 아니라 **GitHub 기본값**이다:
+  `gh api repos/SeongYuna/call.solidbob.cloud/actions/oidc/customization/sub` →
+  `{"use_default": true, "use_immutable_subject": true, "sub_claim_prefix": "repo:SeongYuna@…/call.solidbob.cloud@…"}`.
+  `use_immutable_subject` 가 켜져 있어 이름 대신 ID 가 박힌다.
+  ⚠ **그래서 이 토글을 끄면 배포가 전부 깨진다** — `sub` 가 이름 형태(`repo:SeongYuna/call.solidbob.cloud:ref:…`)로
+  돌아가는데 신뢰 정책은 ID 형태로 고정돼 있어 더는 일치하지 않는다. 증상은 `#54`·`#55` 와 똑같은
+  `Not authorized to perform sts:AssumeRoleWithWebIdentity` 라 원인을 찾기 어렵다. **끄지 않는다.**
+  덧붙여 **신뢰 정책은 저장소 어디에도 코드로 없다**(terraform 포함 — 전수 확인). AWS 콘솔에만 있으므로
+  역할을 잃으면 정책 원문도 같이 사라진다.
+- [x] ~~ES 이미지는 CI 가 굽지 않는다~~ — **2026-09-15 자동화했다** (`decisions/114`).
+  `release.yml` 의 `paths` 에 `infra/elasticsearch/**` 를 넣고 `es-image` 잡을 만들었고, 태그 게이트
+  (`check_release_tags.py` 의 `IMAGES`)에도 `es` 를 추가했다. 두 갈래가 다 닫혔다.
+  ⚠ **ES 태그는 ES 버전을 따라간다**(`Dockerfile` 의 `ARG ES_VERSION`). Dockerfile 만 고치고 버전은
+  그대로일 때는 빌드 접미사를 붙인다 — 예: `9.5.1-2`. 같은 태그로 다시 구우면 노드가 캐시를 계속 쓴다.
+- [x] ~~`converge.sh` 가 게이트웨이 롤아웃을 보지 않는다~~ — **2026-09-15 한 줄 추가했다** (`decisions/114`).
+  `rollout status deploy/callguard-gateway` 를 더해 부팅 경로도 릴리스 배포와 같은 것을 본다.
+- [x] ~~`test.yml` 이 같은 SHA 에 검사를 2벌 단다~~ — **2026-09-15 트리거를 좁혔다** (`decisions/114`).
+  `push.branches` 를 `[main]` 으로 바꿨다. **`concurrency` 를 합치는 「싼 수정」은 쓰지 않았다** —
+  두 런이 같은 SHA 에 같은 이름으로 check-run 을 보고해서, 취소된 쪽이 나중에 기록되면 필수 검사가
+  `cancelled` 로 남아 **머지가 막힌다**(필수 검사가 다섯이 된 지금은 더 위험하다).
+  ⚠ **잃은 것 하나** — 「PR 없이 브랜치에만 push 했을 때」는 CI 가 돌지 않는다. PR 이 열려 있으면
+  push 마다 `pull_request` 가 돈다. 일찍 보고 싶으면 **초안 PR**을 연다. 불편하면 되돌릴 수 있다(중복도 같이 돌아온다).
+- [x] ~~운영 이미지에 테스트가 실린다~~ — **2026-09-15 `.dockerignore` 로 뺐다** (`decisions/114`).
+  `**/tests` · `**/conftest.py` · `**/pytest.ini` · `**/.importlinter` · `ai/apps/evaluation` 추가.
+  **`ai/apps/call_guard`·`voice_signal` 은 남겼다** — C-6·D-5 가 꽂힐 자리라 빼면 나중에 꽂는 사람이
+  로컬에선 되는데 운영에서만 ImportError 로 헤맨다.
+  같이 한 것: **안전망을 넓혔다.** `server/tests/test_image_layout.py` 는 Dockerfile 의 `COPY` 만 읽어서
+  `COPY ai/apps/` 가 그대로여도 `.dockerignore` 가 그 안을 빼면 **테스트는 초록인데 이미지엔 없다.**
+  `_ignored_by()` 를 더해 `.dockerignore` 도 함께 보게 했다.
 
 ### 운영 스키마가 배포보다 늦게 따라간다 (신규, 2026-09-14)
 
