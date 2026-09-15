@@ -23,6 +23,7 @@ from fastapi import FastAPI, Request  # noqa: E402
 from fastapi.middleware.cors import CORSMiddleware  # noqa: E402
 
 from admin_auth.adapter.inbound.api.v1.auth_router import auth_router  # noqa: E402
+from agent_auth.adapter.inbound.api.v1.agent_token_router import agent_token_router  # noqa: E402
 from core.config import Settings, load_settings  # noqa: E402
 from hub.adapter.inbound.api.v1.blacklist_decision_router import blacklist_decision_router  # noqa: E402
 from hub.adapter.inbound.api.v1.blacklist_entry_list_router import blacklist_entry_list_router  # noqa: E402
@@ -52,7 +53,7 @@ from hub.adapter.inbound.api.v1.upload_router import upload_router  # noqa: E402
 SPOKES: list[str] = []  # 스포크를 꽂을 때 이름을 추가한다 — /health 가 그대로 보고한다
 
 # `server/` 안에 사는 규칙 기반 스포크. 프로바이더 기본값이라 조건 없이 붙는다.
-_BUILTIN_SPOKES = ("masking", "closure_gate")
+_BUILTIN_SPOKES = ("masking", "closure_gate", "postcall")
 
 AI_APPS = Path(__file__).resolve().parent.parent / "ai" / "apps"
 
@@ -249,6 +250,7 @@ app.add_middleware(
 _install_missing_index_handler(app)
 
 app.include_router(auth_router)
+app.include_router(agent_token_router)
 app.include_router(blacklist_decision_router)
 app.include_router(blacklist_entry_list_router)
 app.include_router(blacklist_release_router)

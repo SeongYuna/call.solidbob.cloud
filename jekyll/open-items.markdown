@@ -492,3 +492,30 @@ Environment Variables → **Production 만** → Deployments → Redeploy(`VITE_
   `kustomization.yaml` 의 `newTag` 와 무관하다). **정할 것**: 빌드 시점에 이미지 태그를 넣어
   (`--build-arg` → 환경변수 → `/health`) 어느 이미지가 도는지 응답으로 알 수 있게 할지.
   그러면 `server/core/config.py` 와 `secret.example.yaml` 이 같이 움직인다(런북 16-1).
+
+### 통화 후 초안 · 상담원 토큰에서 남은 것 (신규, 2026-09-15, 장민석)
+
+- [x] **운영 적용 순서 — 정성윤 님께** — **2026-09-15 확인: 운영 서버 파드에서 26 테이블, 이름이 `schema.sql` 과 완전 일치**(`agent_token` · 09-14 의 `admin_account`·`admin_refresh_token`·`closure_item` 포함). 두 마이그레이션 모두 한 트랜잭션이라 테이블이 있으면 파일 전체가 들어간 것이다. 컬럼 단위는 직접 보지 않았다. 원문 — `db/migrations/2026-09-15-agent-token.sql`(25 → 26 테이블)을 **서버 이미지 태그를 올리기 전에** 넣는다.
+  09-14 마이그레이션이 먼저 들어가 있어야 한다(파일이 확인하고 멈춘다). 안 넣으면 `POST /hub/blacklist-requests`·`/admin/agent-tokens` 가 500(`42P01`).
+  ⚠ **09-14 마이그레이션 적용 후 출력도 아직 아무도 찍지 않았다** — 같은 SSM 세션에서 런북 19장 6번(테이블 수)으로 둘 다 확인한다.
+  `server` 브랜치는 이미지 태그를 **일부러** 안 올렸다 — 머지 = 배포라 순서가 뒤집히지 않게
+- [ ] **조서희 님께 — 블랙리스트 요청 계약이 바뀌었다**(`decisions/307`) — `POST /hub/blacklist-requests` 는 `Authorization: Bearer cga_…`(상담원 토큰)이 필요하고
+  본문에서 `requested_by` 가 빠졌다(실어도 무시). 토큰은 관리자가 `POST /admin/agent-tokens {agent_id}` 로 발급하며 **응답에서 한 번만 보인다.**
+  **정할 것**: ① `apps/call` 이 토큰을 어디에 두는지(입력 · sessionStorage) ② `apps/admin` 에 발급·목록·폐기 화면을 둘지
+- [ ] **상담원 토큰을 어디까지 걸지** — 지금 가드가 달린 곳은 블랙리스트 요청 하나다. 카드 피드백·수동 검색·통화 목록·전사 조회 등은 인증이 없다.
+  모두 걸면 게이트웨이(`services/gateway`)가 부르는 허브 API 와 겹치는 것부터 갈라야 한다. **토큰 만료도 없다** — 폐기로만 끊는다
+  ⚠ **카드 피드백(`POST /hub/cards/{id}/feedback`)은 걸면 안 된다** — 상담원 ID 를 **일부러** 받지 않는 API 다(부록 A-1, 상담원 단위 집계 금지).
+  토큰을 달면 요청마다 상담원이 식별돼 그 설계를 뒷문으로 무너뜨린다
+- [ ] **§7.3 정본은 「응답 전부 문자열」 로 고쳤다 — 조서희 님 `contract.ts` 가 남았다 (2026-09-15)** — `_project/plan.md` 7.3 절 머리에 규칙을 올리고 예시를 실제 응답으로 바꿨다.
+  프론트 `apps/call/src/types/contract.ts` 는 아직 `is_final: boolean`·`utterance_end_ms: number` 다. 공개 사이트 `docs/07` 7.3 은 v2 기록이라 경고만 달았다
+- [ ] **PR #86 머지 순서 — `tag-check` 가 실패한 채 머지 가능으로 뜬다 (2026-09-15)** — 필수 검사가 아니라서다. 운영 DB 에 `agent_token` 마이그레이션 → `newTag` 올리기 → 머지 순서를 지킨다.
+  태그 없이 먼저 머지되면 `release.yml` 이 «코드 변경 + 태그 그대로» 로 실패해 배포되지 않는다(깨지진 않지만 릴리스가 빨갛다). 로컬 `origin` 은 옛 주소(`solidbob02/…`)라 바꿔야 한다
+- [ ] **통화 후 초안은 규칙 발췌다 — 류준 님께**(`decisions/306`) — `POST /hub/calls/{id}/close` 가 501 대신 발췌 초안을 준다(유형은 null).
+  [w7-postcall-spoke](/backlog/w7-postcall-spoke/)의 «501 이 사라진다» 조건은 이것으로 먼저 채워졌지만 **LLM 요약·D-2 분류·품질 측정은 그대로 류준 님 몫**이다.
+  LLM 이 들어오면 규칙 어댑터를 폴백으로 남길지 함께 정한다. 초안 저장은 [w7-postcall-persistence](/backlog/w7-postcall-persistence/)
+- [ ] **과잉 마스킹 관찰 — 「주민센터로 가시면」 이 `*********` 로 가려졌다**(09-15 로컬 E2E, 기존 동작). C-5 는 재현율 우선이라 방향은 맞지만
+  통화 후 요약·자막 가독성을 깎는다. 어느 패턴(P6 인명 폴백 추정 — 미확인)이 잡았는지 먼저 본다. 과잉 마스킹률은 «측정·기록» 항목이다
+- [ ] **저장한 통화 후 초안을 읽는 경로가 없다 (2026-09-15)** — `POST /hub/calls/{id}/close` 가 이제 `call.summary_text`·`follow_up_action`(draft)에 남기지만
+  `GET /hub/calls` 는 `inquiry_type`·`summary_confirmed` 만 준다. 상담원이 초안을 **확정**하는 API(`summary_confirmed_at` 채우기)도 없다.
+  **정할 것**: 상담기록 화면이 목록에서 요약을 보여줄지(목록 응답에 `summary_text` 추가) 상세 조회를 따로 둘지 — 조서희 님 화면 흐름에 달렸다
+- [ ] **`ERD.png` 를 다시 그리지 못했다** — graphviz 없는 머신. `schema.sql`·`erd.dot` 은 `agent_token` 까지 갱신됐다. `brew install graphviz` 뒤 `db/generate_schema_docs.py`

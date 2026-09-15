@@ -108,7 +108,7 @@ def test_카드피드백이_접수되면_201이다():
         with TestClient(app) as client:
             r = client.post("/hub/cards/42/feedback", json={"action": "adopted"})
         assert r.status_code == 201
-        assert r.json() == {"feedback_id": 501234, "card_id": 42, "action": "adopted"}
+        assert r.json() == {"feedback_id": "501234", "card_id": "42", "action": "adopted"}  # 응답은 전부 문자열
     finally:
         app.dependency_overrides.clear()
 

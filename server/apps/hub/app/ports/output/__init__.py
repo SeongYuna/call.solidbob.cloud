@@ -20,6 +20,7 @@ from .knowledge_gap_port import KnowledgeGapPort
 from .masking_port import MaskingPort
 from .myself_record_port import MyselfRecordPort
 from .postcall_port import PostcallPort
+from .postcall_record_port import PostcallRecordPort, SummaryAlreadyConfirmedError
 from .retrieval_port import RetrievalPort
 from .transcript_ingest_record_port import CallNotStartedError, TranscriptIngestRecordPort
 from .transcript_query_port import TranscriptQueryPort
@@ -38,6 +39,8 @@ __all__ = [
     "MaskingPort",
     "MyselfRecordPort",
     "PostcallPort",
+    "PostcallRecordPort",
+    "SummaryAlreadyConfirmedError",
     "RetrievalPort",
     "TranscriptIngestRecordPort",
     "TranscriptQueryPort",

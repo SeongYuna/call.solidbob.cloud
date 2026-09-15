@@ -405,3 +405,21 @@ CREATE TABLE "admin_refresh_token" (
 COMMENT ON COLUMN "admin_refresh_token"."token_hash" IS 'SHA-256 hex — 원문은 응답으로만 한 번 나가고 저장하지 않는다';
 COMMENT ON COLUMN "admin_refresh_token"."revoked_at" IS '회전·로그아웃으로 무효화된 시각. NULL 이면 아직 유효(만료 전이라면)';
 CREATE INDEX "admin_refresh_token_idx0" ON "admin_refresh_token" ("admin_account_id");
+
+-- 상담원 전용 토큰(`decisions/307`). 상담원 로그인 화면이 없어 관리자가 발급해 건넨다 — 블랙리스트 요청의 요청자를 본문이 아니라 이 토큰에서 얻는다(`decisions/304` 의 남은 구멍). **원문을 저장하지 않는다** — SHA-256 해시만 둔다(`admin_refresh_token` 과 같은 원칙). 폐기해도 행을 지우지 않는다(절대 원칙 8, 누가 언제 쓰던 토큰인지 흔적용). 만료는 아직 없다 — 폐기로만 끊는다
+CREATE TABLE "agent_token" (
+    "id" BIGINT GENERATED ALWAYS AS IDENTITY NOT NULL,
+    "agent_id" VARCHAR(20) NOT NULL,
+    "token_hash" VARCHAR(64) NOT NULL,
+    "issued_by" BIGINT NULL,
+    "issued_at" TIMESTAMPTZ NOT NULL,
+    "revoked_at" TIMESTAMPTZ NULL,
+    PRIMARY KEY ("id"),
+    UNIQUE ("token_hash"),
+    FOREIGN KEY ("agent_id") REFERENCES "agent"("agent_id"),
+    FOREIGN KEY ("issued_by") REFERENCES "admin_account"("id")
+);
+COMMENT ON COLUMN "agent_token"."token_hash" IS 'SHA-256 hex — 원문(`cga_…`)은 발급 응답으로 한 번만 나가고 저장하지 않는다';
+COMMENT ON COLUMN "agent_token"."issued_by" IS '발급한 관리자';
+COMMENT ON COLUMN "agent_token"."revoked_at" IS '폐기 시각. NULL 이면 유효';
+CREATE INDEX "agent_token_idx0" ON "agent_token" ("agent_id");

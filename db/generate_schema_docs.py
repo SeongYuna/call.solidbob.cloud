@@ -518,6 +518,24 @@ TABLES: list[Table] = [
         ],
         indexes=[(('"admin_account_id"',), None)],
     ),
+    Table(
+        "agent_token", "상담원 전용 토큰(`decisions/307`). 상담원 로그인 화면이 없어 관리자가 발급해 건넨다 — "
+        "블랙리스트 요청의 요청자를 본문이 아니라 이 토큰에서 얻는다(`decisions/304` 의 남은 구멍). "
+        "**원문을 저장하지 않는다** — SHA-256 해시만 둔다(`admin_refresh_token` 과 같은 원칙). "
+        "폐기해도 행을 지우지 않는다(절대 원칙 8, 누가 언제 쓰던 토큰인지 흔적용). 만료는 아직 없다 — 폐기로만 끊는다",
+        cluster="관리자 인증",
+        unique=[("token_hash",)],
+        columns=[
+            Column("id", "BIGINT", "PK", nullable=False, auto_increment=True),
+            Column("agent_id", "VARCHAR(20)", "FK", "agent.agent_id", nullable=False, identifying=True),
+            Column("token_hash", "VARCHAR(64)", nullable=False,
+                   note="SHA-256 hex — 원문(`cga_…`)은 발급 응답으로 한 번만 나가고 저장하지 않는다"),
+            Column("issued_by", "BIGINT", "FK", "admin_account.id", note="발급한 관리자"),
+            Column("issued_at", "DATETIME", nullable=False),
+            Column("revoked_at", "DATETIME", note="폐기 시각. NULL 이면 유효"),
+        ],
+        indexes=[(('"agent_id"',), None)],
+    ),
 ]
 
 

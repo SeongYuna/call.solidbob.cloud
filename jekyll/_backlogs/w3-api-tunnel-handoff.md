@@ -2,7 +2,7 @@
 title: "로컬 서버 API 를 ngrok 으로 조서희에게 연다 (정성윤 부재 중 프론트 연동)"
 assignee: "장민석"
 role: "ai"
-status: "in-progress"
+status: "done"
 sprint: 3
 priority: 2
 date: 2026-09-10
@@ -32,4 +32,6 @@ paths:
 - [x] 로컬 서버가 스포크 4종으로 뜬다 · 통화 시작 → 전사 → 추천이 실제 응답으로 돈다
 - [x] ngrok authtoken (사용자 계정) · [ ] 고정 도메인 — 대시보드 Domains 에서 만들면 주소가 고정된다
 - [x] basic auth 는 **일부러 안 건다** — 브라우저 CORS preflight(OPTIONS)에는 Authorization 이 안 실려 ngrok 이 401 로 막고, 그러면 fetch 자체가 실패한다. 근거는 [미결](/open-items/)
-- [ ] 조서희가 그 주소로 `/health`·`/hub/recommendations` 응답을 받았다
+- [x] 조서희가 그 주소로 `/health`·`/hub/recommendations` 응답을 받았다 — 2026-09-15 사용자(장민석) 확인으로 완료 처리
+
+고정 도메인은 만들지 않은 채 닫는다 — 터널은 정성윤 부재 중 임시 경로였고, 이제 운영 서버(`server.solidbob.cloud`)가 떠 있다.

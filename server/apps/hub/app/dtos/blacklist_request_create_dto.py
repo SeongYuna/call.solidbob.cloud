@@ -14,7 +14,7 @@ class BlacklistRequestCreateCommand:
     """
 
     call_id: str
-    requested_by: str  # agent.agent_id — 상담원 로그인이 없어 입력으로 받는다(`decisions/304`)
+    requested_by: str  # agent.agent_id — 상담원 토큰에서 온다(`decisions/307`). 본문으로 받지 않는다
     reason: str
 
 
