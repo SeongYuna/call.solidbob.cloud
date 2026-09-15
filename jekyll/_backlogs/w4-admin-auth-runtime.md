@@ -2,7 +2,7 @@
 title: "관리자 로그인 운영 배선 — Redis · 시크릿 키 3종 · RDS 테이블"
 assignee: "정성윤"
 role: "infra"
-status: "in-progress"
+status: "done"
 sprint: 4
 priority: 1
 date: 2026-09-14
@@ -60,3 +60,13 @@ paths:
 **남은 것은 전부 값·계정 작업이다**(저장소에 들어갈 수 없는 것들): 구글 OAuth 클라이언트 ID ·
 `ADMIN_JWT_SECRET` 생성 · `server-env` patch · 허용 목록 행 1건(테이블은 이미 있다).
 화면 배포는 `w4-admin-subdomain` 으로 갈랐다.
+
+## 완료 (2026-09-15)
+
+운영에서 **구글 로그인 → 관리자 화면 진입까지 실제로 됐다.** 닫은 것 —
+Redis 파드(Running) · `server-env` 키 4종 patch + `rollout restart` · CORS 에 admin 오리진 추가
+(실측: 프리플라이트 400 → **200 + allow-origin 에코**, `call` 오리진은 그대로 200) ·
+`admin_account` 행 1건. 절차는 런북 **18-3** 에 남겼다(검증 뒤에 넣었다).
+
+⚠ **남은 것 하나** — 그 행의 `agent_id` 가 `NULL` 이다. 로그인은 되지만 **블랙리스트 승인·해제는 409** 다
+(`decisions/304`). 어느 상담원 마스터 ID 로 기록할지는 정해지지 않았다 → [미결](/open-items/).
