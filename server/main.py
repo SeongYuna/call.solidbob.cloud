@@ -27,12 +27,16 @@ from agent_auth.adapter.inbound.api.v1.agent_token_router import agent_token_rou
 from core.config import Settings, load_settings  # noqa: E402
 from hub.adapter.inbound.api.v1.blacklist_decision_router import blacklist_decision_router  # noqa: E402
 from hub.adapter.inbound.api.v1.blacklist_entry_list_router import blacklist_entry_list_router  # noqa: E402
+from hub.adapter.inbound.api.v1.blacklist_expiry_change_list_router import blacklist_expiry_change_list_router  # noqa: E402
+from hub.adapter.inbound.api.v1.blacklist_expiry_change_router import blacklist_expiry_change_router  # noqa: E402
 from hub.adapter.inbound.api.v1.blacklist_release_router import blacklist_release_router  # noqa: E402
+from hub.adapter.inbound.api.v1.blacklist_retention_purge_router import blacklist_retention_purge_router  # noqa: E402
 from hub.adapter.inbound.api.v1.blacklist_request_create_router import blacklist_request_create_router  # noqa: E402
 from hub.adapter.inbound.api.v1.blacklist_request_list_router import blacklist_request_list_router  # noqa: E402
 from hub.adapter.inbound.api.v1.call_guard_check_router import call_guard_check_router  # noqa: E402
 from hub.adapter.inbound.api.v1.call_guard_flag_list_router import call_guard_flag_list_router  # noqa: E402
 from hub.adapter.inbound.api.v1.call_list_router import call_list_router  # noqa: E402
+from hub.adapter.inbound.api.v1.call_record_router import call_record_router  # noqa: E402
 from hub.adapter.inbound.api.v1.call_start_router import call_start_router  # noqa: E402
 from hub.adapter.inbound.api.v1.card_feedback_router import card_feedback_router  # noqa: E402
 from hub.adapter.inbound.api.v1.closure_router import closure_router  # noqa: E402
@@ -45,7 +49,13 @@ from hub.adapter.inbound.api.v1.myself_router import myself_router  # noqa: E402
 from hub.adapter.inbound.api.v1.postcall_router import postcall_router  # noqa: E402
 from hub.adapter.inbound.api.v1.recommendation_router import recommendation_router  # noqa: E402
 from hub.adapter.inbound.api.v1.required_docs_detection_router import required_docs_detection_router  # noqa: E402
+from hub.adapter.inbound.api.v1.routing_decision_router import routing_decision_router  # noqa: E402
+from hub.adapter.inbound.api.v1.routing_setting_query_router import routing_setting_query_router  # noqa: E402
+from hub.adapter.inbound.api.v1.routing_setting_router import routing_setting_router  # noqa: E402
 from hub.adapter.inbound.api.v1.search_router import search_router  # noqa: E402
+from hub.adapter.inbound.api.v1.summary_confirmation_router import summary_confirmation_router  # noqa: E402
+from hub.adapter.inbound.api.v1.summary_revision_list_router import summary_revision_list_router  # noqa: E402
+from hub.adapter.inbound.api.v1.summary_revision_router import summary_revision_router  # noqa: E402
 from hub.adapter.inbound.api.v1.transcript_ingest_router import transcript_ingest_router  # noqa: E402
 from hub.adapter.inbound.api.v1.transcript_query_router import transcript_query_router  # noqa: E402
 from hub.adapter.inbound.api.v1.upload_router import upload_router  # noqa: E402
@@ -253,12 +263,16 @@ app.include_router(auth_router)
 app.include_router(agent_token_router)
 app.include_router(blacklist_decision_router)
 app.include_router(blacklist_entry_list_router)
+app.include_router(blacklist_expiry_change_router)
+app.include_router(blacklist_expiry_change_list_router)
 app.include_router(blacklist_release_router)
+app.include_router(blacklist_retention_purge_router)
 app.include_router(blacklist_request_create_router)
 app.include_router(blacklist_request_list_router)
 app.include_router(call_guard_check_router)
 app.include_router(call_guard_flag_list_router)
 app.include_router(call_list_router)
+app.include_router(call_record_router)
 app.include_router(call_start_router)
 app.include_router(card_feedback_router)
 app.include_router(closure_router)
@@ -267,8 +281,14 @@ app.include_router(knowledge_gap_query_router)
 app.include_router(knowledge_gap_router)
 app.include_router(myself_router)
 app.include_router(postcall_router)
+app.include_router(summary_confirmation_router)
+app.include_router(summary_revision_router)
+app.include_router(summary_revision_list_router)
 app.include_router(recommendation_router)
 app.include_router(required_docs_detection_router)
+app.include_router(routing_decision_router)
+app.include_router(routing_setting_router)
+app.include_router(routing_setting_query_router)
 app.include_router(search_router)
 app.include_router(transcript_ingest_router)
 app.include_router(transcript_query_router)

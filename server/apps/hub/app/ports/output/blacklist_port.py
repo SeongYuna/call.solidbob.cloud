@@ -5,7 +5,8 @@ from abc import ABC, abstractmethod
 
 from datetime import datetime
 
-from hub.app.dtos.blacklist_dto import BlacklistEntry, BlacklistRequest
+from hub.app.dtos.blacklist_dto import BlacklistEntry, BlacklistRequest, ExpiryChange
+from hub.app.dtos.blacklist_retention_dto import RetentionPurgeResult
 
 
 class BlacklistNotFound(LookupError):
@@ -18,6 +19,14 @@ class UnknownAgent(ValueError):
 
 class BlacklistConflict(ValueError):
     """상태가 맞지 않는다 — 이미 결정된 요청 · 이미 적용 중인 등록이 있는 고객 · 이미 해제된 등록."""
+
+
+class ExpiryBeyondCap(ValueError):
+    """새 만료가 누적 상한(승인일 + 365일)을 넘는다(`decisions/309` 추가). 상태 충돌이 아니라 입력이 정책을 넘은 것이라 409 가 아니다."""
+
+    def __init__(self, latest_allowed: datetime) -> None:
+        super().__init__(f"연장 누적 상한을 넘습니다 — 이 등록은 {latest_allowed.isoformat()} 까지만 둘 수 있습니다. 더 두려면 새 요청으로 재등록합니다")
+        self.latest_allowed = latest_allowed
 
 
 class BlacklistPort(ABC):
@@ -57,3 +66,18 @@ class BlacklistPort(ABC):
     @abstractmethod
     async def release_entry(self, entry_id: int, *, released_by: str, reason: str) -> BlacklistEntry:
         """등록을 해제한다. **행을 지우지 않는다** — 왜 풀렸는지가 남아야 한다(`decisions/205`)."""
+
+    @abstractmethod
+    async def change_expiry(
+        self, entry_id: int, *, changed_by: str, expires_at: datetime, reason: str
+    ) -> tuple[BlacklistEntry, ExpiryChange]:
+        """등록의 만료 시각을 바꾸고 변경 1건을 쌓는다(`decisions/309`). 연장·단축 모두.
+        없으면 `BlacklistNotFound`, 이미 해제된 등록이면 `BlacklistConflict`, 승인일 + 365일을 넘으면 `ExpiryBeyondCap`."""
+
+    @abstractmethod
+    async def list_expiry_changes(self, entry_id: int) -> list[ExpiryChange]:
+        """만료 변경 이력, 오래된 순. 등록이 없으면 `BlacklistNotFound`."""
+
+    @abstractmethod
+    async def purge_retained_texts(self) -> RetentionPurgeResult:
+        """보존 기간이 지난 자유 입력 문장을 표시로 바꾼다(`decisions/312`). 행을 지우지 않는다. 여러 번 불러도 결과가 같다."""

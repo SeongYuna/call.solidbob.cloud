@@ -35,8 +35,8 @@ function cardDomId(index: number): string {
   return `term-card-${index}`;
 }
 
-function hasClosureType(item: PanelCard): boolean {
-  return item.closure !== null && item.closure.closure_type.length > 0;
+function hasProcedure(item: PanelCard): boolean {
+  return item.closure !== null && item.closure.procedure.length > 0;
 }
 
 interface TermsPanelProps {
@@ -147,13 +147,13 @@ function CardsLoadingIndicator(): ReactElement {
 }
 
 /**
- * 필요서류 탭: closure_type 있는 카드만 그린다. 없는 카드는 목록에서 뺀다.
+ * 필요서류 탭: procedure 있는 카드만 그린다. 없는 카드는 목록에서 뺀다.
  * 연결된 카드가 없으면 안내 문구 하나, 여러 건이면 전부 보여 준다.
  */
 function ClosureCardList({ cards }: { cards: PanelCard[] }): ReactElement {
   const linked = cards
     .map((item, index) => ({ item, index }))
-    .filter(({ item }) => hasClosureType(item));
+    .filter(({ item }) => hasProcedure(item));
 
   if (linked.length === 0) {
     return (
@@ -194,7 +194,7 @@ function TermCard({
   const canSettle =
     closure !== null && closure.missing.length === 0 && !item.settled;
 
-  if (view === "closure" && !hasClosureType(item)) {
+  if (view === "closure" && !hasProcedure(item)) {
     return null;
   }
 
@@ -241,7 +241,7 @@ function TermCard({
               canSettle={canSettle}
               category={category}
               onSettle={() => {
-                settleClosure(closure.closure_type);
+                settleClosure(closure.procedure);
               }}
             />
           </>

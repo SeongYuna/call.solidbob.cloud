@@ -4,7 +4,7 @@
 from dataclasses import replace
 from datetime import datetime, timezone
 
-from hub.app.dtos.blacklist_dto import BlacklistEntry, BlacklistRequest, RequestEvidence
+from hub.app.dtos.blacklist_dto import BlacklistEntry, BlacklistRequest, ExpiryChange, RequestEvidence
 from hub.app.dtos.blacklist_request_create_dto import CallEvidence
 from hub.app.ports.output.blacklist_evidence_port import BlacklistEvidencePort
 from hub.app.ports.output.blacklist_port import BlacklistPort
@@ -42,6 +42,22 @@ class StubBlacklist(BlacklistPort):
         self.calls.append(("release", entry_id, released_by, reason))
         return BlacklistEntry(entry_id=entry_id, customer_ref=REF, request_id="7", released_by=released_by,
                               release_reason=reason)
+
+    async def change_expiry(self, entry_id, *, changed_by, expires_at, reason):
+        self.calls.append(("change_expiry", entry_id, changed_by, expires_at, reason))
+        entry = BlacklistEntry(entry_id=entry_id, customer_ref=REF, request_id="7", approved_at=NOW, expires_at=expires_at)
+        return entry, ExpiryChange(change_id=1, entry_id=entry_id, previous_expires_at=NOW, new_expires_at=expires_at,
+                                   changed_by=changed_by, reason=reason, changed_at=NOW)
+
+    async def list_expiry_changes(self, entry_id):
+        self.calls.append(("list_expiry_changes", entry_id))
+        return []
+
+    async def purge_retained_texts(self):
+        from hub.app.dtos.blacklist_retention_dto import RetentionPurgeResult
+
+        self.calls.append(("purge",))
+        return RetentionPurgeResult(retention_days=180, cutoff=NOW, expiry_change_reasons_purged=2, rejected_requests_purged=1)
 
 
 class StubEvidence(BlacklistEvidencePort):

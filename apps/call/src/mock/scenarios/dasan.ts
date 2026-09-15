@@ -25,11 +25,13 @@ function requiredDocsEvent(
   return {
     call_id: CALL_ID,
     // RequiredDocsType — 서비스명을 그대로 쓴다. ClosureType enum 이 아님.
-    closure_type: SERVICE,
+    procedure: SERVICE,
     ...after,
     source: DOCS_SOURCE,
     domain: DOMAIN,
     is_example: true,
+    // 이 시나리오는 대본이지 상담원 발화 키워드 스캔이 아니다 — 항상 수동 판정.
+    detected: false,
   };
 }
 
@@ -264,7 +266,7 @@ export const dasanScenario: MockScenario = {
           위임장: false,
           대리인_신분증: false,
         },
-        verdict: "blocked",
+        verdict: "incomplete",
         missing: ["위임장", "대리인_신분증"],
       }),
     },
@@ -277,7 +279,7 @@ export const dasanScenario: MockScenario = {
           위임장: true,
           대리인_신분증: false,
         },
-        verdict: "blocked",
+        verdict: "incomplete",
         missing: ["대리인_신분증"],
       }),
     },
@@ -290,7 +292,7 @@ export const dasanScenario: MockScenario = {
           위임장: true,
           대리인_신분증: true,
         },
-        verdict: "approved",
+        verdict: "complete",
         missing: [],
       }),
     },

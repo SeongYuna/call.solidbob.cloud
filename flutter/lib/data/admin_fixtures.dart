@@ -1,7 +1,33 @@
 /// apps/admin/src/mock/adminFixtures.ts 그대로 이식. 개인 실험(decisions/405).
 library;
 
+import '../models/account_models.dart';
 import '../models/blacklist_models.dart';
+
+final List<AgentAccountItem> seedAgentAccounts = [
+  AgentAccountItem(
+    id: 'acc-seed-1',
+    name: '박도윤',
+    loginId: 'dyoon.park@dasan120.go.kr',
+    tempPassword: 'aB3fK9pQ',
+    createdAt: DateTime.parse('2026-09-09T10:00:00+09:00'),
+  ),
+  AgentAccountItem(
+    id: 'acc-seed-2',
+    name: '이수아',
+    loginId: 'sooa.lee@dasan120.go.kr',
+    tempPassword: 'x7Ln2WmZ',
+    mustChangePassword: false,
+    createdAt: DateTime.parse('2026-08-20T09:30:00+09:00'),
+  ),
+  AgentAccountItem(
+    id: 'acc-seed-3',
+    name: '정하윤',
+    loginId: '20260091',
+    tempPassword: 'Qw8eR4tY',
+    createdAt: DateTime.parse('2026-09-12T14:10:00+09:00'),
+  ),
+];
 
 final List<BlacklistRequestItem> seedRequests = [
   BlacklistRequestItem(

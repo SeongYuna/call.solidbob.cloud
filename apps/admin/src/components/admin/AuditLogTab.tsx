@@ -31,7 +31,7 @@ export function AuditLogTab({
         at: r.decided_at,
         actor: r.decided_by ?? "알 수 없음",
         action: r.status === "approved" ? "승인" : "반려",
-        detail: r.display_hint,
+        detail: r.display_hint ?? "****",
       });
     }
     for (const e of entries) {

@@ -20,7 +20,7 @@ class WallboardTab extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = context.colors;
     return ListView(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(AppSpacing.cardPadding),
       children: [
         Text(
           '백엔드 연동 전이라 mock 시드 값 + 이 세션에서 처리한 건수입니다. '
@@ -60,7 +60,7 @@ class _Tile extends StatelessWidget {
     return Card(
       color: emphasize ? c.warnBg : null,
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(AppSpacing.cardPadding),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisAlignment: MainAxisAlignment.spaceBetween,

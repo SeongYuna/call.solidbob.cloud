@@ -214,7 +214,7 @@ rev.5의 C-6은 **자동 탐지**(고객 욕설·폭언, 재현율 우선 분류
 - [ ] **C-6 갈래가 프론트·백엔드에서 다르다 — 조서희 님 확인 필요 (신규, 2026-09-09)** — 프론트 `CallGuardFlag.category` 는 한글 3종(`폭언`·`욕설`·`위협`)인데 백엔드(`server/apps/hub/app/dtos/call_guard_dto.py`)는 4종(`insult`·`threat`·`sexual`·**`distress`**)이다. **`sexual` 이 프론트에 없고, `distress` 는 그냥 매핑할 수 없다** — `DASAN-MANUAL-5.4` 가 위기 신호를 폭언과 **반대로** 다루라고 정한다(통화를 끊지 않고 전문 기관 연결). 하나로 뭉치면 **위기 상황에서 전화를 끊게 된다.** `severity: "low"|"high"` 도 [부록 A-1](/docs/12/)의 점수 표기에 가까운지 함께 봐야 한다. **정할 것**: ① 프론트를 4종으로 맞출지 ② `distress` 를 별도 이벤트로 뺄지(화면 대응이 아예 다르므로 이쪽이 나아 보인다)
 - [ ] **J(블랙리스트)가 §7.3 계약에 없다 — 서버 어댑터도 없다 (신규, 2026-09-09)** — `_project/decisions/204` 로 J 블록을 새로 만들었다. **도메인 규칙**(`server/apps/blacklist/`, 테스트 19건)·**DTO/포트**·**DB 3테이블**·**대시보드 화면 2개**까지 있는데, **저장 어댑터와 라우터가 없어 지금은 대시보드 store 안의 mock 이다.** 담당 경계상 `BlacklistPort` 구현과 HTTP 는 장민석 몫이다(`decisions/012`). **정할 것**: ① J 이벤트를 §7.3 에 언제 넣을지 ② 관리자 화면을 같은 앱에 둘지 별도 앱으로 뺄지(지금은 `shell: "admin"` 으로 같은 앱에 있다 — 라우터가 없는 구조라 기존 패턴을 따랐다)
 - [ ] **AI Hub 원문을 골든셋에 몇 건까지 실을 수 있나 (신규, 2026-09-09)** — `golden-set/v1-150.json` 에 AI Hub 다산 전사 **원문 12건**을 그대로 실었다(`source: "aihub"` 로 표시). `data/README.md` 가 **재배포 금지 조항**을 적고 있고 이 저장소는 **공개**다(CLAUDE.md §8 — 커밋이 곧 발행). GS-101·GS-102 가 이미 원문을 싣고 있어 전례는 있지만 **2건과 90건은 규모가 다르다** — 그래서 12건만 쓰고 나머지는 그 문체를 보고 직접 썼다. **정할 것**: 원문 인용 범위를 넓혀도 되는지, 아니면 12건도 바꿔 써야 하는지. ⚠ **`source` 필드로 갈라 뒀으므로 두 집단의 지표를 따로 낼 수 있다** — 위의 *"골든셋 문체와 실제 전사의 분포 차이"* 가 요구한 측정이 이제 가능하다
-- [ ] **베테랑 기준 「근속 3년」의 근거가 없다 (신규, 2026-09-09)** — `decisions/204` 가 검토에서 나온 예시를 그대로 1차 기준으로 삼았다. **우리에게 3년이 옳다는 근거가 없어**(절대 원칙 2) 코드에 굳히지 않고 인자로 뺐다(`routing.py` `veteran_years`). **정할 것**: 조직 기준을 확인할 경로가 있는지, 없으면 발표에서 「예시값」이라고 명시할지. 함께 볼 것: **베테랑이 없어 일반 배정으로 떨어진 건수**(`routing_log.fell_back`)가 운영 지표가 되도록 설계했는데, 우리 데이터로는 실측할 수 없다
+- [ ] **베테랑 기준 「근속 3년」의 근거가 없다 (신규, 2026-09-09)** **→ 2026-09-15 관리자가 바꿀 수 있게 저장한다(`PUT /hub/routing-settings`, `decisions/313`). 값의 근거는 여전히 없다.** 원문 — — `decisions/204` 가 검토에서 나온 예시를 그대로 1차 기준으로 삼았다. **우리에게 3년이 옳다는 근거가 없어**(절대 원칙 2) 코드에 굳히지 않고 인자로 뺐다(`routing.py` `veteran_years`). **정할 것**: 조직 기준을 확인할 경로가 있는지, 없으면 발표에서 「예시값」이라고 명시할지. 함께 볼 것: **베테랑이 없어 일반 배정으로 떨어진 건수**(`routing_log.fell_back`)가 운영 지표가 되도록 설계했는데, 우리 데이터로는 실측할 수 없다
 - [ ] **`distress_count` 를 저장하지 않기로 한 판단 — 팀 확인 (신규, 2026-09-09)** — `_project/decisions/205` ④ 로 컬럼을 지웠다. 근거는 **자해·극단적 선택 암시 건수가 정신건강에 관한 정보**이고, 고객 식별자와 같은 행에 반려·해제 뒤에도 무기한 남으면 *"이 번호의 사람이 자해를 N회 암시했다"* 는 레코드가 된다는 것이다. 화면 경고에 필요한 것은 불리언 하나이고 프론트가 이미 그렇게 쓴다(`hasDistress()`). **정할 것**: ① 이 판단에 동의하는지 ② 운영 지표(전문기관 연결 건수)가 필요하면 **고객 식별자 없는 일별 집계**로 셀지. ⚠ 페르소나 QA 가 낸 판단이고 **사람이 검토한 적이 없다**
 - [ ] **블랙리스트 만료 기간을 얼마로 둘지 (신규, 2026-09-09)** — `blacklist_entry.expires_at` 을 넣었고(`decisions/205` ⑤) 프론트 mock 기본값은 **6개월**인데 **우리에게 6개월이 옳다는 근거가 없다**(절대 원칙 2). 만료가 없으면 영구 표시가 되고 번호 재할당 시 다른 사람이 대상이 된다는 것까지가 근거이고, 길이는 조직이 정할 사안이다. 함께 볼 것: **반려된 요청의 `context_excerpt`·`reason` 을 언제 비울지** — 지금은 무기한 남아 **조치 대상이 아닌 사람이 가장 상세한 기록을 갖는다**
 - [ ] **`agent.role` 은 컬럼만 있고 서버에 인증이 없다 (신규, 2026-09-09)** — `transitions.py` 가 `role="admin"` 일 때만 승인을 허용하는데, **그 역할을 호출자가 주장한다.** `server/apps/hub/adapter/inbound` 에 인증·권한 확인 코드가 0건이라 상담원이 `role: "admin"` 을 보내면 통과한다 — `decisions/204` 의 핵심 보장(「승인은 관리자 몫」)이 끝에서 끝까지 강제되지 않는다. **정할 것**: ① 인증을 언제 붙일지 ② 그 전까지 **J-4 승인 API 를 열지 않을지**(권고). 스키마에 `agent.role` 은 이미 넣어 뒀다. ⚠ **2026-09-14 추가**: 관리자 로그인(`admin_auth`, `decisions/403`)이 생기면서 재사용 가능한 `require_admin` 가드가 생겼다 — J-4 승인 API 를 만들 때 이걸 붙이면 이 항목이 풀린다. 다만 `admin_account`(구글 로그인 허용 목록)와 `agent.role='admin'`(상담원 마스터의 역할 구분)은 **서로 다른 테이블**이라, 매핑을 어떻게 할지는 별도로 정해야 한다
@@ -268,7 +268,7 @@ Google STT → 로컬 server 마스킹 → 대시보드 WS 까지 관통했다. 
 
 ### 게이트웨이 마무리에서 남은 것 (2026-09-14)
 
-- [ ] **조서희 님께 — 「검색 중」 신호 수신 (신규, 2026-09-14)** — 게이트웨이가 추천 요청 직전에
+- [x] **조서희 님께 — 「검색 중」 신호 수신 (신규, 2026-09-14)** **→ 2026-09-15 파서가 main 에 들어와(PR #88) 게이트웨이 `0.1.4` 에서 `announcePending`·`announceCallGuard`·`announceClosure` 셋 다 켰다.** 원문 — — 게이트웨이가 추천 요청 직전에
   `{"type":"recommendation_pending","payload":{"call_id","segment_id"}}` 을 보낼 수 있게 됐다(`plan.md` §7.3).
   **지금은 꺼 두었다** — `apps/call/src/lib/ws/realGatewayClient.ts` 의 `parseGatewayMessage` 가 모르는 `type` 을 `null` 로 돌려
   **「알 수 없는 게이트웨이 메시지입니다」 배너**를 띄우기 때문이다. 필요한 것: 그 `type` 을 받아 `listeners.onRecommendationPending?.(call_id)`
@@ -304,7 +304,7 @@ Google STT → 로컬 server 마스킹 → 대시보드 WS 까지 관통했다. 
   틀린다 — 측정 전까지 「F-2 누락 0건」 을 인용하지 않는다. 조건 분기 조항 10개(`EXCLUDED`)도 조건 판정 규칙이 생기면 넣는다
 - [ ] **`DASAN-POLICY-1`(「F-2 미적용」)이 `decisions/305` 와 어긋난다 (신규, 2026-09-14)** — 지식베이스 문서라 고치지 않았다. 검색 인덱스에 들어가는 문서라 류준 님과 함께 고친다
 - [ ] **블랙리스트 남은 것 (신규, 2026-09-14)** — ① 상담원 인증이 없어 요청은 `agent` 에 있는 아무 ID 로나 부를 수 있다 ② `display_hint` 를 채우는 경로가 없다(늘 null)
-  ③ 반려 요청 사유·자막을 일정 기간 뒤 비우는 작업이 없다(`decisions/205`) ④ J-5 배정(`find_entry`)은 인입 경로에 아직 안 붙었다
+  ③ 반려 요청 사유·자막을 일정 기간 뒤 비우는 작업이 없다(`decisions/205`) ④ ~~J-5 배정은~~ **2026-09-15 `POST /hub/routing-decisions` 로 열었다(`decisions/313`) — 부르는 곳(교환기)은 아직 없다.** 원문: J-5 배정(`find_entry`)은 인입 경로에 아직 안 붙었다
 - [ ] **재상담 고객 이력 요약(메모)이 없다 (신규, 2026-09-14)** — `GET /hub/calls?customer_id=` 로 같은 고객의 지난 통화·문의 유형은 나온다. 프론트 mock 의 「메모」 는
   대응 컬럼이 없다(`summary_text` 는 D-1 요약이고 채우는 경로도 501)
 - [ ] **main 의 관리자 로그인 머지(`cb959a9`)가 서버 이미지 태그를 안 올렸다 (신규, 2026-09-14)** — `server/` 가 바뀌었는데
@@ -493,6 +493,26 @@ Environment Variables → **Production 만** → Deployments → Redeploy(`VITE_
   (`--build-arg` → 환경변수 → `/health`) 어느 이미지가 도는지 응답으로 알 수 있게 할지.
   그러면 `server/core/config.py` 와 `secret.example.yaml` 이 같이 움직인다(런북 16-1).
 
+### `w4-dashboard-live-contract` 로 드러난 계약 구멍 셋 (신규, 2026-09-15)
+
+- [x] **카드 피드백(`POST /hub/cards/{id}/feedback`)을 부를 방법이 없다** → **같은 날
+  장민석이 풀었다**(`decisions/308` — 추천 카드에 `card_id` 추가, 아래 섹션 참고).
+  ⚠ 남은 것: `card_id`가 **문자열**로 온다 — `coreClient.ts`의 `submitCardFeedback`은
+  숫자를 기대한다(아래 「프론트 수정 5건」 ③과 같은 지적).
+- [ ] **상담기록(통화 재생) 화면을 실제 API로 못 바꾼다** — `apps/call`의 "상담기록"은 지금
+  카드·종결·감정분석까지 통째로 재생하는 mock 시나리오(`mock/callHistory.ts`) 기반인데,
+  실제 API(`GET /hub/calls`·`GET /hub/calls/{id}/transcript`)는 통화 목록+자막만 준다 —
+  카드·종결·감정분석 재조회 엔드포인트가 없다. REST 함수(`fetchCallList`·
+  `fetchCallTranscript`)는 만들어 뒀다. → **같은 날 장민석이 `GET /hub/calls/{id}/record`를
+  만들었다**(아래 섹션 참고, 감정분석은 모델이 없어 빈 채로). 화면 연결은 아직.
+- [ ] **관리자 "지식베이스 갭" 화면이 실제 계약과 모양이 다르다** — 화면(`KnowledgeGapTab.tsx`)은
+  지금 `{call_id, query, found}`(상담원이 직접 검색해 못 찾은 질의) 기준으로 묶어 세는데,
+  실제 `GET /hub/knowledge-gaps` 계약은 `{module: B|C|F, description, status: open|resolved}`
+  (더 넓은 D-4 공백 개념)라 필드가 아예 다르다 — 이름만 바꿔서 옮길 수 없다. REST 함수
+  (`hubClient.ts`의 `fetchKnowledgeGaps`)는 만들어 뒀지만 화면엔 안 붙였다. **정할 것**:
+  탭을 "질의 그룹핑 랭킹"에서 "module 뱃지 + 설명 + 해제(resolve) 버튼" 목록으로 다시
+  설계할지. 담당: 조서희
+
 ### 통화 후 초안 · 상담원 토큰에서 남은 것 (신규, 2026-09-15, 장민석)
 
 - [x] **운영 적용 순서 — 정성윤 님께** — **2026-09-15 확인: 운영 서버 파드에서 26 테이블, 이름이 `schema.sql` 과 완전 일치**(`agent_token` · 09-14 의 `admin_account`·`admin_refresh_token`·`closure_item` 포함). 두 마이그레이션 모두 한 트랜잭션이라 테이블이 있으면 파일 전체가 들어간 것이다. 컬럼 단위는 직접 보지 않았다. 원문 — `db/migrations/2026-09-15-agent-token.sql`(25 → 26 테이블)을 **서버 이미지 태그를 올리기 전에** 넣는다.
@@ -515,6 +535,39 @@ Environment Variables → **Production 만** → Deployments → Redeploy(`VITE_
   LLM 이 들어오면 규칙 어댑터를 폴백으로 남길지 함께 정한다. 초안 저장은 [w7-postcall-persistence](/backlog/w7-postcall-persistence/)
 - [ ] **과잉 마스킹 관찰 — 「주민센터로 가시면」 이 `*********` 로 가려졌다**(09-15 로컬 E2E, 기존 동작). C-5 는 재현율 우선이라 방향은 맞지만
   통화 후 요약·자막 가독성을 깎는다. 어느 패턴(P6 인명 폴백 추정 — 미확인)이 잡았는지 먼저 본다. 과잉 마스킹률은 «측정·기록» 항목이다
+- [ ] **관리자 가드가 «헤더 없음» 에도 500 이다 — 운영에서 확인 (2026-09-15)** — `0.1.8` 배포 뒤 `GET /admin/agent-tokens`·`GET /hub/blacklist-requests`·`/admin/auth/me` 가 로그인 없이 **401 이 아니라 500**.
+  `require_admin` 이 `Authorization` 을 보기 전에 `get_current_admin_use_case` → Redis 프로바이더를 먼저 풀어, Redis 가 없으면 `RuntimeError` 가 난다. 운영 Redis(`w4-admin-auth-runtime`, 정성윤 님)가 붙으면 증상은 사라지지만
+  **헤더가 없으면 인프라를 타기 전에 401** 이 맞다 — 가드에서 헤더 검사를 의존성 해석보다 앞에 두는 수정은 `server/` 몫(장민석). 이 상태로는 운영에서 상담원 토큰을 발급할 수 없다
+- [ ] **조서희 님께 — `frontend` 병합분 대조에서 나온 프론트 수정 5건 (2026-09-15, 장민석)** — `apps/` 는 전담 영역이라 서버 쪽만 고치고 여기 모은다.
+  서버 쪽은 같은 날 고쳤다: 관리자·상담원 가드가 헤더 없으면 401 · 추천 카드에 `card_id`(`decisions/308`).
+  ① **막힘 — 블랙리스트 요청**(`apps/call/src/lib/api/coreClient.ts` `createBlacklistRequest`): 헤더 없이 본문 `requested_by` 를 보낸다 → 운영 `0.1.8` 에서 **늘 401**.
+  `Authorization: Bearer cga_…`(관리자가 `/admin/agent-tokens` 로 발급) 를 붙이고 `requested_by` 를 뺀다. 토큰을 어디에 두고 누가 넣을지는 화면이 정한다(`decisions/307`)
+  ② **만료 상한** — 관리자 설정 최대 **24개월**(`SettingsTab.tsx`) × 30일을 보내는데 서버 상한은 **365일**(`decisions/205` ⑤) → 13개월 이상 승인은 422. 프론트 상한을 12로 권함
+  ③ **카드 피드백** — 추천 카드 응답에 `card_id`(문자열, DB 없으면 null)가 생겼다. `submitCardFeedback` 은 응답 `feedback_id`·`card_id` 를 숫자로 기대하는데 **문자열**이다
+  ④ 해제 사유가 `"관리자 해제"` 고정(`AdminPanel.tsx`) — 동작은 하지만 왜 풀었는지가 남지 않는다
+  ⑤ `fetchCallList` 주석 「`customer_id` 늘 null」 은 낡았다 — 발신 번호가 넘어온 통화는 채워진다
+  ✅ 맞는 것: 관리자 `hubClient.ts` 경로·필드 전부 · 통화 목록·자막·수동 검색 · WS `closure`(procedure·complete/incomplete)·`call_guard`(영어 4종)·`recommendation_pending` 파서. `apps/call` `tsc --noEmit` 통과
+- [ ] **조서희 님께 — 상담기록 재생·블랙리스트 연장 API 가 생겼다 (2026-09-15, 장민석)** — 조서희 님 쪽 보고 「끝까지 못 한 것」 3·4번의 서버 몫이다.
+  ③ **`GET /hub/calls/{call_id}/record`** — 한 통화의 요약 초안·후속조치·추천(카드 `card_id` 포함)·필요서류 판정(서류별)을 한 번에. 전사는 기존 `…/transcript`.
+  **감정분석은 저장되지 않아 없다**(모델 없음) — 재생 화면의 그 칸은 비워 둔다. `0.1.9` 전 통화는 추천이 저장되지 않아 `recommendations: []`
+  ④ **`POST /hub/blacklist-entries/{id}/expiry {expires_in_days, reason}`** + **`GET …/expiry-changes`** — 연장·단축 모두 «지금부터 N일 뒤»(1~365), 사유 필수.
+  `decisions/205` 「연장은 새 요청으로만」 을 **철회**했다(`decisions/309`). 관리자 화면 `extendEntry`(개월 × 30, 로컬)를 이 API 로 바꾸고 사유 입력을 받는다
+  ✅ **2026-09-15 운영 반영**(서버 `0.1.9`, 운영 DB 27 테이블 확인) — 붙여도 된다
+- [x] **블랙리스트 연장을 되풀이하면 사실상 영구 표시가 된다 (2026-09-15, `decisions/309`)** **→ 같은 날 누적 상한 «승인일 + 365일» 로 막았다(사용자 선택, 넘으면 422). 이력 사유 보존 기간은 아직 안 정했다.** 원문 — — 365일 상한은 변경 1회에만 걸린다. 이력으로 드러날 뿐 막지 않는다.
+  **정할 것**: 등록 1건의 누적 상한(예: 승인일로부터 N일)을 둘지. 이력 테이블의 사유 보존 기간도 함께
+- [ ] **조서희 님께 — 요약 확정 API · 연장 누적 상한 (2026-09-15, 장민석)** — ① `POST /hub/calls/{id}/summary-confirmation {summary_text, inquiry_type?, follow_up_actions[]}`
+  (상담원 토큰 필수) — 통화 후 화면에서 초안을 고쳐 확정한다. 확정은 한 번(409). `GET /hub/calls/{id}/record` 의 `summary_confirmed` 가 `"true"` 가 된다(`decisions/310`)
+  ② 연장·단축은 **승인일 + 365일** 을 넘으면 422 — 응답 `detail` 에 언제까지 가능한지가 있다. ③ 게이트웨이가 `recommendation_pending`·`call_guard`·`closure` 를 이제 실제로 보낸다(`0.1.4` 배포 뒤)
+  ④ `POST /hub/calls/{id}/summary-revision {summary_text, reason, …}` + `GET …/summary-revisions`(상담원 토큰) — 확정된 요약을 사유와 함께 고친다. 확정 전 409(`decisions/311`)
+  ⑤ 관리자 `POST /hub/blacklist-retention/purge` — 끝난 뒤 180일 지난 문장을 비운다(`decisions/312`). 관리자 화면에 버튼이 필요하다
+  ⚠ 전부 **운영 반영 전**(서버 `0.1.10` · 게이트웨이 `0.1.4`). **`0.1.10` 은 운영 DB 마이그레이션이 먼저다**(`2026-09-15-summary-revision-app-setting.sql`, 27 → 28)
+- [ ] **조서희 님께 — J-5 베테랑 기준 설정이 서버에 생겼다 (2026-09-15, 장민석)** — 설정 탭 「근속 연차」 를 `GET /hub/routing-settings`(현재값, `saved:"false"` 면 기본 3년) ·
+  `PUT /hub/routing-settings {veteran_years: 0.5~40}` 에 붙이면 된다(관리자 로그인). 화면의 «서버에 연결 안 됨» 문구는 운영 반영 뒤 걷어도 된다.
+  배정 판정 자체(`POST /hub/routing-decisions`)는 교환기가 부르는 것이라 화면이 부를 일은 없다. `fell_back` 집계 화면이 필요하면 조회 API 를 따로 만든다
+- [ ] **J-5 배정 판정을 부르는 곳이 없다 (2026-09-15, `decisions/313`)** — 교환기가 없고 게이트웨이도 부르지 않는다. 판정 API 는 인증도 없다(통화 시작과 같은 한계).
+  **정할 것**: 데모에서 게이트웨이 `/dev` 테스트 콜이 통화 시작 직후 부르게 할지 · `routing_log.fell_back` 집계를 관리자 현황판에 올릴지
+- [ ] **블랙리스트 보존 정리를 누가 언제 부르나 (2026-09-15, `decisions/312`)** — 관리자 API 만 있고 주기 실행이 없다. 부르지 않으면 비워지지 않는다.
+  **정할 것**: 관리자가 주기적으로 누를지 · CronJob 으로 부를지(운영 인스턴스 02시 자동 중지와 겹치지 않게). 대상 밖으로 남긴 것 — 승인 요청 사유·자막, 해제 사유·승인 메모, 요약 재수정 사유
 - [ ] **저장한 통화 후 초안을 읽는 경로가 없다 (2026-09-15)** — `POST /hub/calls/{id}/close` 가 이제 `call.summary_text`·`follow_up_action`(draft)에 남기지만
   `GET /hub/calls` 는 `inquiry_type`·`summary_confirmed` 만 준다. 상담원이 초안을 **확정**하는 API(`summary_confirmed_at` 채우기)도 없다.
   **정할 것**: 상담기록 화면이 목록에서 요약을 보여줄지(목록 응답에 `summary_text` 추가) 상세 조회를 따로 둘지 — 조서희 님 화면 흐름에 달렸다

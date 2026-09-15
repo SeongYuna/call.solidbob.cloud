@@ -33,13 +33,15 @@ export const DEMO_DOMAIN_LABELS: Record<DemoDomain, string> = {
 /**
  * 금융·쇼핑 F-2 처리 유형.
  * 4도메인 시절 코드. decisions/201로 다산 단일화되며 신규 시나리오에는 쓰지 않는다.
- * 삭제하지 않는다 — 4도메인으로 되돌릴 가능성 대비 기록으로 남긴다.
+ * `decisions/305`로 `ClosureEvent.closure_type` 필드 자체가 없어져 지금은 어디서도
+ * 안 쓴다. 삭제하지 않는다 — 4도메인으로 되돌릴 가능성 대비 기록으로 남긴다.
  */
 export type ClosureType = "상품해지" | "보상" | "반품" | "교환";
 
 /**
  * 다산 민원 서비스명. 지식베이스 69종 실측이 오면 그 이름을 그대로 넣는다.
- * mock은 예시 서비스명만 쓴다 (`is_example`).
+ * mock은 예시 서비스명만 쓴다 (`is_example`). `decisions/305`로 `ClosureEvent.procedure`가
+ * 이 값(또는 조항 ID)을 받는다 — 타입 자체는 참고용으로 남긴다.
  */
 export type RequiredDocsType = string;
 
@@ -81,13 +83,28 @@ export interface AgentTtsStatus {
 }
 
 /**
- * C-6 콜가드 — §7.3 계약에 아직 없다. 프론트가 mock용으로 먼저 정의했다.
- * 고객 발화 텍스트만 본다. 오디오 톤·자동 차단은 decisions/201 범위 밖.
+ * C-6 콜가드 — §7.3 계약에 아직 없지만 `category` 값은 백엔드
+ * `server/apps/hub/app/dtos/call_guard_dto.py`(`CallGuardFlag`)를 그대로 따른다.
+ * 옛 한글 3종(`폭언`·`욕설`·`위협`)은 여기서 걷어냈다 — `sexual`이 그 셋엔 없었고,
+ * `distress`는 애초에 없었다.
+ *
+ * ⚠ **`distress`를 나머지 셋과 같은 자리에 두지만, 같은 취급을 하지 않는다.**
+ * DASAN-MANUAL-5.4 — 위기 신호는 통화를 끊지 않고 전문 기관으로 연결한다(폭언과
+ * 정반대). 화면·집계 양쪽에서 `isCallGuardDistress()`로 먼저 갈라 쓴다 —
+ * `lib/blacklist/collectEvidence.ts`의 `abuseTotal()`이 이미 그렇게 한다.
+ *
+ * `severity`(low/high)는 프론트가 임시로 지어낸 필드였다 — 백엔드 DTO에 없고,
+ * 부록 A-1(위험도 점수 금지)과도 어긋나 뺐다. `segment_id`는 계약 필드가 아니라
+ * 프론트 저장소가 세그먼트별로 색인하려고 붙인 것이다.
  */
 export interface CallGuardFlag {
   segment_id: number;
-  category: "폭언" | "욕설" | "위협";
-  severity: "low" | "high";
+  category: "insult" | "threat" | "sexual" | "distress";
+}
+
+/** 위기 신호인가 — 화면·집계가 폭언과 반대로 다뤄야 하는 갈래다(MANUAL-5.4). */
+export function isCallGuardDistress(flag: CallGuardFlag): boolean {
+  return flag.category === "distress";
 }
 
 export interface DocumentSource {
@@ -176,22 +193,36 @@ export interface CallWrapUp {
 }
 
 /**
- * 4도메인 시절 F-2 판정값. decisions/201로 다산 단일화되며 화면 카피는 쓰지 않는다.
- * DTO를 재사용하므로 필드는 남긴다 — approved 는 missing 이 비었다는 뜻.
+ * F-2 필요서류 체크리스트 판정값(`_project/decisions/305`, 2026-09-14).
+ * 「차단」이 아니라 「경고」다(rev.5) — `complete`는 missing 이 비었다는 뜻.
+ * 옛 `approved`/`blocked`는 여기서 걷어냈다(4도메인 시절 값, git 이력에 남아 있다).
  */
-export type ClosureVerdict = "approved" | "blocked";
+export type ClosureVerdict = "complete" | "incomplete";
 
+/**
+ * `_project/decisions/305` — `closure_type`(4도메인 처리유형)·`approved`/`blocked`를
+ * 걷어내고 `procedure`(필요서류 조항 ID·추천 카드 `source.doc_id`와 같은 체계) +
+ * `verdict: complete/incomplete`로 바꿨다. 계약 예시(`server/apps/hub/app/dtos/closure_verdict_dto.py`):
+ * `{"call_id","procedure","procedure_title","evidence","verdict","missing","source","detected"}`.
+ * 값은 전부 문자열로 온다(다른 계약 3종과 같다) — 파싱은 `lib/ws/realGatewayClient.ts`가 한다.
+ */
 export interface ClosureEvent {
   call_id: string;
-  /** 금융·쇼핑이면 ClosureType, 다산이면 서비스명(RequiredDocsType). */
-  closure_type: ClosureType | RequiredDocsType;
-  reason: string;
-  /** 키 = 종결 요건 항목 → 다산에서는 이 서비스에 필요한 서류 하나. */
+  /** 필요서류 조항 ID(`DASAN-TERM-4.4`) 또는 다산 서비스명. 옛 closure_type을 대체한다. */
+  procedure: string;
+  /** 조항 제목. 서버가 안 보내면 화면은 procedure 값을 그대로 쓴다. */
+  procedure_title?: string;
+  reason?: string | null;
+  /** 키 = 이 절차에 필요한 서류 하나 → 안내했는가. */
   evidence: Record<string, boolean>;
   verdict: ClosureVerdict;
-  /** 상담원이 아직 안내하지 않은 서류(다산) / 미충족 종결 항목(4도메인). */
+  /** 상담원이 아직 안내하지 않은 필수 서류 — 빠짐없이. */
   missing: string[];
-  source: DocumentSource;
+  /** 조건부 추가 서류 — 판정에는 넣지 않는다. 「해당하면 함께」로만 보여준다. */
+  conditional?: string[];
+  source?: DocumentSource;
+  /** true면 상담원 발화 키워드로 자동 판정했다 — 부정 문맥을 모른다. */
+  detected: boolean;
   domain?: DemoDomain;
   /**
    * 프론트 전용. 69종 구비서류 실측이 지식베이스에 오기 전 mock임을 표시한다.

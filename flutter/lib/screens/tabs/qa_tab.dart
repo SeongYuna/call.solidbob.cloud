@@ -9,7 +9,7 @@ class QaTab extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = context.colors;
     return ListView(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(AppSpacing.cardPadding),
       children: [
         Text(
           '상담 분위기가 "주의 필요"였거나 콜가드 경고가 뜬 통화입니다. '

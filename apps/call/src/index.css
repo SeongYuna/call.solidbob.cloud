@@ -270,6 +270,8 @@ button {
 
 .call-history-heading {
   margin: 0 0 8px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--line);
   font-size: 12px;
   font-weight: 600;
   color: var(--muted);
@@ -360,23 +362,30 @@ button {
   gap: 4px;
 }
 
+/* 2026-09-15 — 항목 전체(재생 버튼 포함)를 카드 하나로 본다. 호버 배경은
+   여기서 한 번만 준다 — 재생 버튼 위에 마우스가 있어도 행 전체가 밝아진다. */
 .call-history-item {
   display: flex;
   align-items: stretch;
   gap: 2px;
+  border-radius: var(--radius-chip);
+}
+
+.call-history-item:hover {
+  background: var(--hover);
 }
 
 .call-history-row {
   display: grid;
   grid-template-columns: 7.2em auto minmax(0, 1fr) auto;
-  gap: 8px;
+  gap: 12px;
   align-items: center;
   flex: 1;
   min-width: 0;
   width: auto;
   padding: 8px 10px;
   border: 0;
-  border-radius: 7px;
+  border-radius: var(--radius-chip);
   background: transparent;
   color: var(--text);
   font-family: inherit;
@@ -385,7 +394,6 @@ button {
   cursor: pointer;
 }
 
-.call-history-row:hover,
 .call-history-row:focus-visible {
   background: var(--hover);
   color: var(--text);
@@ -432,7 +440,7 @@ button {
   margin: 0;
   padding: 0;
   border: 0;
-  border-radius: 7px;
+  border-radius: var(--radius-chip);
   background: transparent;
   color: var(--muted);
   cursor: pointer;
@@ -743,6 +751,7 @@ button {
   gap: 12px;
   padding: 12px 24px;
   background: var(--paper);
+  border-bottom: 1px solid var(--line);
 }
 
 .terms-chips {
@@ -1260,8 +1269,12 @@ button {
   white-space: nowrap;
 }
 
-.callguard-pill.is-high {
-  background: #fff5f5;
+/* 위기 신호(distress)는 폭언과 반대로 다룬다(MANUAL-5.4) — 같은 파랑 톤을
+   customer-risk 배너의 is-distress 와 맞춘다(색은 새로 만들지 않는다). */
+.callguard-row.is-distress .callguard-pill {
+  border-color: #3d4bb8;
+  color: #3d4bb8;
+  background: #eef0fd;
 }
 
 .callguard-hint {
@@ -1515,11 +1528,30 @@ button {
   letter-spacing: 0.02em;
 }
 
+/* 2026-09-15 — 카드형 구획 + 좌측 상태 바(met/missing)로 다듬었다. 텍스트
+   위계(라벨 진하게 --text · 안내 문구 연하게 --muted)는 아이콘/좌측 바 색과
+   별개로 항상 같은 톤을 쓴다 — 상태 표시를 색 하나에 몰아주지 않는다. */
 .evidence-list li {
   display: flex;
   align-items: flex-start;
   gap: 12px;
-  padding: 8px 0;
+  padding: 12px 16px;
+  margin-bottom: 8px;
+  border-radius: var(--radius-chip);
+  background: var(--hover);
+  border-left: 4px solid var(--line);
+}
+
+.evidence-list li:last-child {
+  margin-bottom: 0;
+}
+
+.evidence-list li.met {
+  border-left-color: var(--ok-fg);
+}
+
+.evidence-list li.missing {
+  border-left-color: var(--warn-fg);
 }
 
 .evidence-copy {
@@ -1529,6 +1561,8 @@ button {
 .evidence-label {
   margin: 0;
   font-size: 13.5px;
+  font-weight: 600;
+  color: var(--text);
 }
 
 .evidence-clause {
@@ -1542,29 +1576,21 @@ button {
 }
 
 .evidence-say {
-  margin: 4px 0 0;
+  margin: 8px 0 0;
   font-size: 12.5px;
   font-weight: 400;
   line-height: 1.45;
-  color: #8f2a29;
-}
-
-.evidence-list .missing {
-  color: #8f2a29;
-}
-
-.evidence-list .met {
-  color: var(--text);
+  color: var(--muted);
 }
 
 .evidence-icon {
   display: block;
   flex-shrink: 0;
-  color: #1f7a43;
+  color: var(--ok-fg);
 }
 
 .evidence-list .missing .evidence-icon {
-  color: #8f2a29;
+  color: var(--warn-fg);
 }
 
 .manual-search {
@@ -3066,13 +3092,16 @@ button {
   }
 }
 
-/* --- 재상담 고객 이력 요약 (2026-09-14) — 필요서류 카드 위, 통화 시작 시 자동으로 뜬다 --- */
+/* --- 재상담 고객 이력 요약 (2026-09-14) — 필요서류 카드 위, 통화 시작 시 자동으로 뜬다 ---
+   2026-09-15 — 카드 전체는 다른 카드들과 같은 중립 톤(--paper·--line·--radius-card)으로
+   두고, "재상담 고객" 배지만 --ok-bg/--ok-fg 로 색을 몰아줘 헤더처럼 도드라지게 했다. */
 .customer-history-summary {
   flex-shrink: 0;
   margin: 10px 24px 0;
-  border-radius: 14px;
-  background: var(--ok-bg);
-  color: var(--ok-fg);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  background: var(--paper);
+  color: var(--text);
   overflow: hidden;
 }
 
@@ -3090,7 +3119,16 @@ button {
   text-align: left;
 }
 
+/* 펼쳐졌을 때만 — 배지 영역이 카드 헤더, 그 아래가 본문으로 보이게 */
+.customer-history-summary:not(.is-collapsed) .customer-history-toggle {
+  border-bottom: 1px solid var(--line);
+}
+
 .customer-history-badge {
+  padding: 3px 10px;
+  border-radius: var(--radius-pill);
+  background: var(--ok-bg);
+  color: var(--ok-fg);
   font-size: 13px;
   font-weight: 700;
   white-space: nowrap;
@@ -3100,11 +3138,12 @@ button {
   flex: 1;
   font-size: 12.5px;
   font-weight: 600;
-  opacity: 0.85;
+  color: var(--muted);
 }
 
 .customer-history-chevron {
   flex-shrink: 0;
+  color: var(--muted);
   transition: transform 0.15s ease;
 }
 
@@ -3126,21 +3165,37 @@ button {
   font-size: 12.5px;
 }
 
+/* 날짜 ↔ 문의유형 — 좌우로 벌린 라벨-값 구조 */
 .customer-history-list li {
   display: flex;
+  align-items: baseline;
+  justify-content: space-between;
   gap: 8px;
 }
 
 .customer-history-list time {
   flex-shrink: 0;
   font-family: var(--mono);
-  opacity: 0.8;
+  color: var(--muted);
 }
 
+.customer-history-list li span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 600;
+  color: var(--text);
+  text-align: right;
+}
+
+/* 카드 본문 padding 바깥까지 번지게 해 하단 구획처럼 보이게 한다 —
+   부모(.customer-history-summary)의 overflow:hidden·radius 가 모서리를 정리한다. */
 .customer-history-memo {
-  margin: 0;
-  padding-top: 8px;
-  border-top: 1px solid color-mix(in srgb, var(--ok-fg) 20%, transparent);
+  margin: 8px -14px -12px;
+  padding: 10px 14px 12px;
+  border-top: 1px solid var(--line);
+  background: var(--hover);
   font-size: 12.5px;
   line-height: 1.5;
 }
