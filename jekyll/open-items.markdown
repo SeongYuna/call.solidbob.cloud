@@ -532,7 +532,7 @@ Environment Variables → **Production 만** → Deployments → Redeploy(`VITE_
   **감정분석은 저장되지 않아 없다**(모델 없음) — 재생 화면의 그 칸은 비워 둔다. `0.1.9` 전 통화는 추천이 저장되지 않아 `recommendations: []`
   ④ **`POST /hub/blacklist-entries/{id}/expiry {expires_in_days, reason}`** + **`GET …/expiry-changes`** — 연장·단축 모두 «지금부터 N일 뒤»(1~365), 사유 필수.
   `decisions/205` 「연장은 새 요청으로만」 을 **철회**했다(`decisions/309`). 관리자 화면 `extendEntry`(개월 × 30, 로컬)를 이 API 로 바꾸고 사유 입력을 받는다
-  ⚠ 둘 다 **운영 반영 전**이다. ④는 운영 DB 마이그레이션이 먼저다(`db/migrations/2026-09-15-blacklist-expiry-change.sql`)
+  ✅ **2026-09-15 운영 반영**(서버 `0.1.9`, 운영 DB 27 테이블 확인) — 붙여도 된다
 - [ ] **블랙리스트 연장을 되풀이하면 사실상 영구 표시가 된다 (2026-09-15, `decisions/309`)** — 365일 상한은 변경 1회에만 걸린다. 이력으로 드러날 뿐 막지 않는다.
   **정할 것**: 등록 1건의 누적 상한(예: 승인일로부터 N일)을 둘지. 이력 테이블의 사유 보존 기간도 함께
 - [ ] **저장한 통화 후 초안을 읽는 경로가 없다 (2026-09-15)** — `POST /hub/calls/{id}/close` 가 이제 `call.summary_text`·`follow_up_action`(draft)에 남기지만
