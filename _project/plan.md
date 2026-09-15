@@ -1079,12 +1079,14 @@ F-2(필요서류 체크리스트)가 참조하는 필수 항목 정의도 이 �
 | `POST /hub/search` `{utterance, top_k}` | 상담원 수동 검색 | `{query, docs: [{doc_id, title, snippet, score}]}` — 카드 모양 변환(`summary` ← `snippet`, `source_type: "manual"`)은 화면 몫 |
 | `GET /hub/calls?limit&offset&customer_id` | 상담기록 | 최근 시작순 통화 목록. `customer_id` 는 HMAC — 재상담 이력 |
 | `GET /hub/calls/{id}/transcript` | 상담기록 | 마스킹된 자막 재조회 |
+| `GET /hub/calls/{id}/record` | 상담기록 재생 | `{call_id, status, started_at, ended_at, summary_text, inquiry_type, summary_confirmed, follow_up_actions[{action_text, status}], recommendations[{recommendation_id, trigger_at_ms, internal_latency_ms, created_at, cards[{card_id, rank, title, summary, source_doc_id, similarity_score}]}], closures[{closure_id, procedure, verdict, detected, reason, source_doc_id, decided_at, items[{rank, document_name, informed}]}]}` — 저장된 것만. 감정분석·통번역은 저장되지 않아 없다. 없는 통화 404 |
 | `POST /hub/closure-checks` `{call_id, procedure, evidence, reason}` | 체크리스트를 사람이 채울 때 | 위 판정 JSON(`detected: "false"`) |
 | `POST /hub/calls/{id}/close` `{call_id, segments: [{segment_id, speaker, text}]}` | 통화 후 화면 | `{call_id, summary_text, inquiry_type, follow_up_actions: [{action_text}], confirmed: "false"}` — **규칙 발췌 초안**(`decisions/306`). `inquiry_type` 은 늘 `null`, 저장하지 않는다(아직) |
 | `POST /hub/cards/{card_id}/feedback` `{action: adopted\|ignored}` | 상담원 | `{feedback_id, card_id, action}`. `card_id` 는 추천 카드 응답의 값(`decisions/308`). 상담원 ID 를 받지 않는다(부록 A-1 — 상담원 단위 집계 금지) |
 | `POST /hub/blacklist-requests` `{call_id, reason}` + 헤더 **`Authorization: Bearer cga_…`** | **상담원 토큰** | `pending` 요청. **요청자는 토큰에서 온다** — 본문 `requested_by` 는 없다(실어도 무시, `decisions/307`). 토큰 없음·폐기 401 · 근거·고객·자막은 서버가 모은다 · `has_distress` |
 | `GET /hub/blacklist-requests?status` · `POST …/{id}/decision {approve, expires_in_days, note}` | **관리자 로그인** | 승인 시 등록 에피소드. 결정자는 `admin_account.agent_id` |
 | `GET /hub/blacklist-entries?active_only` · `POST …/{id}/release {reason}` | **관리자 로그인** | 해제는 지우지 않고 기록 |
+| `POST /hub/blacklist-entries/{id}/expiry {expires_in_days, reason}` · `GET …/{id}/expiry-changes` | **관리자 로그인** | 만료를 «지금부터 N일 뒤»(1~365)로 — 연장·단축 모두. 사유 필수(마스킹) · 이력이 쌓인다 · 해제된 등록 409(`decisions/309`) |
 | `GET /hub/call-guard-flags?call_id&category&limit&offset` | **관리자 로그인** | 콜 가드 로그 |
 | `POST /admin/agent-tokens` `{agent_id}` · `GET /admin/agent-tokens?agent_id` · `POST /admin/agent-tokens/{id}/revoke` | **관리자 로그인** | 상담원 토큰 발급·목록·폐기. **원문 `token` 은 발급 응답에만 한 번** — 목록·폐기 응답에는 없다. 만료 없음(폐기로만 끊는다) |
 
