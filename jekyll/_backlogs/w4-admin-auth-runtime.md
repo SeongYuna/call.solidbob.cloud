@@ -2,7 +2,7 @@
 title: "관리자 로그인 운영 배선 — Redis · 시크릿 키 3종 · RDS 테이블"
 assignee: "정성윤"
 role: "infra"
-status: "todo"
+status: "in-progress"
 sprint: 4
 priority: 1
 date: 2026-09-14
@@ -27,13 +27,21 @@ paths:
 
 ## 할 것
 
-- [ ] **Redis** — `infra/k8s/base/` 에 매니페스트가 0건이다. 세션 토큰이라 휘발해도 되는 성격인지
-      (Deployment + emptyDir) 아니면 PVC 를 붙일지 먼저 정한다. ES 처럼 StatefulSet 까지 갈 이유는 없어 보인다
-- [ ] **`server-env` 시크릿에 키 3종** — `GOOGLE_OAUTH_CLIENT_ID` · `ADMIN_JWT_SECRET` · `REDIS_URL`.
+- [x] **Redis** — `infra/k8s/base/redis.yaml` 신설(Deployment + ClusterIP Service), kustomize `resources` 에 추가.
+      **휘발로 정했다** — 볼륨 없이 `--save "" --appendonly no`. 잃을 것이 5분짜리 access token 세션뿐이고
+      refresh 는 RDS 에 있어 사용자는 재로그인 없이 복구된다(`decisions/112` §2). 다음 릴리스에 같이 적용된다
+- [ ] **`server-env` 시크릿에 키 3종** ← 값이 필요해 남았다. 키 설명은 `secret.example.yaml` ① 에 적었다 — `GOOGLE_OAUTH_CLIENT_ID` · `ADMIN_JWT_SECRET` · `REDIS_URL`.
       값은 SSM 세션 안에서 `--from-env-file` 로 넣는다(런북 12-2). **GitHub·로그·이 저장소 어디에도 값이 남지 않게 한다**(SEC-2)
-- [ ] **RDS 에 `admin_account` · `admin_refresh_token`** — `db/schema.sql` 에는 있고 `callguard-pg` 에는 없다.
-      운영 스키마를 손으로 따라가는 방식이 이번이 세 번째다 → 마이그레이션 절차를 런북에 한 줄로 남긴다
-- [ ] `.env.example` 에 위 세 키 이름 추가 (값 없이)
+- [x] **RDS 에 `admin_account` · `admin_refresh_token`** — 이미 들어가 있다.
+      `db/migrations/2026-09-14-customer-ref-admin-closure.sql` 이 만들었고 09-15 확인에서 **26 테이블 일치**
+      (`_logs/2026-09-15-05-minseok.md`). 09-14 에 「없다」고 적은 것은 그 시점 사실이었고, 마이그레이션이 그 뒤에 들어갔다
+- [ ] **허용 목록 행 1건** — `admin_account` 에 본인 구글 이메일(소문자). 이게 없으면 인증을 통과해도 403 이다.
+      절차는 런북 **17-4**. **이메일은 저장소에 적지 않는다**(§8)
+- [x] `.env.example` 에 위 세 키 이름 추가 (값 없이) — 이미 들어가 있었다(93·96·105행)
+- [ ] **`CORS_ALLOWED_ORIGINS` 에 `https://admin.solidbob.cloud` 추가** — 관리자 화면은 상담원 화면과
+      **다른 오리진**이다. 빠지면 브라우저가 프리플라이트에서 막고 **서버 로그에는 아무것도 안 남는다**
+- [ ] **구글 클라우드 콘솔** — 웹 애플리케이션 OAuth 클라이언트 생성. 승인된 JavaScript 원본에
+      `https://admin.solidbob.cloud` · `http://localhost:5174`. 리다이렉트 URI 는 필요 없다(GIS 는 id_token 방식)
 - [ ] 붙인 뒤 실제 로그인 한 번 — 500 이 아닌 것까지 봐야 완료다
 
 ## 완료 조건
@@ -43,3 +51,12 @@ paths:
 ## 안 하는 것
 
 - **관리자 계정을 코드·저장소에 넣지 않는다.** `admin_account` 는 허용 목록이라 행 추가는 DB 쪽 작업이다
+
+## 진행 (2026-09-15)
+
+저장소 쪽은 닫았다 — `redis.yaml` · kustomization · `secret.example.yaml`(키 3종 + CORS 주의) ·
+런북 **16-3**(세션 Redis) · **17-4**(첫 관리자 계정). 근거는 `_project/decisions/112`.
+
+**남은 것은 전부 값·계정 작업이다**(저장소에 들어갈 수 없는 것들): 구글 OAuth 클라이언트 ID ·
+`ADMIN_JWT_SECRET` 생성 · `server-env` patch · 허용 목록 행 1건(테이블은 이미 있다).
+화면 배포는 `w4-admin-subdomain` 으로 갈랐다.

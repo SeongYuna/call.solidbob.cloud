@@ -18,6 +18,7 @@ namespace: callguard
 resources:
   - namespace.yaml
   - elasticsearch.yaml
+  - redis.yaml          # 관리자 로그인 세션(5분). 휘발 — 볼륨 없음(decisions/112)
   - server.yaml
   - gateway.yaml
   - ingress.yaml
