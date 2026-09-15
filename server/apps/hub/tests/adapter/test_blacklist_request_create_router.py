@@ -64,3 +64,10 @@ def test_요청자는_본문이_아니라_토큰에서_온다():
     (_, saved), = blacklist.calls
     assert saved.requested_by == "agent-7"
     assert r.json()["request"]["requested_by"] == "agent-7"
+
+
+def test_헤더가_없으면_DB_설정이_없어도_501이_아니라_401이다():
+    """헤더 검사가 저장소 의존성(DB 없으면 501)보다 먼저다 — 누가 불렀는지 모르면 인프라를 보기 전에 끊는다."""
+    app.dependency_overrides.clear()
+    with TestClient(app) as client:
+        assert client.post("/hub/blacklist-requests", json=BODY).status_code == 401
