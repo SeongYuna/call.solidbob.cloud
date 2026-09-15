@@ -1435,7 +1435,7 @@ curl -fsS $B/hub/calls/$C/transcript
 {"status":"ok","postgres_configured":true,"elasticsearch_configured":true,"spokes":["masking","closure_gate","retrieval","trigger","call_guard"]}
 ```
 
-> **2026-09-15 `server` 브랜치 이후 이미지부터** `closure_gate` 뒤에 `postcall` 이 붙는다(`decisions/306` — D-1 규칙 발췌 초안).
+> **`0.1.8` 부터**(2026-09-15 `server` 브랜치, PR #86) `closure_gate` 뒤에 `postcall` 이 붙는다(`decisions/306` — D-1 규칙 발췌 초안).
 > S3 가 설정돼 있으면 끝에 `uploads` 도 있다. 순서는 상관없다.
 >
 > ⚠ **같은 이미지는 DB 스키마도 바뀐다**(`decisions/307`) — `agent_token` 신설(25 → 26 테이블). **이미지를 올리기 전에**
