@@ -518,6 +518,15 @@ Environment Variables → **Production 만** → Deployments → Redeploy(`VITE_
 - [ ] **관리자 가드가 «헤더 없음» 에도 500 이다 — 운영에서 확인 (2026-09-15)** — `0.1.8` 배포 뒤 `GET /admin/agent-tokens`·`GET /hub/blacklist-requests`·`/admin/auth/me` 가 로그인 없이 **401 이 아니라 500**.
   `require_admin` 이 `Authorization` 을 보기 전에 `get_current_admin_use_case` → Redis 프로바이더를 먼저 풀어, Redis 가 없으면 `RuntimeError` 가 난다. 운영 Redis(`w4-admin-auth-runtime`, 정성윤 님)가 붙으면 증상은 사라지지만
   **헤더가 없으면 인프라를 타기 전에 401** 이 맞다 — 가드에서 헤더 검사를 의존성 해석보다 앞에 두는 수정은 `server/` 몫(장민석). 이 상태로는 운영에서 상담원 토큰을 발급할 수 없다
+- [ ] **조서희 님께 — `frontend` 병합분 대조에서 나온 프론트 수정 5건 (2026-09-15, 장민석)** — `apps/` 는 전담 영역이라 서버 쪽만 고치고 여기 모은다.
+  서버 쪽은 같은 날 고쳤다: 관리자·상담원 가드가 헤더 없으면 401 · 추천 카드에 `card_id`(`decisions/308`).
+  ① **막힘 — 블랙리스트 요청**(`apps/call/src/lib/api/coreClient.ts` `createBlacklistRequest`): 헤더 없이 본문 `requested_by` 를 보낸다 → 운영 `0.1.8` 에서 **늘 401**.
+  `Authorization: Bearer cga_…`(관리자가 `/admin/agent-tokens` 로 발급) 를 붙이고 `requested_by` 를 뺀다. 토큰을 어디에 두고 누가 넣을지는 화면이 정한다(`decisions/307`)
+  ② **만료 상한** — 관리자 설정 최대 **24개월**(`SettingsTab.tsx`) × 30일을 보내는데 서버 상한은 **365일**(`decisions/205` ⑤) → 13개월 이상 승인은 422. 프론트 상한을 12로 권함
+  ③ **카드 피드백** — 추천 카드 응답에 `card_id`(문자열, DB 없으면 null)가 생겼다. `submitCardFeedback` 은 응답 `feedback_id`·`card_id` 를 숫자로 기대하는데 **문자열**이다
+  ④ 해제 사유가 `"관리자 해제"` 고정(`AdminPanel.tsx`) — 동작은 하지만 왜 풀었는지가 남지 않는다
+  ⑤ `fetchCallList` 주석 「`customer_id` 늘 null」 은 낡았다 — 발신 번호가 넘어온 통화는 채워진다
+  ✅ 맞는 것: 관리자 `hubClient.ts` 경로·필드 전부 · 통화 목록·자막·수동 검색 · WS `closure`(procedure·complete/incomplete)·`call_guard`(영어 4종)·`recommendation_pending` 파서. `apps/call` `tsc --noEmit` 통과
 - [ ] **저장한 통화 후 초안을 읽는 경로가 없다 (2026-09-15)** — `POST /hub/calls/{id}/close` 가 이제 `call.summary_text`·`follow_up_action`(draft)에 남기지만
   `GET /hub/calls` 는 `inquiry_type`·`summary_confirmed` 만 준다. 상담원이 초안을 **확정**하는 API(`summary_confirmed_at` 채우기)도 없다.
   **정할 것**: 상담기록 화면이 목록에서 요약을 보여줄지(목록 응답에 `summary_text` 추가) 상세 조회를 따로 둘지 — 조서희 님 화면 흐름에 달렸다
