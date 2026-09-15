@@ -492,3 +492,28 @@ Environment Variables → **Production 만** → Deployments → Redeploy(`VITE_
   `kustomization.yaml` 의 `newTag` 와 무관하다). **정할 것**: 빌드 시점에 이미지 태그를 넣어
   (`--build-arg` → 환경변수 → `/health`) 어느 이미지가 도는지 응답으로 알 수 있게 할지.
   그러면 `server/core/config.py` 와 `secret.example.yaml` 이 같이 움직인다(런북 16-1).
+
+### `w4-dashboard-live-contract` 로 드러난 계약 구멍 셋 (신규, 2026-09-15)
+
+- [ ] **카드 피드백(`POST /hub/cards/{id}/feedback`)을 부를 방법이 없다** — 엔드포인트는
+  09-14 부터 있었는데 추천 카드 응답(`RecommendResponse.cards[]`, 7.3절)에 `card_id`가
+  없다. 카드 하나를 가리킬 값 자체가 계약에 없다(2026-09-11 미결 항목과 같은 지적이 아직
+  안 풀렸다). 프론트 함수(`coreClient.ts`의 `submitCardFeedback`)는 만들어 뒀지만 어디서도
+  안 부른다. **정할 것**: `CardSchema`에 `card_id`를 추가할지, 추가한다면 DB
+  `recommendation_card` 저장 경로부터 있어야 한다(`INSERT INTO "recommendation…"` 가
+  0곳이라는 09-11 지적이 그대로다). 담당: 장민석
+- [ ] **상담기록(통화 재생) 화면을 실제 API로 못 바꾼다** — `apps/call`의 "상담기록"은 지금
+  카드·종결·감정분석까지 통째로 재생하는 mock 시나리오(`mock/callHistory.ts`) 기반인데,
+  실제 API(`GET /hub/calls`·`GET /hub/calls/{id}/transcript`)는 통화 목록+자막만 준다 —
+  카드·종결·감정분석 재조회 엔드포인트가 없다. REST 함수(`fetchCallList`·
+  `fetchCallTranscript`)는 만들어 뒀다. **정할 것**: 라이브 모드에서는 상담기록 재생을
+  "자막만" 보여주는 걸로 기능을 줄일지, 재생에 필요한 나머지(카드·종결·감정분석)를
+  저장·재조회하는 엔드포인트를 새로 만들지 — 후자면 서버·`ai/` 양쪽에 걸린 작업이다.
+  담당: 조서희(화면) ↔ 장민석(엔드포인트, 필요하다면)
+- [ ] **관리자 "지식베이스 갭" 화면이 실제 계약과 모양이 다르다** — 화면(`KnowledgeGapTab.tsx`)은
+  지금 `{call_id, query, found}`(상담원이 직접 검색해 못 찾은 질의) 기준으로 묶어 세는데,
+  실제 `GET /hub/knowledge-gaps` 계약은 `{module: B|C|F, description, status: open|resolved}`
+  (더 넓은 D-4 공백 개념)라 필드가 아예 다르다 — 이름만 바꿔서 옮길 수 없다. REST 함수
+  (`hubClient.ts`의 `fetchKnowledgeGaps`)는 만들어 뒀지만 화면엔 안 붙였다. **정할 것**:
+  탭을 "질의 그룹핑 랭킹"에서 "module 뱃지 + 설명 + 해제(resolve) 버튼" 목록으로 다시
+  설계할지. 담당: 조서희
