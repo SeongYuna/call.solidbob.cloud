@@ -1,6 +1,6 @@
 import { useEffect, type ReactElement } from "react";
 import { captureAgentCallTokenFromUrl } from "../lib/agentCallToken";
-import { useAgentCallSession } from "../lib/useAgentCallSession";
+import type { AgentCallSession } from "../lib/useAgentCallSession";
 
 function formatClock(totalSeconds: number): string {
   const m = Math.floor(totalSeconds / 60)
@@ -16,22 +16,23 @@ function formatClock(totalSeconds: number): string {
  * 말하면 이 박스 안에 실시간으로(딜레이는 있어도 된다) 텍스트가 뜬다.
  * apps/platform 히어로의 통화 데모와 같은 배선·같은 팀 전용 토큰 규칙을 쓴다
  * — 음성 자체는 절대 녹음·전송하지 않고 브라우저 음성 인식이 만든 글자만 보낸다.
+ *
+ * 세션(useAgentCallSession)은 App.tsx에서 만들어 props로 받는다 — "통화받기"를
+ * 누르면 연결 성공 여부(active/no-token/unsupported/error 무엇이든)와 상관없이
+ * 상담기록(대시보드)이 바로 보이도록 이 박스를 숨긴다(2026-09-16 사용자 지시 —
+ * 팀 전용 토큰이 없는 로컬 테스트에서도 팝업이 막고 있으면 안 된다). 마이크·WS는
+ * 계속 떠 있을 수 있고 헤더의 기존 "통화 종료"가 그것까지 끊는다(`end("ended")`
+ * → status "ended" → 이 박스가 다시 뜬다).
  */
-export function AgentCallBox(): ReactElement {
-  const { status, elapsedSeconds, turns, errorMessage, start, end } = useAgentCallSession();
+export function AgentCallBox({ session }: { session: AgentCallSession }): ReactElement | null {
+  const { status, elapsedSeconds, start } = session;
 
   useEffect(() => {
     captureAgentCallTokenFromUrl();
   }, []);
 
-  const active = status === "active";
-
-  function handleToggle(): void {
-    if (active || status === "connecting") {
-      end("ended");
-      return;
-    }
-    start();
+  if (status !== "idle" && status !== "ended") {
+    return null;
   }
 
   return (
@@ -47,39 +48,16 @@ export function AgentCallBox(): ReactElement {
       >
         <header className="agent-call-head">
           <p className="agent-call-title">
-            <span className={`agent-call-dot${active ? " live" : ""}`} aria-hidden="true" />
+            <span className="agent-call-dot" aria-hidden="true" />
             고객과 전화하기
           </p>
           <p className="agent-call-clock">{formatClock(elapsedSeconds)}</p>
         </header>
 
         <div className="agent-call-body">
-          {status === "idle" || status === "ended" ? (
-            <p className="agent-call-hint">
-              통화를 시작하면 마이크로 말하는 내용이 실시간 텍스트로 여기에 표시됩니다.
-            </p>
-          ) : status === "no-token" ? (
-            <p className="agent-call-hint">
-              이 기능은 팀 내부 테스트용입니다. 지금 이 브라우저는 테스트 권한(팀 전용
-              링크)이 없어 실제로 연결되지 않습니다.
-            </p>
-          ) : status === "unsupported" ? (
-            <p className="agent-call-hint">이 브라우저는 음성 인식을 지원하지 않습니다. 크롬으로 열어주세요.</p>
-          ) : status === "connecting" ? (
-            <p className="agent-call-hint">연결하는 중…</p>
-          ) : status === "error" ? (
-            <p className="agent-call-hint">{errorMessage ?? "연결에 실패했습니다."}</p>
-          ) : turns.length === 0 ? (
-            <p className="agent-call-hint">마이크에 대고 말씀하시면 여기에 표시됩니다.</p>
-          ) : (
-            <ul className="agent-call-turns">
-              {turns.map((turn) => (
-                <li key={turn.id} className={turn.interim ? "interim" : undefined}>
-                  {turn.interim ? `… ${turn.text}` : `“${turn.text}”`}
-                </li>
-              ))}
-            </ul>
-          )}
+          <p className="agent-call-hint">
+            통화를 시작하면 마이크로 말하는 내용이 실시간 텍스트로 여기에 표시됩니다.
+          </p>
         </div>
 
         <p className="agent-call-note">
@@ -87,8 +65,8 @@ export function AgentCallBox(): ReactElement {
           텍스트만 마스킹을 거쳐 처리됩니다.
         </p>
 
-        <button type="button" className="agent-call-toggle" onClick={handleToggle}>
-          {active || status === "connecting" ? "통화 종료" : "통화 시작"}
+        <button type="button" className="agent-call-toggle" onClick={start}>
+          통화받기
         </button>
       </aside>
     </div>

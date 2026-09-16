@@ -2981,7 +2981,9 @@ button {
   display: grid;
   place-items: center;
   padding: 24px;
-  background: rgba(20, 20, 18, 0.5);
+  background: rgba(20, 20, 18, 0.35);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
   animation: agent-call-backdrop-in 180ms ease-out;
 }
 
