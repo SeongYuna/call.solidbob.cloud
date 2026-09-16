@@ -3044,6 +3044,27 @@ button {
   color: var(--warn-fg);
 }
 
+/* 지식베이스 갭 module 뱃지 — B(검색 실패)는 중립, C(놓친 위반)는 컴플라이언스와
+   같은 warn 톤, F(사후 문제)는 가장 심각해 pii 색을 빌린다. */
+.admin-module-badge {
+  flex-shrink: 0;
+  padding: 2px 8px;
+  border-radius: var(--radius-pill);
+  background: var(--hover);
+  color: var(--muted);
+  font-size: 0.75rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.admin-module-badge.module-c {
+  background: var(--warn-bg);
+  color: var(--warn-fg);
+}
+.admin-module-badge.module-f {
+  background: color-mix(in srgb, var(--pii) 16%, transparent);
+  color: var(--pii);
+}
+
 /* 현황판 — .standby-kpi 카드와 같은 무게감(큰 숫자 + 배지)을 쓴다. */
 /* 2026-09-15 — 좌측 통계 카드 + 우측 비율 도넛. 데스크톱 기준, 반응형은 신경 안 쓴다. */
 .wallboard-layout {

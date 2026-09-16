@@ -1,58 +1,48 @@
-import { useMemo, type ReactElement } from "react";
-import type { KnowledgeGapEntry } from "../../types/blacklist";
+import { useMemo, useState, type ReactElement } from "react";
+import type { KnowledgeGapItem } from "../../lib/api/hubClient";
 
-interface GapRow {
-  query: string;
-  missCount: number;
-  totalCount: number;
-  callIds: string[];
-}
+const MODULE_LABEL: Record<KnowledgeGapItem["module"], string> = {
+  B: "B · 검색 실패",
+  C: "C · 놓친 위반",
+  F: "F · 사후 문제",
+};
+
+type GapFilter = "all" | "open" | "resolved";
 
 /**
- * 지식베이스 갭 관리. Zendesk Guide Admin·Intercom의 "콘텐츠 갭" 리포트를
- * 본떴다 — D-4(공백 리포트)는 지금까지 통화 1건 단위(`CallSummaryPanel`)로만
- * 보였는데, 여러 통화에 걸쳐 모아야 "어떤 질문이 자주 안 잡히는지" 우선순위가
- * 보인다. 판정을 새로 하지 않는다 — `knowledgeGapLog`(상담원이 직접 검색한 기록)를
- * 질의 기준으로 묶어 세기만 한다.
+ * 지식베이스 갭 관리. D-4(공백 리포트) 실제 계약(`GET /hub/knowledge-gaps`)에 붙인다.
+ *
+ * 2026-09-16 재설계 — 옛 화면은 상담원이 직접 검색해 못 찾은 질의(`{query, found}`)를
+ * 질의 기준으로 묶어 세는 mock 전용이었다. 실제 계약은 그보다 넓은 D-4 개념
+ * (`{module: B|C|F, description, status}`)이라 필드가 대응되지 않아 다시 짰다 —
+ * B(검색 실패)·C(놓친 위반)·F(통과했으나 사후 문제) 세 갈래를 module 뱃지로 구분하고,
+ * 항목마다 해제(resolved)/다시 열기(open) 버튼을 둔다. 서버가 되돌리기도 허용한다
+ * (`GapResolutionRequest` — 잘못 닫은 것을 기록에서 지우지 않는다, 절대 원칙 8).
  */
 export function KnowledgeGapTab({
-  log,
+  gaps,
+  onResolve,
 }: {
-  log: KnowledgeGapEntry[];
+  gaps: KnowledgeGapItem[];
+  onResolve: (gapId: string, status: "open" | "resolved") => void;
 }): ReactElement {
-  const rows = useMemo<GapRow[]>(() => {
-    const byQuery = new Map<string, GapRow>();
-    for (const entry of log) {
-      const key = entry.query.trim();
-      if (key.length === 0) {
-        continue;
-      }
-      const row = byQuery.get(key) ?? {
-        query: key,
-        missCount: 0,
-        totalCount: 0,
-        callIds: [],
-      };
-      row.totalCount += 1;
-      if (!entry.found) {
-        row.missCount += 1;
-      }
-      if (!row.callIds.includes(entry.call_id)) {
-        row.callIds.push(entry.call_id);
-      }
-      byQuery.set(key, row);
-    }
-    return [...byQuery.values()]
-      .filter((row) => row.missCount > 0)
-      .sort((a, b) => b.missCount - a.missCount || b.totalCount - a.totalCount);
-  }, [log]);
+  const [filter, setFilter] = useState<GapFilter>("open");
 
-  if (rows.length === 0) {
+  const openCount = gaps.filter((g) => g.status === "open").length;
+  const resolvedCount = gaps.length - openCount;
+  const filtered = useMemo(() => {
+    const rows = gaps.filter((g) => filter === "all" || g.status === filter);
+    return [...rows].sort(
+      (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+    );
+  }, [gaps, filter]);
+
+  if (gaps.length === 0) {
     return (
       <section aria-label="지식베이스 갭">
         <p className="admin-empty">
-          아직 검색 실패로 기록된 질의가 없습니다. 상담원이 직접 검색해
-          못 찾은 질의가 여기 쌓입니다.
+          아직 쌓인 공백 신고가 없습니다. 검색 실패(B)·놓친 위반(C)·사후 문제(F)가
+          여기 모입니다.
         </p>
       </section>
     );
@@ -61,20 +51,90 @@ export function KnowledgeGapTab({
   return (
     <section aria-label="지식베이스 갭">
       <p className="admin-help">
-        상담원이 직접 검색했는데 문서를 못 찾은 질의를 모은 것입니다. 자동
-        추천이 놓친 것은 화면 밖이라 여기 안 잡힙니다 — 상담원이 관찰한
-        범위만 집계됩니다.
+        B(검색 실패) · C(놓친 위반) · F(통과했으나 사후 문제)를 한 곳에 모은 공백
+        리포트입니다. 판정을 새로 하지 않습니다 — 서버가 기록한 것을 그대로 보여줍니다.
       </p>
-      <ul className="gap-rank-list">
-        {rows.map((row) => (
-          <li key={row.query} className="gap-rank-item">
-            <span className="gap-rank-query">{row.query}</span>
-            <span className="gap-rank-count">
-              실패 {row.missCount}/{row.totalCount}건 · 통화 {row.callIds.length}건
-            </span>
-          </li>
-        ))}
-      </ul>
+      <div className="admin-tabs admin-subfilter" role="tablist" aria-label="열림·해제 분류">
+        <FilterChip label="전체" count={gaps.length} active={filter === "all"} onClick={() => setFilter("all")} />
+        <FilterChip label="열림" count={openCount} active={filter === "open"} onClick={() => setFilter("open")} />
+        <FilterChip
+          label="해제됨"
+          count={resolvedCount}
+          active={filter === "resolved"}
+          onClick={() => setFilter("resolved")}
+        />
+      </div>
+      {filtered.length === 0 ? (
+        <p className="admin-empty">
+          {filter === "open" ? "열려 있는 공백이 없습니다." : "해제된 공백이 없습니다."}
+        </p>
+      ) : (
+        <ul className="admin-list">
+          {filtered.map((gap) => (
+            <GapRow key={gap.gap_id} gap={gap} onResolve={onResolve} />
+          ))}
+        </ul>
+      )}
     </section>
+  );
+}
+
+function FilterChip({
+  label,
+  count,
+  active,
+  onClick,
+}: {
+  label: string;
+  count: number;
+  active: boolean;
+  onClick: () => void;
+}): ReactElement {
+  return (
+    <button
+      type="button"
+      role="tab"
+      aria-selected={active}
+      className={`admin-tab${active ? " is-active" : ""}`}
+      onClick={onClick}
+    >
+      {label}
+      <span className="admin-count">{count}</span>
+    </button>
+  );
+}
+
+function GapRow({
+  gap,
+  onResolve,
+}: {
+  gap: KnowledgeGapItem;
+  onResolve: (gapId: string, status: "open" | "resolved") => void;
+}): ReactElement {
+  const resolved = gap.status === "resolved";
+  return (
+    <li className={`admin-entry-row${resolved ? " is-muted" : ""}`}>
+      <div className="admin-entry-row-main">
+        <span className={`admin-module-badge module-${gap.module.toLowerCase()}`}>
+          {MODULE_LABEL[gap.module]}
+        </span>
+        <span className="admin-ref">{gap.description}</span>
+        <span className="admin-meta">
+          {new Date(gap.created_at).toLocaleDateString("ko-KR")}
+          {gap.call_id !== null ? ` · ${gap.call_id}` : ""}
+        </span>
+      </div>
+      <div className="admin-entry-row-actions">
+        <button
+          type="button"
+          className="btn-outline admin-release"
+          onClick={() => {
+            onResolve(gap.gap_id, resolved ? "open" : "resolved");
+          }}
+        >
+          {resolved ? "다시 열기" : "해제"}
+        </button>
+      </div>
+    </li>
   );
 }

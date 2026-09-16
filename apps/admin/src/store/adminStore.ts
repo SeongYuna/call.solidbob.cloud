@@ -6,18 +6,16 @@ import {
   fetchBlacklistRequests,
   fetchCallGuardFlagTotal,
   fetchCallListTotal,
+  fetchKnowledgeGaps,
   fetchRoutingSetting,
   HubApiError,
   releaseBlacklistEntryApi,
+  resolveKnowledgeGap,
   saveRoutingSetting,
+  type KnowledgeGapItem,
 } from "../lib/api/hubClient";
 import { useAuthStore } from "../lib/auth/authStore";
-import { SEED_KNOWLEDGE_GAP_LOG } from "../mock/adminFixtures";
-import type {
-  BlacklistEntryItem,
-  BlacklistRequestItem,
-  KnowledgeGapEntry,
-} from "../types/blacklist";
+import type { BlacklistEntryItem, BlacklistRequestItem } from "../types/blacklist";
 
 /**
  * 관리자 화면 전용 스토어. `apps/call`의 `callStore.ts`와 더는
@@ -26,10 +24,9 @@ import type {
  * 2026-09-15(`w4-dashboard-live-contract`) — 승인요청·블랙리스트·현황판 두 칸은
  * 이제 `server`(FastAPI) `/hub/*`를 실제로 부른다(`lib/api/hubClient.ts`).
  * **연결에 실패하면 빈 목록으로 조용히 넘어가지 않는다** — `status`/`error`를
- * 화면이 그대로 보여준다(티켓 완료 조건). `knowledgeGapLog`는 아직 mock이다 —
- * 실제 계약(`GET /hub/knowledge-gaps`)이 `{module, description, status}`라
- * 지금 화면의 `{query, found}` 집계와 모양이 달라 `KnowledgeGapTab`을 다시
- * 설계하기 전까지는 연결하지 않는다(`hubClient.ts`의 `fetchKnowledgeGaps` 참고).
+ * 화면이 그대로 보여준다(티켓 완료 조건).
+ * 2026-09-16 — `knowledgeGaps`도 실제 계약(`GET /hub/knowledge-gaps`)에 붙였다.
+ * `KnowledgeGapTab`을 module/description/status 모양으로 다시 설계해서 가능해졌다.
  */
 type LoadStatus = "idle" | "loading" | "ready" | "error";
 
@@ -38,7 +35,7 @@ interface AdminState {
   error: string | null;
   requests: BlacklistRequestItem[];
   entries: BlacklistEntryItem[];
-  knowledgeGapLog: KnowledgeGapEntry[];
+  knowledgeGaps: KnowledgeGapItem[];
   callGuardTotal: number;
   completedCallsTotal: number;
   /** `decisions/313` — 서버 값(`GET /hub/routing-settings`). `loadAll` 전까지는 로컬 기본값. */
@@ -64,6 +61,8 @@ interface AdminState {
   extendEntry: (entryId: string, months: number, reason: string) => Promise<void>;
   setVeteranThresholdYears: (years: number) => Promise<void>;
   setBlacklistExpiryMonths: (months: number) => void;
+  /** 되돌리기(resolved→open)도 같은 액션이다 — 서버가 둘 다 허용한다. */
+  resolveGap: (gapId: string, status: "open" | "resolved") => Promise<void>;
 }
 
 function errorMessage(error: unknown): string {
@@ -77,7 +76,7 @@ export const useAdminStore = create<AdminState>((set, get) => ({
   error: null,
   requests: [],
   entries: [],
-  knowledgeGapLog: SEED_KNOWLEDGE_GAP_LOG,
+  knowledgeGaps: [],
   callGuardTotal: 0,
   completedCallsTotal: 0,
   veteranThresholdYears: 3,
@@ -91,18 +90,21 @@ export const useAdminStore = create<AdminState>((set, get) => ({
     }
     set({ status: "loading", error: null });
     try {
-      const [requests, entries, callGuardTotal, completedCallsTotal, routingSetting] = await Promise.all([
-        fetchBlacklistRequests(accessToken),
-        fetchBlacklistEntries(accessToken),
-        fetchCallGuardFlagTotal(accessToken),
-        fetchCallListTotal(),
-        fetchRoutingSetting(accessToken),
-      ]);
+      const [requests, entries, knowledgeGaps, callGuardTotal, completedCallsTotal, routingSetting] =
+        await Promise.all([
+          fetchBlacklistRequests(accessToken),
+          fetchBlacklistEntries(accessToken),
+          fetchKnowledgeGaps(accessToken),
+          fetchCallGuardFlagTotal(accessToken),
+          fetchCallListTotal(),
+          fetchRoutingSetting(accessToken),
+        ]);
       set({
         status: "ready",
         error: null,
         requests,
         entries,
+        knowledgeGaps,
         callGuardTotal,
         completedCallsTotal,
         veteranThresholdYears: routingSetting.veteranYears,
@@ -211,5 +213,24 @@ export const useAdminStore = create<AdminState>((set, get) => ({
 
   setBlacklistExpiryMonths: (months) => {
     set({ blacklistExpiryMonths: months });
+  },
+
+  resolveGap: async (gapId, status) => {
+    const accessToken = useAuthStore.getState().accessToken;
+    if (accessToken === null) {
+      set({ error: "로그인이 필요합니다." });
+      return;
+    }
+    try {
+      const resolved = await resolveKnowledgeGap(accessToken, gapId, status);
+      set((state) => ({
+        knowledgeGaps: state.knowledgeGaps.map((g) =>
+          g.gap_id === resolved.gap_id ? { ...g, status: resolved.status } : g,
+        ),
+        error: null,
+      }));
+    } catch (error) {
+      set({ error: errorMessage(error) });
+    }
   },
 }));
