@@ -80,6 +80,10 @@ function authedPut<T>(path: string, accessToken: string, body: unknown): Promise
   return authedRequest<T>(path, accessToken, { method: "PUT", body: JSON.stringify(body) });
 }
 
+function authedPatch<T>(path: string, accessToken: string, body: unknown): Promise<T> {
+  return authedRequest<T>(path, accessToken, { method: "PATCH", body: JSON.stringify(body) });
+}
+
 // ── 블랙리스트 요청·등록 wire 모양 (둘 다 `_types.StrField` 규칙) ──────────
 
 interface BlacklistEvidenceWire {
@@ -277,11 +281,8 @@ interface KnowledgeGapItemWire {
 }
 
 /**
- * ⚠ **`KnowledgeGapTab.tsx`가 아직 이 모양을 소비하지 않는다.** 화면은 지금
- * `{call_id, query, found}`(상담원이 직접 검색해 못 찾은 질의) 기준으로 묶어 세는데,
- * 실제 계약은 `{module: B|C|F, description, status}`(더 넓은 D-4 공백)라 필드가
- * 대응되지 않는다 — 단순 이름 바꾸기로 못 옮긴다. 탭을 다시 설계하기 전까지는
- * 이 함수만 두고 화면에 연결하지 않는다.
+ * 2026-09-16 — `KnowledgeGapTab.tsx`를 이 모양(module/description/status)으로
+ * 다시 설계해 붙였다. 옛 mock 기반 `{call_id, query, found}` 집계는 걷어냈다.
  */
 export async function fetchKnowledgeGaps(
   accessToken: string,
@@ -308,6 +309,22 @@ export async function fetchKnowledgeGaps(
     call_id: g.call_id,
     domain: g.domain,
   }));
+}
+
+/**
+ * PATCH /hub/knowledge-gaps/{gap_id} — 공백 해제(resolved)·되돌리기(open) 둘 다 이걸로 부른다
+ * (서버가 되돌리기도 허용한다 — 잘못 닫은 것을 기록에서 지우지 않는다).
+ */
+export async function resolveKnowledgeGap(
+  accessToken: string,
+  gapId: string,
+  status: "open" | "resolved",
+): Promise<{ gap_id: string; status: "open" | "resolved" }> {
+  return authedPatch<{ gap_id: string; status: "open" | "resolved" }>(
+    `/hub/knowledge-gaps/${encodeURIComponent(gapId)}`,
+    accessToken,
+    { status },
+  );
 }
 
 // ── POST /hub/blacklist-entries/{entry_id}/expiry ─────────────────────────

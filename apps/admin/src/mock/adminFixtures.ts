@@ -3,11 +3,7 @@
  * 비어 보이지 않게 하는 예시일 뿐이다 — `apps/call`의 실시간 상태에서
  * 온 것이 아니다(2026-09-10, 앱 분리로 두 곳이 더는 상태를 공유하지 않는다).
  */
-import type {
-  BlacklistEntryItem,
-  BlacklistRequestItem,
-  KnowledgeGapEntry,
-} from "../types/blacklist";
+import type { BlacklistEntryItem, BlacklistRequestItem } from "../types/blacklist";
 
 export const SEED_REQUESTS: BlacklistRequestItem[] = [
   {
@@ -72,13 +68,5 @@ export const SEED_ENTRIES: BlacklistEntryItem[] = [
     release_reason: null,
     note: "해제 뒤 재범으로 재등록",
   },
-];
-
-export const SEED_KNOWLEDGE_GAP_LOG: KnowledgeGapEntry[] = [
-  { call_id: "c_seed_2", query: "외국인 등록증 재발급", found: false, logged_at: "2026-09-09T10:00:00+09:00" },
-  { call_id: "c_seed_3", query: "외국인 등록증 재발급", found: false, logged_at: "2026-09-09T15:30:00+09:00" },
-  { call_id: "c_seed_4", query: "외국인 등록증 재발급", found: false, logged_at: "2026-09-10T08:20:00+09:00" },
-  { call_id: "c_seed_5", query: "체류지 변경 신고", found: false, logged_at: "2026-09-09T11:00:00+09:00" },
-  { call_id: "c_seed_6", query: "주민등록등본 발급 수수료", found: true, logged_at: "2026-09-09T12:00:00+09:00" },
 ];
 

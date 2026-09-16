@@ -82,7 +82,8 @@ export function AdminPanel({
   const decide = useAdminStore((s) => s.decideRequest);
   const release = useAdminStore((s) => s.releaseEntry);
   const extend = useAdminStore((s) => s.extendEntry);
-  const knowledgeGapLog = useAdminStore((s) => s.knowledgeGapLog);
+  const knowledgeGaps = useAdminStore((s) => s.knowledgeGaps);
+  const resolveGap = useAdminStore((s) => s.resolveGap);
   const callGuardTotal = useAdminStore((s) => s.callGuardTotal);
   const completedCallsTotal = useAdminStore((s) => s.completedCallsTotal);
   const veteranThresholdYears = useAdminStore((s) => s.veteranThresholdYears);
@@ -100,6 +101,7 @@ export function AdminPanel({
   const pendingRequests = requests.filter((r) => r.status === "pending");
   const pendingCount = pendingRequests.length;
   const activeEntryCount = entries.filter((e) => e.released_at === null).length;
+  const openGapCount = knowledgeGaps.filter((g) => g.status === "open").length;
 
   return (
     <main className="admin-page">
@@ -141,7 +143,13 @@ export function AdminPanel({
           {TABS.map(({ id, label }) => {
             const Icon = TAB_ICONS[id];
             const count =
-              id === "requests" ? pendingCount : id === "entries" ? activeEntryCount : 0;
+              id === "requests"
+                ? pendingCount
+                : id === "entries"
+                  ? activeEntryCount
+                  : id === "gaps"
+                    ? openGapCount
+                    : 0;
             return (
               <button
                 key={id}
@@ -197,7 +205,14 @@ export function AdminPanel({
               />
             ) : null}
             {tab === "qa" ? <QaReviewTab /> : null}
-            {tab === "gaps" ? <KnowledgeGapTab log={knowledgeGapLog} /> : null}
+            {tab === "gaps" ? (
+              <KnowledgeGapTab
+                gaps={knowledgeGaps}
+                onResolve={(gapId, status) => {
+                  void resolveGap(gapId, status);
+                }}
+              />
+            ) : null}
             {tab === "audit" ? (
               <AuditLogTab requests={requests} entries={entries} />
             ) : null}
