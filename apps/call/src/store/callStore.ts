@@ -22,6 +22,7 @@ import {
   fetchCallTranscript,
   getHistoryPlayback,
   isCoreApiConfigured,
+  submitCardFeedback,
   type CallRecord,
 } from "../lib/api/coreClient";
 import { getScenarioById } from "../mock/scenarios";
@@ -525,9 +526,10 @@ export const useCallStore = create<CallState>((set) => ({
   },
 
   toggleAdoption: (card) => {
+    let adopted = false;
     set((state) => {
       const id = cardId(card);
-      const adopted = state.adoptions[id]?.adopted !== true;
+      adopted = state.adoptions[id]?.adopted !== true;
       return {
         adoptions: {
           ...state.adoptions,
@@ -535,6 +537,14 @@ export const useCallStore = create<CallState>((set) => ({
         },
       };
     });
+    // 채택 토글은 화면에서 낙관적으로 먼저 바뀐다 — 서버 피드백은 best-effort로 뒤따라간다.
+    // `card.card_id`(recommendation_card.card_id)는 cardId()의 로컬 dedup 키와 다르다 —
+    // 서버에 저장되지 않은 카드는 null이라 그때는 보내지 않는다(decisions/308).
+    if (isCoreApiConfigured() && card.card_id !== null && card.card_id !== undefined) {
+      submitCardFeedback(card.card_id, adopted ? "adopted" : "ignored").catch(() => {
+        // 피드백 저장 실패는 채택 표시 자체를 막지 않는다 — 조용히 넘어간다.
+      });
+    }
   },
 
   endCall: () => {
