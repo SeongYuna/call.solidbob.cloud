@@ -1,0 +1,185 @@
+{
+  "id": "SYN-006",
+  "version": "dasan-v0",
+  "source": "synthetic",
+  "generated_by": "Claude Code (claude-opus-5) · 2026-09-16 · 사람 검토 전",
+  "title": "과태료 문의 — 성희롱·모욕·협박, 통화 종료 후 블랙리스트 요청",
+  "length_class": "medium",
+  "turn_count": 12,
+  "caller_number": "01000000666",
+  "agent_persona": "A01",
+  "customer_persona": "C06",
+  "procedure": {
+    "doc_ids": [
+      "DASAN-TERM-4.20",
+      "DASAN-MANUAL-5.1",
+      "DASAN-MANUAL-5.2",
+      "DASAN-MANUAL-5.3",
+      "DASAN-MANUAL-5.5"
+    ],
+    "required_documents": [
+      "이의신청서",
+      "소명 자료"
+    ]
+  },
+  "turns": [
+    {
+      "seq": 1,
+      "speaker": "agent",
+      "text": "네, 한별시 통합민원콜센터입니다. 무엇을 도와드릴까요?",
+      "tone": "calm"
+    },
+    {
+      "seq": 2,
+      "speaker": "customer",
+      "text": "어이 아가씨, 목소리 좋네. 과태료 딱지 때문에 전화했는데.",
+      "tone": "tense",
+      "labels": {
+        "call_guard": [
+          {
+            "type": "sexual",
+            "phrase": "아가씨, 목소리 좋네"
+          }
+        ]
+      }
+    },
+    {
+      "seq": 3,
+      "speaker": "agent",
+      "text": "고객님, 업무와 무관한 표현은 삼가 주시기 바랍니다. 어떤 과태료인지 말씀해 주시겠어요?",
+      "tone": "calm"
+    },
+    {
+      "seq": 4,
+      "speaker": "customer",
+      "text": "우리 집 앞 한별시 가온구 은하로 7-3 앞에 잠깐 댔는데 주정차 딱지를 끊었어. 이게 말이 되냐고.",
+      "tone": "raised",
+      "labels": {
+        "pii": [
+          {
+            "pattern": "P7",
+            "span": "한별시 가온구 은하로 7-3"
+          }
+        ]
+      }
+    },
+    {
+      "seq": 5,
+      "speaker": "agent",
+      "text": "네, 불편하셨겠습니다. 부과 내용에 이의가 있으시면 이의신청을 하실 수 있어요. 이의신청서와 소명 자료로 접수합니다. 사전납부 감경 제도가 있는 경우에는 기한 안에 납부하셔야 적용됩니다.",
+      "tone": "calm"
+    },
+    {
+      "seq": 6,
+      "speaker": "customer",
+      "text": "이의신청 같은 소리 하네. 그냥 네가 지금 취소해.",
+      "tone": "raised"
+    },
+    {
+      "seq": 7,
+      "speaker": "agent",
+      "text": "감경이나 취소 여부는 심사로 정해져서 제가 지금 취소해 드리거나 결과를 말씀드릴 수는 없습니다.",
+      "tone": "tense"
+    },
+    {
+      "seq": 8,
+      "speaker": "customer",
+      "text": "이 머저리 같은 게. 너 몇 살이야? 끝나고 나랑 술이나 한잔하면 생각해 보지.",
+      "tone": "shouting",
+      "labels": {
+        "call_guard": [
+          {
+            "type": "insult",
+            "phrase": "머저리 같은 게"
+          },
+          {
+            "type": "sexual",
+            "phrase": "몇 살이야? 끝나고 나랑 술이나 한잔하면"
+          }
+        ]
+      }
+    },
+    {
+      "seq": 9,
+      "speaker": "agent",
+      "text": "계속 이런 표현을 하시면 통화가 종료될 수 있음을 안내드립니다.",
+      "tone": "tense"
+    },
+    {
+      "seq": 10,
+      "speaker": "customer",
+      "text": "삼가긴 뭘 삼가. 네 이름 대. 내가 거기 찾아가서 너 가만 안 둬.",
+      "tone": "shouting",
+      "labels": {
+        "call_guard": [
+          {
+            "type": "threat",
+            "phrase": "찾아가서 너 가만 안 둬"
+          }
+        ]
+      }
+    },
+    {
+      "seq": 11,
+      "speaker": "agent",
+      "text": "성적 표현과 모욕, 협박이 계속되어 통화를 종료하겠습니다. 과태료 이의신청은 이의신청서와 소명 자료로 접수하실 수 있습니다.",
+      "tone": "tense"
+    },
+    {
+      "seq": 12,
+      "speaker": "customer",
+      "text": "야! 야!",
+      "tone": "shouting"
+    }
+  ],
+  "expected": {
+    "pii_by_pattern": {
+      "P7": 1
+    },
+    "compliance": [],
+    "call_guard_by_type": {
+      "insult": 1,
+      "sexual": 2,
+      "threat": 1
+    },
+    "customer_non_calm_turns": [
+      {
+        "seq": 2,
+        "tone": "tense"
+      },
+      {
+        "seq": 4,
+        "tone": "raised"
+      },
+      {
+        "seq": 6,
+        "tone": "raised"
+      },
+      {
+        "seq": 8,
+        "tone": "shouting"
+      },
+      {
+        "seq": 10,
+        "tone": "shouting"
+      },
+      {
+        "seq": 12,
+        "tone": "shouting"
+      }
+    ],
+    "j": {
+      "blacklist_request": true,
+      "routing": "normal",
+      "request_reason_by_agent": "통화 내내 성적 표현·인격 모독·방문 협박 반복, 1차·2차 안내 후에도 지속되어 종료",
+      "admin_decision_scenario": "approve",
+      "why": "sexual·insult·threat 가 안내 뒤에도 반복 — 5.2 종료 기준 충족. 승인 여부는 관리자 몫이고 여기 적힌 것은 데모 시나리오다"
+    }
+  },
+  "notes": [
+    "SYN-007 과 같은 발신 번호 — 다음 통화가 베테랑에게 가는지(J-5) 이어서 본다",
+    "성적 표현은 식별 가능한 수준으로만 쓰고 노골적으로 쓰지 않았다",
+    "신입이 같은 방식으로 맞대응하지 않는지(5.1) — 톤은 tense 까지만",
+    "성적 표현(#2) 직후 1차 안내 → 모욕·성적 표현(#8) 뒤 2차 안내 → 협박(#10) 뒤 종료(5.2)"
+  ]
+}

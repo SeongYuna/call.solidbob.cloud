@@ -1,0 +1,267 @@
+{
+  "id": "SYN-009",
+  "version": "dasan-v0",
+  "source": "synthetic",
+  "generated_by": "Claude Code (claude-opus-5) · 2026-09-16 · 사람 검토 전",
+  "title": "고령 세대원 재난지원금 — 사칭 문자 피해 의심과 위기 신호",
+  "length_class": "long",
+  "turn_count": 21,
+  "caller_number": "01000000109",
+  "agent_persona": "A01",
+  "customer_persona": "C08",
+  "procedure": {
+    "doc_ids": [
+      "DASAN-TERM-6.2",
+      "DASAN-TERM-6.12",
+      "DASAN-MANUAL-5.4",
+      "DASAN-MANUAL-1.2"
+    ],
+    "required_documents": [
+      "신청서",
+      "신청인 신분증",
+      "주민등록등본",
+      "입금 계좌 정보",
+      "위임장",
+      "세대주 신분증"
+    ]
+  },
+  "turns": [
+    {
+      "seq": 1,
+      "speaker": "agent",
+      "text": "네, 한별시 통합민원콜센터입니다. 무엇을 도와드릴까요?",
+      "tone": "calm"
+    },
+    {
+      "seq": 2,
+      "speaker": "customer",
+      "text": "저기요... 재난지원금 그거 신청하려고 하는데요, 뭘 가져가야 하는지 몰라서요.",
+      "tone": "weary"
+    },
+    {
+      "seq": 3,
+      "speaker": "agent",
+      "text": "네, 재난지원금 신청 문의시군요. 신청하시는 분이 세대주이신지 먼저 여쭤볼게요.",
+      "tone": "calm"
+    },
+    {
+      "seq": 4,
+      "speaker": "customer",
+      "text": "아니요, 아들이 세대주예요. 근데 아들이랑 연락이 잘 안 돼요.",
+      "tone": "weary"
+    },
+    {
+      "seq": 5,
+      "speaker": "agent",
+      "text": "확인해 드리려면 고객님 주민등록번호 열세 자리 전부 불러 주세요.",
+      "tone": "calm",
+      "labels": {
+        "compliance": [
+          {
+            "type": "C-2",
+            "phrase": "주민등록번호 열세 자리 전부 불러 주세요",
+            "expected_alternative_source": "DASAN-MANUAL-1.2"
+          }
+        ]
+      }
+    },
+    {
+      "seq": 6,
+      "speaker": "customer",
+      "text": "4803152000000이요.",
+      "tone": "weary",
+      "labels": {
+        "pii": [
+          {
+            "pattern": "P1",
+            "span": "4803152000000"
+          }
+        ]
+      }
+    },
+    {
+      "seq": 7,
+      "speaker": "agent",
+      "text": "방금 주민등록번호 전체를 여쭌 건 제 잘못입니다. 전화로는 말씀 안 하셔도 돼요. 세대주가 아니신 분이 신청하시면 신청서, 신청인 신분증, 주민등록등본, 입금 계좌 정보에 더해 위임장과 세대주 신분증이 추가로 필요해요.",
+      "tone": "calm"
+    },
+    {
+      "seq": 8,
+      "speaker": "customer",
+      "text": "아들 신분증을 어떻게 받아요... 연락도 안 되는데.",
+      "tone": "weary"
+    },
+    {
+      "seq": 9,
+      "speaker": "agent",
+      "text": "온라인으로 신청하시면 본인인증으로 서류 일부가 대체될 수 있어요.",
+      "tone": "calm"
+    },
+    {
+      "seq": 10,
+      "speaker": "customer",
+      "text": "위임장은 제가 쓰는 거예요, 아들이 쓰는 거예요?",
+      "tone": "weary"
+    },
+    {
+      "seq": 11,
+      "speaker": "agent",
+      "text": "위임장 작성 방법과 양식은 소관 부서 확인 후 안내드리겠습니다.",
+      "tone": "calm"
+    },
+    {
+      "seq": 12,
+      "speaker": "customer",
+      "text": "그것도 아들한테 받아야 되는 거면... 못 받는데.",
+      "tone": "weary"
+    },
+    {
+      "seq": 13,
+      "speaker": "agent",
+      "text": "네, 많이 막막하시겠어요.",
+      "tone": "calm"
+    },
+    {
+      "seq": 14,
+      "speaker": "customer",
+      "text": "인터넷은 못 해요. 그리고 어제 지원금 준다고 문자가 와서 시키는 대로 인증번호 739201 알려 줬는데 그건 괜찮은 거죠?",
+      "tone": "tense",
+      "labels": {
+        "pii": [
+          {
+            "pattern": "P5",
+            "span": "739201"
+          }
+        ]
+      }
+    },
+    {
+      "seq": 15,
+      "speaker": "agent",
+      "text": "고객님, 센터와 소관 부서는 전화나 문자로 인증번호나 카드 정보를 요구하지 않습니다. 그런 연락은 사기일 수 있어서 경찰이나 이용하시는 금융기관에 바로 신고하셔야 해요.",
+      "tone": "calm"
+    },
+    {
+      "seq": 16,
+      "speaker": "customer",
+      "text": "카드 번호도 불러 줬는데... 9410 0000 0000 0109 이거요. 계좌는 없고 카드만 있어서.",
+      "tone": "tense",
+      "labels": {
+        "pii": [
+          {
+            "pattern": "P2",
+            "span": "9410 0000 0000 0109"
+          }
+        ]
+      }
+    },
+    {
+      "seq": 17,
+      "speaker": "agent",
+      "text": "카드번호는 저한테도 말씀 안 하셔도 됩니다. 카드사에 바로 연락하셔서 분실 신고나 정지를 요청하세요.",
+      "tone": "calm"
+    },
+    {
+      "seq": 18,
+      "speaker": "customer",
+      "text": "이것도 안 되고 돈도 뺏기고... 그냥 다 끝내고 싶어요.",
+      "tone": "weary",
+      "labels": {
+        "call_guard": [
+          {
+            "type": "distress",
+            "phrase": "그냥 다 끝내고 싶어요"
+          }
+        ]
+      }
+    },
+    {
+      "seq": 19,
+      "speaker": "agent",
+      "text": "고객님, 말씀해 주셔서 고맙습니다. 지금 많이 힘드신 것 같아요. 통화는 끊지 않을게요. 전문 상담 기관과 연결해 드려도 될까요?",
+      "tone": "calm"
+    },
+    {
+      "seq": 20,
+      "speaker": "customer",
+      "text": "...네.",
+      "tone": "weary"
+    },
+    {
+      "seq": 21,
+      "speaker": "agent",
+      "text": "네, 지금 바로 전문 상담 기관으로 연결해 드리겠습니다. 끊지 마시고 잠시만 기다려 주세요.",
+      "tone": "calm"
+    }
+  ],
+  "expected": {
+    "pii_by_pattern": {
+      "P1": 1,
+      "P2": 1,
+      "P5": 1
+    },
+    "compliance": [
+      {
+        "seq": 5,
+        "type": "C-2"
+      }
+    ],
+    "call_guard_by_type": {
+      "distress": 1
+    },
+    "customer_non_calm_turns": [
+      {
+        "seq": 2,
+        "tone": "weary"
+      },
+      {
+        "seq": 4,
+        "tone": "weary"
+      },
+      {
+        "seq": 6,
+        "tone": "weary"
+      },
+      {
+        "seq": 8,
+        "tone": "weary"
+      },
+      {
+        "seq": 10,
+        "tone": "weary"
+      },
+      {
+        "seq": 12,
+        "tone": "weary"
+      },
+      {
+        "seq": 14,
+        "tone": "tense"
+      },
+      {
+        "seq": 16,
+        "tone": "tense"
+      },
+      {
+        "seq": 18,
+        "tone": "weary"
+      },
+      {
+        "seq": 20,
+        "tone": "weary"
+      }
+    ],
+    "j": {
+      "blacklist_request": false,
+      "routing": "normal",
+      "why": "distress 는 블랙리스트 사유가 아니다(decisions/204) — 요청 화면이 전문 기관 연결 안내를 띄워야 한다"
+    }
+  },
+  "notes": [
+    "톤이 올라가지 않고 가라앉는다(weary) — 통화 온도 이상치가 아래 방향으로 나는지",
+    "C-2 위반: 주민등록번호 전체 요구",
+    "P1·P2·P5 가 한 통화에 모두 나온다",
+    "상담원은 위험도를 판단하지 않고 끊지 않으며, 동의를 받으면 다른 안내보다 연결을 먼저 한다(5.4)",
+    "C-2 위반은 다음 턴에 상담원이 스스로 정정한다"
+  ]
+}

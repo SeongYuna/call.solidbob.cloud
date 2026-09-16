@@ -1,0 +1,117 @@
+{
+  "id": "SYN-007",
+  "version": "dasan-v0",
+  "source": "synthetic",
+  "generated_by": "Claude Code (claude-opus-5) · 2026-09-16 · 사람 검토 전",
+  "title": "같은 민원인 3일 뒤 재인입 — 베테랑 배정",
+  "length_class": "short",
+  "turn_count": 9,
+  "caller_number": "01000000666",
+  "agent_persona": "A03",
+  "customer_persona": "C06",
+  "procedure": {
+    "doc_ids": [
+      "DASAN-TERM-4.20",
+      "DASAN-MANUAL-5.1"
+    ],
+    "required_documents": [
+      "이의신청서",
+      "소명 자료"
+    ]
+  },
+  "turns": [
+    {
+      "seq": 1,
+      "speaker": "agent",
+      "text": "네, 한별시 통합민원콜센터입니다. 무엇을 도와드릴까요?",
+      "tone": "calm"
+    },
+    {
+      "seq": 2,
+      "speaker": "customer",
+      "text": "저번에 과태료 때문에 전화했는데 그 아가씨가 그냥 끊어 버렸어. 너네 다 머저리들이야.",
+      "tone": "raised",
+      "labels": {
+        "call_guard": [
+          {
+            "type": "insult",
+            "phrase": "너네 다 머저리들이야"
+          }
+        ]
+      }
+    },
+    {
+      "seq": 3,
+      "speaker": "agent",
+      "text": "고객님, 말씀 들었습니다. 업무와 무관한 표현은 삼가 주시면 과태료 건 안내를 이어서 도와드리겠습니다.",
+      "tone": "calm"
+    },
+    {
+      "seq": 4,
+      "speaker": "customer",
+      "text": "...그래서 이의신청 하면 취소되는 거요?",
+      "tone": "tense"
+    },
+    {
+      "seq": 5,
+      "speaker": "agent",
+      "text": "감경이나 취소 여부는 심사 결과에 따라 정해져서 미리 말씀드릴 수는 없습니다. 이의신청은 이의신청서와 주정차 사정을 보여 주는 소명 자료로 접수하시면 됩니다.",
+      "tone": "calm"
+    },
+    {
+      "seq": 6,
+      "speaker": "customer",
+      "text": "사전에 내면 깎아 준다는 건 뭐요?",
+      "tone": "tense"
+    },
+    {
+      "seq": 7,
+      "speaker": "agent",
+      "text": "사전납부 감경 제도가 있는 경우에는 기한 안에 내셔야 적용돼요. 기한은 소관 부서 확인 후 안내드리겠습니다.",
+      "tone": "calm"
+    },
+    {
+      "seq": 8,
+      "speaker": "customer",
+      "text": "알았어요.",
+      "tone": "calm"
+    },
+    {
+      "seq": 9,
+      "speaker": "agent",
+      "text": "네, 정리하면 이의신청서와 소명 자료입니다. 이용해 주셔서 감사합니다.",
+      "tone": "calm"
+    }
+  ],
+  "expected": {
+    "pii_by_pattern": {},
+    "compliance": [],
+    "call_guard_by_type": {
+      "insult": 1
+    },
+    "customer_non_calm_turns": [
+      {
+        "seq": 2,
+        "tone": "raised"
+      },
+      {
+        "seq": 4,
+        "tone": "tense"
+      },
+      {
+        "seq": 6,
+        "tone": "tense"
+      }
+    ],
+    "j": {
+      "blacklist_request": false,
+      "routing": "veteran",
+      "precondition": "SYN-006 의 블랙리스트 요청이 승인되어 이 발신 번호가 active 상태",
+      "why": "J-5 — 인입 전 판정으로 근속 기준 이상 상담원에게 배정. 베테랑이 없으면 일반 배정으로 떨어지고 그 사실이 로그에 남아야 한다"
+    }
+  },
+  "notes": [
+    "베테랑 상담원 톤은 끝까지 calm — 통화 온도 기준선이 흔들리지 않는 쪽",
+    "고객은 한 번 모욕 후 1차 안내에 물러난다"
+  ]
+}
