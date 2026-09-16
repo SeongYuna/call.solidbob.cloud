@@ -30,19 +30,20 @@ paths:
 - [x] **Redis** — `infra/k8s/base/redis.yaml` 신설(Deployment + ClusterIP Service), kustomize `resources` 에 추가.
       **휘발로 정했다** — 볼륨 없이 `--save "" --appendonly no`. 잃을 것이 5분짜리 access token 세션뿐이고
       refresh 는 RDS 에 있어 사용자는 재로그인 없이 복구된다(`decisions/112` §2). 다음 릴리스에 같이 적용된다
-- [ ] **`server-env` 시크릿에 키 3종** ← 값이 필요해 남았다. 키 설명은 `secret.example.yaml` ① 에 적었다 — `GOOGLE_OAUTH_CLIENT_ID` · `ADMIN_JWT_SECRET` · `REDIS_URL`.
+- [x] **`server-env` 시크릿에 키 3종** (2026-09-15 — 실제로는 **4종** patch + `rollout restart`). 키 설명은 `secret.example.yaml` ① 에 적었다 — `GOOGLE_OAUTH_CLIENT_ID` · `ADMIN_JWT_SECRET` · `REDIS_URL`.
       값은 SSM 세션 안에서 `--from-env-file` 로 넣는다(런북 12-2). **GitHub·로그·이 저장소 어디에도 값이 남지 않게 한다**(SEC-2)
 - [x] **RDS 에 `admin_account` · `admin_refresh_token`** — 이미 들어가 있다.
       `db/migrations/2026-09-14-customer-ref-admin-closure.sql` 이 만들었고 09-15 확인에서 **26 테이블 일치**
       (`_logs/2026-09-15-05-minseok.md`). 09-14 에 「없다」고 적은 것은 그 시점 사실이었고, 마이그레이션이 그 뒤에 들어갔다
-- [ ] **허용 목록 행 1건** — `admin_account` 에 본인 구글 이메일(소문자). 이게 없으면 인증을 통과해도 403 이다.
+- [x] **허용 목록 행 1건** (2026-09-15) — `admin_account` 에 1건. 이게 없으면 인증을 통과해도 403 이다.
+      ⚠ **그 행의 `agent_id` 는 아직 `NULL`** 이라 블랙리스트 승인·해제는 409 다 — 아래 「남은 것 하나」.
       절차는 런북 **17-4**. **이메일은 저장소에 적지 않는다**(§8)
 - [x] `.env.example` 에 위 세 키 이름 추가 (값 없이) — 이미 들어가 있었다(93·96·105행)
-- [ ] **`CORS_ALLOWED_ORIGINS` 에 `https://admin.solidbob.cloud` 추가** — 관리자 화면은 상담원 화면과
+- [x] **`CORS_ALLOWED_ORIGINS` 에 `https://admin.solidbob.cloud` 추가** (2026-09-15, 실측: 프리플라이트 400 → 200 + allow-origin 에코) — 관리자 화면은 상담원 화면과
       **다른 오리진**이다. 빠지면 브라우저가 프리플라이트에서 막고 **서버 로그에는 아무것도 안 남는다**
-- [ ] **구글 클라우드 콘솔** — 웹 애플리케이션 OAuth 클라이언트 생성. 승인된 JavaScript 원본에
+- [x] **구글 클라우드 콘솔** (2026-09-15 — 실제 로그인이 됐으므로 생성·등록이 끝난 것이다) — 웹 애플리케이션 OAuth 클라이언트 생성. 승인된 JavaScript 원본에
       `https://admin.solidbob.cloud` · `http://localhost:5174`. 리다이렉트 URI 는 필요 없다(GIS 는 id_token 방식)
-- [ ] 붙인 뒤 실제 로그인 한 번 — 500 이 아닌 것까지 봐야 완료다
+- [x] 붙인 뒤 실제 로그인 한 번 (2026-09-15) — 운영에서 구글 로그인 → 관리자 화면 진입까지 됐다
 
 ## 완료 조건
 

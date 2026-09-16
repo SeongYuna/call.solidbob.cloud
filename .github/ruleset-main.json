@@ -41,13 +41,24 @@
         "do_not_enforce_on_create": false,
         "required_status_checks": [
           {
-            "context": "server"
+            "context": "jekyll",
+            "integration_id": 15368
           },
           {
-            "context": "ai"
+            "context": "ai",
+            "integration_id": 15368
           },
           {
-            "context": "jekyll"
+            "context": "server",
+            "integration_id": 15368
+          },
+          {
+            "context": "gateway",
+            "integration_id": 15368
+          },
+          {
+            "context": "tag-check",
+            "integration_id": 15368
           }
         ]
       }
