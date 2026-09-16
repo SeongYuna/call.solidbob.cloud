@@ -2,7 +2,7 @@
 title: "테스트 음성 업로드·보관 — presign 발급 지점 + 브라우저 페이지"
 assignee: "정성윤"
 role: "infra"
-status: "in-progress"
+status: "done"
 sprint: 4
 priority: 3
 date: 2026-09-14
@@ -53,8 +53,11 @@ paths:
       `UPLOAD_MAX_BYTES`. 키 목록으로 확인했고 **`AWS_ACCESS_KEY_ID`·`AWS_SECRET_ACCESS_KEY` 는 없다**(`108` ③ 유지).
       ⚠ SSM 에서 `K=` 변수가 붙여넣기에 씹혀 `patch: command not found` 가 났다 — **전체 명령을 한 줄씩** 쳐서 해결.
       같은 이유로 첫 백업이 **0바이트**로 만들어졌다(리다이렉트만 실행됨). 다시 떴다
-- [ ] 운영 관통 확인 — **`0.1.6`** 배포 후 `/health` `spokes` 에 `uploads`, 토큰 없이 401,
-      브라우저에서 한 건 올리고 `aws s3 ls s3://assist-apne2/uploads/` 로 보인다
+- [x] **운영 관통 확인 완료 (2026-09-15).** `0.1.6` 배포 · `/health` `spokes` 에 `uploads` ·
+      토큰 없이 401 · 틀린 토큰 401 · 페이지 200. **브라우저에서 실제로 한 건 올라갔다** —
+      `s3://assist-apne2/uploads/2026-09-15/a2d7f69a-…​.mp3` (30.6KB · Standard, 콘솔 확인).
+      이 한 건이 **CORS · presigned POST · IAM 역할(IMDSv2) · 키 생성 규칙 · 확장자 보존**을 한 번에 증명한다 —
+      CORS 는 브라우저만 적용하므로 curl 로는 끝까지 검증할 수 없었다
 
 ## 하지 않는 것
 

@@ -17,9 +17,21 @@ name: CI — 하네스 테스트 · 구조 계약 · 사이트 빌드
 #  - 진행 기록 확인은 경고만 낸다(exit 0). 기록 누락으로 코드 머지를 막지 않는다
 #  - 구조 계약(import-linter 5종, docs/harness.md §1)은 테스트와 별개 step — 계층 위반은 테스트가 못 잡는다
 
+# ⚠ **push 는 main 에서만 돈다 (2026-09-15, `_project/decisions/114`).**
+#   전에는 `[main, PM, ai, server, frontend]` 였는데, 브랜치에 PR 이 열려 있으면 **브랜치 push 런과
+#   PR 런이 같은 커밋을 헤드로** 잡아(실측: `61a3d35d` 에 둘) `server`·`ai`·`jekyll`·`gateway` 가
+#   **같은 SHA 에 두 벌씩** 달렸다. 러너 분이 두 배로 들고 checks 목록이 지저분해진다.
+#
+#   `concurrency` group 을 합쳐 한쪽을 취소하는 «싼 수정»은 **쓰면 안 된다** — 두 런이 같은 SHA 에
+#   **같은 이름**으로 check-run 을 보고하므로, 취소된 쪽이 나중에 기록되면 필수 검사가 `cancelled` 로
+#   남아 **PR 이 머지 불가**가 된다(경합이라 재현이 들쭉날쭉하다). 필수 검사가 다섯이 된 지금은 더 위험하다.
+#
+#   그래서 트리거를 좁혔다. 잃는 것은 «PR 없이 브랜치에만 push 했을 때의 CI» 하나뿐이다 —
+#   PR 이 열려 있으면 `pull_request` 가 **push 마다**(synchronize) 돌고, main 은 머지 후 그대로 돈다.
+#   일찍 결과를 보고 싶으면 **초안 PR**을 연다.
 on:
   push:
-    branches: [main, PM, ai, server, frontend]
+    branches: [main]
   pull_request:
     branches: [main]
   workflow_dispatch:
@@ -31,7 +43,8 @@ concurrency:
   group: test-${{ github.ref }}
   cancel-in-progress: true
 
-# ⚠ job 이름 `server` · `ai` · `jekyll` 은 main 브랜치 보호의 **필수 통과 검사 이름**이다.
+# ⚠ job 이름 `server` · `ai` · `jekyll` · `gateway` 는 main 브랜치 보호의 **필수 통과 검사 이름**이다
+#   (2026-09-15 에 `gateway` 가 등록되어 넷이 됐고, `tag-check.yml` 의 `tag-check` 까지 다섯이다).
 #   이름을 바꾸면 보호 설정이 존재하지 않는 검사를 기다리게 되어 PR 이 영원히 머지되지 않는다.
 #   바꿀 때는 룰셋(Settings → Rules → Rulesets → main → Require status checks)을 **함께** 고친다.
 #   2026-08-26: fastapi/ 를 server/ · ai/ 로 나누면서 job `backend` → `server` + `ai` 로 갈렸다.
@@ -170,8 +183,8 @@ jobs:
 
   gateway:
     # A-1~A-4 게이트웨이 (services/gateway, Node.js). 구글·서버 없이 가짜 포트로 돈다.
-    # ⚠ 이 job 은 아직 main 룰셋의 필수 통과 검사가 아니다(2026-09-11 추가). 필수로 걸려면
-    #   룰셋에 `gateway` 를 더한다 — 저장소 admin(정성윤) 몫. 이름을 바꾸면 그때 룰셋도 같이 고친다.
+    # ⚠ **2026-09-15 부터 main 룰셋의 필수 통과 검사다.** 이름을 바꾸면 룰셋도 같이 고친다 —
+    #   없는 검사를 기다리며 PR 이 영원히 머지되지 않는다.
     runs-on: ubuntu-latest
     defaults:
       run:

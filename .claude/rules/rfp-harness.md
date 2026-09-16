@@ -71,8 +71,11 @@ infra/ (Docker, AWS, PostgreSQL, Elasticsearch)
 > 류준은 브랜치 `ai`, 장민석은 브랜치 `server` 에서 일한다. **이름이 곧 작업 범위는 아니다** —
 > 한 브랜치에서 위 셋을 전부 고치고 한 PR 로 넣는다(`decisions/302`).
 > 브랜치는 넷을 유지한다(`_project/decisions/011`). 개명해도 main 룰셋은 그대로다 —
-> 필수 통과 검사 이름은 `test.yml` 의 **job 이름**(`server`·`ai`·`jekyll`)이지 브랜치 이름이
-> 아니다. 브랜치 이름이 걸린 곳은 `test.yml` 의 push 트리거 목록 하나뿐이다.
+> 필수 통과 검사 이름은 **job 이름**이지 브랜치 이름이 아니다 — 2026-09-15 현재 다섯이고,
+> 넷(`server`·`ai`·`jekyll`·`gateway`)은 `test.yml`, `tag-check` 는 **`tag-check.yml`** 에 있다
+> (`decisions/111`·`114`). ⚠ **`test.yml` 만 보면 안 된다.**
+> 브랜치 이름이 걸린 곳은 이제 없다 — `test.yml` 의 push 트리거가 `[main]` 하나로 좁혀졌다
+> (2026-09-15, `decisions/114`). PR 이 열려 있으면 `pull_request` 가 push 마다 돈다.
 > ⚠ 2026-08-26 이전 기록의 `ai` 브랜치는 **장민석**을 가리킨다 — 이름이 사람을 갈아탔다.
 
 > **팀 개편 (2026-08-26)**: 원래 3인 체제에서 플러터 앱 개발을 중단하고, 장민석이

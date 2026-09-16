@@ -40,6 +40,7 @@ on:
       - "services/gateway/**"
       - "infra/docker/**"
       - "infra/k8s/**"
+      - "infra/elasticsearch/**"
       - ".dockerignore"
       - ".github/workflows/release.yml"
   workflow_dispatch:
@@ -62,6 +63,7 @@ env:
   AWS_REGION: ap-northeast-2
   SERVER_IMAGE: seongyuna/callguard-server
   GATEWAY_IMAGE: seongyuna/callguard-gateway
+  ES_IMAGE: seongyuna/callguard-es
   HEALTH_URL: https://server.solidbob.cloud/health
   GATEWAY_HEALTH_URL: https://server.solidbob.cloud/gateway/health
 
@@ -77,6 +79,8 @@ jobs:
       build: ${{ steps.changed.outputs.build }}
       gateway_tag: ${{ steps.changed.outputs.gateway_tag }}
       gateway_build: ${{ steps.changed.outputs.gateway_build }}
+      es_tag: ${{ steps.changed.outputs.es_tag }}
+      es_build: ${{ steps.changed.outputs.es_build }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -179,6 +183,36 @@ jobs:
           cache-from: type=gha,scope=gateway
           cache-to: type=gha,mode=max,scope=gateway
 
+  # ES(nori 포함). 2026-09-15 추가 — 전에는 CI 가 이 이미지를 몰라서 **굽는 잡이 없었다.**
+  # 그 결과 ① Dockerfile 을 고쳐도 워크플로가 안 깨어나고 ② newTag 만 올리면 없는 태그를 적용해
+  # **ImagePullBackOff** 가 났다(server 스모크는 통과해서 늦게 발견된다).
+  # ⚠ 태그는 ES 버전을 따라간다(Dockerfile 의 `ARG ES_VERSION`). Dockerfile 만 고치고 버전은 그대로일
+  #   때는 빌드 접미사를 붙인다 — 예: `9.5.1-2`. 같은 태그로 다시 구우면 노드가 캐시를 계속 쓴다.
+  es-image:
+    name: es-image
+    needs: plan
+    if: needs.plan.outputs.es_build == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: 빌드 · 푸시
+        uses: docker/build-push-action@v6
+        with:
+          context: infra/elasticsearch/ # 이 이미지는 저장소 루트가 필요 없다
+          platforms: linux/amd64
+          push: true
+          tags: ${{ env.ES_IMAGE }}:${{ needs.plan.outputs.es_tag }}
+          # 캐시를 쓰지 않는다 — 2.58GB 라 GHA 캐시(저장소당 10GB)를 server·gateway 것까지
+          # 밀어낸다. ES 버전을 올릴 때만 굽는 이미지라 캐시 이득도 거의 없다.
+
   # ── k3s 에 적용한다 ──────────────────────────────────────────────────────
   # ⚠ job 이름이 `deploy` 였다 — pages.yml 의 deploy 와 **체크 이름이 겹쳤다**(한 커밋에 `deploy` 둘).
   #   룰셋은 context 이름으로만 매칭해서 워크플로를 구분하지 못한다. 지금은 둘 다 필수 검사가 아니라
@@ -186,13 +220,14 @@ jobs:
   #   필수로 걸 일이 생기기 전에 미리 갈라 둔다(2026-09-14, `_project/decisions/111`).
   k3s-deploy:
     name: k3s-deploy
-    needs: [plan, image, gateway-image]
+    needs: [plan, image, gateway-image, es-image]
     # plan 이 성공했을 때만 — plan 이 실패하면 두 image 는 skipped 가 되는데, 그걸 «구울 게 없었다» 로 읽고
     # 배포가 돌았다(2026-09-10 #61 — 태그 검사에 걸렸는데도 deploy 가 초록). 이미지는 구웠거나 건너뛰었어야 한다.
     if: >-
       always() && !cancelled() && needs.plan.result == 'success' &&
       (needs.image.result == 'success' || needs.image.result == 'skipped') &&
-      (needs.gateway-image.result == 'success' || needs.gateway-image.result == 'skipped')
+      (needs.gateway-image.result == 'success' || needs.gateway-image.result == 'skipped') &&
+      (needs.es-image.result == 'success' || needs.es-image.result == 'skipped')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

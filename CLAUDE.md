@@ -265,7 +265,13 @@ ai/                      품질을 만들고 재는 쪽 (Python 3.13). 청킹·B
                          함께 실린다(decisions/024·105). 옛 `ai.solidbob.cloud` 서술은 2026-09-03 삭제
                          검증: cd ai && pytest && PYTHONPATH=apps:../server/apps lint-imports --config .importlinter
                          의존 방향은 ai → server 한쪽뿐이다 (evaluation 이 hub 계약을 import). 역방향은 계약이 막는다
-apps/                    call(상담원, 옛 dashboard — 2026-09-14 이름 변경). 고객 화면은 `_project/decisions/014` 로 철회(013 철회)
+apps/                    프론트 셋. 전부 Vercel 배포(STATE.md `apps/` 줄) — 담당: 조서희
+                         call/     상담원 데모 `call.solidbob.cloud` (옛 dashboard, 2026-09-14 개명)
+                         admin/    관리자 `admin.solidbob.cloud` (2026-09-15 신설, 구글 로그인 — `decisions/403`)
+                         platform/ 소개 `www.solidbob.cloud`
+                         고객 화면은 `_project/decisions/014` 로 철회(013 철회)
+                         ⚠ 작업 트리에 `apps/dashboard/` 가 남아 있을 수 있다 — git 추적 0개,
+                         개명 전 `dist`·`node_modules` 잔존물이다. 지워도 된다
 infra/                   로컬 개발 인프라(compose · ES nori 이미지) + 운영 배포 산출물.
                          CLAUDE.md(AWS 전제 · 만들지 말 것) · README.md(로컬 사용법). 주 담당: 정성윤
                          (잠금 아님 — 세 사람 누구나 고친다. 단 런북 선행 읽기는 그대로, `decisions/302`)
@@ -273,7 +279,9 @@ scripts/ data/           유틸리티 / 데이터 (원본은 .gitignore)
 .github/workflows/       Pages 배포(pages.yml) · CI(test.yml — server · ai · jekyll · gateway job)
                          · 릴리스(release.yml — plan · image · gateway-image · k3s-deploy)
                          · 배포 태그 검사(tag-check.yml — tag-check job, PR 전용. 이미지를 굽지 않는다)
-                         · branch-protection.json ⚠ 라이브 룰셋과 어긋나 있다 — [미결](/open-items/)
+                         · ruleset-main.json(라이브 룰셋 `21538648` 의 복원본 — PUT 으로 그대로 되살린다)
+                         · branch-protection.json — 클래식 보호로 되돌릴 때의 대비본(`decisions/011`).
+                         라이브는 룰셋이다. 룰셋을 고치면 이 파일도 같이 고친다(2026-09-15 일치시킴)
                          판정 로직은 `scripts/check_release_tags.py` 한 벌이다(`decisions/111`)
 jekyll/                  지킬 사이트 루트 — 지킬 명령은 전부 이 안에서 실행
   index.markdown         표지 (layout: cover)
@@ -486,15 +494,24 @@ code(eval): 마스킹 재현율 계산 추가
 | | 설정 |
 |---|---|
 | PR 필수 | 승인 0건 (혼자 관리 — 리뷰어를 두지 않는다) |
-| 필수 통과 검사 | `server`(파이프라인·계약) · `ai`(검색·평가) · `jekyll`(사이트 빌드 + 링크 검사) |
+| 필수 통과 검사 | `server`(파이프라인·계약) · `ai`(검색·평가) · `jekyll`(사이트 빌드 + 링크 검사) · **`gateway`**(게이트웨이 타입·테스트) · **`tag-check`**(배포 태그 — `tag-check.yml`). 2026-09-15 에 뒤의 둘을 더했다(`decisions/114`) |
 | force push · 브랜치 삭제 | 금지 |
 
-CI(`test.yml`)는 위 네 브랜치 push 와 main 대상 PR 양쪽에서 돈다. 배포(`pages.yml`)는
+CI(`test.yml`)는 **main push 와 main 대상 PR** 에서 돈다 — 2026-09-15 에 네 브랜치 push 트리거를 걷어냈다(`decisions/114`). 브랜치 push 런과 PR 런이 **같은 커밋에 같은 이름으로** 검사를 두 벌 달았기 때문이다. PR 이 열려 있으면 push 마다 `pull_request` 가 도니 실질 손실은 「PR 없이 브랜치에만 push 했을 때」 하나뿐이다 — 일찍 보고 싶으면 초안 PR 을 연다. 배포(`pages.yml`)는
 main push 에서만 도는데, 보호 설정 이후 그 push 는 **PR 머지로만 발생한다.**
 
 필수 통과 검사 이름은 `test.yml` 의 **job 이름**이지 브랜치 이름이 아니다 — 브랜치를
 개명해도 룰셋은 건드릴 필요가 없다. 반대로 **job 이름을 바꾸면 룰셋을 같이 고쳐야 한다**
 (없는 검사를 기다리며 PR 이 영원히 머지되지 않는다). 룰셋 변경은 저장소 admin 몫이다 — **2026-09-03 소유권이 `SeongYuna` 로 넘어와 정성윤이 직접 한다**(`decisions/106`).
+
+**룰셋을 고치면 `.github/ruleset-main.json` 을 함께 갱신한다 (2026-09-15).** 그 파일이 라이브 룰셋의
+복원본이다 — 전에는 라이브가 유일본이라 누가 지우면 되돌릴 근거가 없었다. 뜨고 되살리는 법:
+
+```bash
+R=repos/SeongYuna/call.solidbob.cloud/rulesets
+gh api $R/21538648 | python3 -c "import json,sys;d=json.load(sys.stdin);print(json.dumps({k:v for k,v in d.items() if k not in {'id','node_id','created_at','updated_at','source','source_type','_links','current_user_can_bypass'}},indent=2,ensure_ascii=False))" > .github/ruleset-main.json
+gh api -X PUT $R/21538648 --input .github/ruleset-main.json   # 되살리기 (지워졌으면 -X POST $R)
+```
 
 ---
 
