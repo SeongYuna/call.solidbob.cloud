@@ -59,16 +59,3 @@ export interface BlacklistEntryItem {
   release_reason: string | null;
   note: string | null;
 }
-
-/**
- * ⚠ **실제 `GET /hub/knowledge-gaps` 계약과 모양이 다르다** — 저 쪽은
- * `{module: B|C|F, description, status}`고 여기는 `{query, found}` 기준으로
- * 묶어 센다. `KnowledgeGapTab.tsx`를 다시 설계하기 전까지는 mock 전용으로 남긴다
- * (`lib/api/hubClient.ts`의 `KnowledgeGapItem`이 실제 계약 쪽).
- */
-export interface KnowledgeGapEntry {
-  call_id: string;
-  query: string;
-  found: boolean;
-  logged_at: string;
-}

@@ -34,7 +34,16 @@ function gatewayDemoBase(): string {
   return (import.meta.env.VITE_GATEWAY_DEMO_BASE_URL ?? "").trim();
 }
 
-export function useAgentCallSession() {
+export interface AgentCallSession {
+  status: AgentCallStatus;
+  elapsedSeconds: number;
+  turns: AgentCallTurn[];
+  errorMessage: string | null;
+  start: () => void;
+  end: (nextStatus?: AgentCallStatus) => void;
+}
+
+export function useAgentCallSession(): AgentCallSession {
   const [status, setStatus] = useState<AgentCallStatus>("idle");
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [turns, setTurns] = useState<AgentCallTurn[]>([]);

@@ -9,13 +9,25 @@ import { TermsPanel } from "./components/TermsPanel";
 import { TranscriptPanel } from "./components/TranscriptPanel";
 import { useGatewaySession } from "./hooks/useGatewaySession";
 import { captureAgentTokenFromUrl } from "./lib/agentToken";
+import { useAgentCallSession } from "./lib/useAgentCallSession";
 import { getMockAgentAccount } from "./mock/agentAuth";
 import { useCallStore } from "./store/callStore";
 
 export function App(): ReactElement {
   const { startCall, replay, leaveToStandby, manualSearch, endCall, wrapUp } =
     useGatewaySession();
+  const agentCall = useAgentCallSession();
   const [voluntaryPassword, setVoluntaryPassword] = useState(false);
+
+  // "통화받기"를 누르면 AgentCallBox가 사라지고 대시보드(상담기록)가 보인다 —
+  // 그래도 마이크·WS는 계속 떠 있으므로, 헤더의 기존 "통화 종료"가 이것도 함께 끊는다
+  // (2026-09-16 사용자 지시: 별도 상태표시는 두지 않고 기존 종료 버튼에 합친다).
+  function endCallAndAgentSession(): void {
+    if (agentCall.status === "active" || agentCall.status === "connecting") {
+      agentCall.end("ended");
+    }
+    endCall();
+  }
 
   useEffect(() => {
     captureAgentTokenFromUrl();
@@ -95,11 +107,11 @@ export function App(): ReactElement {
               <TranscriptPanel onManualSearch={manualSearch} />
               <TermsPanel
                 onReplay={replay}
-                onEndCall={endCall}
+                onEndCall={endCallAndAgentSession}
                 onLeaveToStandby={leaveToStandby}
               />
             </main>
-            <AgentCallBox />
+            <AgentCallBox session={agentCall} />
           </>
         )}
       </div>
