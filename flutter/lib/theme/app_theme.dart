@@ -9,8 +9,8 @@ import 'package:google_fonts/google_fonts.dart';
 class AppSpacing {
   const AppSpacing._();
 
-  /// --radius-card (24px)
-  static const double cardRadius = 24.0;
+  /// --radius-card (16px)
+  static const double cardRadius = 16.0;
 
   /// --pad-card (24px)
   static const double cardPadding = 24.0;
@@ -23,6 +23,7 @@ class AppColors extends ThemeExtension<AppColors> {
   final Color bg;
   final Color text;
   final Color muted;
+  final Color dim;
   final Color accent;
   final Color pii;
   final Color line;
@@ -36,6 +37,7 @@ class AppColors extends ThemeExtension<AppColors> {
     required this.bg,
     required this.text,
     required this.muted,
+    required this.dim,
     required this.accent,
     required this.pii,
     required this.line,
@@ -46,32 +48,39 @@ class AppColors extends ThemeExtension<AppColors> {
     required this.warnFg,
   });
 
+  // 화이트 + 블루 포인트 톤 (2026-09-16, 사용자 지시). bg/text/muted는 surface·기본/보조
+  // 텍스트·기본/보조 아이콘을 겸한다(buildAppTheme의 iconTheme 참고). shell은 카드 배경 전용,
+  // warnBg/warnFg는 "강조/포인트"(승인대기 등) 카드용 — accent(라벨용 옅은 톤)와 짝을 이룬다.
   static const light = AppColors(
-    bg: Color(0xFFFAFAF9),
-    text: Color(0xFF1A1A18),
-    muted: Color(0xFF68675F),
-    accent: Color(0xFF2DD4BF),
+    bg: Color(0xFFFFFFFF),
+    text: Color(0xFF2C2C2A),
+    muted: Color(0xFF5F5E5A),
+    dim: Color(0xFF888780),
+    accent: Color(0xFF185FA5),
     pii: Color(0xFFE24B4A),
-    line: Color(0xFFECECE7),
-    shell: Color(0xFFFFFFFF),
+    line: Color(0xFFE4E4E0),
+    shell: Color(0xFFF7F7F3),
     okBg: Color(0xFFE7FBF8),
     okFg: Color(0xFF0F766E),
-    warnBg: Color(0xFFFFF4E0),
-    warnFg: Color(0xFF92400E),
+    warnBg: Color(0xFFE6F1FB),
+    warnFg: Color(0xFF0C447C),
   );
 
+  // 다크에서도 같은 화이트+블루 포인트 톤을 따른다(2026-09-16) — bg/text 등 중립 톤은
+  // 그대로 두고, accent·warnBg·warnFg만 light와 같은 파란 계열로 옮겼다(teal·amber 대신).
   static const dark = AppColors(
     bg: Color(0xFF121410),
     text: Color(0xFFF3F0E8),
     muted: Color(0xFFA39E93),
-    accent: Color(0xFF2DD4BF),
+    dim: Color(0xFF7A766C),
+    accent: Color(0xFF4FA8E0),
     pii: Color(0xFFF0716E),
     line: Color(0xFF2E2C28),
     shell: Color(0xFF161512),
     okBg: Color(0xFF16332F),
     okFg: Color(0xFF7EE8D8),
-    warnBg: Color(0xFF3A2A10),
-    warnFg: Color(0xFFF5B860),
+    warnBg: Color(0xFF14283D),
+    warnFg: Color(0xFF8EC6F5),
   );
 
   @override
@@ -84,6 +93,7 @@ class AppColors extends ThemeExtension<AppColors> {
       bg: Color.lerp(bg, other.bg, t)!,
       text: Color.lerp(text, other.text, t)!,
       muted: Color.lerp(muted, other.muted, t)!,
+      dim: Color.lerp(dim, other.dim, t)!,
       accent: Color.lerp(accent, other.accent, t)!,
       pii: Color.lerp(pii, other.pii, t)!,
       line: Color.lerp(line, other.line, t)!,
@@ -112,20 +122,22 @@ ThemeData buildAppTheme(AppColors c, Brightness brightness) {
       seedColor: c.accent,
       brightness: brightness,
       primary: c.accent,
-      surface: c.shell,
+      surface: c.bg,
     ),
     appBarTheme: AppBarTheme(
-      backgroundColor: c.shell,
+      backgroundColor: c.bg,
       foregroundColor: c.text,
       elevation: 0,
       surfaceTintColor: Colors.transparent,
     ),
+    // 아이콘 기본 색 — 명시적으로 색을 지정하지 않은 Icon은 이 색을 따른다.
+    iconTheme: IconThemeData(color: c.text),
     cardTheme: CardThemeData(
       color: c.shell,
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
-        side: BorderSide(color: c.line),
+        side: BorderSide(color: c.line, width: 0.5),
       ),
     ),
     dividerColor: c.line,
