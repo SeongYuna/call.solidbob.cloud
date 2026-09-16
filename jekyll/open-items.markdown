@@ -498,7 +498,11 @@ Environment Variables → **Production 만** → Deployments → Redeploy(`VITE_
 - [x] **카드 피드백(`POST /hub/cards/{id}/feedback`)을 부를 방법이 없다** → **같은 날
   장민석이 풀었다**(`decisions/308` — 추천 카드에 `card_id` 추가, 아래 섹션 참고).
   → **2026-09-15 조서희가 마저 처리** — `coreClient.ts`의 `submitCardFeedback`을 문자열
-  타입으로 정정(아래 「프론트 수정 5건」 ③과 같은 항목). 화면(`TermsPanel`)에는 아직 연결 안 함.
+  타입으로 정정(아래 「프론트 수정 5건」 ③과 같은 항목).
+  → **2026-09-16 조서희가 화면에 연결** — `callStore.ts`의 `toggleAdoption`이 채택 토글을
+  낙관적으로 먼저 바꾼 뒤 `card.card_id`가 있으면(서버에 저장된 카드) `submitCardFeedback`을
+  best-effort로 부른다. `cardId()`(로컬 dedup 키)와 서버 `card_id`는 다른 값이라 후자만 쓴다.
+  실패해도 채택 표시는 그대로 둔다(조용히 넘어간다).
 - [x] **상담기록(통화 재생) 화면을 실제 API로 못 바꾼다** — `apps/call`의 "상담기록"은 지금
   카드·종결·감정분석까지 통째로 재생하는 mock 시나리오(`mock/callHistory.ts`) 기반인데,
   실제 API(`GET /hub/calls`·`GET /hub/calls/{id}/transcript`)는 통화 목록+자막만 준다 —
@@ -527,13 +531,16 @@ Environment Variables → **Production 만** → Deployments → Redeploy(`VITE_
   전환하는 순간 대기화면이 대신 떴다 — `openHistory`가 `shell: "assist"`도 같이 정하도록
   고쳤다. 헤드리스 크롬 + CDP로 mock 모드 왕복(목록→요약→자막→요약→실시간 복귀) 스크린샷
   확인, 콘솔 에러 없음. `apps/call` `tsc --noEmit`·`vite build` 클린.
-- [ ] **관리자 "지식베이스 갭" 화면이 실제 계약과 모양이 다르다** — 화면(`KnowledgeGapTab.tsx`)은
-  지금 `{call_id, query, found}`(상담원이 직접 검색해 못 찾은 질의) 기준으로 묶어 세는데,
+- [x] **관리자 "지식베이스 갭" 화면이 실제 계약과 모양이 다르다** — 화면(`KnowledgeGapTab.tsx`)은
+  ~~지금 `{call_id, query, found}`(상담원이 직접 검색해 못 찾은 질의) 기준으로 묶어 세는데,
   실제 `GET /hub/knowledge-gaps` 계약은 `{module: B|C|F, description, status: open|resolved}`
   (더 넓은 D-4 공백 개념)라 필드가 아예 다르다 — 이름만 바꿔서 옮길 수 없다. REST 함수
-  (`hubClient.ts`의 `fetchKnowledgeGaps`)는 만들어 뒀지만 화면엔 안 붙였다. **정할 것**:
-  탭을 "질의 그룹핑 랭킹"에서 "module 뱃지 + 설명 + 해제(resolve) 버튼" 목록으로 다시
-  설계할지. 담당: 조서희
+  (`hubClient.ts`의 `fetchKnowledgeGaps`)는 만들어 뒀지만 화면엔 안 붙였다.~~
+  → **2026-09-16 조서희가 재설계·연결** — "질의 그룹핑 랭킹"에서 "module 뱃지(B/C/F) +
+  설명 + 열림/해제됨 필터 + 해제·다시 열기 버튼" 목록으로 다시 짰다.
+  `hubClient.ts`에 `resolveKnowledgeGap`(`PATCH /hub/knowledge-gaps/{gap_id}`)을 추가하고
+  `adminStore.ts`의 `loadAll`이 실제 목록을 받는다. mock(`SEED_KNOWLEDGE_GAP_LOG`,
+  `KnowledgeGapEntry`)은 걷어냈다.
 
 ### 통화 후 초안 · 상담원 토큰에서 남은 것 (신규, 2026-09-15, 장민석)
 
@@ -550,8 +557,14 @@ Environment Variables → **Production 만** → Deployments → Redeploy(`VITE_
   모두 걸면 게이트웨이(`services/gateway`)가 부르는 허브 API 와 겹치는 것부터 갈라야 한다. **토큰 만료도 없다** — 폐기로만 끊는다
   ⚠ **카드 피드백(`POST /hub/cards/{id}/feedback`)은 걸면 안 된다** — 상담원 ID 를 **일부러** 받지 않는 API 다(부록 A-1, 상담원 단위 집계 금지).
   토큰을 달면 요청마다 상담원이 식별돼 그 설계를 뒷문으로 무너뜨린다
-- [ ] **§7.3 정본은 「응답 전부 문자열」 로 고쳤다 — 조서희 님 `contract.ts` 가 남았다 (2026-09-15)** — `_project/plan.md` 7.3 절 머리에 규칙을 올리고 예시를 실제 응답으로 바꿨다.
-  프론트 `apps/call/src/types/contract.ts` 는 아직 `is_final: boolean`·`utterance_end_ms: number` 다. 공개 사이트 `docs/07` 7.3 은 v2 기록이라 경고만 달았다
+- [x] **§7.3 정본은 「응답 전부 문자열」 로 고쳤다 — 조서희 님 `contract.ts` 가 남았다 (2026-09-15)** — `_project/plan.md` 7.3 절 머리에 규칙을 올리고 예시를 실제 응답으로 바꿨다.
+  ~~프론트 `apps/call/src/types/contract.ts` 는 아직 `is_final: boolean`·`utterance_end_ms: number` 다.~~
+  → **2026-09-16 조서희 확인: 오판이었다, 고칠 것 없음.** `contract.ts`의 이 필드들은 와이어 그대로가
+  아니라 **파싱 이후 내부 표현**이다 — 문자열 경계는 `lib/ws/realGatewayClient.ts`의
+  `readBoolean`/`readNumber`와 `lib/api/coreClient.ts`의 `*Wire` 타입 + `toBool`/`toNum`이 이미
+  따로 맡고 있다. UI·mock은 전부 파싱 후 네이티브 타입을 전제로 짜여 있어, 여기를 `string`으로
+  바꾸면 계약을 맞추는 게 아니라 멀쩡한 경계를 무너뜨린다. `contract.ts`에 설명 주석만 추가했다.
+  공개 사이트 `docs/07` 7.3 은 v2 기록이라 경고만 달았다
 - [ ] **PR #86 머지 순서 — `tag-check` 가 실패한 채 머지 가능으로 뜬다 (2026-09-15)** — 필수 검사가 아니라서다. 운영 DB 에 `agent_token` 마이그레이션 → `newTag` 올리기 → 머지 순서를 지킨다.
   태그 없이 먼저 머지되면 `release.yml` 이 «코드 변경 + 태그 그대로» 로 실패해 배포되지 않는다(깨지진 않지만 릴리스가 빨갛다). 로컬 `origin` 은 옛 주소(`solidbob02/…`)라 바꿔야 한다
 - [ ] **통화 후 초안은 규칙 발췌다 — 류준 님께**(`decisions/306`) — `POST /hub/calls/{id}/close` 가 501 대신 발췌 초안을 준다(유형은 null).
