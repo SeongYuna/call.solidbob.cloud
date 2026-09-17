@@ -17,6 +17,7 @@ import pytest
 from retrieval.adapter.outbound import es_index
 from retrieval.adapter.outbound.es_bm25_retriever import SEARCH_FIELDS, EsBm25Retriever
 from retrieval.adapter.outbound.knowledge_base_loader import load_chunks
+from retrieval.domain.value_objects.chunk import NON_RECOMMENDABLE_DOC_TYPES
 
 KB_ROOT = Path(__file__).resolve().parents[4].parent / "knowledge-base"
 
@@ -43,10 +44,23 @@ def _hit(doc_id="FIN-TERM-2.2", chunk_id=None, score=9.9):
 
 # ─────────────────────────────────────── ES 없이 도는 것
 
+def _match(q):
+    return q["bool"]["must"][0]["multi_match"]
+
+
 def test_질의는_title_과_text_를_함께_본다():
     q = EsBm25Retriever(FakeClient()).build_query("반품 배송비")
-    assert q["multi_match"]["query"] == "반품 배송비"
-    assert q["multi_match"]["fields"] == list(SEARCH_FIELDS)
+    assert _match(q)["query"] == "반품 배송비"
+    assert _match(q)["fields"] == list(SEARCH_FIELDS)
+
+
+def test_내부_규정_조항은_후보에서_뺀다():
+    """2026-09-17 로컬 E2E — 「F-2 가 적용되지 않는 이유」(POLICY) 가 인감증명 통화의 1순위 카드가 돼
+    필요서류 판정이 0건이었다. 상담원에게 보일 내용이 아니고 골든셋 정답에도 없다(97건 중 0).
+    must_not 이라 점수를 바꾸지 않고 후보만 줄인다."""
+    q = EsBm25Retriever(FakeClient()).build_query("인감증명 대리")
+    assert q["bool"]["must_not"] == [{"terms": {"doc_type": list(NON_RECOMMENDABLE_DOC_TYPES)}}]
+    assert "POLICY" in NON_RECOMMENDABLE_DOC_TYPES and "TERM" not in NON_RECOMMENDABLE_DOC_TYPES
 
 
 def test_필드_가중치를_주지_않는다():
@@ -58,12 +72,12 @@ def test_도메인을_주면_filter_로_좁힌다():
     q = EsBm25Retriever(FakeClient(), domain="shopping").build_query("반품")
     assert q["bool"]["filter"] == [{"term": {"domain": "shopping"}}]
     # filter 절이라 점수에 영향을 주지 않는다 — must 안의 질의만 점수를 만든다
-    assert q["bool"]["must"][0]["multi_match"]["query"] == "반품"
+    assert _match(q)["query"] == "반품"
 
 
 def test_기본은_도메인을_좁히지_않는다():
     """포트 시그니처에 도메인이 없어서 하네스가 넘겨줄 방법이 없다 — 4개 도메인 전체를 본다."""
-    assert "bool" not in EsBm25Retriever(FakeClient()).build_query("반품")
+    assert "filter" not in EsBm25Retriever(FakeClient()).build_query("반품")["bool"]
 
 
 def test_top_k_와_인덱스가_그대로_넘어간다():
