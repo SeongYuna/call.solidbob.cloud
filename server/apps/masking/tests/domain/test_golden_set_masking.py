@@ -21,7 +21,9 @@ import pytest
 
 from masking.domain.services.masker import mask_text
 
-GOLDEN_SET = Path(__file__).resolve().parents[4].parent / "golden-set" / "v1-50.json"
+# 2026-09-17 v1-50 → v1-150. 하네스 기본 골든셋이 v1-150 인데 이 테스트만 v1-50 을 봐서 **v1-150 의 누락 4건(GS-056·412·413·415)이
+# CI 에서 초록불이었다.** 절대 규칙(누락 0건)은 하네스가 채점하는 것과 같은 골든셋으로 막는다.
+GOLDEN_SET = Path(__file__).resolve().parents[4].parent / "golden-set" / "v1-150.json"
 
 
 def _c5_cases():
@@ -30,7 +32,7 @@ def _c5_cases():
     raw = json.loads(GOLDEN_SET.read_text(encoding="utf-8"))
     items = raw if isinstance(raw, list) else raw.get("cases", raw.get("items", []))
     return [
-        pytest.param(c["id"], c["customer_utterance"], p, id=f"{c['id']}-{p['pattern']}")
+        pytest.param(c["id"], c.get("customer_utterance") or c.get("agent_utterance", ""), p, id=f"{c['id']}-{p['pattern']}")
         for c in items if c.get("module") == "C-5"
         for p in c.get("pii_patterns", []) if p.get("masked_expected")
     ]
