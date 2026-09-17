@@ -276,8 +276,8 @@ infra/                   로컬 개발 인프라(compose · ES nori 이미지) +
                          CLAUDE.md(AWS 전제 · 만들지 말 것) · README.md(로컬 사용법). 주 담당: 정성윤
                          (잠금 아님 — 세 사람 누구나 고친다. 단 런북 선행 읽기는 그대로, `decisions/302`)
 scripts/ data/           유틸리티 / 데이터 (원본은 .gitignore)
-.github/workflows/       Pages 배포(pages.yml) · CI(test.yml — server · ai · jekyll · gateway job)
-                         · 릴리스(release.yml — plan · image · gateway-image · k3s-deploy)
+.github/workflows/       Pages 배포(pages.yml) · CI(test.yml — server · ai · jekyll · call-mediator job)
+                         · 릴리스(release.yml — plan · image · call-mediator-image · k3s-deploy)
                          · 배포 태그 검사(tag-check.yml — tag-check job, PR 전용. 이미지를 굽지 않는다)
                          · ruleset-main.json(라이브 룰셋 `21538648` 의 복원본 — PUT 으로 그대로 되살린다)
                          · branch-protection.json — 클래식 보호로 되돌릴 때의 대비본(`decisions/011`).
@@ -362,7 +362,7 @@ sprint: 1
 priority: 5               # 같은 칸 안의 정렬 순서
 date: 2026-08-25
 paths:                    # (선택) 이 티켓 소관 파일. 세션 종료 검사가 status 정합성을 본다
-  - "services/gateway/stt/*"
+  - "services/call-mediator/stt/*"
 ---
 ```
 
@@ -494,7 +494,7 @@ code(eval): 마스킹 재현율 계산 추가
 | | 설정 |
 |---|---|
 | PR 필수 | 승인 0건 (혼자 관리 — 리뷰어를 두지 않는다) |
-| 필수 통과 검사 | `server`(파이프라인·계약) · `ai`(검색·평가) · `jekyll`(사이트 빌드 + 링크 검사) · **`gateway`**(게이트웨이 타입·테스트) · **`tag-check`**(배포 태그 — `tag-check.yml`). 2026-09-15 에 뒤의 둘을 더했다(`decisions/114`) |
+| 필수 통과 검사 | `server`(파이프라인·계약) · `ai`(검색·평가) · `jekyll`(사이트 빌드 + 링크 검사) · **`call-mediator`**(콜 미디에이터 타입·테스트) · **`tag-check`**(배포 태그 — `tag-check.yml`). 2026-09-15 에 뒤의 둘을 더했다(`decisions/114`) |
 | force push · 브랜치 삭제 | 금지 |
 
 CI(`test.yml`)는 **main push 와 main 대상 PR** 에서 돈다 — 2026-09-15 에 네 브랜치 push 트리거를 걷어냈다(`decisions/114`). 브랜치 push 런과 PR 런이 **같은 커밋에 같은 이름으로** 검사를 두 벌 달았기 때문이다. PR 이 열려 있으면 push 마다 `pull_request` 가 도니 실질 손실은 「PR 없이 브랜치에만 push 했을 때」 하나뿐이다 — 일찍 보고 싶으면 초안 PR 을 연다. 배포(`pages.yml`)는

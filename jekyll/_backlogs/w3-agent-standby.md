@@ -9,10 +9,10 @@ date: 2026-09-01
 paths:
   - "apps/dashboard/src/components/AgentStandbyScreen.tsx"
   - "apps/dashboard/src/App.tsx"
-  - "apps/dashboard/src/hooks/useGatewaySession.ts"
+  - "apps/dashboard/src/hooks/useCallMediatorSession.ts"
 ---
 
-로그인 직후(앱 시작)는 대기화면. 통화 시작 후에만 2단 어시스트와 mock 게이트웨이를 연다.
+로그인 직후(앱 시작)는 대기화면. 통화 시작 후에만 2단 어시스트와 mock 콜 미디에이터를 연다.
 
 ## 완료 조건
 

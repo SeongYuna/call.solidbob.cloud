@@ -20,15 +20,15 @@ resources:
   - elasticsearch.yaml
   - redis.yaml          # 관리자 로그인 세션(5분). 휘발 — 볼륨 없음(decisions/112)
   - server.yaml
-  - gateway.yaml
+  - call-mediator.yaml
   - ingress.yaml
   # secret.example.yaml · clusterissuer.example.yaml 은 일부러 넣지 않는다.
 
 images:
   - name: seongyuna/callguard-server
-    newTag: "0.1.16"
+    newTag: "0.1.17"
   - name: seongyuna/callguard-es
     newTag: "9.5.1"
-  # 게이트웨이(services/gateway). server 와 태그를 따로 올린다 — release.yml 이 이미지마다 판단한다.
-  - name: seongyuna/callguard-gateway
-    newTag: "0.1.6"
+  # 콜 미디에이터(services/call-mediator). server 와 태그를 따로 올린다 — release.yml 이 이미지마다 판단한다.
+  - name: seongyuna/callguard-call-mediator
+    newTag: "0.2.0"

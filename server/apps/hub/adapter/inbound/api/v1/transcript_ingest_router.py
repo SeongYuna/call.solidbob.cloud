@@ -1,5 +1,5 @@
 # Requirement: 7.3절 전사 이벤트, C-5, SEC-1
-"""POST /hub/transcripts — 게이트웨이 → 허브. 스키마 ↔ DTO 변환은 여기서만 한다 (유스케이스는 DTO 만 받는다)."""
+"""POST /hub/transcripts — 콜 미디에이터 → 허브. 스키마 ↔ DTO 변환은 여기서만 한다 (유스케이스는 DTO 만 받는다)."""
 
 from __future__ import annotations
 

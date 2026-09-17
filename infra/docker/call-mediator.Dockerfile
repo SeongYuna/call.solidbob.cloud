@@ -1,11 +1,11 @@
 # Requirement: A-1, A-3, COST-1
 #
-# services/gateway(Node.js) 이미지. server 와 **따로** 굽고 따로 뜬다 — 오디오 중계라 파이썬 서버와
-# 수명·자원이 다르다. 같은 노드에 올린다(런북 0장 사양표가 이미 «FastAPI server · Node 게이트웨이 ≈ 1.0GB» 로 계산).
+# services/call-mediator(Node.js) 이미지. server 와 **따로** 굽고 따로 뜬다 — 오디오 중계라 파이썬 서버와
+# 수명·자원이 다르다. 같은 노드에 올린다(런북 0장 사양표가 이미 «FastAPI server · Node 콜 미디에이터 ≈ 1.0GB» 로 계산).
 #
 #   docker buildx build --platform linux/amd64 \
-#     -f infra/docker/gateway.Dockerfile \
-#     -t seongyuna/callguard-gateway:0.1.0 --push .
+#     -f infra/docker/call-mediator.Dockerfile \
+#     -t seongyuna/callguard-call-mediator:0.1.0 --push .
 #
 # 컨텍스트는 저장소 루트다(server 이미지와 같은 규칙 — `.dockerignore` 하나를 같이 쓴다).
 # ⚠ **Docker Hub 저장소는 공개여야 한다.** k3s 는 인증 없이 받는다(imagePullSecret 없음). 첫 푸시가 저장소를
@@ -21,18 +21,18 @@ ENV NODE_ENV=production \
 
 # 코드 위치를 저장소와 같게 둔다 — `src/config.ts` 가 사용량 장부를 저장소 루트 기준
 # (`../../../data/processed/stt-usage.json` → `/app/data/processed/`)으로 찾는다. 운영은 거기에 볼륨을 붙인다.
-WORKDIR /app/services/gateway
+WORKDIR /app/services/call-mediator
 
 # 의존성 먼저 — 코드만 고쳤을 때 이 레이어가 캐시된다.
 # `--omit=dev`: typescript·@types 는 실행에 필요 없다(타입 검사는 CI 가 한다).
 # `--ignore-scripts`: 설치 스크립트를 돌리지 않는다. 지금 걸리는 것은 protobufjs 의 버전 경고 스크립트 하나다.
-COPY services/gateway/package.json services/gateway/package-lock.json ./
+COPY services/call-mediator/package.json services/call-mediator/package-lock.json ./
 RUN npm ci --omit=dev --ignore-scripts --no-audit --no-fund \
  && npm cache clean --force
 
-COPY services/gateway/src ./src
+COPY services/call-mediator/src ./src
 
-# 장부 디렉터리를 미리 만들어 node 사용자에게 준다. 운영은 이 자리에 hostPath 를 덮어 쓴다(gateway.yaml).
+# 장부 디렉터리를 미리 만들어 node 사용자에게 준다. 운영은 이 자리에 hostPath 를 덮어 쓴다(call-mediator.yaml).
 RUN mkdir -p /app/data/processed && chown -R node:node /app/data
 
 # 루트로 돌리지 않는다 — 이미지에 있는 node 사용자(uid 1000).

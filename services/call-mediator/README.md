@@ -1,24 +1,24 @@
-# services/gateway — A-1~A-4 게이트웨이
+# services/call-mediator — A-1~A-4 콜 미디에이터
 
 오디오를 받아 Google STT 로 스트리밍 전사하고, 결과를 server 로 넘겨 **마스킹된 것만** 대시보드로 흘린다.
 주 담당: 정성윤 (`_project/plan.md` 7.1절 · `_project/decisions/019`). 티켓: `jekyll/_backlogs/w4-gateway-streaming-stt.md`.
 
 ```
-[오디오 생산자] ──WS /ingest (PCM16)──▶ gateway ──HTTP──▶ server  POST /hub/calls · /hub/transcripts · /hub/recommendations
+[오디오 생산자] ──WS /ingest (PCM16)──▶ call-mediator ──HTTP──▶ server  POST /hub/calls · /hub/transcripts · /hub/recommendations
                                           │ Google STT (ko-KR, interim)
-[대시보드]      ◀──WS /ws (JSON)───────── gateway  ← 서버가 마스킹해 돌려준 응답만
+[대시보드]      ◀──WS /ws (JSON)───────── call-mediator  ← 서버가 마스킹해 돌려준 응답만
 ```
 
 ## 실행
 
 ```bash
-cd services/gateway
+cd services/call-mediator
 npm ci
 npm start                       # ../../.env 를 읽는다. 셸 변수가 .env 보다 우선한다
 ```
 
 server 가 `http://localhost:8000` 에 떠 있어야 한다(`cd server && uvicorn main:app --env-file ../.env`).
-대시보드는 `apps/call/.env.local` 에 `VITE_GATEWAY_WS_URL=ws://localhost:8080/ws` 를 넣으면 라이브 모드로 붙는다.
+대시보드는 `apps/call/.env.local` 에 `VITE_CALL_MEDIATOR_WS_URL=ws://localhost:8080/ws` 를 넣으면 라이브 모드로 붙는다.
 
 ### 통화 흉내 — AI Hub 녹음 재생
 
@@ -45,14 +45,14 @@ node scripts/replay_persona_call.ts SYN-004 --watch --speak
 
 | | |
 |---|---|
-| 대시보드 | `wss://server.solidbob.cloud/gateway/ws?token=<뷰 토큰>` (`VITE_GATEWAY_WS_URL`) |
-| 오디오 생산자 | `wss://server.solidbob.cloud/gateway/ingest?call_id=…&speaker=…` + `Authorization: Bearer <과금 토큰>` |
-| 상태 | `https://server.solidbob.cloud/gateway/health` |
-| 개발용 테스트 통화 | `https://server.solidbob.cloud/gateway/dev` — 폰 크롬으로 열고 과금 문 토큰을 붙여 넣는다 |
+| 대시보드 | `wss://server.solidbob.cloud/call-mediator/ws?token=<뷰 토큰>` (`VITE_CALL_MEDIATOR_WS_URL`) |
+| 오디오 생산자 | `wss://server.solidbob.cloud/call-mediator/ingest?call_id=…&speaker=…` + `Authorization: Bearer <과금 토큰>` |
+| 상태 | `https://server.solidbob.cloud/call-mediator/health` |
+| 개발용 테스트 통화 | `https://server.solidbob.cloud/call-mediator/dev` — 폰 크롬으로 열고 과금 문 토큰을 붙여 넣는다 |
 
-- **배포는 `main` 머지다.** `release.yml` 이 `infra/k8s/base/kustomization.yaml` 의 `callguard-gateway` newTag 로 굽는다.
-  `src/`·`package*.json`·`infra/docker/gateway.Dockerfile` 을 고치면 **newTag 를 올려야** 한다 — 안 올리면 릴리스가 실패한다
-- 매니페스트: `infra/k8s/base/gateway.yaml`. Ingress `/gateway` 경로는 이 서버가 스스로 뗀다(`PUBLIC_PREFIX`)
+- **배포는 `main` 머지다.** `release.yml` 이 `infra/k8s/base/kustomization.yaml` 의 `callguard-call-mediator` newTag 로 굽는다.
+  `src/`·`package*.json`·`infra/docker/call-mediator.Dockerfile` 을 고치면 **newTag 를 올려야** 한다 — 안 올리면 릴리스가 실패한다
+- 매니페스트: `infra/k8s/base/call-mediator.yaml`. Ingress `/call-mediator` 경로는 이 서버가 스스로 뗀다(`PUBLIC_PREFIX`)
 - 토큰은 배포가 인스턴스 안에서 만든다. 꺼내는 법·교체법: `infra/k8s/base/secret.example.yaml` ③
 - 검증: 런북 19-1 (12·13번)
 - ⚠ 뷰 토큰을 공개 대시보드 번들(Vercel env)에 넣으면 그 순간 비밀이 아니다 — 무작위 스캔만 막는다
@@ -61,15 +61,15 @@ node scripts/replay_persona_call.ts SYN-004 --watch --speak
 
 | 키 | 없으면 |
 |---|---|
-| `GATEWAY_PORT` | 8080 |
+| `CALL_MEDIATOR_PORT` | 8080 |
 | `CORE_API_URL` | `http://localhost:8000` (운영은 `http://callguard-server`) |
 | `GOOGLE_APPLICATION_CREDENTIALS` | **키 파일 경로.** 파일이 없으면 `/ingest` 를 거절한다 — 가짜 STT 로 대신하지 않는다 |
 | `STT_MAX_SECONDS_PER_DAY` · `_MONTH` | **거절한다(fail-closed).** 스트림은 끝을 미리 몰라서 캡 없이 열면 누가 끊기 전까지 과금된다 |
 | `CORS_ALLOWED_ORIGINS` | 로컬 Vite 둘 — server 와 같은 키·같은 기본값. 대시보드 WS 의 `Origin` 을 대조한다 |
-| `GATEWAY_INGEST_TOKEN` | `/ingest`(과금) 비밀. **없으면 이 머신(루프백) 접속만 받는다** |
-| `GATEWAY_VIEW_TOKEN` | `/ws`(자막 보기) 토큰. **없으면 이 머신(루프백) 접속만 받는다** |
+| `CALL_MEDIATOR_INGEST_TOKEN` | `/ingest`(과금) 비밀. **없으면 이 머신(루프백) 접속만 받는다** |
+| `CALL_MEDIATOR_VIEW_TOKEN` | `/ws`(자막 보기) 토큰. **없으면 이 머신(루프백) 접속만 받는다** |
 
-⚠ `GATEWAY_PORT`·`CORE_API_URL`·`GATEWAY_INGEST_TOKEN`·`GATEWAY_VIEW_TOKEN` 은 아직 `.env.example` 에 없다.
+⚠ `CALL_MEDIATOR_PORT`·`CORE_API_URL`·`CALL_MEDIATOR_INGEST_TOKEN`·`CALL_MEDIATOR_VIEW_TOKEN` 은 아직 `.env.example` 에 없다.
 그 파일은 자격증명 보호 훅이 편집을 막아 사람이 채운다.
 
 ## 접속 제어 (`src/domain/access.ts`)
@@ -79,15 +79,15 @@ node scripts/replay_persona_call.ts SYN-004 --watch --speak
 | 이 머신(루프백) | 받는다 — 로컬 개발은 설정 없이 돈다 | 받는다 |
 | 그 밖(쿠버네티스에서는 Traefik 을 거친 모든 접속) | **거절(401) — fail-closed** | 그 문의 토큰이 맞아야 받는다 |
 
-- **토큰은 문마다 따로다.** `/ingest` 는 STT 과금을 쓰므로 `GATEWAY_INGEST_TOKEN` 이 **진짜 비밀**이고,
+- **토큰은 문마다 따로다.** `/ingest` 는 STT 과금을 쓰므로 `CALL_MEDIATOR_INGEST_TOKEN` 이 **진짜 비밀**이고,
   `Authorization: Bearer` 헤더로만 받는다(URL 은 접근 로그·기록에 남는다).
-  `/ws` 는 `GATEWAY_VIEW_TOKEN` 을 헤더나 `?token=` 으로 받는다 — 브라우저 WebSocket 은 헤더를 못 붙인다.
+  `/ws` 는 `CALL_MEDIATOR_VIEW_TOKEN` 을 헤더나 `?token=` 으로 받는다 — 브라우저 WebSocket 은 헤더를 못 붙인다.
 - ⚠ **뷰 토큰은 비밀이 아니다.** 대시보드는 공개 사이트라, 번들(`VITE_*`)에 넣는 순간 누구나 읽는다.
   무작위 스캔만 막는다. 그래서 둘을 갈랐다 — 뷰 토큰이 새도 과금 문은 안 열린다. 두 값을 같게 두면 기동 때 경고한다
 - `/ws` 를 제대로 막으려면 **사람별 인증**(상담원 로그인)이 필요하다. 서버에도 아직 없다 — 이 토큰이 그걸 대신하지 않는다
 - 루프백 판정은 `req.socket.remoteAddress` 로만 한다. `X-Forwarded-For` 는 믿지 않는다
 - 토큰·거절된 요청의 쿼리는 로그에 남기지 않는다. `/health` 는 거르지 않는다(쿠버네티스 프로브)
-- 생산자 스크립트는 환경변수 `GATEWAY_INGEST_TOKEN`·`GATEWAY_VIEW_TOKEN` 을 헤더로 보낸다(명령줄 인자로는 안 받는다)
+- 생산자 스크립트는 환경변수 `CALL_MEDIATOR_INGEST_TOKEN`·`CALL_MEDIATOR_VIEW_TOKEN` 을 헤더로 보낸다(명령줄 인자로는 안 받는다)
 
 ## 계약
 
@@ -120,7 +120,7 @@ node scripts/replay_persona_call.ts SYN-004 --watch --speak
 
 ### `WS /ws[?call_id=]` — 대시보드
 
-받기만 한다. `call_id` 를 안 주면 모든 통화를 받는다. 메시지는 `realGatewayClient.ts` 가 이미 기다리는 형식이다.
+받기만 한다. `call_id` 를 안 주면 모든 통화를 받는다. 메시지는 `realCallMediatorClient.ts` 가 이미 기다리는 형식이다.
 
 ```json
 {"type": "transcript",     "payload": { /* POST /hub/transcripts 응답 그대로 — 값은 전부 문자열 */ }}
@@ -147,11 +147,11 @@ node scripts/replay_persona_call.ts SYN-004 --watch --speak
 - 브라우저 내장 음성 인식(Web Speech API)이 그 자리에서 글자로 바꿔 `{"text", "is_final"}` 로 보낸다.
   같은 파이프라인(서버 마스킹 → 대시보드)을 탄다. 통화 기록 엔진은 `web-speech` — 구글 STT 가 아니므로 COST-1 캡과 무관하다
 - **품질 측정용이 아니다** — 브라우저 엔진의 인식 품질이다(절대 원칙 2·10). 배선 확인용이다
-- DB 에 전사를 쓰므로 **과금 문 토큰**(`GATEWAY_INGEST_TOKEN`)을 요구한다. 브라우저는 서브프로토콜 `bearer.<토큰>` 으로 낸다
+- DB 에 전사를 쓰므로 **과금 문 토큰**(`CALL_MEDIATOR_INGEST_TOKEN`)을 요구한다. 브라우저는 서브프로토콜 `bearer.<토큰>` 으로 낸다
   — URL 에 싣지 않는다. 뷰 토큰으로는 안 열린다. 이 머신(루프백)에서 열면 토큰이 필요 없다
 - ngrok 같은 터널로 열면 요청이 루프백으로 들어오지만 **프록시 헤더가 붙어 있어 «이 머신» 으로 치지 않는다** — 토큰이 필요하다
 - 페이지는 CSP(스크립트는 해시로만)·틀 금지·캐시 금지로 나간다. 비밀이 없다
-- 대시보드 경로 `/dashboard` 도 `/ws` 와 같다(조서희 님 게이트웨이가 쓰던 경로)
+- 대시보드 경로 `/dashboard` 도 `/ws` 와 같다(조서희 님 콜 미디에이터가 쓰던 경로)
 - **`producer=script`**(2026-09-16) — 합성 대본 재생기(`scripts/replay_persona_call.ts`)가 붙는다. 엔진을 `synthetic-script` 로 적는다.
   모르는 값은 무시하고 `web-speech` 로 친다 — 호출자가 엔진 이름을 지어 넣지 못한다. 헤더 `X-Caller-Phone` 은 `/ingest` 와 똑같이 받는다
 
@@ -161,7 +161,7 @@ node scripts/replay_persona_call.ts SYN-004 --watch --speak
 
 ## 지키는 것
 
-- **SEC-1** — 원문은 게이트웨이 → server 로만 간다. server 가 실패하면 그 결과는 **아무 데도 가지 않는다.**
+- **SEC-1** — 원문은 콜 미디에이터 → server 로만 간다. server 가 실패하면 그 결과는 **아무 데도 가지 않는다.**
   로그에는 번호·상태 코드만 남는다. 422 본문은 원문을 되돌려 주므로 읽지 않고 버린다
 - **COST-1** — `data/processed/stt-usage.json` 을 `scripts/transcribe_batch.py` 와 **같은 파일·같은 형식**으로 쓴다.
   캡을 넘겼으면 새 채널을 열지 않고, 열린 채널도 캡에 닿으면 거기서 끊는다
@@ -173,7 +173,7 @@ node scripts/replay_persona_call.ts SYN-004 --watch --speak
 
 - **모노 한 줄에 섞인 두 화자 분리(diarization)** — 채널 분리만 한다. 구글 화자 태그는 final 에만 붙고
   누가 상담원인지는 알려 주지 않는다. 잘못 붙이면 C-1~C-4(상담원)·C-6(고객) 방향이 뒤집힌다
-- 판정 — 트리거·마스킹·추천은 전부 server 가 한다. 게이트웨이는 나르기만 한다
+- 판정 — 트리거·마스킹·추천은 전부 server 가 한다. 콜 미디에이터는 나르기만 한다
 - 사람별 인증 — 위 토큰은 팀 공유 값이다. 상담원 로그인은 server 와 같은 미결 항목이다(「서버에 인증이 없다」)
 
 ## 검증

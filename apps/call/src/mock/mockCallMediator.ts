@@ -5,7 +5,7 @@ import type {
   RecommendationCard,
   TranscriptEvent,
 } from "../types/contract";
-import type { GatewayClient, GatewayListener, WrapUpSegment } from "../lib/ws/types";
+import type { CallMediatorClient, CallMediatorListener, WrapUpSegment } from "../lib/ws/types";
 import { getScenario } from "./scenarios";
 import { DEFAULT_LOCAL_RESOURCES } from "./localResources";
 import { sentimentFromScenario } from "./sentiment";
@@ -28,14 +28,14 @@ const WRAP_UP_MS = 600;
  * 다산콜센터 mock 시나리오를 재생한다.
  * 발화 시각은 utterance_end_ms 를 쓰되, 발화 사이 간격만 2초 줄여 재생한다.
  */
-export class MockGatewayClient implements GatewayClient {
+export class MockCallMediatorClient implements CallMediatorClient {
   readonly mode = "mock" as const;
   private timers: number[] = [];
   private aborted = false;
   /** connect 시점 시나리오. 칩만 바꾸고 재생 전이면 검색·랩업이 다른 통화와 섞이지 않게 한다. */
   private playing = getScenario();
 
-  connect(listeners: GatewayListener): void {
+  connect(listeners: CallMediatorListener): void {
     this.disconnect();
     this.aborted = false;
     listeners.onStatus({ mode: "mock", connected: true });
@@ -132,7 +132,7 @@ export class MockGatewayClient implements GatewayClient {
 
   /**
    * 요약·분류·감정분석 모델이 없어 시나리오 문장과 C-6 건수만 돌려준다.
-   * `segments`는 실서버 전용(`RealGatewayClient`) — mock은 시나리오 데이터를 그대로 쓴다.
+   * `segments`는 실서버 전용(`RealCallMediatorClient`) — mock은 시나리오 데이터를 그대로 쓴다.
    */
   wrapUp(callId: string, _segments: WrapUpSegment[]): Promise<CallWrapUp> {
     return new Promise((resolve) => {

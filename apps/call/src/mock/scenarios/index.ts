@@ -11,7 +11,7 @@ import type { MockScenario } from "./types";
 
 export type { MockScenario } from "./types";
 
-/** mock 재생용. 게이트웨이 계약이 아니다. */
+/** mock 재생용. 콜 미디에이터 계약이 아니다. */
 export type MockScenarioId =
   | "vi-deungbon"
   | "en-transit"

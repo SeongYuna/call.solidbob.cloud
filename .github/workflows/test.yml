@@ -19,7 +19,7 @@ name: CI — 하네스 테스트 · 구조 계약 · 사이트 빌드
 
 # ⚠ **push 는 main 에서만 돈다 (2026-09-15, `_project/decisions/114`).**
 #   전에는 `[main, PM, ai, server, frontend]` 였는데, 브랜치에 PR 이 열려 있으면 **브랜치 push 런과
-#   PR 런이 같은 커밋을 헤드로** 잡아(실측: `61a3d35d` 에 둘) `server`·`ai`·`jekyll`·`gateway` 가
+#   PR 런이 같은 커밋을 헤드로** 잡아(실측: `61a3d35d` 에 둘) `server`·`ai`·`jekyll`·`call-mediator` 가
 #   **같은 SHA 에 두 벌씩** 달렸다. 러너 분이 두 배로 들고 checks 목록이 지저분해진다.
 #
 #   `concurrency` group 을 합쳐 한쪽을 취소하는 «싼 수정»은 **쓰면 안 된다** — 두 런이 같은 SHA 에
@@ -43,8 +43,8 @@ concurrency:
   group: test-${{ github.ref }}
   cancel-in-progress: true
 
-# ⚠ job 이름 `server` · `ai` · `jekyll` · `gateway` 는 main 브랜치 보호의 **필수 통과 검사 이름**이다
-#   (2026-09-15 에 `gateway` 가 등록되어 넷이 됐고, `tag-check.yml` 의 `tag-check` 까지 다섯이다).
+# ⚠ job 이름 `server` · `ai` · `jekyll` · `call-mediator` 는 main 브랜치 보호의 **필수 통과 검사 이름**이다
+#   (2026-09-15 에 `call-mediator` 가 등록되어 넷이 됐고, `tag-check.yml` 의 `tag-check` 까지 다섯이다).
 #   이름을 바꾸면 보호 설정이 존재하지 않는 검사를 기다리게 되어 PR 이 영원히 머지되지 않는다.
 #   바꿀 때는 룰셋(Settings → Rules → Rulesets → main → Require status checks)을 **함께** 고친다.
 #   2026-08-26: fastapi/ 를 server/ · ai/ 로 나누면서 job `backend` → `server` + `ai` 로 갈렸다.
@@ -181,14 +181,14 @@ jobs:
         # 로컬에서 강하게 보려면: python3 scripts/check_progress_log.py --strict
         run: python3 scripts/check_progress_log.py --days 7
 
-  gateway:
-    # A-1~A-4 게이트웨이 (services/gateway, Node.js). 구글·서버 없이 가짜 포트로 돈다.
+  call-mediator:
+    # A-1~A-4 콜 미디에이터 (services/call-mediator, Node.js). 구글·서버 없이 가짜 포트로 돈다.
     # ⚠ **2026-09-15 부터 main 룰셋의 필수 통과 검사다.** 이름을 바꾸면 룰셋도 같이 고친다 —
     #   없는 검사를 기다리며 PR 이 영원히 머지되지 않는다.
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: services/gateway
+        working-directory: services/call-mediator
     steps:
       - name: 체크아웃
         uses: actions/checkout@v4
@@ -199,7 +199,7 @@ jobs:
         with:
           node-version: '24'
           cache: npm
-          cache-dependency-path: services/gateway/package-lock.json
+          cache-dependency-path: services/call-mediator/package-lock.json
 
       - name: 의존성 설치
         run: npm ci
@@ -213,6 +213,6 @@ jobs:
         # 돌아서 `| tee` 가 실패를 삼킨다 — 첫 줄에서 켜고, 실패 개수도 따로 본다(두 겹).
         run: |
           set -o pipefail
-          npm test 2>&1 | tee gateway-test.log
-          grep -qE "^ℹ pass [1-9]" gateway-test.log || { echo "::error::게이트웨이 테스트가 하나도 돌지 않았다"; exit 1; }
-          if grep -qE "^ℹ fail [1-9]" gateway-test.log; then echo "::error::게이트웨이 테스트 실패"; exit 1; fi
+          npm test 2>&1 | tee call-mediator-test.log
+          grep -qE "^ℹ pass [1-9]" call-mediator-test.log || { echo "::error::콜 미디에이터 테스트가 하나도 돌지 않았다"; exit 1; }
+          if grep -qE "^ℹ fail [1-9]" call-mediator-test.log; then echo "::error::콜 미디에이터 테스트 실패"; exit 1; fi

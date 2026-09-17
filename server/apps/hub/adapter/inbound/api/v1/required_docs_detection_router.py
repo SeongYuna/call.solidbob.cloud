@@ -1,5 +1,5 @@
 # Requirement: F-2
-"""POST /hub/required-docs-checks — 상담원 발화로 필요서류 안내 여부를 자동 판정한다. 게이트웨이가 부른다."""
+"""POST /hub/required-docs-checks — 상담원 발화로 필요서류 안내 여부를 자동 판정한다. 콜 미디에이터가 부른다."""
 
 from __future__ import annotations
 

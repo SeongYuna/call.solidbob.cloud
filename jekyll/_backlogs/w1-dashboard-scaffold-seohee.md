@@ -21,7 +21,7 @@ requirement:
 ## 범위
 
 - 3분할: 실시간 자막 / 추천 카드 / 개인정보 마스킹 로그. F-2 종결 모달
-- 게이트웨이 클라이언트 real/mock 동일 인터페이스. `VITE_GATEWAY_WS_URL` 이 없으면 mock.
+- 콜 미디에이터 클라이언트 real/mock 동일 인터페이스. `VITE_CALL_MEDIATOR_WS_URL` 이 없으면 mock.
   mock 데이터는 7.3절 예시값만 사용 (프로모션 할인 카드, 해지 종결 `blocked`)
 - **상태관리 zustand — 팀 컨펌 필요.** 칸반·규칙에 합의된 방식이 없어 이번에 도입했다.
   PR 올릴 때 이 선택을 팀에 확인한다.

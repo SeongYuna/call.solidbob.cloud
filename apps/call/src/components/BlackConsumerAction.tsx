@@ -9,7 +9,7 @@ interface BlackConsumerActionProps {
 /**
  * Requirement: C-6 확장. 욕설·폭언으로 통화가 길어진 고객을 상담원이 통화 종료 시
  * 직접 판단해 분류한다 — 자동 탐지가 아니다(부록 A-2, 판정은 사람이 한다).
- * 확인 즉시 관리자에게 알림을 보낸다(현재 mock — services/gateway 알림 API 없음).
+ * 확인 즉시 관리자에게 알림을 보낸다(현재 mock — services/call-mediator 알림 API 없음).
  */
 export function BlackConsumerAction({
   callId,

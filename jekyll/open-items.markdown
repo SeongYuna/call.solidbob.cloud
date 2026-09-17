@@ -136,7 +136,7 @@ rev.5의 C-6은 **자동 탐지**(고객 욕설·폭언, 재현율 우선 분류
 - [ ] **랭그래프·랭체인 실제 도입 (`ai/` — 류준 담당)** — [영역 규칙](https://github.com/SeongYuna/call.solidbob.cloud/blob/main/ai/CLAUDE.md)이 "한다" 목록에 올려두고 `orchestration` 디렉터리도 예정 표에 있으나, **의존성·코드가 둘 다 없다**(2026-08-27 확인). `server/.importlinter` 에는 **금지 대상**으로만 등록돼 있다 — `server/` 가 import 하면 계약 위반이라는 뜻이지 설치돼 있다는 뜻이 아니다. 파이프라인 배선은 이미 포트로 끝나 있어 **오케스트레이션이 없어도 동작**하므로, 실제로 필요한 시점(생성·리랭킹 체인)에 도입 여부를 정한다
 - [ ] **`RetrievalPort` 에 도메인을 넘길 방법이 없다 (신규, 2026-08-27 실측)** — `retrieve(utterance, top_k)` 시그니처에 도메인이 없어서 평가 하네스가 B-0 라우팅 결과를 넘겨줄 수 없다. 지금은 **4개 도메인 전체를 검색**한다. 그 대가가 실측으로 보인다: 못 맞힌 2건(GS-001·GS-019)의 상위에 **다른 도메인 문서**가 올라와 있다(금융 질의에 `DASAN-MANUAL-4.1`·`HLT-MANUAL-1.4`). 어댑터 생성자에 `domain=` 을 임시로 열어 뒀고 필터가 듣는 것은 확인했지만, **포트 시그니처 변경은 `server/` 소관**이라 장민석 님과 합의가 필요하다. [`w2-naive-rag`](/backlog/w2-naive-rag/)
 - [ ] **nori 개선 폭을 잴 수 없게 됐다 (신규, 2026-08-27)** — [8주 로드맵](/docs/08/)은 4주차에 "nori 인덱스"를 넣어 개선 폭을 보여주기로 했는데, `w2-kb-index` 색인 매핑이 **이미 nori** 라 베이스라인에 포함돼 버렸다(2주차 티켓 문구는 "nori 없이 BM25 만"이었다). 재려면 `standard` 애널라이저 인덱스를 따로 적재해 같은 골든셋으로 비교해야 한다 — 재적재가 1초라 언제든 가능하다. 4주차 비교 항목을 `dense_vector`·RRF·청킹전략 3종으로 좁힐지, nori 대조군을 만들지 정한다
-- [x] **`TranscriptEvent` 에 이벤트 도착 시각이 없다 — 트리거 지연을 잴 수 없다 (신규, 2026-08-27)** **→ 2026-09-14 게이트웨이가 `received_at_ms` 를 싣고 트리거가 쓴다**([w4-trigger-arrival-time](/backlog/w4-trigger-arrival-time/)). 실시간 경로의 `trigger_at_ms` 는 이제 측정값이다. **평가 하네스는 여전히 측정 불가** — 골든셋에 도착 시각이 없다. 아래 원문은 그대로 둔다 — — `TriggerPort.decide(event)` 가 받는 `TranscriptEvent` 에는 `utterance_end_ms`(발화가 끝난 시각)만 있고 **이벤트가 언제 도착했는지가 없다.** 그래서 발동 시각을 "발화 종료 + STT 최종 결과 지연(V4 실측 346ms)"으로 **모형화**했고, 그대로 채점하면 지연 분포가 **상수 하나로 수렴한다**(p50 = p95 = 346, 적절 발동률 1.0) — 숫자는 나오지만 측정이 아니다. 그래서 **서버 경로에는 꽂고**(발동 여부는 진짜 판정이라 파이프라인이 흘러야 한다) **평가 하네스에는 일부러 꽂지 않았다**(절대 원칙 10). 고치려면 게이트웨이가 도착 시각을 실어 보내고 포트가 받아야 하는데 **계약 변경이라 `server/`(장민석)·게이트웨이(정성윤) 합의가 필요하다.** 그때까지의 통로로 `IsFinalTrigger(now_ms=...)` 를 열어 뒀다. [w3-trigger-v1](/backlog/w3-trigger-v1/)
+- [x] **`TranscriptEvent` 에 이벤트 도착 시각이 없다 — 트리거 지연을 잴 수 없다 (신규, 2026-08-27)** **→ 2026-09-14 콜 미디에이터가 `received_at_ms` 를 싣고 트리거가 쓴다**([w4-trigger-arrival-time](/backlog/w4-trigger-arrival-time/)). 실시간 경로의 `trigger_at_ms` 는 이제 측정값이다. **평가 하네스는 여전히 측정 불가** — 골든셋에 도착 시각이 없다. 아래 원문은 그대로 둔다 — — `TriggerPort.decide(event)` 가 받는 `TranscriptEvent` 에는 `utterance_end_ms`(발화가 끝난 시각)만 있고 **이벤트가 언제 도착했는지가 없다.** 그래서 발동 시각을 "발화 종료 + STT 최종 결과 지연(V4 실측 346ms)"으로 **모형화**했고, 그대로 채점하면 지연 분포가 **상수 하나로 수렴한다**(p50 = p95 = 346, 적절 발동률 1.0) — 숫자는 나오지만 측정이 아니다. 그래서 **서버 경로에는 꽂고**(발동 여부는 진짜 판정이라 파이프라인이 흘러야 한다) **평가 하네스에는 일부러 꽂지 않았다**(절대 원칙 10). 고치려면 콜 미디에이터가 도착 시각을 실어 보내고 포트가 받아야 하는데 **계약 변경이라 `server/`(장민석)·콜 미디에이터(정성윤) 합의가 필요하다.** 그때까지의 통로로 `IsFinalTrigger(now_ms=...)` 를 열어 뒀다. [w3-trigger-v1](/backlog/w3-trigger-v1/)
 - [x] **nori 복합명사 분해 — 사용자 사전으로 해결 (2026-08-27)** — 장민석 님이 찾아준 건. `_analyze` 로 확인해 보니 **`decompound_mode` 문제가 아니라 사전 미등재**였다: `mixed` 는 멀쩡하다(`수수료` → `수수료·수수·료` 로 원형+조각을 제대로 낸다). mecab-ko-dic 에 없는 말이라 미등록어 분해로 떨어지면서 `해지` 가 `하+아+지`(동사 활용)로 오분석된 것이다. 조항 제목의 4글자+ 명사 24개를 전수 검사해 **3개**를 찾았다 — `중도해지수수료`·`생활하수도`·`에스컬레이션`. `user_dictionary_rules` 로 등록하니 `중도해지수수료 · 중도 · 해지 · 수수료` 로 정상화됐다. ⚠ **재측정 결과 Recall@5·MRR 은 변하지 않았다**(0.857 / 0.702 그대로) — 골든셋 14건 중 이 세 용어를 쓰는 질의가 없다. 토큰화는 고쳤지만 **개선 효과는 이 표본에서 미측정**이다. 정밀도·IDF 오염을 줄이는 위생 조치로 남긴다. 내 초안 주석이 "mixed 가 원형을 남긴다"고 일반화한 것도 틀려서 함께 고쳤다
 - [ ] **hub 포트 계약 간극 3건 — 장민석 님 확인 대상 (2026-08-27 정리)** — `ai/` 스포크를 붙이면서 **계약으로는 표현할 수 없는 것**이 셋 나왔다. 셋 다 `server/` 소관이라 손대지 않았고, 지금은 각각 우회로만 열어 뒀다. ① **`RetrievalPort.retrieve(utterance, top_k)` 에 도메인이 없다** — 하네스가 B-0 결과를 넘겨줄 수 없어 4개 도메인 전체를 검색한다. 못 맞힌 2건의 상위에 다른 도메인 문서가 올라온 것이 그 대가다(어댑터 생성자에 `domain=` 임시 통로) ② **`TranscriptEvent` 에 이벤트 도착 시각이 없다** — 트리거 발동 시각을 상수로 모형화할 수밖에 없어 하네스에 꽂지 못한다(`IsFinalTrigger(now_ms=...)` 통로) ③ **`DomainClassification.domain` 이 `str` 이라 "판정 불가"를 표현할 수 없다** — 결과가 0건일 때 런타임에 `None` 을 넣고 있다. **셋을 한 번에 논의하는 게 효율적**일 것 같다
 - [x] **B-0 분류기 학습 — 두 번 시도했고 두 번 다 v1 을 못 넘었다 (2026-08-27)** — AI Hub 민원 데이터로 KcELECTRA 파인튜닝. **골든셋은 학습에 쓰지 않았다**(평가 세트). 2 epoch → **AI Hub 0.815 / 골든셋 0.786**. epoch 4 + 초반턴 증강(+13,204건) → **AI Hub 0.879 / 골든셋 0.786** — **혼동 행렬까지 동일**하다. 검색 기반 v1 은 **0.857**. 틀린 3건은 전부 `finance` 로 가고 신뢰도 0.77~0.97 로 **확신하며 틀린다** — `발급`·`처리`·`비용` 이 AI Hub 금융에 압도적으로 많은 탓으로 보이고 **학습을 키울수록 편향이 강해진다.** **기본값을 v1 으로 고정**했다. `scripts/train_domain_classifier.py`, [w1-domain-routing](/backlog/w1-domain-routing/)
@@ -181,7 +181,7 @@ rev.5의 C-6은 **자동 탐지**(고객 욕설·폭언, 재현율 우선 분류
 
 ## 3주차에 남긴 것
 
-- [ ] **A-1 게이트웨이를 같은 EC2 에 올릴지 — 인스턴스 등급이 걸린다 (신규, 2026-09-03)** — [w3-aws-deploy](/backlog/w3-aws-deploy/)가 세운 `t3.medium`(4GB)은 **`server` + Elasticsearch 둘만** 계산한 값이다(ES 힙 1g + JVM·mmap ≈ 1.5GB · FastAPI ≈ 0.3GB · OS·도커 ≈ 0.4GB). `services/gateway`(Node.js WebSocket + Google STT 중계)는 **아직 코드가 0줄**이라 빼고 쟀는데, 3주차 실시간화에서 만들면 올릴 자리를 정해야 한다. **정할 것**: ① 같은 인스턴스에 얹고 등급을 올릴지 ② 게이트웨이만 따로 띄울지 ③ 데모 때만 로컬에서 돌릴지. ⚠ **오디오 중계라 지연이 곧 품질**이고([4.1절](/docs/04/) p95 ≤1,000ms), STT 할당량 가드(COST-1)가 **인스턴스별 파일**(`data/processed/stt-usage.json`)에 누적되므로 **두 곳에서 돌면 캡이 두 배가 된다** — 나누기로 하면 그 상태를 공유할 곳이 필요하다
+- [ ] **A-1 콜 미디에이터를 같은 EC2 에 올릴지 — 인스턴스 등급이 걸린다 (신규, 2026-09-03)** — [w3-aws-deploy](/backlog/w3-aws-deploy/)가 세운 `t3.medium`(4GB)은 **`server` + Elasticsearch 둘만** 계산한 값이다(ES 힙 1g + JVM·mmap ≈ 1.5GB · FastAPI ≈ 0.3GB · OS·도커 ≈ 0.4GB). `services/call-mediator`(Node.js WebSocket + Google STT 중계)는 **아직 코드가 0줄**이라 빼고 쟀는데, 3주차 실시간화에서 만들면 올릴 자리를 정해야 한다. **정할 것**: ① 같은 인스턴스에 얹고 등급을 올릴지 ② 콜 미디에이터만 따로 띄울지 ③ 데모 때만 로컬에서 돌릴지. ⚠ **오디오 중계라 지연이 곧 품질**이고([4.1절](/docs/04/) p95 ≤1,000ms), STT 할당량 가드(COST-1)가 **인스턴스별 파일**(`data/processed/stt-usage.json`)에 누적되므로 **두 곳에서 돌면 캡이 두 배가 된다** — 나누기로 하면 그 상태를 공유할 곳이 필요하다
 - [ ] **운영 배포를 CI 에 붙일지 (신규, 2026-09-03)** — 지금은 이미지를 손으로 굽고 손으로 올린다. `test.yml` 에 붙이면 main 머지가 곧 운영 배포가 되는데, **main 은 이미 push 즉시 사이트를 배포한다**(`pages.yml`). 사이트가 잘못 나가는 것과 API 가 잘못 나가는 것은 되돌리는 비용이 다르다 — 붙인다면 **태그를 달았을 때만** 도는 쪽이 맞아 보인다. 함께 정할 것: OIDC 로 AWS 자격증명을 주입할지(권장 — 장기 키를 GitHub Secrets 에 두지 않는다, SEC-2)
 - [ ] **Terraform state 를 원격으로 옮길지 (신규, 2026-09-03)** — 지금 `terraform.tfstate` 는 **정성윤 로컬에만** 있고 `.gitignore` 가 막고 있다(RDS 비밀번호가 평문으로 들어간다). **이 머신이 죽으면 인프라를 코드로 관리할 수 없게 된다** — 리소스는 살아 있는데 Terraform 이 그걸 모른다. S3 + 잠금으로 옮기면 해소되지만 버킷·키 관리가 늘어난다. 혼자 쓰는 동안은 로컬로 두되, **다른 사람이 `apply` 할 일이 생기면 그때가 아니라 그 전에** 옮긴다
 
@@ -189,13 +189,13 @@ rev.5의 C-6은 **자동 탐지**(고객 욕설·폭언, 재현율 우선 분류
 - [ ] **랜딩 자동배포가 실제로 도는지는 아직 모른다 (신규, 2026-09-03)** — [w3-vercel-account-migration](/backlog/w3-vercel-account-migration/)이 Git 연동을 붙이기로 했지만, **연동 후 `main` 에 커밋을 한 번 밀어 배포가 도는 것을 보기 전까지는 「됐다」가 아니다.** 지금까지 아무도 안 도는 걸 몰랐던 이유가 정확히 그것이다 — 수동 배포는 멈춰도 아무 일이 일어나지 않는다. **정할 것**: 연동 확인 뒤 `pages.yml` 처럼 「머지 = 배포」를 문서에 못 박을지, 아니면 위 「운영 배포를 CI 에 붙일지」와 묶어 태그 기준으로 통일할지
 - [ ] **`api.solidbob.cloud` 가 TLS 미발급으로 안 열린다 (신규, 2026-09-03)** — Railway(`uivwfh8v.up.railway.app`)로 CNAME 은 살아 있는데 HTTPS 연결이 실패한다(인증서 발급 안 됨). `decisions/104` 가 「api = Railway(임시)」로 적어 둔 것인데, **`105`·[w3-aws-deploy](/backlog/w3-aws-deploy/)로 백엔드가 AWS EC2(`server.solidbob.cloud`)로 가기로 이미 정해졌다.** **정할 것**: Railway 를 고쳐 쓸지, 아니면 AWS 배포 때 `api` 레코드를 정리하고 `server` 로 일원화할지 — 후자가 `105`(배포 단위 하나)와 맞다
 - [ ] **GPU·EXAONE 을 이번 배포에 넣을지 (신규, 2026-09-08)** — 개인 운영 지침서(09-04)는 `g4dn.xlarge` + Ollama + EXAONE 을 전제하는데, [w3-aws-deploy](/backlog/w3-aws-deploy/)는 *"생성 모델(EXAONE)을 EC2 에 올리지 않는다"* 고 적었다. **지침서가 나중이라 방향이 바뀐 것으로 보이나 명시된 적이 없다.** 지금 코드에는 **GPU 를 쓰는 경로가 아예 없다** — 검색은 BM25 뿐이고(`ai/apps/retrieval` 의 서드파티 import 는 `elasticsearch` 하나), 생성·분류·NER 은 미구현이다. 그래서 지침서 11장(GPU 공유)·14장(Ollama)을 **건너뛰어도 `/health` 와 Swagger 는 그대로 뜬다.** **정할 것**: ① 11·14장을 뒤로 미루고 모델이 붙을 때 실행할지(권장 — 인스턴스 타입만 처음부터 `g4dn` 으로 잡아 AMI 를 한 번만 만든다) ② 처음부터 전부 세울지. ⚠ 비용이 걸린다 — 지침서 21장이 **하루 8h×주5일 $142 vs 24/7 $597** 로 잰다. `_project/decisions/107`
-- [x] **카드 추천 "검색 중" 신호가 §7.3 계약에 없다 (신규, 2026-09-09)** **→ 2026-09-14 §7.3 에 `recommendation_pending` 을 올리고 게이트웨이에 넣었다 — 전송은 꺼 둠**([w4-recommendation-pending-contract](/backlog/w4-recommendation-pending-contract/)). 남은 것은 아래 「조서희 님께 — 검색 중 신호 수신」. 원문 — — `fired` 필드 반영(`_project/decisions/401`)과 함께, 카드 응답을 기다리는 동안 로딩 인디케이터를 보여주도록 대시보드를 고쳤다. 그런데 "지금 검색 중"임을 알리는 신호 자체가 계약에 없어서 **mock 게이트웨이만** 그 신호(`onRecommendationPending`)를 보낸다 — 트리거 시점에 먼저 쏘고 `internal_latency_ms` 뒤 실제 카드를 배달하는 식으로 흉내냈다. **실서버는 이 신호가 없어 라이브 모드에서는 로딩 UI가 뜨지 않는다** — `fired:false`/`cards:[]`/`cards:[...]` 세 상태 자체는 실서버에서도 정상 동작한다. A-5·C-6·D 처럼 프론트가 먼저 정의한 계약 미정 항목과 같은 처지다. **정할 것**: 트리거 발동 시점을 알리는 신호를 §7.3에 추가할지(추가한다면 게이트웨이가 트리거 결정 직후 얇은 메시지를 먼저 쏴야 한다), 아니면 로딩 UI를 mock 전용으로 남겨둘지
+- [x] **카드 추천 "검색 중" 신호가 §7.3 계약에 없다 (신규, 2026-09-09)** **→ 2026-09-14 §7.3 에 `recommendation_pending` 을 올리고 콜 미디에이터에 넣었다 — 전송은 꺼 둠**([w4-recommendation-pending-contract](/backlog/w4-recommendation-pending-contract/)). 남은 것은 아래 「조서희 님께 — 검색 중 신호 수신」. 원문 — — `fired` 필드 반영(`_project/decisions/401`)과 함께, 카드 응답을 기다리는 동안 로딩 인디케이터를 보여주도록 대시보드를 고쳤다. 그런데 "지금 검색 중"임을 알리는 신호 자체가 계약에 없어서 **mock 콜 미디에이터만** 그 신호(`onRecommendationPending`)를 보낸다 — 트리거 시점에 먼저 쏘고 `internal_latency_ms` 뒤 실제 카드를 배달하는 식으로 흉내냈다. **실서버는 이 신호가 없어 라이브 모드에서는 로딩 UI가 뜨지 않는다** — `fired:false`/`cards:[]`/`cards:[...]` 세 상태 자체는 실서버에서도 정상 동작한다. A-5·C-6·D 처럼 프론트가 먼저 정의한 계약 미정 항목과 같은 처지다. **정할 것**: 트리거 발동 시점을 알리는 신호를 §7.3에 추가할지(추가한다면 콜 미디에이터가 트리거 결정 직후 얇은 메시지를 먼저 쏴야 한다), 아니면 로딩 UI를 mock 전용으로 남겨둘지
 
-- [ ] **프론트에 「`score`·`similarity_score` 둘 다 받는 방어 코드」가 없다 — 조서희 님 확인 필요 (신규, 2026-09-09)** — 카드 필드명 수정 요청서는 *"당분간 둘 다 받는 방어 코드가 프론트에 임시로 들어가 있다"* 고 적었으나, `apps/dashboard/src/lib/ws/realGatewayClient.ts:238` `parseCard` 는 `similarity_score` **하나만** 읽고 없으면 `null` 을 반환해 **카드를 통째로 버린다.** 저장소 전체에 `"score"` 문자열 리터럴이 **0건**이고 `apps/dashboard` 에 미커밋 변경도 없다. **정할 것**: 서희 님 로컬에만 있는 미푸시 코드인지, 아니면 넣으려다 만 것인지. ⚠ 서버는 [고쳤으므로](/backlog/w3-card-score-contract-fix/) **방어 코드가 있었더라도 이제 지워도 된다** — 다만 없는 것을 지울 수는 없으니 후속 작업으로 잡아 두지 않는다
+- [ ] **프론트에 「`score`·`similarity_score` 둘 다 받는 방어 코드」가 없다 — 조서희 님 확인 필요 (신규, 2026-09-09)** — 카드 필드명 수정 요청서는 *"당분간 둘 다 받는 방어 코드가 프론트에 임시로 들어가 있다"* 고 적었으나, `apps/dashboard/src/lib/ws/realCallMediatorClient.ts:238` `parseCard` 는 `similarity_score` **하나만** 읽고 없으면 `null` 을 반환해 **카드를 통째로 버린다.** 저장소 전체에 `"score"` 문자열 리터럴이 **0건**이고 `apps/dashboard` 에 미커밋 변경도 없다. **정할 것**: 서희 님 로컬에만 있는 미푸시 코드인지, 아니면 넣으려다 만 것인지. ⚠ 서버는 [고쳤으므로](/backlog/w3-card-score-contract-fix/) **방어 코드가 있었더라도 이제 지워도 된다** — 다만 없는 것을 지울 수는 없으니 후속 작업으로 잡아 두지 않는다
 - [ ] **계약 필드명을 단언하지 않는 테스트가 또 있는가 (신규, 2026-09-09)** — `score`/`similarity_score` 어긋남이 3주를 간 이유는 `test_recommendation_router.py` 의 「카드를 계약 형태로 돌려준다」가 `doc_id`·`summary`·`internal_latency_ms` 만 보고 **점수 필드명을 단언하지 않았기 때문**이다. 7.3절 계약은 3종(전사·카드·종결)인데 **나머지 둘(전사 이벤트·종결 판정)에도 같은 구멍이 있는지 아직 안 봤다.** ⚠ 이미 알려진 어긋남이 둘 더 있다 — `ClosureType` `"사고·보상"` vs `"보상"`(422 유발) · `segment_id` `string` vs `int`(7.3절 **예시**가 틀렸다). **정할 것**: 계약 3종을 한 번에 대조하는 테스트를 둘지, 아니면 슬라이스별 단언으로 흩어 둘지 — 전자면 7.3절 JSON 을 픽스처로 떼야 한다
 
 세부 진행은 [8주 마일스톤](/docs/08/)의 칸반 보드, 완료 기록은 [진행상황](/progress/)에서 확인하세요.
-- [x] **통화 시작이 §7.3 계약에 없다 — 게이트웨이가 `POST /hub/calls` 를 먼저 불러야 한다 (신규, 2026-09-10)** **→ 2026-09-14 `plan.md` §7.3 에 올렸다** — 게이트웨이가 첫 채널을 열 때 부른다(09-11 구현). 원문 — — `transcript_segment.call_id → call` 외래키 때문에 통화 행이 먼저 있어야 전사가 저장되는데, 계약 3종(전사·카드·종결)에 "통화가 시작됐다"는 메시지가 없었다. 서버에 `POST /hub/calls` 를 만들었다(`_project/decisions/301`). **정할 것**: 게이트웨이(정성윤)가 통화를 여는 순간 이 엔드포인트를 부르는 것으로 §7.3 에 올릴지, 게이트웨이 → 허브 WebSocket 이 생기면 그 첫 메시지로 할지. 지금은 테스트하는 사람이 직접 부른다
+- [x] **통화 시작이 §7.3 계약에 없다 — 콜 미디에이터가 `POST /hub/calls` 를 먼저 불러야 한다 (신규, 2026-09-10)** **→ 2026-09-14 `plan.md` §7.3 에 올렸다** — 콜 미디에이터가 첫 채널을 열 때 부른다(09-11 구현). 원문 — — `transcript_segment.call_id → call` 외래키 때문에 통화 행이 먼저 있어야 전사가 저장되는데, 계약 3종(전사·카드·종결)에 "통화가 시작됐다"는 메시지가 없었다. 서버에 `POST /hub/calls` 를 만들었다(`_project/decisions/301`). **정할 것**: 콜 미디에이터(정성윤)가 통화를 여는 순간 이 엔드포인트를 부르는 것으로 §7.3 에 올릴지, 콜 미디에이터 → 허브 WebSocket 이 생기면 그 첫 메시지로 할지. 지금은 테스트하는 사람이 직접 부른다
 - [x] **CI 에서 PostgreSQL integration 테스트가 돌지 않는다 (신규, 2026-09-11 · 같은 날 붙였다)** — **권고안대로 붙였다**: `test.yml` `server` job 에 `postgres:17` 서비스(trust 인증, 암호 없음) → 새 DB 에 `db/schema.sql` 적용 → `pytest -m integration`(0건·스킵이면 실패). 세 테스트 파일에 복사돼 있던 `.env` 읽기는 `server/conftest.py` 의 `integration_settings` 픽스처 하나로 합쳤고, `CALLGUARD_TEST_DATABASE_URL` 이 있으면 그것만 쓴다. 로컬에서 같은 절차로 4 passed, 수정 전 어댑터로 되돌리면 2 failed 로 잡히는 것까지 확인했다. **CI 에서 실제로 도는 것은 첫 PR 에서 확인한다**(job 이름 `server` 는 그대로라 룰셋은 안 고친다). 원래 적힌 내용 — `test.yml` 의 `server` job 에 psycopg 도 PostgreSQL 서비스도 없어 `@pytest.mark.integration` 이 한 번도 CI 에서 안 돌았다. 그래서 09-09 스키마 QA(`decisions/205`)로 PK 가 `(call_id, segment_id)` 가 된 뒤 전사 저장 어댑터가 **새 스키마에서 저장 전부가 실패**하는 상태(`InvalidColumnReference`)로 사흘간 초록이었다([w4-segment-composite-upsert](/backlog/w4-segment-composite-upsert/)에서 고침). 게다가 integration 테스트는 루트 `.env` 에서 DB 를 읽는데 그 DB(Neon)는 옛 스키마다. **정할 것**: `postgres:17` 서비스 + 매번 새 DB 에 `db/schema.sql` 을 적용하는 픽스처를 CI 에 붙일지. 붙이면 `server` job 이 느려지고 `test.yml` 을 고쳐야 한다(런북 13·21~22장)
 - [ ] **지식베이스에 여권 발급·재발급 조항이 없다 (신규, 2026-09-11)** — 운영 ES 적재 뒤 「여권 재발급 서류가 뭐예요」로 검색하니 1위가 `DASAN-MANUAL-4.1`(의학적 판단 금지)이었다. 검색 결함이 아니라 **정답 문서가 없다** — `knowledge-base/dasan/` 98조항에서 「여권」은 신분 확인 서류 목록에 두 번 나올 뿐이다. 그런데 `decisions/201` 은 다산을 고른 근거로 **서류 문의 상위 단어에 `여권` 이 4위**라고 적었고, 외국인 지원(A-5)이 차별점이다. **정할 것**: 여권 관련 절차 조항을 지식베이스에 넣을지(출처 확인 필요 — 절대 원칙 6, 원문 전재 금지), 골든셋에 「정답 없음」 케이스로 둘지. D-4(공백 리포트)가 잡아야 할 전형이다
 - [ ] **`POST /hub/cards/{id}/feedback` 이 새 스키마에서 늘 500 (신규, 2026-09-11)** — `card_feedback.card_id` 가 `recommendation_card` 를 FK 로 참조하는데 `recommendation`·`recommendation_card` 를 쓰는 코드가 없고, 카드 응답에 `card_id` 도 없다. 피드백을 받을 카드가 DB 에 있을 수 없는 구조다. **정할 것**: 추천 결과를 저장할지(카드 응답에 `card_id` 추가), FK 를 뺄지. `db/schema.sql` FK · `INSERT INTO "recommendation…"` 0곳 · 카드 스키마에 `card_id` 없음을 grep 으로 확인했다(실행으로는 안 쟀다). 코드는 손대지 않았다
@@ -228,13 +228,13 @@ rev.5의 C-6은 **자동 탐지**(고객 욕설·폭언, 재현율 우선 분류
   → **닫힘 (2026-09-15)** — `decisions/112` — 클러스터 안 Redis 파드(`infra/k8s/base/redis.yaml`), **볼륨 없음**(5분짜리 세션만 담고 refresh 는 RDS 에 있다). ElastiCache 는 만들지 않았다. 런북 16-3.
 - [ ] **access 5분·refresh 10분은 테스트 값이다 — 운영 값을 따로 정해야 한다 (신규, 2026-09-14)** — 사용자가 "테스트만 진행할 것"이라는 전제로 준 값을 그대로 코드 기본값(`.env.example`)에 넣었다. 실제로 운영에 올리기 전에 이 두 숫자(그리고 리프레시 회전 주기가 사용성에 미치는 영향)를 다시 정해야 한다
 
-### 게이트웨이를 붙이며 남은 것 (2026-09-11)
+### 콜 미디에이터를 붙이며 남은 것 (2026-09-11)
 
-`services/gateway` 가 생겼다([w4-gateway-streaming-stt](/backlog/w4-gateway-streaming-stt/)) — 실제 AI Hub 음성 →
+`services/call-mediator` 가 생겼다([w4-gateway-streaming-stt](/backlog/w4-gateway-streaming-stt/)) — 실제 AI Hub 음성 →
 Google STT → 로컬 server 마스킹 → 대시보드 WS 까지 관통했다. 거기서 나온 것들이다.
 
-- [x] **`.env.example` 에 게이트웨이 키 넷을 사람이 넣어야 한다 (신규, 2026-09-11 · 같은 날 넣었다)** — 사용자가 `!` 로 직접 붙였다(값 없이 키 이름·설명만, 보호 훅은 우회하지 않았다). 원래 적힌 내용 — `GATEWAY_PORT`(기본 8080) ·
-  `CORE_API_URL`(기본 `http://localhost:8000`, 운영은 `http://callguard-server`) · `GATEWAY_INGEST_TOKEN` · `GATEWAY_VIEW_TOKEN`
+- [x] **`.env.example` 에 콜 미디에이터 키 넷을 사람이 넣어야 한다 (신규, 2026-09-11 · 같은 날 넣었다)** — 사용자가 `!` 로 직접 붙였다(값 없이 키 이름·설명만, 보호 훅은 우회하지 않았다). 원래 적힌 내용 — `CALL_MEDIATOR_PORT`(기본 8080) ·
+  `CORE_API_URL`(기본 `http://localhost:8000`, 운영은 `http://callguard-server`) · `CALL_MEDIATOR_INGEST_TOKEN` · `CALL_MEDIATOR_VIEW_TOKEN`
   (둘 다 없으면 루프백만 받는다). 자격증명 보호 훅이 이 파일을
   **파일 이름으로** 막아 Claude 가 넣지 않았다(우회하지 않았다). 값 없이 키 이름만 넣으면 된다(SEC-2).
   ⚠ 이 머신의 `.env` 는 `GOOGLE_APPLICATION_CREDENTIALS` 가 **류준 님 Mac 경로**(`/Users/ryujun/…`)라 그대로는
@@ -243,49 +243,49 @@ Google STT → 로컬 server 마스킹 → 대시보드 WS 까지 관통했다. 
   녹음은 전부 모노라, 재생하면 한 화자로 찍힌다. 구글 화자 태그(diarization)는 final 에만 붙고 **누가 상담원인지는
   알려 주지 않는다** — 첫 화자를 상담원으로 치는 식의 추측을 넣으면 C-1~C-4(상담원)·C-6(고객) 방향이 뒤집힐 수 있어
   넣지 않았다. **정할 것**: 데모를 물리 2채널(브라우저 2대)로만 할지, 모노 녹음 재생용으로 diarization + 규칙을 둘지
-- [x] **게이트웨이 배포 — 위 「A-1 게이트웨이를 같은 EC2 에 올릴지」(2026-09-03)의 답이 런북에 이미 있다 (신규, 2026-09-11 · 같은 날 배포)** —
-  **→ 2026-09-11 운영에 올렸다**(PR #68 — 같은 노드, Ingress `/gateway`, `infra/k8s/base/gateway.yaml`). ①~⑥ 전부 반영 — ⑤ 장부는 hostPath,
+- [x] **콜 미디에이터 배포 — 위 「A-1 콜 미디에이터를 같은 EC2 에 올릴지」(2026-09-03)의 답이 런북에 이미 있다 (신규, 2026-09-11 · 같은 날 배포)** —
+  **→ 2026-09-11 운영에 올렸다**(PR #68 — 같은 노드, Ingress `/call-mediator`, `infra/k8s/base/call-mediator.yaml`). ①~⑥ 전부 반영 — ⑤ 장부는 hostPath,
   ⑥ 토큰은 배포가 인스턴스 안에서 만든다. 첫 배포는 Docker Hub 새 저장소가 비공개로 만들어져 멈췄다(아래 원문은 그대로 둔다).
   원래 적은 것 —
-  런북 0장 사양표가 **FastAPI server · Node 게이트웨이 · Caddy ≈ 1.0GB** 를 같은 노드에 넣고 계산했다. 남은 것은
-  ① 이미지(`infra/docker/gateway.Dockerfile`) ② k8s Deployment·Service(시크릿 `server-env` · `gcp-stt-credentials`
-  재사용) ③ Ingress 경로 — 밖에 여는 주소는 `server.solidbob.cloud` 하나이므로 `/gateway` 같은 경로로 붙인다
+  런북 0장 사양표가 **FastAPI server · Node 콜 미디에이터 · Caddy ≈ 1.0GB** 를 같은 노드에 넣고 계산했다. 남은 것은
+  ① 이미지(`infra/docker/call-mediator.Dockerfile`) ② k8s Deployment·Service(시크릿 `server-env` · `gcp-stt-credentials`
+  재사용) ③ Ingress 경로 — 밖에 여는 주소는 `server.solidbob.cloud` 하나이므로 `/call-mediator` 같은 경로로 붙인다
   ④ `release.yml` 이 server 이미지만 굽는다 ⑤ **STT 사용량 장부가 파드 안 파일이라 재시작하면 0 이 된다** —
   볼륨에 두거나 1차 방어선(GCP 쿼터)만 믿을지 ⑥ **인증 — Ingress 로 열기 전에 `/ws`·`/ingest` 접근 제어가 먼저다
   (배포 선행 조건).** 처음엔 `Origin` 검사뿐이라 **브라우저만** 막았다 — 밖에 열리면 비브라우저 클라이언트가 `call_id`
   없이 `WS /ws` 로 **모든 통화의 마스킹된 자막·추천을 받고**, `/ingest` 로 **STT 캡까지 과금을 태울 수 있었다**(a5 세션 지적).
-  → **같은 날 토큰 두 개로 막았다**(`services/gateway/src/domain/access.ts`). 루프백 밖은 문마다 토큰이 맞아야 하고, 토큰을
-  안 넣고 배포하면 **전부 401(fail-closed)**. `/ingest` 는 진짜 비밀(`GATEWAY_INGEST_TOKEN`, 헤더로만), `/ws` 는
-  `GATEWAY_VIEW_TOKEN` — **브라우저가 내므로 비밀이 아니다.** 번들에서 뽑혀도 과금 문은 안 열리게 가른 것이다.
+  → **같은 날 토큰 두 개로 막았다**(`services/call-mediator/src/domain/access.ts`). 루프백 밖은 문마다 토큰이 맞아야 하고, 토큰을
+  안 넣고 배포하면 **전부 401(fail-closed)**. `/ingest` 는 진짜 비밀(`CALL_MEDIATOR_INGEST_TOKEN`, 헤더로만), `/ws` 는
+  `CALL_MEDIATOR_VIEW_TOKEN` — **브라우저가 내므로 비밀이 아니다.** 번들에서 뽑혀도 과금 문은 안 열리게 가른 것이다.
   ⚠ **그래서 `/ws` 는 아직 제대로 막힌 게 아니다** — 자막을 보는 사람을 가르려면 상담원 로그인이 있어야 하고, 서버에도 없다
   (「서버에 인증이 없다」). 배포 때 할 일: 두 토큰을 시크릿에 넣는다(서로 다른 값). 공개 대시보드 번들에 뷰 토큰을 넣을지는
   그 한계를 알고 정한다
   ⚠ 지금 EC2 등급이 런북의 g4dn.xlarge 인지 확인이 먼저다
-- [x] **통화 시작(2026-09-10 항목)은 게이트웨이가 ①로 구현했다 — §7.3 문서 반영이 남았다 (신규, 2026-09-11)** **→ 2026-09-14 §7.3 반영 완료** (「검색 중」 은 꺼 둔 채로 — 위 09-09 항목). 원문 — —
+- [x] **통화 시작(2026-09-10 항목)은 콜 미디에이터가 ①로 구현했다 — §7.3 문서 반영이 남았다 (신규, 2026-09-11)** **→ 2026-09-14 §7.3 반영 완료** (「검색 중」 은 꺼 둔 채로 — 위 09-09 항목). 원문 — —
   첫 `/ingest` 채널이 열리는 순간 `POST /hub/calls` 를 부르고, 실패하면 채널을 열지 않는다(외래키 때문에 저장이 전부
-  실패하므로). 같은 통화에 화자가 둘이어도 한 번만 부른다. 「검색 중」 신호(2026-09-09 항목)도 게이트웨이가 추천을
+  실패하므로). 같은 통화에 화자가 둘이어도 한 번만 부른다. 「검색 중」 신호(2026-09-09 항목)도 콜 미디에이터가 추천을
   부르기 직전에 쏘면 된다 — 계약만 정하면 붙일 자리가 있다
 - [x] **ES 에 못 붙을 때 `/hub/recommendations` 가 500 이다 (신규, 2026-09-11)** **→ 2026-09-14 503 으로 고쳤다**([w4-es-unreachable-503](/backlog/w4-es-unreachable-503/)) — `ConnectionError`·`ConnectionTimeout`, 본문에 ES 주소를 싣지 않는다. 원문 — — 09-10 에 인덱스가 없을 때(`index_not_found`)는
-  503 + 「적재해야 한다」로 돌려주게 했는데, **ES 자체에 연결을 못 하면**(로컬 ES 없음) 여전히 500 이다. 게이트웨이는
+  503 + 「적재해야 한다」로 돌려주게 했는데, **ES 자체에 연결을 못 하면**(로컬 ES 없음) 여전히 500 이다. 콜 미디에이터는
   둘 다 상태 코드만 로그에 남기므로 동작은 같지만, 운영에서 원인을 가르려면 503 쪽이 낫다 — `server/` (누구나)
 
-### 게이트웨이 마무리에서 남은 것 (2026-09-14)
+### 콜 미디에이터 마무리에서 남은 것 (2026-09-14)
 
-- [x] **조서희 님께 — 「검색 중」 신호 수신 (신규, 2026-09-14)** **→ 2026-09-15 파서가 main 에 들어와(PR #88) 게이트웨이 `0.1.4` 에서 `announcePending`·`announceCallGuard`·`announceClosure` 셋 다 켰다.** 원문 — — 게이트웨이가 추천 요청 직전에
+- [x] **조서희 님께 — 「검색 중」 신호 수신 (신규, 2026-09-14)** **→ 2026-09-15 파서가 main 에 들어와(PR #88) 콜 미디에이터 `0.1.4` 에서 `announcePending`·`announceCallGuard`·`announceClosure` 셋 다 켰다.** 원문 — — 콜 미디에이터가 추천 요청 직전에
   `{"type":"recommendation_pending","payload":{"call_id","segment_id"}}` 을 보낼 수 있게 됐다(`plan.md` §7.3).
-  **지금은 꺼 두었다** — `apps/call/src/lib/ws/realGatewayClient.ts` 의 `parseGatewayMessage` 가 모르는 `type` 을 `null` 로 돌려
-  **「알 수 없는 게이트웨이 메시지입니다」 배너**를 띄우기 때문이다. 필요한 것: 그 `type` 을 받아 `listeners.onRecommendationPending?.(call_id)`
+  **지금은 꺼 두었다** — `apps/call/src/lib/ws/realCallMediatorClient.ts` 의 `parseCallMediatorMessage` 가 모르는 `type` 을 `null` 로 돌려
+  **「알 수 없는 콜 미디에이터 메시지입니다」 배너**를 띄우기 때문이다. 필요한 것: 그 `type` 을 받아 `listeners.onRecommendationPending?.(call_id)`
   를 부르기(mock 과 같은 콜백). ⚠ 뜻이 mock 과 조금 다르다 — «트리거 발동» 이 아니라 **«추천을 요청했다»** 라서 상담원 발화에도 오고,
-  뒤따르는 카드가 `fired:"false"` 면 로딩을 거둬야 한다. 들어가면 `services/gateway/src/main.ts` `announcePending` 을 `true` 로 켠다
-  (게이트웨이 이미지 태그를 올려야 한다)
+  뒤따르는 카드가 `fired:"false"` 면 로딩을 거둬야 한다. 들어가면 `services/call-mediator/src/main.ts` `announcePending` 을 `true` 로 켠다
+  (콜 미디에이터 이미지 태그를 올려야 한다)
 - [ ] **`speaker=auto` 화자 분리를 실제 구글로 돌려 본 적이 없다 (신규, 2026-09-14)** — 키·AI Hub 음성이 있는 머신에서
   `node scripts/stream_wav.ts <모노.wav> --speaker auto --watch` 로 확인한다. 볼 것: ① `ko-KR` 기본 모델이 스트리밍 화자 분리를
   받는가(거절이면 채널이 `1011` 로 닫힌다) ② 라벨이 `speakerLabel`·`speakerTag` 중 무엇으로 오는가 ③ 상담원이 실제로 첫 라벨인가.
   결과는 `decisions/303` 「검증하지 못한 것」 에 적는다
-- [ ] **조서희 님께 — 대시보드가 받아야 할 서버·게이트웨이 계약 (신규, 2026-09-14)** — 백엔드를 먼저 만들었고 프론트 연결이 남았다.
+- [ ] **조서희 님께 — 대시보드가 받아야 할 서버·콜 미디에이터 계약 (신규, 2026-09-14)** — 백엔드를 먼저 만들었고 프론트 연결이 남았다.
   계약 정본은 `_project/plan.md` 7.3절 끝 「허브 HTTP 표면」.
-  ① **게이트웨이 WS 메시지 셋** — `recommendation_pending` · `call_guard` · `closure`. 셋 다 게이트웨이에서 전송을 꺼 두었다
-  (`services/gateway/src/main.ts` `announcePending`·`announceCallGuard`·`announceClosure`). 받는 코드가 들어가면 켠다.
+  ① **콜 미디에이터 WS 메시지 셋** — `recommendation_pending` · `call_guard` · `closure`. 셋 다 콜 미디에이터에서 전송을 꺼 두었다
+  (`services/call-mediator/src/main.ts` `announcePending`·`announceCallGuard`·`announceClosure`). 받는 코드가 들어가면 켠다.
   ⚠ `call_guard.category` 는 `insult·threat·sexual·distress` 다(mock `폭언·욕설·위협` 과 다름). ⚠ `closure` 는 새 형식이다 —
   `procedure`·`procedure_title`·`verdict: complete/incomplete`·`conditional`·`detected`, `closure_type`·`reason`(필수)·`approved/blocked` 는 없다
   ② **REST** — 수동 검색 `POST /hub/search`(응답이 조항 목록이라 카드로 바꾸는 것은 화면 몫) · 상담기록 `GET /hub/calls` ·
@@ -332,7 +332,7 @@ Google STT → 로컬 server 마스킹 → 대시보드 WS 까지 관통했다. 
   → **닫힘 (2026-09-15)** — 2026-09-15 적재 완료(98행). 돌리기 전 쌓인 `call_guard_flag` 1건은 `source_doc_id` 가 NULL 로 남는다 — **적재는 과거 행을 소급하지 않는다.**
   가리킨다. 비어 있으면 **근거가 NULL 로 저장된다**(장민석 님 콜 가드 저장소가 FK 위반 대신 NULL 로 떨어뜨린다). ~~500 이 난다~~ 는
   걷어낸 류준 배선 기준의 서술이었다. 절차는 런북 17-3 — `scripts/seed_documents.py`. **정할 것**: 누가 언제 돌리는가(정성윤 님 vs 류준)
-- [x] **C-6 배선이 두 벌이었다 (2026-09-14 해결)** — 류준(PR #76, 전사 수신 안에서 탐지)과 장민석 님(`server` 브랜치, 게이트웨이가
+- [x] **C-6 배선이 두 벌이었다 (2026-09-14 해결)** — 류준(PR #76, 전사 수신 안에서 탐지)과 장민석 님(`server` 브랜치, 콜 미디에이터가
   `POST /hub/call-guard-checks`)이 같은 날 따로 만들었다. 둘 다 들어가면 같은 발화를 두 번 탐지·저장한다. **사용자 결정으로 장민석 님
   방식을 남기고 류준 쪽을 걷어냈다** — 결과를 대시보드로 보낼 수 있는 쪽이다. 걷어낼 때 민석 님 브랜치 기준과 같은 모양으로 되돌려
   머지 충돌이 코드에서 나지 않게 했다
@@ -347,68 +347,68 @@ Google STT → 로컬 server 마스킹 → 대시보드 WS 까지 관통했다. 
   없다 ③ 학습 데이터·시드·명령을 어디에 기록할지(개인 PC 라 저장소에 흔적이 안 남는다 — 절대 원칙 2·8) ④ 모델 파일에 원본 데이터가
   섞여 올라가지 않게 할 것(AI Hub 데이터는 커밋·공개 금지)
 - [ ] **D-5 를 누가 부르는가 (신규, 2026-09-14)** — 저장 경로(`VoiceOutlierRecordPort`)는 있고 호출부가 없다. 톤 특징값은 오디오에서
-  나오는데 `server/` 는 텍스트만 받는다. **정할 것**: 게이트웨이가 발화별 특징값(F0 흔들림)을 전사와 함께 보낼지, 통화 종료 때
-  게이트웨이가 한 번에 보낼지. 게이트웨이(`services/gateway`)·§7.3 계약에 걸린다
+  나오는데 `server/` 는 텍스트만 받는다. **정할 것**: 콜 미디에이터가 발화별 특징값(F0 흔들림)을 전사와 함께 보낼지, 통화 종료 때
+  콜 미디에이터가 한 번에 보낼지. 콜 미디에이터(`services/call-mediator`)·§7.3 계약에 걸린다
 
 ### frontend 브랜치를 main 에 합칠 때 — 조서희 님께 (2026-09-11, `decisions/109`)
 
-- [x] **`services/gateway` 가 두 벌이다 — main 쪽을 쓰고 frontend 쪽 것은 버린다.** → **2026-09-11 정성윤이 직접 합쳤다**(사용자 결정, 머지 `ce7f525`).
+- [x] **`services/call-mediator` 가 두 벌이다 — main 쪽을 쓰고 frontend 쪽 것은 버린다.** → **2026-09-11 정성윤이 직접 합쳤다**(사용자 결정, 머지 `ce7f525`).
   아래 ①~③ 그대로 했고 ④ 는 해당 없음. frontend 브랜치 자체는 고치지 않았다 — 조서희 님은 main 을 받으면 이 정리가 그대로 들어온다. 원래 적은 것 — 같은 날 조서희 님(`decisions/402`, 브라우저 음성 인식 dev 경로)과
-  정성윤(정식 A-1, 운영 배포)이 서로 모르고 같은 디렉터리에 게이트웨이를 만들었다. 합치면 `README.md`·`package.json`·`package-lock.json` 이
-  충돌한다. **402 의 쓸모는 main 게이트웨이로 옮겼다**(`decisions/109`) — 운영 `https://server.solidbob.cloud/gateway/dev` 가 같은 테스트 페이지이고
+  정성윤(정식 A-1, 운영 배포)이 서로 모르고 같은 디렉터리에 콜 미디에이터를 만들었다. 합치면 `README.md`·`package.json`·`package-lock.json` 이
+  충돌한다. **402 의 쓸모는 main 콜 미디에이터로 옮겼다**(`decisions/109`) — 운영 `https://server.solidbob.cloud/call-mediator/dev` 가 같은 테스트 페이지이고
   (ngrok 필요 없음), `/dashboard` 경로도 그대로 받는다. 합칠 때 할 일:
-  ① `services/gateway/` 는 main 쪽을 고른다(`git checkout origin/main -- services/gateway`) — frontend 의 `server.js`·`devPage.js`·`hubClient.js`·
-  `dashboardHub.js`·`Dockerfile`·`.dockerignore`·`.gitignore` 는 버린다(남으면 게이트웨이 이미지에 섞이고 릴리스 태그 검사가 막는다)
-  ② **`apps/dashboard/src/lib/ws/types.ts` 의 `?gateway=` 덮어쓰기는 그대로 넣는다** — 정식 게이트웨이와 맞물린다. 운영 주소는
-  `?gateway=` + `encodeURIComponent("wss://server.solidbob.cloud/gateway/ws?token=<뷰 토큰>")` (토큰 안에 `&` 는 없지만 인코딩해 두는 편이 안전하다)
-  ③ `decisions/402` 머리에 «일부 대체됨 — 109» 를 적는다(게이트웨이 신설 부분). 대시보드 덮어쓰기 결정은 402 그대로 유효하다
+  ① `services/call-mediator/` 는 main 쪽을 고른다(`git checkout origin/main -- services/call-mediator`) — frontend 의 `server.js`·`devPage.js`·`hubClient.js`·
+  `dashboardHub.js`·`Dockerfile`·`.dockerignore`·`.gitignore` 는 버린다(남으면 콜 미디에이터 이미지에 섞이고 릴리스 태그 검사가 막는다)
+  ② **`apps/dashboard/src/lib/ws/types.ts` 의 `?call_mediator=` 덮어쓰기는 그대로 넣는다** — 정식 콜 미디에이터와 맞물린다. 운영 주소는
+  `?call_mediator=` + `encodeURIComponent("wss://server.solidbob.cloud/call-mediator/ws?token=<뷰 토큰>")` (토큰 안에 `&` 는 없지만 인코딩해 두는 편이 안전하다)
+  ③ `decisions/402` 머리에 «일부 대체됨 — 109» 를 적는다(콜 미디에이터 신설 부분). 대시보드 덮어쓰기 결정은 402 그대로 유효하다
   ④ `w3-gateway-dev-testcall` 티켓은 그대로 `done` 이다 — 옮겨 온 쪽은 [w4-gateway-dev-browser-stt](/backlog/w4-gateway-dev-browser-stt/)
-- [ ] **뷰 토큰을 대시보드에 어떻게 줄지 (신규, 2026-09-11)** — `?gateway=` 로 넣으면 localStorage 에 남고, Vercel env 로 넣으면 공개 번들에 들어간다.
+- [ ] **뷰 토큰을 대시보드에 어떻게 줄지 (신규, 2026-09-11)** — `?call_mediator=` 로 넣으면 localStorage 에 남고, Vercel env 로 넣으면 공개 번들에 들어간다.
   둘 다 **비밀이 아니다**(무작위 스캔만 막는다). 사람별 인증이 생기기 전까지는 그 한계를 알고 쓴다. 뷰 토큰 값은 인스턴스에서 꺼낸다(`secret.example.yaml` ③)
   → 아래 「공개 데모를 라이브로 바꿀지」에 선택지를 정리했다.
 
 ### 공개 데모(`call.solidbob.cloud`)를 라이브로 바꿀지 — 조서희 님과 정할 것 (2026-09-11)
 
-게이트웨이가 운영에 떴다(`/gateway/health` — 키·캡·토큰 둘 전부 true). 대시보드를 실제 게이트웨이에 붙이려면 Vercel 에
-`VITE_GATEWAY_WS_URL=wss://server.solidbob.cloud/gateway/ws?token=<뷰 토큰>` 을 넣고 재배포하면 된다 — **그런데 정성윤은
+콜 미디에이터가 운영에 떴다(`/call-mediator/health` — 키·캡·토큰 둘 전부 true). 대시보드를 실제 콜 미디에이터에 붙이려면 Vercel 에
+`VITE_CALL_MEDIATOR_WS_URL=wss://server.solidbob.cloud/call-mediator/ws?token=<뷰 토큰>` 을 넣고 재배포하면 된다 — **그런데 정성윤은
 이 설정을 일부러 멈췄다.** 기술 문제가 아니라 팀이 정할 일이라서다: 대시보드는 조서희 님 전담이고(`decisions/302`),
 `decisions/109` 도 «프론트는 건드리지 않는다» 고 적었다.
 
 **먼저 알아 둘 사실** (2026-09-11 코드·운영 확인)
 
-- 대시보드의 실시간 자막·추천은 **전부 게이트웨이 WebSocket** 으로 온다. 필요한 빌드 변수는 `VITE_GATEWAY_WS_URL` 하나다.
+- 대시보드의 실시간 자막·추천은 **전부 콜 미디에이터 WebSocket** 으로 온다. 필요한 빌드 변수는 `VITE_CALL_MEDIATOR_WS_URL` 하나다.
   `VITE_CORE_API_URL` 은 지금 헤더 `REST` 배지만 켠다(`AppHeader.tsx`) — 통화 기록(`coreClient.ts`)은 아직 mock 이다.
   그래서 **운영 서버의 CORS(`call.solidbob.cloud` → 지금 400)도 지금은 필요 없다.** 통화 기록이 서버 REST 로 바뀔 때 넣는다
-- 지금 배포된 번들에는 서버·게이트웨이 주소가 없다 → **가짜 시나리오(mock)** 를 재생한다. 누가 열어도 자막·카드가 흐른다
-- 라이브로 바꾸면 **오디오를 보내는 쪽(생산자)이 있어야** 화면에 뭔가 뜬다. 지금 생산자는 개발용 `/gateway/dev`(ingest 토큰 필요) 하나다
-- 게이트웨이 허용 origin 은 `https://call.solidbob.cloud` · 로컬 Vite 뿐이다 — Vercel **Preview**(`*.vercel.app`)는 붙지 못한다
+- 지금 배포된 번들에는 서버·콜 미디에이터 주소가 없다 → **가짜 시나리오(mock)** 를 재생한다. 누가 열어도 자막·카드가 흐른다
+- 라이브로 바꾸면 **오디오를 보내는 쪽(생산자)이 있어야** 화면에 뭔가 뜬다. 지금 생산자는 개발용 `/call-mediator/dev`(ingest 토큰 필요) 하나다
+- 콜 미디에이터 허용 origin 은 `https://call.solidbob.cloud` · 로컬 Vite 뿐이다 — Vercel **Preview**(`*.vercel.app`)는 붙지 못한다
 
 | | 방법 | 좋은 점 | 나쁜 점 |
 |---|---|---|---|
-| **A** | **공개 데모는 mock 그대로** · 라이브는 개발자가 `?gateway=<주소>` 로 자기 브라우저에서만 | 바꿀 것 없음. 공개 데모가 늘 돈다. 자막이 밖에 노출되지 않는다 | 방문자는 실제 동작을 못 본다. 뷰 토큰을 쓸 사람에게 따로 건넨다. ⚠ **`?gateway=` 가 아무 주소나 받는다 — 아래 항목을 먼저 고쳐야 A 가 안전하다** |
-| **B** | **Vercel Production 에 `VITE_GATEWAY_WS_URL`** (뷰 토큰 포함) → 재배포 | 주소만 열면 라이브. 시연 준비가 간단하다 | ① 생산자가 없으면 **빈 화면** ② 번들이 공개라 **주소를 아는 누구나 모든 통화의 (마스킹된) 자막을 본다** ③ EC2 가 꺼지면(자동 중지를 걸면) 멈춘다 ④ 토큰을 바꾸면 재배포 |
-| **C** | 기본은 mock, 화면에서 「라이브 연결」을 골라 **토큰을 사람이 입력** | 공개 데모도 살고 라이브도 쉽다. 토큰이 번들에 안 들어간다 | **프론트 코드 작업**이 필요하다(조서희 님). 지금의 `?gateway=` 를 화면으로 올린 것에 가깝다 |
+| **A** | **공개 데모는 mock 그대로** · 라이브는 개발자가 `?call_mediator=<주소>` 로 자기 브라우저에서만 | 바꿀 것 없음. 공개 데모가 늘 돈다. 자막이 밖에 노출되지 않는다 | 방문자는 실제 동작을 못 본다. 뷰 토큰을 쓸 사람에게 따로 건넨다. ⚠ **`?call_mediator=` 가 아무 주소나 받는다 — 아래 항목을 먼저 고쳐야 A 가 안전하다** |
+| **B** | **Vercel Production 에 `VITE_CALL_MEDIATOR_WS_URL`** (뷰 토큰 포함) → 재배포 | 주소만 열면 라이브. 시연 준비가 간단하다 | ① 생산자가 없으면 **빈 화면** ② 번들이 공개라 **주소를 아는 누구나 모든 통화의 (마스킹된) 자막을 본다** ③ EC2 가 꺼지면(자동 중지를 걸면) 멈춘다 ④ 토큰을 바꾸면 재배포 |
+| **C** | 기본은 mock, 화면에서 「라이브 연결」을 골라 **토큰을 사람이 입력** | 공개 데모도 살고 라이브도 쉽다. 토큰이 번들에 안 들어간다 | **프론트 코드 작업**이 필요하다(조서희 님). 지금의 `?call_mediator=` 를 화면으로 올린 것에 가깝다 |
 
-**권고: 지금은 A — 단, `?gateway=` 허용 목록을 먼저 고친 뒤에.** 공개 데모를 망가뜨리지 않고 노출도 없으며, 라이브 확인은
-`?gateway=` 로 충분하다. 그런데 그 `?gateway=` 에 지금 구멍이 있다(바로 아래 항목 — A/B 선택과 상관없이 **이미 운영 번들에 있다**). **B 로 가는 조건** —
-① 시연 때 오디오를 누가 어떻게 보낼지 정해졌다(`/gateway/dev` 등) ② 「주소를 아는 사람은 자막을 본다」를 팀이 받아들였다
+**권고: 지금은 A — 단, `?call_mediator=` 허용 목록을 먼저 고친 뒤에.** 공개 데모를 망가뜨리지 않고 노출도 없으며, 라이브 확인은
+`?call_mediator=` 로 충분하다. 그런데 그 `?call_mediator=` 에 지금 구멍이 있다(바로 아래 항목 — A/B 선택과 상관없이 **이미 운영 번들에 있다**). **B 로 가는 조건** —
+① 시연 때 오디오를 누가 어떻게 보낼지 정해졌다(`/call-mediator/dev` 등) ② 「주소를 아는 사람은 자막을 본다」를 팀이 받아들였다
 (상담원 로그인은 서버에도 아직 없다 — 「서버에 인증이 없다」). 발표 시연만 라이브가 필요하면 **그날만 B 로 바꿨다가 되돌리는** 방법도 있다.
 
 **B 를 고르면 할 일** (정성윤 — Vercel 계정):
-뷰 토큰 꺼내기(`sudo k3s kubectl -n callguard get secret gateway-tokens -o jsonpath='{.data.GATEWAY_VIEW_TOKEN}' | base64 -d`, 32자 — 48자인
+뷰 토큰 꺼내기(`sudo k3s kubectl -n callguard get secret call-mediator-tokens -o jsonpath='{.data.CALL_MEDIATOR_VIEW_TOKEN}' | base64 -d`, 32자 — 48자인
 `INGEST` 는 **절대 넣지 않는다**) → `call.solidbob.cloud` 가 붙은 Vercel 프로젝트(`call-solidbob-cloud-kxu6`, Root Directory `apps/call` — 09-14 개명 반영) → Settings →
-Environment Variables → **Production 만** → Deployments → Redeploy(`VITE_` 는 빌드 때 박힌다) → 확인: 번들에 `gateway/ws` 가 들어갔는지 ·
-대시보드를 연 동안 `/gateway/health` 의 `dashboards` 가 1 이 되는지.
+Environment Variables → **Production 만** → Deployments → Redeploy(`VITE_` 는 빌드 때 박힌다) → 확인: 번들에 `call-mediator/ws` 가 들어갔는지 ·
+대시보드를 연 동안 `/call-mediator/health` 의 `dashboards` 가 1 이 되는지.
 
 - [ ] **A / B / C 중 무엇으로 할지** — 조서희 님(대시보드) · 정성윤(Vercel). 정하면 위 「뷰 토큰을 대시보드에 어떻게 줄지」와 함께 닫는다
-- [x] **⚠ `?gateway=` 가 아무 WebSocket 주소나 받아 저장한다 — 운영 대시보드에 이미 떠 있었다 (신규, 2026-09-11 · 2026-09-14 해결)** —
+- [x] **⚠ `?call_mediator=` 가 아무 WebSocket 주소나 받아 저장한다 — 운영 대시보드에 이미 떠 있었다 (신규, 2026-09-11 · 2026-09-14 해결)** —
   `apps/call/src/lib/ws/types.ts`(옛 `apps/dashboard`) 가 `ws://`·`wss://` 로 **시작만 하면** 받아 localStorage 에 남기고 있었다(PR #70 으로 배포,
-  운영 번들 `index-ZZuCSHQN.js` 에 `callguard:gatewayUrlOverride` 확인). 그래서 `call.solidbob.cloud/?gateway=wss://<남의 서버>/ws` 링크
-  하나를 누른 브라우저는 `?gateway=clear` 를 하기 전까지 **그 서버에 붙고, 그 서버가 보내는 가짜 자막·「필요서류」 카드를 그대로 띄웠다.**
+  운영 번들 `index-ZZuCSHQN.js` 에 `callguard:callMediatorUrlOverride` 확인). 그래서 `call.solidbob.cloud/?call_mediator=wss://<남의 서버>/ws` 링크
+  하나를 누른 브라우저는 `?call_mediator=clear` 를 하기 전까지 **그 서버에 붙고, 그 서버가 보내는 가짜 자막·「필요서류」 카드를 그대로 띄웠다.**
   상담원이 가짜 서류 안내를 믿고 고객에게 전하는 경로가 될 수 있었다(a5·33 세션 확인, bc 세션이 운영 번들로 재확인).
-  **고친 것**: ① `isAllowedGatewayUrl()` 허용 목록 — `wss://server.solidbob.cloud/gateway/*` 와 `ws://localhost` · `ws://127.0.0.1`(로컬 개발)만
+  **고친 것**: ① `isAllowedCallMediatorUrl()` 허용 목록 — `wss://server.solidbob.cloud/call-mediator/*` 와 `ws://localhost` · `ws://127.0.0.1`(로컬 개발)만
   받고 나머지는 조용히 버린다(서브도메인 스푸핑 `server.solidbob.cloud.evil.com` 같은 것도 정확한 hostname 비교라 걸린다)
-  ② `GatewayOverrideBanner.tsx` — 덮어쓰기가 켜져 있는 동안 화면 상단에 붙은 주소 + 「연결 해제」 버튼을 보여준다.
+  ② `CallMediatorOverrideBanner.tsx` — 덮어쓰기가 켜져 있는 동안 화면 상단에 붙은 주소 + 「연결 해제」 버튼을 보여준다.
   `npm run typecheck && npm run build` 통과 확인(사용자 지시로 조서희 진행).
 
 
@@ -422,12 +422,12 @@ Environment Variables → **Production 만** → Deployments → Redeploy(`VITE_
 
 ### 릴리스 태그 게이트를 고치며 남은 것 (2026-09-14, `decisions/111`)
 
-- [x] ~~룰셋에 `tag-check`·`gateway` 를 필수 통과 검사로 등록~~ — **2026-09-15 완료.**
-  룰셋(`21538648`)의 필수 검사가 `jekyll`·`ai`·`server` **→ + `gateway`·`tag-check`** 로 다섯이 됐다.
+- [x] ~~룰셋에 `tag-check`·`call-mediator` 를 필수 통과 검사로 등록~~ — **2026-09-15 완료.**
+  룰셋(`21538648`)의 필수 검사가 `jekyll`·`ai`·`server` **→ + `call-mediator`·`tag-check`** 로 다섯이 됐다.
   나머지 규칙(`deletion`·`non_fast_forward`·`pull_request`·`strict: true`·승인 0건)은 그대로다.
   이제 `server/`·`ai/` 를 고치면서 `newTag` 를 안 올리면 **머지 버튼이 잠긴다**(전에는 빨간 X 만 떴다).
 - [x] **`.github/branch-protection.json` 을 라이브 룰셋에 맞췄다** (2026-09-15, 정성윤) —
-  값 셋을 고쳤다: `contexts` 셋 → **다섯**(`gateway`·`tag-check` 추가) · 승인 `1` → **`0`** ·
+  값 셋을 고쳤다: `contexts` 셋 → **다섯**(`call-mediator`·`tag-check` 추가) · 승인 `1` → **`0`** ·
   `enforce_admins` `false` → **`true`**(라이브 `bypass_actors: []` = 우회 없음에 대응).
   **파일을 지우지 않은 이유**: `decisions/011` 이 «룰셋을 걷어내고 클래식으로 돌아갈 때를 위해 남겨 둔다»로
   정해뒀다. 목적이 대비본이므로 **값이 어긋나 있으면 되돌리는 순간 정책이 조용히 바뀐다** — 그게 이 항목의 위험이었다.
@@ -465,8 +465,8 @@ Environment Variables → **Production 만** → Deployments → Redeploy(`VITE_
   (`check_release_tags.py` 의 `IMAGES`)에도 `es` 를 추가했다. 두 갈래가 다 닫혔다.
   ⚠ **ES 태그는 ES 버전을 따라간다**(`Dockerfile` 의 `ARG ES_VERSION`). Dockerfile 만 고치고 버전은
   그대로일 때는 빌드 접미사를 붙인다 — 예: `9.5.1-2`. 같은 태그로 다시 구우면 노드가 캐시를 계속 쓴다.
-- [x] ~~`converge.sh` 가 게이트웨이 롤아웃을 보지 않는다~~ — **2026-09-15 한 줄 추가했다** (`decisions/114`).
-  `rollout status deploy/callguard-gateway` 를 더해 부팅 경로도 릴리스 배포와 같은 것을 본다.
+- [x] ~~`converge.sh` 가 콜 미디에이터 롤아웃을 보지 않는다~~ — **2026-09-15 한 줄 추가했다** (`decisions/114`).
+  `rollout status deploy/callguard-call-mediator` 를 더해 부팅 경로도 릴리스 배포와 같은 것을 본다.
 - [x] ~~`test.yml` 이 같은 SHA 에 검사를 2벌 단다~~ — **2026-09-15 트리거를 좁혔다** (`decisions/114`).
   `push.branches` 를 `[main]` 으로 바꿨다. **`concurrency` 를 합치는 「싼 수정」은 쓰지 않았다** —
   두 런이 같은 SHA 에 같은 이름으로 check-run 을 보고해서, 취소된 쪽이 나중에 기록되면 필수 검사가
@@ -508,7 +508,7 @@ Environment Variables → **Production 만** → Deployments → Redeploy(`VITE_
   ⚠ 특히 **류준 16건**으로 쏠렸다 — `ai/` 가 4~6주차 로드맵의 대부분이라 그렇게 됐지만,
   `decisions/302` 로 디렉터리 잠금이 풀렸으니 **나눠 가질 수 있다.** 나눌지는 본인들이 정한다.
 - [ ] **4주차 로드맵 목표에 티켓이 하나도 없었다** — 4주차는 「nori · dense_vector · RRF · 청킹 3종 비교」인데
-  `w4-` 티켓 27건 중 해당하는 것이 0건이었다. **4주차에 실제로 한 일**(게이트웨이·블랙리스트·관리자 로그인·
+  `w4-` 티켓 27건 중 해당하는 것이 0건이었다. **4주차에 실제로 한 일**(콜 미디에이터·블랙리스트·관리자 로그인·
   배포·스키마)은 전부 로드맵에 없던 일이고, **로드맵에 적힌 일에는 티켓이 없었다.**
   **정할 것**: 로드맵을 실제 진행에 맞춰 고칠지(`docs/08` 수정), 아니면 4주차 검색 품질을 5주차로 미룰지.
   지금은 **티켓만 만들어 두고 주차는 로드맵 그대로 뒀다** — 미루는 판단은 팀 몫이다.
@@ -589,13 +589,13 @@ Environment Variables → **Production 만** → Deployments → Redeploy(`VITE_
   `?agent_token=` URL 쿼리 한 번 → sessionStorage(`lib/agentToken.ts`) ② `apps/admin`의 `SettingsTab.tsx`에
   발급·목록·폐기 화면을 새로 뒀다(원문 1회 노출 + 복사 버튼)
 - [ ] **상담원 토큰을 어디까지 걸지** — 지금 가드가 달린 곳은 블랙리스트 요청 하나다. 카드 피드백·수동 검색·통화 목록·전사 조회 등은 인증이 없다.
-  모두 걸면 게이트웨이(`services/gateway`)가 부르는 허브 API 와 겹치는 것부터 갈라야 한다. **토큰 만료도 없다** — 폐기로만 끊는다
+  모두 걸면 콜 미디에이터(`services/call-mediator`)가 부르는 허브 API 와 겹치는 것부터 갈라야 한다. **토큰 만료도 없다** — 폐기로만 끊는다
   ⚠ **카드 피드백(`POST /hub/cards/{id}/feedback`)은 걸면 안 된다** — 상담원 ID 를 **일부러** 받지 않는 API 다(부록 A-1, 상담원 단위 집계 금지).
   토큰을 달면 요청마다 상담원이 식별돼 그 설계를 뒷문으로 무너뜨린다
 - [x] **§7.3 정본은 「응답 전부 문자열」 로 고쳤다 — 조서희 님 `contract.ts` 가 남았다 (2026-09-15)** — `_project/plan.md` 7.3 절 머리에 규칙을 올리고 예시를 실제 응답으로 바꿨다.
   ~~프론트 `apps/call/src/types/contract.ts` 는 아직 `is_final: boolean`·`utterance_end_ms: number` 다.~~
   → **2026-09-16 조서희 확인: 오판이었다, 고칠 것 없음.** `contract.ts`의 이 필드들은 와이어 그대로가
-  아니라 **파싱 이후 내부 표현**이다 — 문자열 경계는 `lib/ws/realGatewayClient.ts`의
+  아니라 **파싱 이후 내부 표현**이다 — 문자열 경계는 `lib/ws/realCallMediatorClient.ts`의
   `readBoolean`/`readNumber`와 `lib/api/coreClient.ts`의 `*Wire` 타입 + `toBool`/`toNum`이 이미
   따로 맡고 있다. UI·mock은 전부 파싱 후 네이티브 타입을 전제로 짜여 있어, 여기를 `string`으로
   바꾸면 계약을 맞추는 게 아니라 멀쩡한 경계를 무너뜨린다. `contract.ts`에 설명 주석만 추가했다.
@@ -620,7 +620,7 @@ Environment Variables → **Production 만** → Deployments → Redeploy(`VITE_
   ⑤ `fetchCallList` 주석 「`customer_id` 늘 null」 은 낡았다 — 발신 번호가 넘어온 통화는 채워진다
   ✅ 맞는 것: 관리자 `hubClient.ts` 경로·필드 전부 · 통화 목록·자막·수동 검색 · WS `closure`(procedure·complete/incomplete)·`call_guard`(영어 4종)·`recommendation_pending` 파서. `apps/call` `tsc --noEmit` 통과
   → **2026-09-15 조서희가 ①~④ 처리** — ① 토큰 인증으로 교체(위 항목 참고) ② `RequestsTab.tsx`·`EntriesTab.tsx`·`SettingsTab.tsx`
-  상한 24→12개월 ③ `card_id`/`feedback_id` 문자열로 정정(`coreClient.ts`·`types/contract.ts`·`realGatewayClient.ts`) ④ `EntriesTab.tsx`에
+  상한 24→12개월 ③ `card_id`/`feedback_id` 문자열로 정정(`coreClient.ts`·`types/contract.ts`·`realCallMediatorClient.ts`) ④ `EntriesTab.tsx`에
   사유 입력창 추가, `AdminPanel.tsx`가 하드코딩 대신 실제 사유를 넘긴다(연장도 같이). **⑤는 아직 안 고쳤다** — 남겨 둔다.
   `apps/call`·`apps/admin` 둘 다 `tsc --noEmit`·`vite build` 클린
 - [x] **조서희 님께 — 상담기록 재생·블랙리스트 연장 API 가 생겼다 (2026-09-15, 장민석)** — 조서희 님 쪽 보고 「끝까지 못 한 것」 3·4번의 서버 몫이다.
@@ -637,16 +637,16 @@ Environment Variables → **Production 만** → Deployments → Redeploy(`VITE_
   **정할 것**: 등록 1건의 누적 상한(예: 승인일로부터 N일)을 둘지. 이력 테이블의 사유 보존 기간도 함께
 - [x] **조서희 님께 — 요약 확정 API · 연장 누적 상한 (2026-09-15, 장민석)** — ① `POST /hub/calls/{id}/summary-confirmation {summary_text, inquiry_type?, follow_up_actions[]}`
   (상담원 토큰 필수) — 통화 후 화면에서 초안을 고쳐 확정한다. 확정은 한 번(409). `GET /hub/calls/{id}/record` 의 `summary_confirmed` 가 `"true"` 가 된다(`decisions/310`)
-  ② 연장·단축은 **승인일 + 365일** 을 넘으면 422 — 응답 `detail` 에 언제까지 가능한지가 있다. ③ 게이트웨이가 `recommendation_pending`·`call_guard`·`closure` 를 이제 실제로 보낸다(`0.1.4` 배포 뒤)
+  ② 연장·단축은 **승인일 + 365일** 을 넘으면 422 — 응답 `detail` 에 언제까지 가능한지가 있다. ③ 콜 미디에이터가 `recommendation_pending`·`call_guard`·`closure` 를 이제 실제로 보낸다(`0.1.4` 배포 뒤)
   ④ `POST /hub/calls/{id}/summary-revision {summary_text, reason, …}` + `GET …/summary-revisions`(상담원 토큰) — 확정된 요약을 사유와 함께 고친다. 확정 전 409(`decisions/311`)
   ⑤ 관리자 `POST /hub/blacklist-retention/purge` — 끝난 뒤 180일 지난 문장을 비운다(`decisions/312`). 관리자 화면에 버튼이 필요하다
-  ✅ **2026-09-15 운영 반영**(서버 `0.1.10` · 게이트웨이 `0.1.4`, 운영 DB 29 테이블 확인) — 붙여도 된다. 게이트웨이가 알림 3종을 이제 실제로 보낸다
-  → **2026-09-15 조서희가 ①·④·⑤ 처리** — ① `RealGatewayClient.wrapUp()`이 그동안 "계약 없음"으로 늘 실패하던 것을 고쳐
+  ✅ **2026-09-15 운영 반영**(서버 `0.1.10` · 콜 미디에이터 `0.1.4`, 운영 DB 29 테이블 확인) — 붙여도 된다. 콜 미디에이터가 알림 3종을 이제 실제로 보낸다
+  → **2026-09-15 조서희가 ①·④·⑤ 처리** — ① `RealCallMediatorClient.wrapUp()`이 그동안 "계약 없음"으로 늘 실패하던 것을 고쳐
   `POST /hub/calls/{id}/close`(초안 생성)를 실제로 부르게 했고, `CallSummaryPanel`에 요약·유형·후속조치 편집 + 확정
   버튼(`SummaryConfirmationForm`)을 추가했다. ④ 같은 폼에 "재수정" 버튼을 더해 확정 후에도 사유와 함께
   고칠 수 있게 했다(취소 가능, 재수정 시각 표시) — `GET …/summary-revisions`(이력 목록)는 화면에서 안 씀, 필요하면
   추가. ⑤ `SettingsTab.tsx`에 "지금 정리하기" 버튼 추가(`purgeBlacklistRetention`, 확인 다이얼로그 있음,
-  `apps/admin`의 `RetentionPurgeCard`). ②·③은 프론트 몫 아님(②는 서버 규칙, ③은 게이트웨이).
+  `apps/admin`의 `RetentionPurgeCard`). ②·③은 프론트 몫 아님(②는 서버 규칙, ③은 콜 미디에이터).
   `apps/call`·`apps/admin` `tsc --noEmit`·`vite build` 클린
 - [x] **조서희 님께 — J-5 베테랑 기준 설정이 서버에 생겼다 (2026-09-15, 장민석)** — 설정 탭 「근속 연차」 를 `GET /hub/routing-settings`(현재값, `saved:"false"` 면 기본 3년) ·
   `PUT /hub/routing-settings {veteran_years: 0.5~40}` 에 붙이면 된다(관리자 로그인). 화면의 «서버에 연결 안 됨» 문구는 운영 반영 뒤 걷어도 된다.
@@ -654,12 +654,12 @@ Environment Variables → **Production 만** → Deployments → Redeploy(`VITE_
   → **2026-09-15 조서희가 처리** — `hubClient.ts`에 `fetchRoutingSetting`·`saveRoutingSetting` 추가,
   `adminStore.ts`의 `loadAll`이 로그인 직후 현재값을 받고 `setVeteranThresholdYears`가 `PUT`으로 저장(저장 성공 응답으로만 상태 갱신 — 실패해도 화면 값이 서버와 어긋나지 않는다).
   `SettingsTab.tsx` 입력 상한을 서버 값(0.5~40)에 맞추고 «연결 안 됨» 문구 걷어냄. 배정 판정을 실제로 부르는 쪽(아래 항목)은 그대로 미결.
-- [ ] **J-5 배정 판정을 부르는 곳이 없다 (2026-09-15, `decisions/313`)** — 교환기가 없고 게이트웨이도 부르지 않는다. 판정 API 는 인증도 없다(통화 시작과 같은 한계).
-  **정할 것**: 데모에서 게이트웨이 `/dev` 테스트 콜이 통화 시작 직후 부르게 할지 · `routing_log.fell_back` 집계를 관리자 현황판에 올릴지
-  **2026-09-15 정성윤 확인** — 게이트웨이가 서버로 보내는 것은 `POST /hub/calls` 하나뿐이다(`adapters/hub_http.ts:33`).
+- [ ] **J-5 배정 판정을 부르는 곳이 없다 (2026-09-15, `decisions/313`)** — 교환기가 없고 콜 미디에이터도 부르지 않는다. 판정 API 는 인증도 없다(통화 시작과 같은 한계).
+  **정할 것**: 데모에서 콜 미디에이터 `/dev` 테스트 콜이 통화 시작 직후 부르게 할지 · `routing_log.fell_back` 집계를 관리자 현황판에 올릴지
+  **2026-09-15 정성윤 확인** — 콜 미디에이터가 서버로 보내는 것은 `POST /hub/calls` 하나뿐이다(`adapters/hub_http.ts:33`).
   배정 판정 호출은 코드에 없다. 프론트는 관여하지 않는다(화면이 부르는 API 가 아니다).
   **정할 것**: ① 데모에서 `/dev` 테스트 콜이 통화 시작 직후 이어서 부를지, 아니면 「엔드포인트는 있다」로 남길지
-  ② 부르기로 하면 **인증도 같이** — 지금 토큰 없이 열려 있고, 통화 시작 API 와 묶어서 보는 게 맞다. **정성윤(게이트웨이 코드)**
+  ② 부르기로 하면 **인증도 같이** — 지금 토큰 없이 열려 있고, 통화 시작 API 와 묶어서 보는 게 맞다. **정성윤(콜 미디에이터 코드)**
 - [x] **블랙리스트 보존 정리를 누가 언제 부르나 (2026-09-15, `decisions/312`)** — 관리자 API 만 있고 주기 실행이 없다. 부르지 않으면 비워지지 않는다.
   → **닫힘 (2026-09-15)** — `decisions/113` — **관리자 화면 버튼으로 사람이 부른다. CronJob 을 만들지 않는다.** 그 라우터가 `require_admin` 이라 CronJob 이 들 장기 토큰이 설계에 없다.
   **정할 것**: 관리자가 주기적으로 누를지 · CronJob 으로 부를지(운영 인스턴스 02시 자동 중지와 겹치지 않게). 대상 밖으로 남긴 것 — 승인 요청 사유·자막, 해제 사유·승인 메모, 요약 재수정 사유
@@ -673,7 +673,7 @@ Environment Variables → **Production 만** → Deployments → Redeploy(`VITE_
 - [ ] **B-6 「관련 문서 없음」을 실제로 낼 규칙이 없다 (신규, 2026-09-15, 류준)** — 검색이 점수 문턱 없이 항상 5건을 돌려줘 생성 측정 96문항에서 「관련 문서 없음」이 **한 번도 안 나왔다.** 지식베이스에 정답이 없는 문의(예: 여권 재발급 — 위 09-11 항목)에도 엉뚱한 조항 카드가 뜬다. **정할 것**: 리랭커 점수 문턱을 둘지(골든셋에 「정답 없음」 케이스를 먼저 넣어야 문턱을 잴 수 있다 — 지금은 0건). 절대 원칙 9 대로 판정은 문턱(규칙)이 한다
 - [x] **C-5 규칙 폴백이 문맥 뒤 긴 후보를 버린다 — 오류 곡선 10% 에서 1건 (신규, 2026-09-15, 류준)** **→ 2026-09-17 해소: 문맥 뒤 5~8자 덩어리는 동사 어미가 아니면 어절째 가린다(「애매하면 가린다」 쪽을 골랐다)** — `server/apps/masking/domain/services/name_detector.py` 가 「이름 X」 뒤 후보에서 조사를 못 벗기면(5글자 이상) 가리지 않고 버린다. 주입기가 만든 가짜 음절(`박서연이곴`)에서 NER 도 놓쳐 **규칙+NER 누락 1건**(GS-037)이 남았다(`w5-masking-recall-curve`). 실제 STT 가 내기 어려운 음절이지만 절대 규칙 기준으로는 누락이다. **정할 것**: 문맥이 있으면 긴 후보를 어절째 가릴지(과잉 마스킹이 늘어난다 — 「이름 변경하려면」 같은 말) · 주입기가 실재 음절만 만들게 할지(곡선이 달라진다). 장민석 님 규칙이라 함께 본다
 - [ ] **골든셋의 C-4 라벨이 기획서 C-4 와 뜻이 다르다 (신규, 2026-09-15, 류준)** — 기획서 2.4절의 C-4 는 「권장 대체 표현 제시」(기능)인데 골든셋 GS-312·GS-318 은 **「의학적 안심 발언」(위반 갈래)** 에 C-4 를 붙였다. 컴플라이언스 규칙 v1 은 채점 기준(골든셋)을 따라 `rule_code="C-4"` 로 낸다. `compliance_rule` 카탈로그(C-1~C-4)에 들어갈 라벨이 둘 중 무엇인지 **정할 것** — 기획서를 고칠지(결정 기록) 골든셋 라벨을 C-1(확정적 표현)로 옮길지
-- [ ] **STT 일 캡 600초면 하루 약 4통화다 — 시연 리허설에 걸린다 (신규, 2026-09-15, 류준)** — `scripts/estimate_call_cost.py` **추정**: AI Hub 다산 대화셋 턴 수 × 다산콜DB 발화 길이로 통화 1건 STT 약 146초(발화 합이라 **하한**). `gateway.yaml` 캡(일 600s · 월 3,600s)으로는 하루 4건 · 한 달 25건이다(`w7-token-cost`). **정할 것**: 시연·리허설 일정에 맞춰 캡을 조정할지 — COST-1 이중 가드라 GCP 쿼터와 함께 정성윤 님이 정한다
+- [ ] **STT 일 캡 600초면 하루 약 4통화다 — 시연 리허설에 걸린다 (신규, 2026-09-15, 류준)** — `scripts/estimate_call_cost.py` **추정**: AI Hub 다산 대화셋 턴 수 × 다산콜DB 발화 길이로 통화 1건 STT 약 146초(발화 합이라 **하한**). `call-mediator.yaml` 캡(일 600s · 월 3,600s)으로는 하루 4건 · 한 달 25건이다(`w7-token-cost`). **정할 것**: 시연·리허설 일정에 맞춰 캡을 조정할지 — COST-1 이중 가드라 GCP 쿼터와 함께 정성윤 님이 정한다
 
 ### ~~운영 DB 에 저장소에 없는 테이블이 하나 있다~~ — **오인이었다. 닫는다** (2026-09-15, 정성윤)
 
@@ -704,7 +704,7 @@ Environment Variables → **Production 만** → Deployments → Redeploy(`VITE_
 ### 합성 통화 대본 · 학습 방향에서 남은 것 (신규, 2026-09-16, 류준)
 
 - [ ] **모델을 학습하지 않는다면 — 결정 기록과 티켓 정리** — 류준 메모(확정 아님): *"모델을 따로 학습시키지 않고, 데이터는 S3 에 올려 정확도 측정용으로만 쓸 것 같다."* 확정되면 ① 결정 기록 `2xx` ② `w3-a5-translation-spike`·`w3-call-temperature` 의 「모델 학습 후 진행」 메모를 실제 막힘(AI Hub 505/71479 미신청 · 음성 골든셋 없음)으로 고침 ③ 파인튜닝 전제인 `w5-classifier-ner-benchmark` 를 「측정 불가 — 학습 안 함」으로 닫음(지우지 않는다) ④ `ai/apps/training/` 처리. **S3 버킷·경로는 정성윤 님 확인** — AI Hub 재배포 금지라 비공개여야 한다
-- [ ] **합성 통화(`scripts/persona_sim/` · 재생기 `services/gateway/scripts/replay_persona_call.ts`)를 채택할지 — 결정 기록 없음** — 대본 10건 초안이 있다([w5-persona-sim-scripts](/backlog/w5-persona-sim-scripts/)). **정할 것**: ① 용도를 데모·파이프라인 점검으로 한정할지(권고) ② 합성 수치를 발표에 쓸지 — 쓴다면 `source: synthetic` 분리 + 「STT 미경유 상한」 명시 ③ 재생 음성을 브라우저 TTS(무료)로 할지 Google TTS 파일 캐시로 할지 ④ 대본 JSON 을 공개 저장소에 두는 것 — 가짜 값뿐이지만 폭언·성적 표현 문장이 들어 있다
+- [ ] **합성 통화(`scripts/persona_sim/` · 재생기 `services/call-mediator/scripts/replay_persona_call.ts`)를 채택할지 — 결정 기록 없음** — 대본 10건 초안이 있다([w5-persona-sim-scripts](/backlog/w5-persona-sim-scripts/)). **정할 것**: ① 용도를 데모·파이프라인 점검으로 한정할지(권고) ② 합성 수치를 발표에 쓸지 — 쓴다면 `source: synthetic` 분리 + 「STT 미경유 상한」 명시 ③ 재생 음성을 브라우저 TTS(무료)로 할지 Google TTS 파일 캐시로 할지 ④ 대본 JSON 을 공개 저장소에 두는 것 — 가짜 값뿐이지만 폭언·성적 표현 문장이 들어 있다
 - [ ] **QA 페르소나가 현재 마스킹·콜 가드 규칙을 합성 대본에 돌려 찾은 것 — 장민석 님·류준 (신규, 2026-09-16)** — 대본이 아니라 규칙 쪽 문제라 대본을 규칙에 맞추지 않았다(`scripts/persona_sim/README.md`). ⚠ 서브에이전트가 로컬에서 돌린 결과이고 **하네스 측정값이 아니다** — 수치로 옮기지 말고 재현부터 한다.
   ✅ 09-17 ①②③ 해소(④ 중 distress·성적 표현·모독은 같은 날 C-6 규칙에 반영) ① **P7 과잉 마스킹이 정상 대조군을 깬다** — `_AREA_LOCAL` 이 「하시면」의 `면`, `_ROAD` 가 「~으로」의 `로` 를 주소 표지로 본다고 보고됐다(SYN-001 「신분증으로 하시면」 외 8턴). 09-15 「주민센터로 가시면」 과잉 마스킹과 같은 뿌리로 보인다
   ② **P7 번지·호수가 남는다** — 「새솔로 12, 305호」·「은하로 7-3」에서 숫자 건물번호가 안 잡혀 주소가 도로명에서 끊긴다(누락 — 절대 규칙 쪽)
@@ -716,16 +716,16 @@ Environment Variables → **Production 만** → Deployments → Redeploy(`VITE_
 
 페르소나 4명 점검 결과. 류준 몫은 [w5-e2e-findings-ai](/backlog/w5-e2e-findings-ai/)에서 고쳤다. ⚠ E2E 는 **로컬**(규칙·BM25, NER·임베딩 없음 — 운영과 같은 구성) 결과다.
 
-- [ ] **조서희·정성윤 — `call.solidbob.cloud` 번들에 게이트웨이·서버 주소 3개가 비어 있다**(`VITE_GATEWAY_WS_URL`·`VITE_CORE_API_URL`·`VITE_GATEWAY_DEMO_BASE_URL`) — 기본이 mock 이고 `?gateway=` 로 붙어도 REST 기능은 에러. 위 「공개 데모를 라이브로 바꿀지」 결정과 같은 건이다. 🚫 과금 토큰은 넣지 않는다
+- [ ] **조서희·정성윤 — `call.solidbob.cloud` 번들에 콜 미디에이터·서버 주소 3개가 비어 있다**(`VITE_CALL_MEDIATOR_WS_URL`·`VITE_CORE_API_URL`·`VITE_CALL_MEDIATOR_DEMO_BASE_URL`) — 기본이 mock 이고 `?call_mediator=` 로 붙어도 REST 기능은 에러. 위 「공개 데모를 라이브로 바꿀지」 결정과 같은 건이다. 🚫 과금 토큰은 넣지 않는다
 - [x] **장민석 — 이름·번지 규칙 누락(SEC-1)** **→ 같은 날 류준이 고쳤다(`decisions/302` — `server/` 누구나). 장민석 님 검토 부탁** — — 「김도윤이고요」·「김도윤 고객님」·「제니 레예스」·「은하로 7-3」이 자막·DB 에 원문으로 남았다. NER 을 켜면 이름·「7-3」은 가려지지만 **「햇살로 45,」·「별빛로 88, 5층」 번지는 NER 로도 남는다**(`decisions/208` 측정) — 규칙 보강 필요
-- [ ] **장민석 — 통화 종료 상태를 쓰는 경로가 없다** — 네 통화 모두 `in_progress`·`ended_at` null. `POST /hub/calls/{id}/close` 는 요약 초안만 만든다. 누가(대시보드 종료 버튼 · 게이트웨이 채널 종료) 언제 닫을지 정할 것
+- [ ] **장민석 — 통화 종료 상태를 쓰는 경로가 없다** — 네 통화 모두 `in_progress`·`ended_at` null. `POST /hub/calls/{id}/close` 는 요약 초안만 만든다. 누가(대시보드 종료 버튼 · 콜 미디에이터 채널 종료) 언제 닫을지 정할 것
 - [ ] **장민석 — `compliance_flag` 가 0행** — `/hub/compliance-checks` 를 직접 불러 C-2 가 잡혀도 저장이 안 됐다(설계인지 확인)
-- [ ] **게이트웨이(누구나 · 주 담당 정성윤) — 컴플라이언스 미배선** — `hub_http.ts` 가 `/hub/compliance-checks` 를 부르지 않고 방송 타입에도 없다. 콜 가드 배선을 본떠 상담원 확정 발화마다 호출 → `compliance` 방송. 조서희 님 `ComplianceWarningBanner` 계약 맞추기
-- [ ] **게이트웨이(누구나) — 필요서류 판정이 추천 1순위 한 번에 기댄다** — 오카드 한 번이면 엉뚱한 절차가 `incomplete` 로 계속 방송된다. 같은 절차가 두 번 이상 1순위일 때만 올리는 등. POLICY 가 1순위가 되던 경우는 검색에서 뺐다
+- [ ] **콜 미디에이터(누구나 · 주 담당 정성윤) — 컴플라이언스 미배선** — `hub_http.ts` 가 `/hub/compliance-checks` 를 부르지 않고 방송 타입에도 없다. 콜 가드 배선을 본떠 상담원 확정 발화마다 호출 → `compliance` 방송. 조서희 님 `ComplianceWarningBanner` 계약 맞추기
+- [ ] **콜 미디에이터(누구나) — 필요서류 판정이 추천 1순위 한 번에 기댄다** — 오카드 한 번이면 엉뚱한 절차가 `incomplete` 로 계속 방송된다. 같은 절차가 두 번 이상 1순위일 때만 올리는 등. POLICY 가 1순위가 되던 경우는 검색에서 뺐다
 - [ ] **정성윤 — 자동 중지가 설정돼 있지 않다** — AL2023 에 `crontab` 이 없어 런북 21-1 명령이 안 먹는다(추정). 3일 연속 가동. **EIP 부터** 붙이고(없으면 재기동 시 서버 IP 가 바뀐다) EventBridge 스케줄 등으로
 - [ ] **정성윤 — EC2 t3.large 결정 기록 · Name 태그 · AMI 0개 · EBS 30GB 비암호화 · `ai` DNS 자리표시자 · 안 붙은 SG `launch-wizard-2`(22 전체 개방)** — 런북 0·20장과 어긋남. t3.large 는 `decisions/208`(NER·임베딩 운영) 자원 판단의 전제다
 - [ ] **정성윤·류준 — `decisions/208` 합의** — torch CPU 휠을 서버 이미지에 넣을지 · 모델 파일 위치 · t3.large 재측정
-- [ ] **팀 — 운영 합성 통화 한 건(SYN-010)으로 게이트웨이→서버 경로 확인할지** — 운영 DB 에 `syn-` 통화 행이 남는다
+- [ ] **팀 — 운영 합성 통화 한 건(SYN-010)으로 콜 미디에이터→서버 경로 확인할지** — 운영 DB 에 `syn-` 통화 행이 남는다
 
 ### C-5 규칙 보강에서 남은 것 (신규, 2026-09-17, 류준 — 주 담당 장민석)
 
@@ -735,3 +735,15 @@ Environment Variables → **Production 만** → Deployments → Redeploy(`VITE_
 - [ ] **호칭·문맥이 전혀 없는 이름은 여전히 못 잡는다**(`"김민준 그 사람이"`) — 규칙의 한계. NER 운영(`decisions/208`)이 풀 몫이다. 테스트가 한계를 고정해 두었다
 - [ ] **실제 발화의 남은 P7 과잉은 1건짜리들이다**(「경기 침체로」·「3층 일자리」·「서울시 누수감면」 등) — 누락 0건 > 과잉 억제라 여기서 멈췄다. 자막 가독성 문제가 보고되면 같은 방식(실제 문장을 테스트로 고정 → 규칙)으로 줄인다
 - [ ] **이 측정은 라벨이 없다** — AI Hub 발화에서 「가려진 발화 수」 가 459 → 44 로 줄었다는 것은 **과잉이 줄었다는 근거이지 누락이 없다는 근거가 아니다.** 누락은 골든셋·합성 대본(라벨 있음)으로만 말한다
+
+### 프론트 왕복 테스트로 드러난 것 셋 (신규, 2026-09-17, 정성윤)
+
+- [ ] **홍보 페이지·상담원 박스가 통화 ID 를 각자 만든다 — 조서희 님과 정할 것** — `apps/platform/src/lib/useLiveCallSession.ts:118`(`test-web-platform-*`) · `apps/call/src/lib/useAgentCallSession.ts:128`(`test-web-agent-*`). 콜 미디에이터는 두 통화로 갈라 `/hub/calls` 를 두 번 부르고, 상담원 화면은 `call_id` 없이 구독해 둘 다 받으며, `callStore.applyTranscript` 가 `call_id` 대조 없이 `segment_id` 만으로 덮어쓴다(콜 미디에이터는 통화마다 1번부터 센다). **실제 프론트 코드로 재현: 고객 1번 줄이 상담원 1번 줄에 덮여 사라지고 `callId` 가 메시지마다 바뀐다.** 같은 ID 를 넘기면 순서대로 남는다(09-17 두 번째 기록). 콜 미디에이터·서버 계약은 손댈 것 없음. **정할 것**: 홍보 페이지가 만든 ID 를 상담원 화면에 넘겨 같은 값으로 붙게 하고(새 탭 + 쿼리), 상담원 화면은 그 ID 로 구독하거나 스토어에서 다른 ID 를 버린다 — 티켓 미작성
+- [ ] **못 읽는 콜 미디에이터 메시지 하나가 「연결 끊김」 표시를 만든다 (조서희 님)** — `callStore.setError` 가 `connected:false` 를 같이 세운다. 소켓은 열려 있고 이후 자막도 계속 들어오는데 화면은 끊김으로 보인다. 파서 실패와 연결 상태를 분리할지 정한다
+- [ ] **`GS-204` 는 측정이 아니라 채점 기준 문제 — 결정 기록 필요 (류준 님과)** — 지침 1.3 과 매뉴얼 3.2 가 같은 규칙을 적은 쌍둥이인데 골든셋이 1.3 만 정답·3.2 는 방해 문서로 적었다. 사유(「시민 문의라 지침 쪽」)는 항목 메모에만 있고 README 규약에 없다(GS-216 도 같다). 선택지: ① 3.2 를 정답 목록에 추가(`hit_at_k` 는 any-of) ② 지식베이스에서 쌍둥이 조항 통합 ③ 규약을 README 에 적고 감수. 점수를 올리려고 라벨을 조용히 고치는 것이 되지 않게 **결정 기록으로**. `GS-205` 는 nori `_analyze` 로 「결정」 토큰 생존 여부 확인이 먼저(09-17 두 번째 기록). 다음 측정부터 `scripts/compare_retrievers.py` 가 항목별 상위 k 도 저장하게 하면 파일만으로 분석된다
+
+### `gateway` → `call-mediator` 개명에서 남은 것 (신규, 2026-09-17, 정성윤 · `decisions/115`)
+
+- [ ] **운영 전환이 아직이다** — 저장소는 전부 바꿨고 검증도 통과했지만 **운영은 `/gateway/*` 로 돈다.** 사람이 할 일 일곱 가지와 순서는 런북 19-1 「개명 전환」·[w5-call-mediator-rename](/backlog/w5-call-mediator-rename/). 순서를 어기면 ① Docker Hub 레포가 없어 `tag-check` 가 401 로 죽거나 ② 룰셋이 없어진 `gateway` 검사를 기다리며 머지가 잠기거나 ③ 새 토큰이 만들어져 Vercel 뷰 토큰이 무효가 된다
+- [ ] **류준 님 `origin/ai` 의 `services/gateway/` 미머지 작업** — 합성 통화 재생기와 태그 `0.1.6`. main 을 받을 때 경로(`services/call-mediator/`)·이미지 이름·태그(`0.2.x`)·`/dev/text` 주소(`/call-mediator/dev/text`)를 맞춰야 한다
+- [ ] **개발자용 런타임 오버라이드 주소가 바뀌었다** — `?gateway=` → `?call_mediator=`, 저장 키도 바뀌어 **브라우저에 저장해 둔 옛 오버라이드는 무시된다.** 팀에 알린다

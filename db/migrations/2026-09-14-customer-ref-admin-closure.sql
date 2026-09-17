@@ -59,7 +59,7 @@ CREATE INDEX "admin_refresh_token_idx0" ON "admin_refresh_token" ("admin_account
 ALTER TABLE "customer" ALTER COLUMN "customer_id" TYPE VARCHAR(64);
 ALTER TABLE "call" ALTER COLUMN "customer_id" TYPE VARCHAR(64);
 COMMENT ON COLUMN "customer"."customer_id" IS '**전화번호의 HMAC-SHA256(hex 64자)** — `blacklist_request.customer_ref` 와 같은 체계다. 평문 번호·실명을 저장하지 않는다. 통화 시작(`POST /hub/calls` 의 caller_phone)에서 만든다 (`decisions/304`, 2026-09-14 VARCHAR(40)→(64) — 40 자로는 HMAC 이 안 들어갔다)';
-COMMENT ON COLUMN "call"."customer_id" IS '게이트웨이가 발신 번호를 넘긴 통화만 채워진다(`decisions/304`). 재상담 이력·블랙리스트 요청의 연결 고리';
+COMMENT ON COLUMN "call"."customer_id" IS '콜 미디에이터가 발신 번호를 넘긴 통화만 채워진다(`decisions/304`). 재상담 이력·블랙리스트 요청의 연결 고리';
 
 -- ③ F-2 필요서류 체크리스트. knowledge_gap.closure_id 외래키는 CASCADE 로 함께 떨어지고 아래에서 다시 건다
 DROP TABLE "closure" CASCADE;

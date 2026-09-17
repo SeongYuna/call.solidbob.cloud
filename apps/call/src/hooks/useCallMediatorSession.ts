@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef } from "react";
-import { createGatewayClient } from "../lib/ws";
-import type { GatewayClient } from "../lib/ws";
+import { createCallMediatorClient } from "../lib/ws";
+import type { CallMediatorClient } from "../lib/ws";
 import type { CallWrapUp, TranscriptEvent } from "../types/contract";
 import { useCallStore } from "../store/callStore";
 
@@ -11,7 +11,7 @@ export type ManualSearchOutcome =
   | { kind: "duplicate" }
   | { kind: "error"; message: string };
 
-export interface GatewaySession {
+export interface CallMediatorSession {
   startCall: () => void;
   replay: () => void;
   leaveToStandby: () => void;
@@ -24,8 +24,8 @@ export interface GatewaySession {
  * 같은 segment_id 의 interim 은 누적하지 않고 rAF 한 프레임에 최신 것만 반영.
  * 7.3절: requestAnimationFrame 또는 100ms 디바운스.
  */
-export function useGatewaySession(): GatewaySession {
-  const clientRef = useRef<GatewayClient | null>(null);
+export function useCallMediatorSession(): CallMediatorSession {
+  const clientRef = useRef<CallMediatorClient | null>(null);
   const pendingRef = useRef<Map<string, TranscriptEvent>>(new Map());
   const rafRef = useRef<number>(0);
 
@@ -51,7 +51,7 @@ export function useGatewaySession(): GatewaySession {
   );
 
   const attach = useCallback(
-    (client: GatewayClient) => {
+    (client: CallMediatorClient) => {
       useCallStore.getState().enterAssist();
       useCallStore.getState().resetCall();
       client.connect({
@@ -97,7 +97,7 @@ export function useGatewaySession(): GatewaySession {
   );
 
   useEffect(() => {
-    const client = createGatewayClient();
+    const client = createCallMediatorClient();
     clientRef.current = client;
     return () => {
       if (rafRef.current !== 0) {
@@ -130,7 +130,7 @@ export function useGatewaySession(): GatewaySession {
     async (query: string): Promise<ManualSearchOutcome> => {
       const client = clientRef.current;
       if (client === null) {
-        return { kind: "error", message: "게이트웨이에 연결되어 있지 않습니다." };
+        return { kind: "error", message: "콜 미디에이터에 연결되어 있지 않습니다." };
       }
       const callId = useCallStore.getState().callId ?? "";
       try {
@@ -173,7 +173,7 @@ export function useGatewaySession(): GatewaySession {
   const wrapUp = useCallback(async (): Promise<CallWrapUp> => {
     const client = clientRef.current;
     if (client === null) {
-      throw new Error("게이트웨이에 연결되어 있지 않습니다.");
+      throw new Error("콜 미디에이터에 연결되어 있지 않습니다.");
     }
     const state = useCallStore.getState();
     const segments = state.utterances.map((u) => ({

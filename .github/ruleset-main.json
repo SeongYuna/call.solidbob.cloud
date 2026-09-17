@@ -53,7 +53,7 @@
             "integration_id": 15368
           },
           {
-            "context": "gateway",
+            "context": "call-mediator",
             "integration_id": 15368
           },
           {

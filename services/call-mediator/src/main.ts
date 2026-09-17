@@ -2,7 +2,7 @@
 /**
  * 합성 루트 — 설정을 읽고 어댑터를 꽂고 포트를 연다. 판정은 없다.
  *
- *   cd services/gateway && npm start        # ../../.env 를 읽는다 (셸 변수가 우선)
+ *   cd services/call-mediator && npm start        # ../../.env 를 읽는다 (셸 변수가 우선)
  *
  * 구글 키 파일이 없으면 서버는 뜨지만 `/ingest` 는 거절한다. 가짜 STT 로 조용히 대신하지 않는다 —
  * `call.stt_engine` 에 `google-stt` 라고 적힌 통화가 실제로는 가짜였다면 기록이 거짓이 된다.
@@ -13,12 +13,12 @@ import type { Logger, SttEngine, SttHandlers, SttStream } from "./app/ports.ts";
 import { GoogleSttEngine, googleStreamFactory } from "./adapters/google_stt.ts";
 import { HttpHub } from "./adapters/hub_http.ts";
 import { JsonLedgerFile } from "./adapters/ledger_file.ts";
-import { DashboardHub, createGatewayServer } from "./adapters/ws_server.ts";
+import { DashboardHub, createCallMediatorServer } from "./adapters/ws_server.ts";
 import { loadConfig } from "./config.ts";
 
 const log: Logger = {
-  info: (message) => console.log(`[gateway] ${message}`),
-  warn: (message) => console.warn(`[gateway] ⚠ ${message}`),
+  info: (message) => console.log(`[call-mediator] ${message}`),
+  warn: (message) => console.warn(`[call-mediator] ⚠ ${message}`),
 };
 
 /** 키가 없을 때 꽂는다. 채널을 열기 전에 거절된다 — 서버에 빈 통화 행을 만들지 않는다. */
@@ -47,7 +47,7 @@ const registry = new CallRegistry({
   log,
   nowMs: () => Date.now(),
   // 세 메시지 모두 2026-09-15 켰다 — apps/call 실서버 파서가 main 에 들어왔다(PR #88 에 실린 frontend 69508ae,
-  // realGatewayClient.ts 의 parseRecommendationPending·parseCallGuard·새 parseClosure). 끄려면 false 로 되돌린다
+  // realCallMediatorClient.ts 의 parseRecommendationPending·parseCallGuard·새 parseClosure). 끄려면 false 로 되돌린다
   // 「검색 중」 신호(w4-recommendation-pending-contract)
   announcePending: true,
   // C-6 콜 가드 메시지 — 검사·저장은 늘 돈다(w4-call-guard-wiring)
@@ -56,7 +56,7 @@ const registry = new CallRegistry({
   announceClosure: true,
 });
 
-const server = createGatewayServer({
+const server = createCallMediatorServer({
   registry,
   dashboards,
   allowedOrigins: config.allowedOrigins,
@@ -88,7 +88,7 @@ server.listen(config.port, () => {
   if (!config.googleCredentialsReady) {
     log.warn("GOOGLE_APPLICATION_CREDENTIALS 키 파일이 없다 — /ingest 는 거절한다");
   }
-  for (const [door, name] of [["ingest", "GATEWAY_INGEST_TOKEN"], ["view", "GATEWAY_VIEW_TOKEN"]] as const) {
+  for (const [door, name] of [["ingest", "CALL_MEDIATOR_INGEST_TOKEN"], ["view", "CALL_MEDIATOR_VIEW_TOKEN"]] as const) {
     const token = config.tokens[door];
     if (token.length === 0) {
       log.warn(`${name} 이 없다 — 이 머신(루프백) 접속만 받는다. 밖에 열려면 넣는다`);

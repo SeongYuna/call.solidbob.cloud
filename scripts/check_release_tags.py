@@ -14,7 +14,7 @@
 ## fail-closed (2026-09-14)
 
 전에는 `docker manifest inspect` 의 **모든** 비정상 종료를 「태그 없음」으로 접었다.
-레이트 리밋·5xx·비공개 저장소(2026-09-11 게이트웨이가 실제로 그랬다)·타임아웃이 전부
+레이트 리밋·5xx·비공개 저장소(2026-09-11 콜 미디에이터가 실제로 그랬다)·타임아웃이 전부
 「없음」이 되고, 그러면 게이트가 **조용히 통과**한 뒤 같은 태그를 덮어 구워 위의 사고가
 그대로 난다 — 빨간불이 아니라 초록으로 샌다.
 
@@ -45,20 +45,20 @@ ACCEPT = ", ".join(
 )
 
 # 이미지마다 «그 이미지에 실제로 들어가는 경로»만 본다. server.Dockerfile 의 COPY 집합과 같아야 한다.
-# 예전엔 server 가 `infra/docker/` 전체를 봐서 gateway.Dockerfile 만 고쳐도 server 변경으로 잡혔다.
+# 예전엔 server 가 `infra/docker/` 전체를 봐서 call-mediator.Dockerfile 만 고쳐도 server 변경으로 잡혔다.
 IMAGES = {
     "server": {
         "image": "seongyuna/callguard-server",
         "paths": re.compile(r"^(server/|ai/|infra/docker/server\.Dockerfile|\.dockerignore)"),
         "output": "build",
     },
-    # 게이트웨이 이미지는 src/ 와 package*.json 만 담는다(gateway.Dockerfile) — test/·README 는 태그를 올릴 일이 아니다.
-    "gateway": {
-        "image": "seongyuna/callguard-gateway",
+    # 콜 미디에이터 이미지는 src/ 와 package*.json 만 담는다(call-mediator.Dockerfile) — test/·README 는 태그를 올릴 일이 아니다.
+    "call-mediator": {
+        "image": "seongyuna/callguard-call-mediator",
         "paths": re.compile(
-            r"^(services/gateway/(src/|package(-lock)?\.json)|infra/docker/gateway\.Dockerfile|\.dockerignore)"
+            r"^(services/call-mediator/(src/|package(-lock)?\.json)|infra/docker/call-mediator\.Dockerfile|\.dockerignore)"
         ),
-        "output": "gateway_build",
+        "output": "call_mediator_build",
     },
     # ES(nori 포함). 2026-09-15 추가 — 전에는 CI 가 이 이미지를 아예 몰라서 갈래 둘이 뚫려 있었다:
     #  ① Dockerfile 을 고쳐도 release.yml 의 paths 에 없어 워크플로가 깨어나지 않았다
@@ -233,7 +233,7 @@ def main() -> int:
     ap.add_argument(
         "--emit-build",
         action="store_true",
-        help="GITHUB_OUTPUT 에 tag/gateway_tag 와 build/gateway_build 를 쓴다 (release.yml 전용). "
+        help="GITHUB_OUTPUT 에 tag/call_mediator_tag 와 build/call_mediator_build 를 쓴다 (release.yml 전용). "
         "PR 검사는 굽지 않으므로 쓰지 않는다.",
     )
     ap.add_argument(
@@ -253,9 +253,9 @@ def main() -> int:
     if args.emit_build and out:
         with open(out, "a", encoding="utf-8") as fh:
             fh.write(f"tag={tags['server']}\n")
-            fh.write(f"gateway_tag={tags['gateway']}\n")
+            fh.write(f"call_mediator_tag={tags['call-mediator']}\n")
             fh.write(f"es_tag={tags['es']}\n")
-    print(f"배포할 태그: server={tags['server']} gateway={tags['gateway']} es={tags['es']}")
+    print(f"배포할 태그: server={tags['server']} call-mediator={tags['call-mediator']} es={tags['es']}")
 
     changed = [line.strip() for line in sys.stdin if line.strip()]
     if not changed:

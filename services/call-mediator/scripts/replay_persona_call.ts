@@ -1,6 +1,6 @@
 // Requirement: A-1, A-3, C-5, C-6, J-5
 /**
- * 합성 통화 대본(`scripts/persona_sim/dasan-v0/SYN-*.json`)을 게이트웨이 `/dev/text` 로 **실제 통화처럼** 흘린다.
+ * 합성 통화 대본(`scripts/persona_sim/dasan-v0/SYN-*.json`)을 콜 미디에이터 `/dev/text` 로 **실제 통화처럼** 흘린다.
  * 상담원 대시보드(`apps/call`, 라이브 모드)는 받는 메시지가 실제 통화와 같으니 **프론트를 고치지 않고** 그대로 그린다.
  *
  *   node scripts/replay_persona_call.ts --list
@@ -18,7 +18,7 @@
  * - 통화 기록 엔진은 `synthetic-script` 로 남는다(`producer=script`). STT 를 거치지 않았으므로 **여기서 나온 검색·마스킹
  *   수치는 상한이고, 지연 시각은 지어낸 값이다.**
  *
- * 토큰은 `stream_wav.ts` 와 같다 — 환경변수 `GATEWAY_INGEST_TOKEN`(글자 입력 문) · `GATEWAY_VIEW_TOKEN`(`--watch`)을
+ * 토큰은 `stream_wav.ts` 와 같다 — 환경변수 `CALL_MEDIATOR_INGEST_TOKEN`(글자 입력 문) · `CALL_MEDIATOR_VIEW_TOKEN`(`--watch`)을
  * **헤더로** 보낸다. 명령줄 인자로 받지 않는다(셸 기록에 남는다).
  *
  * 발신 번호는 대본의 `caller_number`(실존하지 않는 `010-0000-XXXX`)를 `X-Caller-Phone` 헤더로 싣는다 — 같은 번호를 쓰는
@@ -120,7 +120,7 @@ function parseArgs(argv: string[]): Args {
     throw new Error("--speed 는 0 보다 커야 한다");
   }
   if (args.close && args.coreUrl === "") {
-    throw new Error("--close 는 --core-url(서버 주소)이 있어야 한다 — 게이트웨이 주소와 다르다");
+    throw new Error("--close 는 --core-url(서버 주소)이 있어야 한다 — 콜 미디에이터 주소와 다르다");
   }
   return args;
 }
@@ -183,7 +183,7 @@ function installedKoreanVoices(): Map<string, string> | null {
 function open(url: string, headers: Record<string, string>): Promise<WebSocket> {
   return new Promise((resolve, reject) => {
     const ws = new WebSocket(url, { headers });
-    ws.once("unexpected-response", (_req, res) => reject(new Error(`게이트웨이가 거절했다 (HTTP ${res.statusCode}) — ${url.split("?")[0]}`)));
+    ws.once("unexpected-response", (_req, res) => reject(new Error(`콜 미디에이터가 거절했다 (HTTP ${res.statusCode}) — ${url.split("?")[0]}`)));
     ws.once("open", () => resolve(ws));
     ws.once("error", reject);
   });
@@ -195,7 +195,7 @@ function bearer(token: string | undefined): Record<string, string> {
 }
 
 function watch(args: Args, callId: string, finals: Map<number, MaskedFinal>, print: boolean): Promise<WebSocket> {
-  return open(`${args.url}/ws?call_id=${encodeURIComponent(callId)}`, bearer(process.env.GATEWAY_VIEW_TOKEN)).then((ws) => {
+  return open(`${args.url}/ws?call_id=${encodeURIComponent(callId)}`, bearer(process.env.CALL_MEDIATOR_VIEW_TOKEN)).then((ws) => {
     ws.on("message", (data) => {
       const message = JSON.parse(data.toString()) as { type: string; payload: Record<string, unknown> };
       const p = message.payload;
@@ -227,7 +227,7 @@ function watch(args: Args, callId: string, finals: Map<number, MaskedFinal>, pri
 }
 
 async function openSpeakers(args: Args, callId: string, phone: string): Promise<Record<Speaker, WebSocket>> {
-  const headers = { ...bearer(process.env.GATEWAY_INGEST_TOKEN), ...(phone ? { "x-caller-phone": phone } : {}) };
+  const headers = { ...bearer(process.env.CALL_MEDIATOR_INGEST_TOKEN), ...(phone ? { "x-caller-phone": phone } : {}) };
   const url = (speaker: Speaker): string =>
     `${args.url}/dev/text?${new URLSearchParams({ call_id: callId, speaker, channels: "2", producer: "script" })}`;
   // 상담원 채널이 통화를 연다(서버에 call 행). 고객 채널은 그 뒤 — 발신 번호는 처음 여는 채널 것만 간다.
@@ -236,7 +236,7 @@ async function openSpeakers(args: Args, callId: string, phone: string): Promise<
   for (const [speaker, ws] of [["agent", agent], ["customer", customer]] as const) {
     ws.once("close", (code, reason) => {
       if (code !== 1000) {
-        console.error(`[${speaker}] 게이트웨이가 닫았다 ${code} ${reason.toString()}`);
+        console.error(`[${speaker}] 콜 미디에이터가 닫았다 ${code} ${reason.toString()}`);
       }
     });
   }
@@ -246,7 +246,7 @@ async function openSpeakers(args: Args, callId: string, phone: string): Promise<
 /** 통화 후 요약 초안(D-1~D-3). 마스킹본이 한 건도 없으면 부르지 않는다 — 원문으로 대신 채우지 않는다. */
 async function closeCall(coreUrl: string, callId: string, segments: MaskedFinal[]): Promise<void> {
   if (segments.length === 0) {
-    console.error("  → 통화 후 요약을 건너뛴다: /ws 로 받은 마스킹 자막이 0건이다(뷰 토큰·게이트웨이 확인)");
+    console.error("  → 통화 후 요약을 건너뛴다: /ws 로 받은 마스킹 자막이 0건이다(뷰 토큰·콜 미디에이터 확인)");
     process.exitCode = 1;
     return;
   }

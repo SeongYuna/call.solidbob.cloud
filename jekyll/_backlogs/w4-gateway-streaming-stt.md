@@ -1,5 +1,5 @@
 ---
-title: "게이트웨이 — 오디오 중계 + Google STT 스트리밍 + 서버 전달"
+title: "콜 미디에이터 — 오디오 중계 + Google STT 스트리밍 + 서버 전달"
 assignee: "정성윤"
 role: "infra"
 status: "done"
@@ -14,18 +14,18 @@ requirement:
   - "COST-1"
   - "SEC-1"
 paths:
-  - "services/gateway/*"
+  - "services/call-mediator/*"
 ---
 
 **「필수」 블록 A 인데 3주 동안 코드가 0줄이었다.** 기획서 역할표(`_project/plan.md` 7.1절)·
-`decisions/019`("정성윤에게 남는 것: 게이트웨이(A-1·A-2)")가 정성윤 몫으로 적어 뒀는데 **티켓이
+`decisions/019`("정성윤에게 남는 것: 콜 미디에이터(A-1·A-2)")가 정성윤 몫으로 적어 뒀는데 **티켓이
 한 번도 없어서** 칸반에 안 보였다. STT 쪽 티켓은 [w1-stt-billing-quota](/backlog/w1-stt-billing-quota/)
 (완료)·[w2-stt-batch](/backlog/w2-stt-batch/)(배치) 둘뿐이었다.
 
 ## 무엇을
 
 ```
-[오디오 생산자] ──WS 바이너리(PCM16)──▶ services/gateway ──HTTP──▶ server (마스킹·저장·트리거)
+[오디오 생산자] ──WS 바이너리(PCM16)──▶ services/call-mediator ──HTTP──▶ server (마스킹·저장·트리거)
                                           │  Google STT 스트리밍
                                           ▼
                               [대시보드] ◀──WS JSON── 마스킹된 전사·추천만
@@ -40,13 +40,13 @@ paths:
 
 ## 지키는 것
 
-- **SEC-1** — 원문은 게이트웨이 → 서버로만 간다. 대시보드는 서버가 마스킹해 돌려준 것만 받고,
+- **SEC-1** — 원문은 콜 미디에이터 → 서버로만 간다. 대시보드는 서버가 마스킹해 돌려준 것만 받고,
   서버가 실패하면 **아무것도 보내지 않는다.** 로그에 전사 문자열을 남기지 않는다
 - 브라우저 마이크 캡처(①)는 `apps/` 라 조서희 전담이다 — 여기서 만들지 않는다. 생산자 쪽 계약만 정한다
 
 ## 완료 조건
 
-- [x] `services/gateway` 단위·통합 테스트 + 타입체크, CI `gateway` job — 53개 통과(2026-09-11).
+- [x] `services/call-mediator` 단위·통합 테스트 + 타입체크, CI `call-mediator` job — 53개 통과(2026-09-11).
   CI job 은 **아직 main 룰셋의 필수 통과 검사가 아니다**
 - [x] 로컬에서 실제 Google STT → 로컬 server → 대시보드 WS 까지 한 번 관통 (2026-09-11) — AI Hub 음성 2.8초,
   모노·스테레오(채널 분리) 둘 다. COST-1 두 동작(캡 초과면 거절 · 도는 중 캡에 닿으면 끊기)도 실제 장부로 확인.
@@ -56,8 +56,8 @@ paths:
   (fail-closed), 과금 문 비밀은 헤더로만. 테스트 65개 · 비루프백 주소로 실측(2026-09-11).
   **a5 세션이 따로 실측해 전 조합이 일치했다** — 토큰 미설정 바깥 8조합 401 · 설정 후 문마다 맞는 토큰만 101 · 로그에 토큰 0건.
   ⚠ 뷰 토큰은 브라우저가 내므로 비밀이 아니다 — **사람별 인증은 남았다**(서버와 같은 미결)
-- [x] 배포(이미지·k8s·Ingress 경로·`release.yml`) — PR #68, 2026-09-11. 운영 `/gateway/health` 설정 넷 전부 true ·
-  토큰 없는 `/gateway/ws`·`/gateway/ingest` 401(런북 19-1 12·13번). ⚠ 첫 시도는 Docker Hub 새 저장소가 **비공개**로 만들어져
+- [x] 배포(이미지·k8s·Ingress 경로·`release.yml`) — PR #68, 2026-09-11. 운영 `/call-mediator/health` 설정 넷 전부 true ·
+  토큰 없는 `/call-mediator/ws`·`/call-mediator/ingest` 401(런북 19-1 12·13번). ⚠ 첫 시도는 Docker Hub 새 저장소가 **비공개**로 만들어져
   ImagePullBackOff — 공개로 바꾸고 재실행 두 번 만에 초록(두 번째는 Deployment 가 이미 «진행 기한 초과» 로 표시돼 있어서)
-- [ ] `.env.example` 에 `GATEWAY_PORT`·`CORE_API_URL`·`GATEWAY_INGEST_TOKEN`·`GATEWAY_VIEW_TOKEN` — 보호 훅 때문에 사람이 넣는다
+- [ ] `.env.example` 에 `CALL_MEDIATOR_PORT`·`CORE_API_URL`·`CALL_MEDIATOR_INGEST_TOKEN`·`CALL_MEDIATOR_VIEW_TOKEN` — 보호 훅 때문에 사람이 넣는다
   (이 티켓 밖으로 옮긴다 — [미결](/open-items/) 「`.env.example` 키 넷」. 적용할 파일은 준비돼 있다)

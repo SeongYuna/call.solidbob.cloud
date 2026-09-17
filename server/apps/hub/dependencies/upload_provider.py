@@ -3,7 +3,7 @@
 
 `_project/decisions/110` 4번: **토큰이 설정돼 있지 않으면 전부 거절한다(fail-closed).**
 잠기지 않은 발급 지점은 익명 업로드 프록시라, 「브라우저에 키가 없으니 안전하다」가 성립하지 않는다.
-게이트웨이(`services/gateway`)의 문과 같은 원칙이다(`decisions/109` 3번).
+콜 미디에이터(`services/call-mediator`)의 문과 같은 원칙이다(`decisions/109` 3번).
 """
 
 from __future__ import annotations

@@ -1,7 +1,7 @@
 // Requirement: A-3, SEC-1, 7.3절
 /**
- * 진짜 소켓을 연다 — 생산자(/ingest) → 게이트웨이 → 대시보드(/ws). STT·서버만 가짜다.
- * 대시보드 쪽 검증은 `apps/dashboard/src/lib/ws/realGatewayClient.ts` 의 `parseGatewayMessage`
+ * 진짜 소켓을 연다 — 생산자(/ingest) → 콜 미디에이터 → 대시보드(/ws). STT·서버만 가짜다.
+ * 대시보드 쪽 검증은 `apps/dashboard/src/lib/ws/realCallMediatorClient.ts` 의 `parseCallMediatorMessage`
  * 가 요구하는 것 그대로다 — `{type, payload}`, 말단 값은 전부 문자열.
  */
 import { test } from "node:test";
@@ -10,10 +10,10 @@ import type { AddressInfo } from "node:net";
 import { WebSocket } from "ws";
 import { BudgetGuard } from "../src/app/budget_guard.ts";
 import { CallRegistry } from "../src/app/call_registry.ts";
-import { DashboardHub, createGatewayServer } from "../src/adapters/ws_server.ts";
+import { DashboardHub, createCallMediatorServer } from "../src/adapters/ws_server.ts";
 import { allLeavesStringOrNull, FakeHub, FakeStt, MemoryLedger, newLog, silence, tick } from "./fakes.ts";
 
-async function startGateway(
+async function startCallMediator(
   opts: {
     caps?: { perDay: number; perMonth: number };
     tokens?: { ingest: string; view: string };
@@ -27,7 +27,7 @@ async function startGateway(
   const dashboards = new DashboardHub();
   const budget = new BudgetGuard(new MemoryLedger(), opts.caps ?? { perDay: 600, perMonth: 3600 }, () => new Date(), log, 1000);
   const registry = new CallRegistry({ hub, stt, budget, broadcaster: dashboards, log, nowMs: () => Date.now(), drainTimeoutMs: 500 });
-  const server = createGatewayServer({
+  const server = createCallMediatorServer({
     registry,
     dashboards,
     allowedOrigins: ["http://localhost:5173"],
@@ -72,7 +72,7 @@ async function waitFor(predicate: () => boolean, ms = 1000): Promise<void> {
 }
 
 test("생산자 오디오 → STT → 서버 → 대시보드: 대시보드 파서가 받는 형식 그대로다", async () => {
-  const gw = await startGateway();
+  const gw = await startCallMediator();
   try {
     const dashboard = await connect(`ws://${gw.base}/ws`, { origin: "http://localhost:5173" });
     const received: unknown[] = [];
@@ -114,7 +114,7 @@ test("생산자 오디오 → STT → 서버 → 대시보드: 대시보드 파�
 });
 
 test("call_id 로 구독하면 그 통화만 받는다", async () => {
-  const gw = await startGateway();
+  const gw = await startCallMediator();
   try {
     const onlyA = await connect(`ws://${gw.base}/ws?call_id=test-a`);
     const got: string[] = [];
@@ -138,7 +138,7 @@ test("call_id 로 구독하면 그 통화만 받는다", async () => {
 });
 
 test("허용되지 않은 Origin 은 연결 자체를 거절한다", async () => {
-  const gw = await startGateway();
+  const gw = await startCallMediator();
   try {
     await assert.rejects(connect(`ws://${gw.base}/ws`, { origin: "https://evil.example" }));
   } finally {
@@ -147,7 +147,7 @@ test("허용되지 않은 Origin 은 연결 자체를 거절한다", async () =>
 });
 
 test("잘못된 파라미터는 1008 과 이유로 닫는다", async () => {
-  const gw = await startGateway();
+  const gw = await startCallMediator();
   try {
     const ws = await connect(`ws://${gw.base}/ingest?call_id=test-1&speaker=robot`);
     const closed = await nextClose(ws);
@@ -159,7 +159,7 @@ test("잘못된 파라미터는 1008 과 이유로 닫는다", async () => {
 });
 
 test("캡이 없으면 1013 으로 닫는다 — 구글에 한 바이트도 가지 않는다", async () => {
-  const gw = await startGateway({ caps: { perDay: 0, perMonth: 0 } });
+  const gw = await startCallMediator({ caps: { perDay: 0, perMonth: 0 } });
   try {
     const ws = await connect(`ws://${gw.base}/ingest?call_id=test-1&speaker=agent`);
     ws.send(silence(0.1));
@@ -173,7 +173,7 @@ test("캡이 없으면 1013 으로 닫는다 — 구글에 한 바이트도 가�
 });
 
 test("채널이 열리기 전에 온 오디오도 버리지 않는다", async () => {
-  const gw = await startGateway();
+  const gw = await startCallMediator();
   gw.hub.ingestDelayMs = 0;
   try {
     const ws = await connect(`ws://${gw.base}/ingest?call_id=test-early&speaker=agent`);
@@ -204,7 +204,7 @@ function upgradeStatus(url: string, headers: Record<string, string> = {}): Promi
 }
 
 test("fail-closed — 토큰을 안 넣고 밖에 열면 두 문 다 401", async () => {
-  const gw = await startGateway({ trustLoopback: false });
+  const gw = await startCallMediator({ trustLoopback: false });
   try {
     assert.equal(await upgradeStatus(`ws://${gw.base}/ws`), 401);
     assert.equal(await upgradeStatus(`ws://${gw.base}/ingest?call_id=test-1&speaker=agent`), 401);
@@ -215,7 +215,7 @@ test("fail-closed — 토큰을 안 넣고 밖에 열면 두 문 다 401", async
 });
 
 test("/ingest — 맞는 토큰을 헤더로 내면 받는다. 없거나 틀리면 401", async () => {
-  const gw = await startGateway({ trustLoopback: false, tokens: { ingest: INGEST, view: VIEW } });
+  const gw = await startCallMediator({ trustLoopback: false, tokens: { ingest: INGEST, view: VIEW } });
   const url = `ws://${gw.base}/ingest?call_id=test-auth&speaker=agent`;
   try {
     assert.equal(await upgradeStatus(url), 401);
@@ -227,7 +227,7 @@ test("/ingest — 맞는 토큰을 헤더로 내면 받는다. 없거나 틀리�
 });
 
 test("/ingest 비밀은 URL 로 받지 않는다 — 접근 로그에 남는다", async () => {
-  const gw = await startGateway({ trustLoopback: false, tokens: { ingest: INGEST, view: VIEW } });
+  const gw = await startCallMediator({ trustLoopback: false, tokens: { ingest: INGEST, view: VIEW } });
   try {
     assert.equal(await upgradeStatus(`ws://${gw.base}/ingest?call_id=test-q&speaker=agent&token=${INGEST}`), 401);
   } finally {
@@ -236,7 +236,7 @@ test("/ingest 비밀은 URL 로 받지 않는다 — 접근 로그에 남는다"
 });
 
 test("토큰은 문마다 따로다 — 대시보드 토큰으로 과금 문이 열리지 않는다", async () => {
-  const gw = await startGateway({ trustLoopback: false, tokens: { ingest: INGEST, view: VIEW } });
+  const gw = await startCallMediator({ trustLoopback: false, tokens: { ingest: INGEST, view: VIEW } });
   try {
     assert.equal(await upgradeStatus(`ws://${gw.base}/ingest?call_id=test-x&speaker=agent`, { authorization: `Bearer ${VIEW}` }), 401);
     assert.equal(await upgradeStatus(`ws://${gw.base}/ws`, { authorization: `Bearer ${INGEST}` }), 401);
@@ -246,7 +246,7 @@ test("토큰은 문마다 따로다 — 대시보드 토큰으로 과금 문이 
 });
 
 test("/ws — 브라우저처럼 ?token= 으로 내도 받는다", async () => {
-  const gw = await startGateway({ trustLoopback: false, tokens: { ingest: INGEST, view: VIEW } });
+  const gw = await startCallMediator({ trustLoopback: false, tokens: { ingest: INGEST, view: VIEW } });
   try {
     assert.equal(await upgradeStatus(`ws://${gw.base}/ws`), 401);
     assert.equal(await upgradeStatus(`ws://${gw.base}/ws?token=nope`), 401);
@@ -257,7 +257,7 @@ test("/ws — 브라우저처럼 ?token= 으로 내도 받는다", async () => {
 });
 
 test("거절 로그에 토큰이 남지 않는다 — 어느 문·왜만 남는다", async () => {
-  const gw = await startGateway({ trustLoopback: false, tokens: { ingest: INGEST, view: VIEW } });
+  const gw = await startCallMediator({ trustLoopback: false, tokens: { ingest: INGEST, view: VIEW } });
   try {
     await upgradeStatus(`ws://${gw.base}/ws?token=leaky-guess`);
     await upgradeStatus(`ws://${gw.base}/ingest?call_id=test-l&speaker=agent`, { authorization: "Bearer leaky-bearer" });
@@ -271,7 +271,7 @@ test("거절 로그에 토큰이 남지 않는다 — 어느 문·왜만 남는�
 });
 
 test("GET /health 는 토큰 없이도 된다 — 쿠버네티스 프로브", async () => {
-  const gw = await startGateway({ trustLoopback: false, tokens: { ingest: INGEST, view: VIEW } });
+  const gw = await startCallMediator({ trustLoopback: false, tokens: { ingest: INGEST, view: VIEW } });
   try {
     assert.equal((await fetch(`http://${gw.base}/health`)).status, 200);
   } finally {
@@ -280,7 +280,7 @@ test("GET /health 는 토큰 없이도 된다 — 쿠버네티스 프로브", as
 });
 
 test("GET /health", async () => {
-  const gw = await startGateway();
+  const gw = await startCallMediator();
   try {
     const response = await fetch(`http://${gw.base}/health`);
     assert.equal(response.status, 200);
@@ -290,31 +290,31 @@ test("GET /health", async () => {
   }
 });
 
-// ── 운영 경로 (/gateway) · 연결 유지 ──
+// ── 운영 경로 (/call-mediator) · 연결 유지 ──
 
-test("운영 Ingress 경로 /gateway 로 와도 같은 문이다 — /gateway/ws · /gateway/health", async () => {
-  const gw = await startGateway({ trustLoopback: false, tokens: { ingest: INGEST, view: VIEW } });
+test("운영 Ingress 경로 /call-mediator 로 와도 같은 문이다 — /call-mediator/ws · /call-mediator/health", async () => {
+  const gw = await startCallMediator({ trustLoopback: false, tokens: { ingest: INGEST, view: VIEW } });
   try {
-    assert.equal(await upgradeStatus(`ws://${gw.base}/gateway/ws?token=${VIEW}`), "open");
-    assert.equal(await upgradeStatus(`ws://${gw.base}/gateway/ws`), 401, "접두어가 붙어도 토큰 검사는 같다");
-    assert.equal(await upgradeStatus(`ws://${gw.base}/gateway/ingest?call_id=test-p&speaker=agent`, { authorization: `Bearer ${INGEST}` }), "open");
-    assert.equal((await fetch(`http://${gw.base}/gateway/health`)).status, 200);
+    assert.equal(await upgradeStatus(`ws://${gw.base}/call-mediator/ws?token=${VIEW}`), "open");
+    assert.equal(await upgradeStatus(`ws://${gw.base}/call-mediator/ws`), 401, "접두어가 붙어도 토큰 검사는 같다");
+    assert.equal(await upgradeStatus(`ws://${gw.base}/call-mediator/ingest?call_id=test-p&speaker=agent`, { authorization: `Bearer ${INGEST}` }), "open");
+    assert.equal((await fetch(`http://${gw.base}/call-mediator/health`)).status, 200);
   } finally {
     await gw.close();
   }
 });
 
-test("접두어 비슷한 경로는 따로 치지 않는다 — /gatewayx/ws 는 404", async () => {
-  const gw = await startGateway();
+test("접두어 비슷한 경로는 따로 치지 않는다 — /call-mediatorx/ws 는 404", async () => {
+  const gw = await startCallMediator();
   try {
-    assert.equal(await upgradeStatus(`ws://${gw.base}/gatewayx/ws`), 404);
+    assert.equal(await upgradeStatus(`ws://${gw.base}/call-mediatorx/ws`), 404);
   } finally {
     await gw.close();
   }
 });
 
 test("대기 중인 연결에 ping 을 보낸다 — 프록시가 조용한 연결을 끊지 않게", async () => {
-  const gw = await startGateway({ heartbeatMs: 30 });
+  const gw = await startCallMediator({ heartbeatMs: 30 });
   try {
     const ws = await connect(`ws://${gw.base}/ws`);
     let pings = 0;
@@ -340,10 +340,10 @@ function openWith(url: string, opts: { headers?: Record<string, string>; protoco
   });
 }
 
-test("GET /dev · /gateway/dev — 페이지를 CSP·틀 금지·캐시 금지 헤더로 준다 (토큰 없이도 페이지는 열린다)", async () => {
-  const gw = await startGateway({ trustLoopback: false, tokens: { ingest: INGEST, view: VIEW } });
+test("GET /dev · /call-mediator/dev — 페이지를 CSP·틀 금지·캐시 금지 헤더로 준다 (토큰 없이도 페이지는 열린다)", async () => {
+  const gw = await startCallMediator({ trustLoopback: false, tokens: { ingest: INGEST, view: VIEW } });
   try {
-    for (const path of ["/dev", "/gateway/dev"]) {
+    for (const path of ["/dev", "/call-mediator/dev"]) {
       const res = await fetch(`http://${gw.base}${path}`);
       assert.equal(res.status, 200);
       const csp = res.headers.get("content-security-policy") ?? "";
@@ -361,7 +361,7 @@ test("GET /dev · /gateway/dev — 페이지를 CSP·틀 금지·캐시 금지 �
 });
 
 test("/dev/text — 글자가 서버 마스킹을 거쳐 대시보드로 간다", async () => {
-  const gw = await startGateway();
+  const gw = await startCallMediator();
   try {
     const dashboard = await connect(`ws://${gw.base}/dashboard`); // 조서희 님 대시보드 경로 별칭
     const received: Array<{ type: string; payload: Record<string, unknown> }> = [];
@@ -389,7 +389,7 @@ test("/dev/text — 글자가 서버 마스킹을 거쳐 대시보드로 간다"
 });
 
 test("/dev/text 는 과금 문 토큰만 받는다 — 서브프로토콜로 내면 열리고 callguard 만 되돌린다", async () => {
-  const gw = await startGateway({ trustLoopback: false, tokens: { ingest: INGEST, view: VIEW } });
+  const gw = await startCallMediator({ trustLoopback: false, tokens: { ingest: INGEST, view: VIEW } });
   const url = `ws://${gw.base}/dev/text?call_id=test-web-2&speaker=agent`;
   try {
     const ws = await openWith(url, { protocols: ["callguard", `bearer.${INGEST}`] });
@@ -404,7 +404,7 @@ test("/dev/text 는 과금 문 토큰만 받는다 — 서브프로토콜로 내
 });
 
 test("루프백이어도 프록시 헤더가 붙으면 토큰을 요구한다 — ngrok 으로 열어도 문이 안 열린다", async () => {
-  const gw = await startGateway({ tokens: { ingest: INGEST, view: VIEW } }); // 루프백 신뢰는 켜 둔다(기본)
+  const gw = await startCallMediator({ tokens: { ingest: INGEST, view: VIEW } }); // 루프백 신뢰는 켜 둔다(기본)
   try {
     assert.equal(await upgradeStatus(`ws://${gw.base}/ws`), "open", "직접 온 루프백은 받는다");
     assert.equal(await upgradeStatus(`ws://${gw.base}/ws`, { "x-forwarded-for": "203.0.113.9" }), 401);
@@ -418,7 +418,7 @@ test("루프백이어도 프록시 헤더가 붙으면 토큰을 요구한다 �
 });
 
 test("/dev/text — 오디오·형식 틀린 메시지는 1008 로 닫는다", async () => {
-  const gw = await startGateway();
+  const gw = await startCallMediator();
   try {
     const a = await connect(`ws://${gw.base}/dev/text?call_id=test-web-3&speaker=agent`);
     const ca = nextClose(a);
@@ -435,7 +435,7 @@ test("/dev/text — 오디오·형식 틀린 메시지는 1008 로 닫는다", a
 });
 
 test("/ingest?speaker=auto — 화자 분리 채널을 연다. /dev/text 는 auto 를 1008 로 닫는다", async () => {
-  const gw = await startGateway();
+  const gw = await startCallMediator();
   try {
     const producer = await connect(`ws://${gw.base}/ingest?call_id=test-auto-1&speaker=auto&sample_rate=16000`);
     producer.send(silence(0.1));
@@ -454,7 +454,7 @@ test("/ingest?speaker=auto — 화자 분리 채널을 연다. /dev/text 는 aut
 });
 
 test("/dev/text?producer=script — 합성 대본 재생은 엔진을 synthetic-script 로 적고 발신 번호 헤더를 싣는다", async () => {
-  const gw = await startGateway();
+  const gw = await startCallMediator();
   try {
     const script = await connect(`ws://${gw.base}/dev/text?call_id=test-syn-1&speaker=customer&producer=script`, {
       "x-caller-phone": "010-0000-0666",
@@ -476,7 +476,7 @@ test("/dev/text?producer=script — 합성 대본 재생은 엔진을 synthetic-
 });
 
 test("/ingest — 발신 번호는 X-Caller-Phone 헤더로만 통화 시작에 간다 (쿼리로는 받지 않는다)", async () => {
-  const gw = await startGateway();
+  const gw = await startCallMediator();
   try {
     const a = await connect(`ws://${gw.base}/ingest?call_id=test-phone-1&speaker=customer`, { "x-caller-phone": "010-1234-5678" });
     await waitFor(() => gw.hub.calls.length === 1);

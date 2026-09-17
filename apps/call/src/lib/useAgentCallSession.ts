@@ -1,12 +1,12 @@
 /**
  * 상담원 대시보드 "고객과 전화하기" 박스(AgentCallBox) — 브라우저 마이크 →
- * 게이트웨이(`/dev/text`, speaker=agent)로 이어지는 실제 배선이다.
+ * 콜 미디에이터(`/dev/text`, speaker=agent)로 이어지는 실제 배선이다.
  * apps/platform 의 `useLiveCallSession.ts`(speaker=customer)와 같은 계약을 쓴다
- * — services/gateway 의 `dev_page.ts`가 정의한 그것이다.
+ * — services/call-mediator 의 `dev_page.ts`가 정의한 그것이다.
  *
  * ⚠ 절대 원칙: 오디오 자체를 녹음하거나 어디로도 전송하지 않는다. 브라우저
  * 내장 음성 인식(Web Speech API)이 그 자리에서 글자로 바꾼 **텍스트만**
- * WebSocket으로 보낸다 — 우리 서버·게이트웨이 어디에도 원본 음성이 닿지
+ * WebSocket으로 보낸다 — 우리 서버·콜 미디에이터 어디에도 원본 음성이 닿지
  * 않는다(개인정보보호법 대응, 2026-09-14 사용자 지시).
  *
  * 팀원 전용: `?call_token=` 쿼리로 받은 값이 없으면 연결하지 않는다
@@ -30,8 +30,8 @@ export interface AgentCallTurn {
   interim: boolean;
 }
 
-function gatewayDemoBase(): string {
-  return (import.meta.env.VITE_GATEWAY_DEMO_BASE_URL ?? "").trim();
+function callMediatorDemoBase(): string {
+  return (import.meta.env.VITE_CALL_MEDIATOR_DEMO_BASE_URL ?? "").trim();
 }
 
 export interface AgentCallSession {
@@ -117,10 +117,10 @@ export function useAgentCallSession(): AgentCallSession {
       return;
     }
 
-    const base = gatewayDemoBase();
+    const base = callMediatorDemoBase();
     if (base.length === 0) {
       setStatus("error");
-      setErrorMessage("게이트웨이 주소가 설정되지 않았다(VITE_GATEWAY_DEMO_BASE_URL).");
+      setErrorMessage("콜 미디에이터 주소가 설정되지 않았다(VITE_CALL_MEDIATOR_DEMO_BASE_URL).");
       return;
     }
 
@@ -182,7 +182,7 @@ export function useAgentCallSession(): AgentCallSession {
 
     ws.onclose = (event) => {
       if (runningRef.current) {
-        setErrorMessage(`게이트웨이 연결이 끊겼다 (${event.code}).`);
+        setErrorMessage(`콜 미디에이터 연결이 끊겼다 (${event.code}).`);
         end("error");
       }
     };

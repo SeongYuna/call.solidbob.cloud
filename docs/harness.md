@@ -68,7 +68,7 @@ lint-imports 가 "모듈 없음"으로 실패한다. 지금은 `server`: `hub`·
 | 도메인 순수성 (`evaluation` 포함) | 절대 원칙 1 "LLM을 채점자로 쓰지 않는다" — 채점 코드가 모델 라이브러리를 부를 수 없다. 규칙이 아니라 **구조**로 막는다 |
 | 모듈 상호 독립 | `masking`이 `retrieval`을 몰라야 "자막·저장 양쪽 앞단" 위치가 유지된다 (C-5, SEC-1) |
 | 분리 가능성 | `server` 가 `ai` 를 직접 import 하면 한 덩어리가 된다. ⚠ **지금은 한 컨테이너에 함께 배포한다**(`decisions/024`·`105` — `ai/` 는 서비스가 아니라 라이브러리다). 이 계약이 지키는 것은 «지금 갈라져 있다»가 아니라 **«나중에 가를 수 있다»** 이다 — 합성 루트(`main.py`)만 양쪽을 알기 때문에, `ai/` 를 서비스로 올릴 때 고칠 파일이 그 하나다 |
-| 허브 격리 | 7.3절 계약이 특정 구현에 끌려가지 않는다 — 대시보드(조서희)·게이트웨이(정성윤)가 허브 DTO만 보고 병렬 작업 |
+| 허브 격리 | 7.3절 계약이 특정 구현에 끌려가지 않는다 — 대시보드(조서희)·콜 미디에이터(정성윤)가 허브 DTO만 보고 병렬 작업 |
 
 ---
 
@@ -84,7 +84,7 @@ lint-imports 가 "모듈 없음"으로 실패한다. 지금은 `server`: `hub`·
 | 구조 계약 (server) | `cd server && PYTHONPATH=apps lint-imports --config .importlinter` | **동작** — 계약 3종 통과 |
 | 구조 계약 (ai) | `cd ai && PYTHONPATH=apps:../server/apps lint-imports --config .importlinter` | **동작** — 계약 3종 통과 |
 | FastAPI 코어 실행 | `cd server && uvicorn main:app --reload --env-file ../.env` → `GET /health`·`GET /hub/myself`·`POST /hub/transcripts` | 동작 — 스포크 0개라 `/hub/transcripts`는 501 |
-| Node 게이트웨이 | `cd services/gateway && npm run typecheck && npm test` | **동작** (2026-09-11) — 65개 통과(접속 제어 포함), 구글·서버 없이 가짜 포트로 돈다. CI `gateway` job — **2026-09-15부터 main 룰셋의 필수 통과 검사**(`decisions/114`). 실제 구글 STT 관통은 `node scripts/stream_wav.ts <wav> --watch` 로 손으로 본다 — [README](../services/gateway/README.md) |
+| Node 콜 미디에이터 | `cd services/call-mediator && npm run typecheck && npm test` | **동작** (2026-09-11) — 65개 통과(접속 제어 포함), 구글·서버 없이 가짜 포트로 돈다. CI `call-mediator` job — **2026-09-15부터 main 룰셋의 필수 통과 검사**(`decisions/114`). 실제 구글 STT 관통은 `node scripts/stream_wav.ts <wav> --watch` 로 손으로 본다 — [README](../services/call-mediator/README.md) |
 | React 대시보드 타입 체크 | `cd apps/call && pnpm run typecheck` | 스캐폴딩됨 — 다만 `node_modules` 미설치라 **로컬에서 아직 안 돌려봄**. CI 에도 이 job 은 없다 |
 | 지킬 사이트 빌드 · 내부 링크 | `cd jekyll && bundle exec jekyll build` → `python3 scripts/check_site_links.py jekyll/_site` | **동작** — 56페이지, 깨진 링크 0 |
 

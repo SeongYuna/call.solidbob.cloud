@@ -9,7 +9,7 @@ date: 2026-08-26
 requirement:
   - "A-1"
 paths:
-  - "services/gateway/stt/*"
+  - "services/call-mediator/stt/*"
   - "scripts/*stt*"
   - "scripts/transcribe_batch.py"
 ---

@@ -143,9 +143,9 @@ HNSW recall 이 무너진다) ② 단일 인덱스가 샤드 2개 이상 필요(
 
 | DTO | 핵심 필드 | 생산자 → 소비자 |
 |---|---|---|
-| `TranscriptEvent` | `call_id`, `segment_id`, `speaker`, `text`(마스킹 후), `masked[]`, `is_final`, `utterance_end_ms` | 게이트웨이 → `hub.transcript_ingest` → `masking` → 대시보드·DB |
+| `TranscriptEvent` | `call_id`, `segment_id`, `speaker`, `text`(마스킹 후), `masked[]`, `is_final`, `utterance_end_ms` | 콜 미디에이터 → `hub.transcript_ingest` → `masking` → 대시보드·DB |
 | `RecommendationCards` | `call_id`, `trigger_at_ms`, `cards[]{title, summary, source{doc_id, title}, score}`, `internal_latency_ms`, `e2e_latency_ms` | `retrieval`→`generation` → 허브 → 대시보드 |
-| `ClosureVerdict` | `call_id`, `procedure`, `procedure_title`, `evidence{서류: bool}`, `verdict`, `missing[]`, `conditional[]`, `reason`, `source{doc_id, title}`, `detected` | 대시보드(체크리스트) 또는 게이트웨이(자동 판정) → 허브 → `closure_gate` → 대시보드·DB(`closure`+`closure_item`) |
+| `ClosureVerdict` | `call_id`, `procedure`, `procedure_title`, `evidence{서류: bool}`, `verdict`, `missing[]`, `conditional[]`, `reason`, `source{doc_id, title}`, `detected` | 대시보드(체크리스트) 또는 콜 미디에이터(자동 판정) → 허브 → `closure_gate` → 대시보드·DB(`closure`+`closure_item`) |
 
 ---
 

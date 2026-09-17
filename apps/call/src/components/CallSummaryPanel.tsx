@@ -371,7 +371,7 @@ function displayHint(callId: string): string {
   return `****${callId.slice(-4).padStart(4, "0")}`;
 }
 
-/** 마지막 발화의 종료 시각을 통화 길이로 본다. 실제 통화 시간은 게이트웨이가 준다. */
+/** 마지막 발화의 종료 시각을 통화 길이로 본다. 실제 통화 시간은 콜 미디에이터가 준다. */
 function callDurationS(utterances: Utterance[]): number {
   const last = utterances[utterances.length - 1];
   return last ? Math.round(last.utterance_end_ms / 1000) : 0;

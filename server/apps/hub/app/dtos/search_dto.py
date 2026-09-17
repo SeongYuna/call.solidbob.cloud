@@ -14,7 +14,7 @@ class SearchQuery:
     """상담원이 직접 던지는 검색 1건. 자동 추천(B-1 트리거)이 빗나갔을 때의 폴백 경로다.
 
     `utterance` 는 이미 마스킹을 거친 화면 텍스트이거나 상담원이 손으로 친 질의다 —
-    게이트웨이가 밀어넣는 원문(TranscriptIngestCommand)과 달리 이 DTO 에는 원문이 오지 않는다.
+    콜 미디에이터가 밀어넣는 원문(TranscriptIngestCommand)과 달리 이 DTO 에는 원문이 오지 않는다.
     """
 
     utterance: str

@@ -7,7 +7,7 @@
 - 통화당 트리거 수: 트리거 v1 은 **고객의 확정 발화마다** 발동한다(`retrieval/domain/services/trigger.py`) →
   AI Hub 다산 대화셋 1,009개의 **고객 턴 수**로 대신한다
 - 발화 길이: `data/processed/call-temperature/hypothesis.json` 의 역할별 발화 길이 중앙값(다산콜DB — ⚠ 연기된 시나리오 음성)
-- STT 캡: `infra/k8s/base/gateway.yaml` 의 `STT_MAX_SECONDS_PER_DAY`·`_MONTH`
+- STT 캡: `infra/k8s/base/call-mediator.yaml` 의 `STT_MAX_SECONDS_PER_DAY`·`_MONTH`
 
 ⚠ **API 요금표를 곱하지 않는다** — 생성은 로컬 Ollama 라 우리가 내는 토큰 요금이 없다. 돈이 나가는 곳은 GPU 점유 시간과 Google STT 다.
 ⚠ STT 초는 **발화 길이의 합**이다 — 침묵·대기음이 빠져 실제 스트림 시간보다 **짧다**(하한).
@@ -37,7 +37,7 @@ def main() -> int:
     cust = sorted(t["고객"] for t in turns.values())
     agent = sorted(t["상담사"] for t in turns.values())
     dur = json.loads((ROOT / "data" / "processed" / "call-temperature" / "hypothesis.json").read_text())["summary"]
-    gw = (ROOT / "infra" / "k8s" / "base" / "gateway.yaml").read_text()
+    gw = (ROOT / "infra" / "k8s" / "base" / "call-mediator.yaml").read_text()
     cap_day = int(re.search(r"STT_MAX_SECONDS_PER_DAY, value: \"(\d+)\"", gw).group(1))
     cap_month = int(re.search(r"STT_MAX_SECONDS_PER_MONTH, value: \"(\d+)\"", gw).group(1))
 

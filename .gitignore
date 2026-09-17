@@ -69,7 +69,7 @@ __pycache__/
 .coverage
 htmlcov/
 
-# --- Node.js / React (services/gateway, apps/call — 예정) ---------------
+# --- Node.js / React (services/call-mediator, apps/call — 예정) ---------------
 node_modules/
 npm-debug.log*
 yarn-debug.log*

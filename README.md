@@ -13,7 +13,7 @@
   `main` 에 머지되면 `.github/workflows/pages.yml` 이 `jekyll/` 을 빌드해 자동 배포한다.
 - 소개 페이지: <https://www.solidbob.cloud/> — `apps/platform` (Vercel)
 - **데모 사이트: <https://call.solidbob.cloud/>** — `apps/call`(옛 `apps/dashboard`) 상담원 화면 (Vercel).
-  게이트웨이·코어가 아직 없어 **mock 으로 돈다**(`VITE_GATEWAY_WS_URL` 이 비면 `MockGatewayClient`).
+  콜 미디에이터·코어가 아직 없어 **mock 으로 돈다**(`VITE_CALL_MEDIATOR_WS_URL` 이 비면 `MockCallMediatorClient`).
   둘 다 `main` 머지로 자동 배포된다 (`_project/decisions/106`).
 
 ## 저장소 구조

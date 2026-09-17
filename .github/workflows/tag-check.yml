@@ -8,7 +8,7 @@
 #     「코드는 새건데 배포는 옛것」이고, 되돌리려면 PR 을 하나 더 내야 한다. 릴리스 실패 5건 중
 #     4건(#55·#59·#61·#73)이 전부 이것이었다.
 #  ② 그런데 `release.yml` 의 `on:` 에 pull_request 를 더하는 것으로는 **안 된다.**
-#     `image`·`gateway-image`·`k3s-deploy` 에 이벤트 가드가 없어 같이 도는데, same-repo PR 이라
+#     `image`·`call-mediator-image`·`k3s-deploy` 에 이벤트 가드가 없어 같이 도는데, same-repo PR 이라
 #     DOCKERHUB 시크릿이 붙는다 → **머지되지 않은 PR 코드가 Docker Hub 에 push 된다.**
 #     그리고 그 PR 이 머지되면 plan 이 「태그가 이미 있다」를 보고 **정상 PR 을 스스로 막는다.**
 #     `concurrency: group: release` 도 공유하게 되어 PR 검사가 실제 배포 뒤에 줄을 선다.
@@ -20,7 +20,7 @@
 #   관련 없는 변경이면 스크립트가 안에서 판단해 그냥 통과시킨다.
 #
 # ⚠ job 이름 `tag-check` 는 룰셋에 걸 **필수 통과 검사 이름**이다(아직 등록 전 — 저장소 admin 몫).
-#   바꾸면 룰셋과 `CLAUDE.md` §7 을 함께 고친다. 기존 이름(`server`·`ai`·`jekyll`·`gateway`·
+#   바꾸면 룰셋과 `CLAUDE.md` §7 을 함께 고친다. 기존 이름(`server`·`ai`·`jekyll`·`call-mediator`·
 #   `deploy`·`build`)과 겹치지 않게 지었다.
 
 name: 배포 태그 검사

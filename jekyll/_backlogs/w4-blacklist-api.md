@@ -25,7 +25,7 @@ depends_on:
 `decisions/304` 로 막혀 있던 셋을 정했다 — 요청자는 `agent_id` 입력 · 승인자는 관리자 로그인(`admin_account.agent_id`) ·
 고객은 통화 시작의 발신 번호 HMAC · 만료는 승인할 때 관리자가 일수로.
 
-- `POST /hub/calls` 에 `caller_phone` → `call.customer_id`(HMAC). 게이트웨이는 `X-Caller-Phone` 헤더로 넘긴다
+- `POST /hub/calls` 에 `caller_phone` → `call.customer_id`(HMAC). 콜 미디에이터는 `X-Caller-Phone` 헤더로 넘긴다
 - `POST /hub/blacklist-requests` — 근거(콜 가드 건수·온도 이상·통화 길이·마스킹 자막)는 **서버가 DB 에서 모은다**(`decisions/205`)
 - 관리자: `GET /hub/blacklist-requests` · `POST /hub/blacklist-requests/{id}/decision` · `GET /hub/blacklist-entries` · `POST /hub/blacklist-entries/{id}/release`
 

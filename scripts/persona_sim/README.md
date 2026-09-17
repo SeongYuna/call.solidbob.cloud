@@ -7,7 +7,7 @@
 > 검증에 필요한 만큼만 썼다. 실제로 힘든 상황이면 자살예방상담전화 **109**(24시간)로 연락할 수 있다.
 
 상담원·고객 **페르소나 대화 대본**이다. 두 AI 가 실시간으로 말하는 것처럼 **재생**한다 — 대본은 미리 만들어 고정하고
-(같은 통화를 반복 재생할 수 있어야 한다), 재생기가 턴마다 게이트웨이에 글자를 흘리고 이 맥의 `say` 로 소리를 낸다.
+(같은 통화를 반복 재생할 수 있어야 한다), 재생기가 턴마다 콜 미디에이터에 글자를 흘리고 이 맥의 `say` 로 소리를 낸다.
 **상담원 대시보드(`apps/call`)는 고치지 않는다** — 받는 메시지가 실제 통화와 똑같다.
 
 ## 파일
@@ -17,7 +17,7 @@
 | `dasan-v0/personas.json` | 상담원 3(신입·일반·베테랑) · 고객 9 · 톤 5종 · `say_voice`(이 맥의 한국어 음성) |
 | `dasan-v0/SYN-001.json` ~ `SYN-010.json` | 통화 1건 = 파일 1개 |
 | `generate_dasan_v0.py` | **정본.** JSON 은 이걸로 만든다. 라벨 문구가 발화에 글자 그대로 없거나 같은 화자가 연달아 말하면 멈춘다 |
-| `../../services/gateway/scripts/replay_persona_call.ts` | 재생기 |
+| `../../services/call-mediator/scripts/replay_persona_call.ts` | 재생기 |
 
 ```bash
 python3 scripts/persona_sim/generate_dasan_v0.py      # JSON 을 손으로 고치지 말고 생성기를 고쳐 다시 만든다
@@ -30,19 +30,19 @@ python3 scripts/persona_sim/generate_dasan_v0.py      # JSON 을 손으로 고�
 
 ## 시연 — 대시보드에서 실제 대화처럼 보기
 
-### A. 로컬 (서버·게이트웨이를 이 맥에서)
+### A. 로컬 (서버·콜 미디에이터를 이 맥에서)
 
 ```bash
 cd server && uvicorn main:app --env-file ../.env                 # 1. 서버 :8000
-cd services/gateway && npm start                                 # 2. 게이트웨이 :8080 (루프백이라 토큰 불필요)
-cd apps/call && VITE_GATEWAY_WS_URL=ws://localhost:8080/ws npm run dev   # 3. 대시보드 :5173
+cd services/call-mediator && npm start                                 # 2. 콜 미디에이터 :8080 (루프백이라 토큰 불필요)
+cd apps/call && VITE_CALL_MEDIATOR_WS_URL=ws://localhost:8080/ws npm run dev   # 3. 대시보드 :5173
 ```
 
-4. 브라우저에서 대시보드를 열고 **「통화 시작」** 을 누른다 — 화면이 비워지고 게이트웨이에 붙는다
+4. 브라우저에서 대시보드를 열고 **「통화 시작」** 을 누른다 — 화면이 비워지고 콜 미디에이터에 붙는다
 5. 재생한다
 
 ```bash
-cd services/gateway
+cd services/call-mediator
 node scripts/replay_persona_call.ts SYN-004 --speak            # 소리까지
 node scripts/replay_persona_call.ts SYN-004 --speed 2 --watch  # 빠르게, 터미널에서 대시보드가 받는 것도 본다
 node scripts/replay_persona_call.ts SYN-004 --close --core-url http://localhost:8000   # 끝나면 통화 후 요약 초안까지
@@ -51,19 +51,19 @@ node scripts/replay_persona_call.ts SYN-004 --close --core-url http://localhost:
 `--close` 는 `/ws` 로 받은 **마스킹본만** `POST /hub/calls/{id}/close` 에 싣는다(대본 원문을 보내지 않는다 — SEC-1).
 ⚠ 이 API 는 통화의 `ended_at`·`status` 를 바꾸지 않는다 — 서버에 그 경로가 아직 없다(2026-09-17, [미결](/open-items/)).
 
-### B. 운영 (`server.solidbob.cloud` 게이트웨이 `0.1.6` 이상 배포 후)
+### B. 운영 (`server.solidbob.cloud` 콜 미디에이터 `0.1.6` 이상 배포 후)
 
 1. 대시보드를 라이브 모드로 연다 — 빌드 설정 없이 런타임 오버라이드(허용 목록 통과 주소)로 붙는다:
    ```
-   https://call.solidbob.cloud/?gateway=wss%3A%2F%2Fserver.solidbob.cloud%2Fgateway%2Fws%3Ftoken%3D<뷰 토큰>
+   https://call.solidbob.cloud/?call_mediator=wss%3A%2F%2Fserver.solidbob.cloud%2Fcall-mediator%2Fws%3Ftoken%3D<뷰 토큰>
    ```
-   한 번 열면 브라우저에 저장된다. 되돌리기: `?gateway=clear`. 뷰 토큰은 정성윤 님께(런북 19-1).
+   한 번 열면 브라우저에 저장된다. 되돌리기: `?call_mediator=clear`. 뷰 토큰은 정성윤 님께(런북 19-1).
 2. **「통화 시작」** 을 누른다
 3. 이 맥에서 재생한다 — **글자 입력 토큰은 환경변수로만** 준다(명령줄·URL 에 싣지 않는다):
    ```bash
-   cd services/gateway
-   export GATEWAY_INGEST_TOKEN=...      # 과금 문 토큰 — 진짜 비밀. 셸 기록에 남기지 않게 주의
-   node scripts/replay_persona_call.ts SYN-004 --url wss://server.solidbob.cloud/gateway --speak
+   cd services/call-mediator
+   export CALL_MEDIATOR_INGEST_TOKEN=...      # 과금 문 토큰 — 진짜 비밀. 셸 기록에 남기지 않게 주의
+   node scripts/replay_persona_call.ts SYN-004 --url wss://server.solidbob.cloud/call-mediator --speak
    ```
 
 ### 시연 순서 (QA-3 권고)
