@@ -87,12 +87,27 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   return (await response.json()) as T;
 }
 
-function get<T>(path: string): Promise<T> {
-  return request<T>(path, { method: "GET" });
+function get<T>(path: string, headers?: Record<string, string>): Promise<T> {
+  return request<T>(path, { method: "GET", headers });
 }
 
 function post<T>(path: string, body: unknown, headers?: Record<string, string>): Promise<T> {
   return request<T>(path, { method: "POST", body: JSON.stringify(body), headers });
+}
+
+// ── GET /hub/agents/me ────────────────────────────────────────────────────
+
+interface AgentMeResponseWire {
+  agent_id: string;
+}
+
+/**
+ * 로그인 화면이 입력받은 토큰을 검증하는 자리(`decisions/307`). 판정(유효·폐기)은
+ * 서버가 401로 이미 내리므로 여기서는 되묻지 않고 `CoreApiError`를 그대로 던진다.
+ */
+export async function fetchAgentMe(token: string): Promise<{ agentId: string }> {
+  const wire = await get<AgentMeResponseWire>("/hub/agents/me", { Authorization: `Bearer ${token}` });
+  return { agentId: wire.agent_id };
 }
 
 // ── GET /hub/calls ────────────────────────────────────────────────────────

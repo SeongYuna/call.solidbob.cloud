@@ -5,7 +5,9 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 
+from agent_auth.app.dtos.agent_directory_dto import AgentSummary
 from agent_auth.app.dtos.agent_token_dto import AgentTokenItem, UnknownAgentError
+from agent_auth.app.ports.output.agent_directory_port import AgentDirectoryPort
 from agent_auth.app.ports.output.agent_token_port import AgentTokenPort
 from agent_auth.domain.services.agent_token import hash_token
 
@@ -46,3 +48,11 @@ class FakeAgentTokens(AgentTokenPort):
             return None
         row["revoked_at"] = row["revoked_at"] or NOW
         return self._item(row)
+
+
+class FakeAgentDirectory(AgentDirectoryPort):
+    def __init__(self, agents: dict[str, str] | None = None) -> None:
+        self.agents = agents or {}
+
+    async def list(self) -> list[AgentSummary]:
+        return [AgentSummary(agent_id=aid, display_name=name) for aid, name in sorted(self.agents.items(), key=lambda kv: kv[1])]

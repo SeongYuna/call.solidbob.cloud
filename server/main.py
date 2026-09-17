@@ -23,6 +23,8 @@ from fastapi import FastAPI, Request  # noqa: E402
 from fastapi.middleware.cors import CORSMiddleware  # noqa: E402
 
 from admin_auth.adapter.inbound.api.v1.auth_router import auth_router  # noqa: E402
+from agent_auth.adapter.inbound.api.v1.agent_directory_router import agent_directory_router  # noqa: E402
+from agent_auth.adapter.inbound.api.v1.agent_me_router import agent_me_router  # noqa: E402
 from agent_auth.adapter.inbound.api.v1.agent_token_router import agent_token_router  # noqa: E402
 from core.config import Settings, load_settings  # noqa: E402
 from hub.adapter.inbound.api.v1.blacklist_decision_router import blacklist_decision_router  # noqa: E402
@@ -388,6 +390,8 @@ app.add_middleware(
 _install_missing_index_handler(app)
 
 app.include_router(auth_router)
+app.include_router(agent_directory_router)
+app.include_router(agent_me_router)
 app.include_router(agent_token_router)
 app.include_router(blacklist_decision_router)
 app.include_router(blacklist_entry_list_router)

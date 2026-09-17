@@ -1,10 +1,12 @@
 import { useEffect, useState, type ReactElement } from "react";
 import {
+  fetchAgents,
   fetchAgentTokens,
   HubApiError,
   issueAgentToken,
   purgeBlacklistRetention,
   revokeAgentToken,
+  type AgentSummary,
   type AgentTokenItem,
   type RetentionPurgeResult,
 } from "../../lib/api/hubClient";
@@ -164,6 +166,7 @@ function RetentionPurgeCard(): ReactElement {
 function AgentTokenIssuer(): ReactElement {
   const accessToken = useAuthStore((s) => s.accessToken);
   const [agentId, setAgentId] = useState("");
+  const [agents, setAgents] = useState<AgentSummary[]>([]);
   const [tokens, setTokens] = useState<AgentTokenItem[]>([]);
   const [issuedToken, setIssuedToken] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -178,7 +181,21 @@ function AgentTokenIssuer(): ReactElement {
       .catch((err: unknown) => {
         setError(err instanceof HubApiError || err instanceof Error ? err.message : "알 수 없는 오류");
       });
+    // 개발자가 아닌 관리자도 쓰는 화면이라 ID를 직접 타이핑하지 않고 이름으로 고른다
+    // (사용자 지적, 2026-09-17). 목록을 못 받으면 아래에서 직접 입력으로 대신한다.
+    fetchAgents(accessToken)
+      .then((list) => {
+        setAgents(list);
+        if (list.length > 0) {
+          setAgentId((current) => (current.length > 0 ? current : list[0].agentId));
+        }
+      })
+      .catch(() => {
+        // 목록 실패는 조용히 넘어간다 — 아래 입력창이 직접 ID 입력으로 대신한다
+      });
   }, [accessToken]);
+
+  const agentNameById = new Map(agents.map((a) => [a.agentId, a.displayName]));
 
   async function handleIssue(): Promise<void> {
     if (accessToken === null || agentId.trim().length === 0) {
@@ -190,7 +207,7 @@ function AgentTokenIssuer(): ReactElement {
       setIssuedToken(token);
       setCopied(false);
       setTokens((prev) => [item, ...prev]);
-      setAgentId("");
+      setAgentId(agents.length > 0 ? agents[0].agentId : "");
     } catch (err) {
       setError(err instanceof HubApiError || err instanceof Error ? err.message : "알 수 없는 오류");
     }
@@ -226,16 +243,31 @@ function AgentTokenIssuer(): ReactElement {
         </p>
       ) : null}
       <label className="admin-settings-field">
-        <span>상담원 ID</span>
+        <span>상담원</span>
         <div style={{ display: "flex", gap: 8 }}>
-          <input
-            type="text"
-            value={agentId}
-            onChange={(event) => {
-              setAgentId(event.target.value);
-            }}
-            placeholder="agent.agent_id"
-          />
+          {agents.length > 0 ? (
+            <select
+              value={agentId}
+              onChange={(event) => {
+                setAgentId(event.target.value);
+              }}
+            >
+              {agents.map((a) => (
+                <option key={a.agentId} value={a.agentId}>
+                  {a.displayName}
+                </option>
+              ))}
+            </select>
+          ) : (
+            <input
+              type="text"
+              value={agentId}
+              onChange={(event) => {
+                setAgentId(event.target.value);
+              }}
+              placeholder="상담원 목록을 불러오지 못했다 — agent.agent_id 직접 입력"
+            />
+          )}
           <button
             type="button"
             className="btn-outline"
@@ -273,7 +305,10 @@ function AgentTokenIssuer(): ReactElement {
           {tokens.map((t) => (
             <li key={t.id} className="admin-entry-row">
               <div className="admin-entry-row-main">
-                <span className="admin-ref">{t.agent_id}</span>
+                <span className="admin-ref">
+                  {agentNameById.get(t.agent_id) ?? t.agent_id}
+                  {agentNameById.has(t.agent_id) ? ` (${t.agent_id})` : ""}
+                </span>
                 <span className="admin-meta">
                   {new Date(t.issued_at).toLocaleDateString("ko-KR")} 발급
                 </span>
