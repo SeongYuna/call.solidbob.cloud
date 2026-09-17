@@ -744,6 +744,6 @@ Environment Variables → **Production 만** → Deployments → Redeploy(`VITE_
 
 ### `gateway` → `call-mediator` 개명에서 남은 것 (신규, 2026-09-17, 정성윤 · `decisions/115`)
 
-- [ ] **운영 전환이 아직이다** — 저장소는 전부 바꿨고 검증도 통과했지만 **운영은 `/gateway/*` 로 돈다.** 사람이 할 일 일곱 가지와 순서는 런북 19-1 「개명 전환」·[w5-call-mediator-rename](/backlog/w5-call-mediator-rename/). 순서를 어기면 ① Docker Hub 레포가 없어 `tag-check` 가 401 로 죽거나 ② 룰셋이 없어진 `gateway` 검사를 기다리며 머지가 잠기거나 ③ 새 토큰이 만들어져 Vercel 뷰 토큰이 무효가 된다
+- [x] **~~운영 전환이 아직이다~~ — 끝났다 (2026-09-17 14:00 확인: `/call-mediator/health` ok · 옛 경로 404 · 번들의 구독 주소로 운영 `/ws` 열림). 남은 것은 EC2 옛 오브젝트 삭제·로컬 `.env` 키 변경뿐 — 티켓에서 닫는다** — 저장소는 전부 바꿨고 검증도 통과했지만 **운영은 `/gateway/*` 로 돈다.** 사람이 할 일 일곱 가지와 순서는 런북 19-1 「개명 전환」·[w5-call-mediator-rename](/backlog/w5-call-mediator-rename/). 순서를 어기면 ① Docker Hub 레포가 없어 `tag-check` 가 401 로 죽거나 ② 룰셋이 없어진 `gateway` 검사를 기다리며 머지가 잠기거나 ③ 새 토큰이 만들어져 Vercel 뷰 토큰이 무효가 된다
 - [ ] **류준 님 `origin/ai` 의 `services/gateway/` 미머지 작업** — 합성 통화 재생기와 태그 `0.1.6`. main 을 받을 때 경로(`services/call-mediator/`)·이미지 이름·태그(`0.2.x`)·`/dev/text` 주소(`/call-mediator/dev/text`)를 맞춰야 한다
 - [ ] **개발자용 런타임 오버라이드 주소가 바뀌었다** — `?gateway=` → `?call_mediator=`, 저장 키도 바뀌어 **브라우저에 저장해 둔 옛 오버라이드는 무시된다.** 팀에 알린다

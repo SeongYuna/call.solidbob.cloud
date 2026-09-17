@@ -25,11 +25,11 @@ paths:
 
 - [x] 저장소 개명 + 검증(call-mediator 101/101 · 프론트 2종 빌드 · server·ai pytest · 계약 · 사이트 링크)
 - [x] Docker Hub 레포 `callguard-call-mediator` 생성 (없으면 `tag-check` 가 401 로 죽는다)
-- [ ] EC2 시크릿 `call-mediator-tokens` 를 옛 값 그대로 복사
-- [ ] Vercel `kxu6` 에 `VITE_CALL_MEDIATOR_WS_URL` · `VITE_CALL_MEDIATOR_DEMO_BASE_URL` 추가
-- [ ] PR 연 뒤 main 룰셋 필수 검사 `gateway` → `call-mediator`
-- [ ] 머지 · 배포 뒤 `/call-mediator/health` ok
+- [x] EC2 시크릿 `call-mediator-tokens` 를 옛 값 그대로 복사
+- [x] Vercel `kxu6` 에 `VITE_CALL_MEDIATOR_WS_URL` · `VITE_CALL_MEDIATOR_DEMO_BASE_URL` 추가
+- [x] PR 연 뒤 main 룰셋 필수 검사 `gateway` → `call-mediator`
+- [x] 머지 · 배포 뒤 `/call-mediator/health` ok
 - [ ] EC2 옛 Deployment·Service·시크릿 삭제 · Vercel 옛 변수 삭제 · 로컬 `.env` 키 변경
-- [ ] `STATE.md` 의 「문서는 새 이름, 운영은 옛 경로」 문장 걷기
+- [x] `STATE.md` 의 「문서는 새 이름, 운영은 옛 경로」 문장 걷기
 
 옛 진행 기록·결정 기록·티켓 슬러그는 고치지 않는다(`decisions/115` 「바꾸지 않은 것」).
