@@ -45,7 +45,11 @@ cd apps/call && VITE_GATEWAY_WS_URL=ws://localhost:8080/ws npm run dev   # 3. �
 cd services/gateway
 node scripts/replay_persona_call.ts SYN-004 --speak            # 소리까지
 node scripts/replay_persona_call.ts SYN-004 --speed 2 --watch  # 빠르게, 터미널에서 대시보드가 받는 것도 본다
+node scripts/replay_persona_call.ts SYN-004 --close --core-url http://localhost:8000   # 끝나면 통화 후 요약 초안까지
 ```
+
+`--close` 는 `/ws` 로 받은 **마스킹본만** `POST /hub/calls/{id}/close` 에 싣는다(대본 원문을 보내지 않는다 — SEC-1).
+⚠ 이 API 는 통화의 `ended_at`·`status` 를 바꾸지 않는다 — 서버에 그 경로가 아직 없다(2026-09-17, [미결](/open-items/)).
 
 ### B. 운영 (`server.solidbob.cloud` 게이트웨이 `0.1.6` 이상 배포 후)
 

@@ -5,12 +5,16 @@
  *
  *   node scripts/replay_persona_call.ts --list
  *   node scripts/replay_persona_call.ts SYN-004 [--url ws://localhost:8080] [--speak] [--watch] [--speed 1] [--dry-run]
+ *       [--close --core-url http://localhost:8000]
  *
  * - 두 화자를 **채널 둘**로 연다(`speaker=agent` · `speaker=customer`, `channels=2`) — 데모의 물리 2채널과 같은 모양이다.
  * - 턴마다 부분 결과(`is_final:false`)를 어절째 늘려 보내고 끝에 확정을 보낸다(`persona_replay/plan.ts`).
  * - `--speak` 는 이 맥에서 `say` 로 소리를 낸다(무료, 키 없음). 음성은 `personas.json` 의 `say_voice`, 없으면 `Yuna`.
  *   톤(`tone`)은 말하는 속도로만 흉내 낸다 — **D-5 통화 온도의 성능 근거가 아니다**(절대 원칙 10).
  * - `--watch` 는 `/ws?call_id=` 를 함께 열어 대시보드가 받는 것(마스킹된 자막·카드·콜 가드·필요서류)을 찍는다.
+ * - `--close --core-url <서버>` 는 재생이 끝나면 `POST /hub/calls/{id}/close` 로 통화 후 요약 초안을 만든다(D-1~D-3).
+ *   본문에는 **`/ws` 로 받은 마스킹본만** 싣는다 — 대본 원문을 보내지 않는다(SEC-1). 그래서 `--watch` 와 같은 뷰 토큰이 필요하다.
+ *   ⚠ 이 API 는 통화의 `ended_at`·`status` 를 바꾸지 않는다(2026-09-17 확인 — 서버에 그 경로가 없다).
  * - 통화 기록 엔진은 `synthetic-script` 로 남는다(`producer=script`). STT 를 거치지 않았으므로 **여기서 나온 검색·마스킹
  *   수치는 상한이고, 지연 시각은 지어낸 값이다.**
  *
@@ -39,6 +43,17 @@ interface Args {
   watch: boolean;
   dryRun: boolean;
   list: boolean;
+  close: boolean;
+  coreUrl: string;
+}
+
+/** `/ws` 로 받은 확정 자막 — 서버가 마스킹해 돌려준 것. 통화 후 요약 요청에 이것만 싣는다. */
+interface MaskedFinal {
+  segment_id: number;
+  speaker: Speaker;
+  text: string;
+  is_final: boolean;
+  utterance_end_ms: number | null;
 }
 
 interface Persona {
@@ -69,6 +84,8 @@ function parseArgs(argv: string[]): Args {
     watch: false,
     dryRun: false,
     list: false,
+    close: false,
+    coreUrl: "",
   };
   for (let i = 0; i < argv.length; i += 1) {
     const flag = argv[i];
@@ -90,12 +107,20 @@ function parseArgs(argv: string[]): Args {
       args.dryRun = true;
     } else if (flag === "--list") {
       args.list = true;
+    } else if (flag === "--close") {
+      args.close = true;
+    } else if (flag === "--core-url") {
+      args.coreUrl = value.replace(/\/+$/, "");
+      i += 1;
     } else if (flag !== undefined && !flag.startsWith("--")) {
       args.target = flag;
     }
   }
   if (!(args.speed > 0)) {
     throw new Error("--speed 는 0 보다 커야 한다");
+  }
+  if (args.close && args.coreUrl === "") {
+    throw new Error("--close 는 --core-url(서버 주소)이 있어야 한다 — 게이트웨이 주소와 다르다");
   }
   return args;
 }
@@ -169,11 +194,25 @@ function bearer(token: string | undefined): Record<string, string> {
   return value ? { authorization: `Bearer ${value}` } : {};
 }
 
-function watch(args: Args, callId: string): Promise<WebSocket> {
+function watch(args: Args, callId: string, finals: Map<number, MaskedFinal>, print: boolean): Promise<WebSocket> {
   return open(`${args.url}/ws?call_id=${encodeURIComponent(callId)}`, bearer(process.env.GATEWAY_VIEW_TOKEN)).then((ws) => {
     ws.on("message", (data) => {
       const message = JSON.parse(data.toString()) as { type: string; payload: Record<string, unknown> };
       const p = message.payload;
+      if (message.type === "transcript" && p["is_final"] === "true") {
+        // 계약상 전 필드가 문자열이다(§7.3) — 요약 요청 스키마의 숫자·불리언으로 되돌린다
+        const endMs = Number(p["utterance_end_ms"]);
+        finals.set(Number(p["segment_id"]), {
+          segment_id: Number(p["segment_id"]),
+          speaker: p["speaker"] === "agent" ? "agent" : "customer",
+          text: String(p["text"]),
+          is_final: true,
+          utterance_end_ms: Number.isFinite(endMs) ? endMs : null,
+        });
+      }
+      if (!print) {
+        return;
+      }
       if (message.type === "transcript" && p["is_final"] === "true") {
         console.log(`    ↳ 자막 [${String(p["speaker"])}] ${String(p["text"])}`);
       } else if (message.type === "recommendation") {
@@ -202,6 +241,30 @@ async function openSpeakers(args: Args, callId: string, phone: string): Promise<
     });
   }
   return { agent, customer };
+}
+
+/** 통화 후 요약 초안(D-1~D-3). 마스킹본이 한 건도 없으면 부르지 않는다 — 원문으로 대신 채우지 않는다. */
+async function closeCall(coreUrl: string, callId: string, segments: MaskedFinal[]): Promise<void> {
+  if (segments.length === 0) {
+    console.error("  → 통화 후 요약을 건너뛴다: /ws 로 받은 마스킹 자막이 0건이다(뷰 토큰·게이트웨이 확인)");
+    process.exitCode = 1;
+    return;
+  }
+  const res = await fetch(`${coreUrl}/hub/calls/${encodeURIComponent(callId)}/close`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ call_id: callId, segments }),
+  });
+  const body = (await res.json().catch(() => ({}))) as Record<string, unknown>;
+  if (!res.ok) {
+    console.error(`  → 통화 후 요약 실패 HTTP ${res.status} ${JSON.stringify(body).slice(0, 200)}`);
+    process.exitCode = 1;
+    return;
+  }
+  const actions = Array.isArray(body["follow_up_actions"]) ? body["follow_up_actions"].length : 0;
+  console.log(
+    `  → 통화 후 요약 초안: 자막 ${segments.length}건 → 요약 ${String(body["summary_text"] ?? "").length}자 · 유형 제안 ${String(body["inquiry_type"] ?? "없음")} · 후속조치 ${actions}건 (확정 전)`,
+  );
 }
 
 function speak(text: string, voice: string, rate: number): ChildProcess {
@@ -239,7 +302,8 @@ async function main(): Promise<void> {
     console.log(`  ⚠ 전제: ${String(j["precondition"])}`);
   }
 
-  const watcher = args.watch && !args.dryRun ? await watch(args, callId) : null;
+  const finals = new Map<number, MaskedFinal>();
+  const watcher = (args.watch || args.close) && !args.dryRun ? await watch(args, callId, finals, args.watch) : null;
   const sockets = args.dryRun ? null : await openSpeakers(args, callId, phone);
   let stopped = false;
   process.once("SIGINT", () => {
@@ -288,6 +352,9 @@ async function main(): Promise<void> {
   if (watcher !== null) {
     await sleep(3000); // 마지막 추천·필요서류 판정을 조금 기다린다
     watcher.close();
+  }
+  if (args.close && !args.dryRun) {
+    await closeCall(args.coreUrl, callId, [...finals.values()].sort((a, b) => a.segment_id - b.segment_id));
   }
   if (j["blacklist_request"] === true) {
     console.log("  → 이 대본은 통화 뒤 상담원이 「블랙리스트 전환 요청」을 누르는 시나리오다(J-1, 대시보드에서 사람이 누른다)");
