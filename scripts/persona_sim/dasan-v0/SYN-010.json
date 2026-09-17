@@ -1,0 +1,65 @@
+{
+  "id": "SYN-010",
+  "version": "dasan-v0",
+  "source": "synthetic",
+  "generated_by": "Claude Code (claude-opus-5) · 2026-09-16 · 사람 검토 전",
+  "title": "고속버스 예매 취소 — 시 소관 아님",
+  "length_class": "short",
+  "turn_count": 5,
+  "caller_number": "01000000110",
+  "agent_persona": "A03",
+  "customer_persona": "C09",
+  "procedure": {
+    "doc_ids": [
+      "DASAN-TERM-2.12",
+      "DASAN-MANUAL-2.2"
+    ],
+    "required_documents": []
+  },
+  "turns": [
+    {
+      "seq": 1,
+      "speaker": "agent",
+      "text": "네, 한별시 통합민원콜센터입니다. 무엇을 도와드릴까요?",
+      "tone": "calm"
+    },
+    {
+      "seq": 2,
+      "speaker": "customer",
+      "text": "고속버스 예매한 거 취소하려고 하는데 여기서 되나요?",
+      "tone": "calm"
+    },
+    {
+      "seq": 3,
+      "speaker": "agent",
+      "text": "고속버스 같은 시외 교통수단은 시 소관이 아니어서 저희가 대신 취소해 드릴 수는 없어요. 예매하신 곳이나 운영 기관 고객센터로 문의해 주세요.",
+      "tone": "calm"
+    },
+    {
+      "seq": 4,
+      "speaker": "customer",
+      "text": "아 네, 알겠습니다.",
+      "tone": "calm"
+    },
+    {
+      "seq": 5,
+      "speaker": "agent",
+      "text": "네, 이용해 주셔서 감사합니다.",
+      "tone": "calm"
+    }
+  ],
+  "expected": {
+    "pii_by_pattern": {},
+    "compliance": [],
+    "call_guard_by_type": {},
+    "customer_non_calm_turns": [],
+    "j": {
+      "blacklist_request": false,
+      "routing": "normal"
+    }
+  },
+  "notes": [
+    "필요서류가 없는 통화 — 서류 카드가 뜨지 않거나 '해당 없음'이어야 한다",
+    "문의처 번호를 지어내지 않는다"
+  ]
+}

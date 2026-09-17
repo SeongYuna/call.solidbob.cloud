@@ -1,0 +1,78 @@
+{
+  "id": "SYN-001",
+  "version": "dasan-v0",
+  "source": "synthetic",
+  "generated_by": "Claude Code (claude-opus-5) · 2026-09-16 · 사람 검토 전",
+  "title": "유학생 도서관 회원 가입 문의",
+  "length_class": "short",
+  "turn_count": 7,
+  "caller_number": "01000000101",
+  "agent_persona": "A02",
+  "customer_persona": "C01",
+  "procedure": {
+    "doc_ids": [
+      "DASAN-TERM-4.18",
+      "DASAN-TERM-1.4"
+    ],
+    "required_documents": [
+      "신분증(외국인등록증 인정)"
+    ]
+  },
+  "turns": [
+    {
+      "seq": 1,
+      "speaker": "agent",
+      "text": "네, 한별시 통합민원콜센터입니다. 무엇을 도와드릴까요?",
+      "tone": "calm"
+    },
+    {
+      "seq": 2,
+      "speaker": "customer",
+      "text": "안녕하세요, 저는 중국 유학생이에요. 시립도서관 회원 가입하고 싶은데 뭐 필요해요?",
+      "tone": "calm"
+    },
+    {
+      "seq": 3,
+      "speaker": "agent",
+      "text": "도서관 회원 가입은 신분증으로 하시면 돼요. 외국인등록증도 인정되고, 방문하실 때는 원본으로 가져오세요.",
+      "tone": "calm"
+    },
+    {
+      "seq": 4,
+      "speaker": "customer",
+      "text": "아 외국인등록증 있어요. 그런데 제 기숙사가 다른 지역이에요. 괜찮아요?",
+      "tone": "calm"
+    },
+    {
+      "seq": 5,
+      "speaker": "agent",
+      "text": "가입은 하실 수 있는데, 다른 지역에 사시는 분은 대출 범위가 제한될 수 있어요. 방문하실 도서관에서 한 번 더 확인해 보세요.",
+      "tone": "calm"
+    },
+    {
+      "seq": 6,
+      "speaker": "customer",
+      "text": "네 알겠어요, 감사합니다!",
+      "tone": "calm"
+    },
+    {
+      "seq": 7,
+      "speaker": "agent",
+      "text": "네, 이용해 주셔서 감사합니다.",
+      "tone": "calm"
+    }
+  ],
+  "expected": {
+    "pii_by_pattern": {},
+    "compliance": [],
+    "call_guard_by_type": {},
+    "customer_non_calm_turns": [],
+    "j": {
+      "blacklist_request": false,
+      "routing": "normal"
+    }
+  },
+  "notes": [
+    "정상 대조군 — 경고·마스킹·콜 가드가 하나도 뜨지 않아야 한다"
+  ]
+}

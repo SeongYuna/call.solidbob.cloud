@@ -1,0 +1,205 @@
+{
+  "id": "SYN-008",
+  "version": "dasan-v0",
+  "source": "synthetic",
+  "generated_by": "Claude Code (claude-opus-5) · 2026-09-16 · 사람 검토 전",
+  "title": "수도요금 이의신청 재문의 — 욕설 없이 강하게 항의",
+  "length_class": "medium",
+  "turn_count": 16,
+  "caller_number": "01000000108",
+  "agent_persona": "A02",
+  "customer_persona": "C07",
+  "procedure": {
+    "doc_ids": [
+      "DASAN-TERM-3.16",
+      "DASAN-MANUAL-1.6",
+      "DASAN-MANUAL-1.4"
+    ],
+    "required_documents": []
+  },
+  "turns": [
+    {
+      "seq": 1,
+      "speaker": "agent",
+      "text": "네, 한별시 통합민원콜센터입니다. 무엇을 도와드릴까요?",
+      "tone": "calm"
+    },
+    {
+      "seq": 2,
+      "speaker": "customer",
+      "text": "지난주에 수도요금 때문에 전화했던 사람인데요. 이의신청 접수됐다고 했는데 아직 아무 연락이 없어요.",
+      "tone": "tense"
+    },
+    {
+      "seq": 3,
+      "speaker": "agent",
+      "text": "기다리셨는데 연락이 없어 답답하셨겠습니다. 먼저 고지 내용과 검침 이력을 확인해 봐야 해서요, 성함과 주소를 말씀해 주시겠어요?",
+      "tone": "calm"
+    },
+    {
+      "seq": 4,
+      "speaker": "customer",
+      "text": "한지영이요. 한별시 나래구 별빛로 88, 5층.",
+      "tone": "tense",
+      "labels": {
+        "pii": [
+          {
+            "pattern": "P6",
+            "span": "한지영"
+          },
+          {
+            "pattern": "P7",
+            "span": "한별시 나래구 별빛로 88, 5층"
+          }
+        ]
+      }
+    },
+    {
+      "seq": 5,
+      "speaker": "agent",
+      "text": "네, 확인하겠습니다. 재검침이 필요한 경우에는 현장 확인 일정이 따로 안내됩니다.",
+      "tone": "calm"
+    },
+    {
+      "seq": 6,
+      "speaker": "customer",
+      "text": "지난번에는 재검침 필요 없다고 했거든요. 전에 전화했을 때랑 말이 다르잖아요.",
+      "tone": "raised"
+    },
+    {
+      "seq": 7,
+      "speaker": "agent",
+      "text": "혼선을 드려 죄송합니다. 재검침 필요 여부는 검침 이력을 보고 소관 부서가 정하는데, 지난 안내가 정확하지 않았을 수 있습니다.",
+      "tone": "calm"
+    },
+    {
+      "seq": 8,
+      "speaker": "customer",
+      "text": "아니 그러니까 제가 몇 번을 전화해야 되냐고요. 저 일하다가 나와서 전화하는 거예요.",
+      "tone": "shouting"
+    },
+    {
+      "seq": 9,
+      "speaker": "agent",
+      "text": "네, 여러 번 연락하시게 해서 죄송합니다. 이번에는 소관 부서 확인 후 제가 직접 결과를 안내드리겠습니다.",
+      "tone": "calm"
+    },
+    {
+      "seq": 10,
+      "speaker": "customer",
+      "text": "그래서 요금은 얼마나 조정되는데요.",
+      "tone": "raised"
+    },
+    {
+      "seq": 11,
+      "speaker": "agent",
+      "text": "아마 절반 정도는 빠질 거예요.",
+      "tone": "calm",
+      "labels": {
+        "compliance": [
+          {
+            "type": "C-1",
+            "phrase": "아마 절반 정도는 빠질 거예요",
+            "expected_alternative_source": "DASAN-MANUAL-1.6"
+          }
+        ]
+      }
+    },
+    {
+      "seq": 12,
+      "speaker": "customer",
+      "text": "절반이요? 확실해요?",
+      "tone": "tense"
+    },
+    {
+      "seq": 13,
+      "speaker": "agent",
+      "text": "아, 제가 단정해서 말씀드렸네요. 조정 여부와 금액은 고지 내용과 검침 이력을 확인한 뒤 심사로 정해져서 지금 말씀드릴 수 없습니다. 결과는 소관 부서 확인 후 안내드리겠습니다.",
+      "tone": "calm"
+    },
+    {
+      "seq": 14,
+      "speaker": "customer",
+      "text": "...진짜 이게 몇 번째인지. 연락처는 01000000108이에요. 이번엔 꼭 연락 주세요.",
+      "tone": "raised",
+      "labels": {
+        "pii": [
+          {
+            "pattern": "P4",
+            "span": "01000000108"
+          }
+        ]
+      }
+    },
+    {
+      "seq": 15,
+      "speaker": "agent",
+      "text": "네, 확인했습니다. 소관 부서 확인 후 꼭 연락드리겠습니다.",
+      "tone": "calm"
+    },
+    {
+      "seq": 16,
+      "speaker": "customer",
+      "text": "네.",
+      "tone": "tense"
+    }
+  ],
+  "expected": {
+    "pii_by_pattern": {
+      "P4": 1,
+      "P6": 1,
+      "P7": 1
+    },
+    "compliance": [
+      {
+        "seq": 11,
+        "type": "C-1"
+      }
+    ],
+    "call_guard_by_type": {},
+    "customer_non_calm_turns": [
+      {
+        "seq": 2,
+        "tone": "tense"
+      },
+      {
+        "seq": 4,
+        "tone": "tense"
+      },
+      {
+        "seq": 6,
+        "tone": "raised"
+      },
+      {
+        "seq": 8,
+        "tone": "shouting"
+      },
+      {
+        "seq": 10,
+        "tone": "raised"
+      },
+      {
+        "seq": 12,
+        "tone": "tense"
+      },
+      {
+        "seq": 14,
+        "tone": "raised"
+      },
+      {
+        "seq": 16,
+        "tone": "tense"
+      }
+    ],
+    "j": {
+      "blacklist_request": false,
+      "routing": "normal",
+      "why": "콜 가드 0건 — 톤 이상치만 있다. 불만 고객은 악성 민원인이 아니다(음성 대조군)"
+    }
+  },
+  "notes": [
+    "decisions/203 의 대표 사례 '전에 전화했을 때랑 말이 다르잖아요' — 텍스트 모듈(C-1~C-6)은 아무것도 못 잡아야 정상",
+    "상담원 C-1 위반: 조정액 예고(3.16·1.6)",
+    "TERM 3.16 은 필요서류를 정하지 않는다 — 이의신청 접수는 고지 내용·검침 이력 확인이 먼저다"
+  ]
+}

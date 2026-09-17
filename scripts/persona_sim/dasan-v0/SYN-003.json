@@ -1,0 +1,176 @@
+{
+  "id": "SYN-003",
+  "version": "dasan-v0",
+  "source": "synthetic",
+  "generated_by": "Claude Code (claude-opus-5) · 2026-09-16 · 사람 검토 전",
+  "title": "어머니 인감증명서 대리 발급",
+  "length_class": "medium",
+  "turn_count": 13,
+  "caller_number": "01000000103",
+  "agent_persona": "A01",
+  "customer_persona": "C03",
+  "procedure": {
+    "doc_ids": [
+      "DASAN-TERM-4.5",
+      "DASAN-MANUAL-3.4"
+    ],
+    "required_documents": [
+      "위임장(위임인 인감 날인)",
+      "위임인 인감증명 관련 서류",
+      "대리인 신분증"
+    ]
+  },
+  "turns": [
+    {
+      "seq": 1,
+      "speaker": "agent",
+      "text": "네, 한별시 통합민원콜센터입니다. 무엇을 도와드릴까요?",
+      "tone": "calm"
+    },
+    {
+      "seq": 2,
+      "speaker": "customer",
+      "text": "안녕하세요, 저희 어머니 인감증명서를 떼야 되는데요, 어머니가 거동이 불편하셔서 제가 대신 가도 되나 해서요.",
+      "tone": "tense"
+    },
+    {
+      "seq": 3,
+      "speaker": "agent",
+      "text": "네, 어떤 용도로 쓰실 인감증명서인지 먼저 여쭤봐도 될까요? 용도에 따라 필요한 서류가 달라서요.",
+      "tone": "calm"
+    },
+    {
+      "seq": 4,
+      "speaker": "customer",
+      "text": "부동산 매도 때문에 필요하대요. 이번 주 안에 해야 돼서 좀 급해요.",
+      "tone": "tense"
+    },
+    {
+      "seq": 5,
+      "speaker": "agent",
+      "text": "아 아드님이시면 가족이니까 위임장까지는 없어도 되실 거예요. 신분증만 챙겨 가세요.",
+      "tone": "calm",
+      "labels": {
+        "compliance": [
+          {
+            "type": "C-3",
+            "phrase": "가족이니까 위임장까지는 없어도 되실 거예요",
+            "expected_alternative_source": "DASAN-MANUAL-3.4"
+          }
+        ]
+      }
+    },
+    {
+      "seq": 6,
+      "speaker": "customer",
+      "text": "아 그래요? 다행이다. 어머니 주민번호도 알아야 되나요? 5001012000000 이거요.",
+      "tone": "calm",
+      "labels": {
+        "pii": [
+          {
+            "pattern": "P1",
+            "span": "5001012000000"
+          }
+        ]
+      }
+    },
+    {
+      "seq": 7,
+      "speaker": "agent",
+      "text": "주민등록번호는 전화로 말씀 안 해 주셔도 돼요. 그리고 죄송합니다, 제가 방금 잘못 안내드렸어요. 대리 발급은 가족이어도 위임 서류가 필요합니다.",
+      "tone": "calm"
+    },
+    {
+      "seq": 8,
+      "speaker": "customer",
+      "text": "네? 그럼 뭘 가져가야 되는데요?",
+      "tone": "tense"
+    },
+    {
+      "seq": 9,
+      "speaker": "agent",
+      "text": "대리 발급하시려면 어머님 인감이 날인된 위임장, 위임인 인감증명 관련 서류, 그리고 대리인이신 고객님 신분증이 필요해요. 요건이 엄격한 편이라 소관 부서 확인 후 안내드리겠습니다.",
+      "tone": "calm"
+    },
+    {
+      "seq": 10,
+      "speaker": "customer",
+      "text": "알겠어요. 제 이름은 김도윤이고요, 연락처는 010-0000-0103입니다.",
+      "tone": "calm",
+      "labels": {
+        "pii": [
+          {
+            "pattern": "P6",
+            "span": "김도윤"
+          },
+          {
+            "pattern": "P4",
+            "span": "010-0000-0103"
+          }
+        ]
+      }
+    },
+    {
+      "seq": 11,
+      "speaker": "agent",
+      "text": "네, 김도윤 고객님. 다시 정리하면 인감 날인된 위임장, 위임인 인감증명 관련 서류, 고객님 신분증 세 가지입니다.",
+      "tone": "calm",
+      "labels": {
+        "pii": [
+          {
+            "pattern": "P6",
+            "span": "김도윤"
+          }
+        ]
+      }
+    },
+    {
+      "seq": 12,
+      "speaker": "customer",
+      "text": "네, 감사합니다.",
+      "tone": "calm"
+    },
+    {
+      "seq": 13,
+      "speaker": "agent",
+      "text": "네, 이용해 주셔서 감사합니다.",
+      "tone": "calm"
+    }
+  ],
+  "expected": {
+    "pii_by_pattern": {
+      "P1": 1,
+      "P4": 1,
+      "P6": 2
+    },
+    "compliance": [
+      {
+        "seq": 5,
+        "type": "C-3"
+      }
+    ],
+    "call_guard_by_type": {},
+    "customer_non_calm_turns": [
+      {
+        "seq": 2,
+        "tone": "tense"
+      },
+      {
+        "seq": 4,
+        "tone": "tense"
+      },
+      {
+        "seq": 8,
+        "tone": "tense"
+      }
+    ],
+    "j": {
+      "blacklist_request": false,
+      "routing": "normal"
+    }
+  },
+  "notes": [
+    "C-3 위반 직후 필요서류 카드가 떠서 상담원이 정정하는 흐름",
+    "주민등록번호가 구분자 없이 붙어 나온다(P1 주 실패 모드)"
+  ]
+}

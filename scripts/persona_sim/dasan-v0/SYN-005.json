@@ -1,0 +1,263 @@
+{
+  "id": "SYN-005",
+  "version": "dasan-v0",
+  "source": "synthetic",
+  "generated_by": "Claude Code (claude-opus-5) · 2026-09-16 · 사람 검토 전",
+  "title": "누수 요금 감면 — 한 번 폭발하고 진정",
+  "length_class": "long",
+  "turn_count": 25,
+  "caller_number": "01000000105",
+  "agent_persona": "A02",
+  "customer_persona": "C05",
+  "procedure": {
+    "doc_ids": [
+      "DASAN-TERM-3.7",
+      "DASAN-TERM-3.3",
+      "DASAN-MANUAL-5.1",
+      "DASAN-MANUAL-1.6"
+    ],
+    "required_documents": [
+      "감면 신청서",
+      "누수 수리 확인 서류(수리 영수증 또는 수리 확인서)",
+      "신분증"
+    ]
+  },
+  "turns": [
+    {
+      "seq": 1,
+      "speaker": "agent",
+      "text": "네, 한별시 통합민원콜센터입니다. 무엇을 도와드릴까요?",
+      "tone": "calm"
+    },
+    {
+      "seq": 2,
+      "speaker": "customer",
+      "text": "아니 수도요금이 이번 달에 평소 세 배가 나왔어요. 이게 말이 됩니까?",
+      "tone": "tense"
+    },
+    {
+      "seq": 3,
+      "speaker": "agent",
+      "text": "많이 놀라셨겠어요. 요금 내역은 고지서나 상수도 요금 조회로 확인하실 수 있는데, 혹시 집 안에서 누수가 있었는지 확인해 보셨을까요?",
+      "tone": "calm"
+    },
+    {
+      "seq": 4,
+      "speaker": "customer",
+      "text": "누수 있었죠. 화장실 배관이 터져서 지난주에 고쳤어요.",
+      "tone": "tense"
+    },
+    {
+      "seq": 5,
+      "speaker": "agent",
+      "text": "그러셨군요. 옥내 누수로 사용량이 늘어난 경우에는 감면 신청을 하실 수 있어요.",
+      "tone": "calm"
+    },
+    {
+      "seq": 6,
+      "speaker": "customer",
+      "text": "그러니까 그걸 왜 내가 다 내야 되냐고요. 내가 일부러 물을 틀어 놓은 것도 아니고.",
+      "tone": "raised"
+    },
+    {
+      "seq": 7,
+      "speaker": "agent",
+      "text": "네, 억울하신 마음 이해합니다. 감면 신청에 필요한 서류는 감면 신청서, 누수 수리 사실을 확인할 수 있는 수리 영수증이나 수리 확인서, 그리고 신분증입니다.",
+      "tone": "calm"
+    },
+    {
+      "seq": 8,
+      "speaker": "customer",
+      "text": "서류는 됐고, 그래서 전액 빼 주는 거예요 안 빼 주는 거예요? 확실하게 말해요.",
+      "tone": "raised"
+    },
+    {
+      "seq": 9,
+      "speaker": "agent",
+      "text": "감면 범위와 인정 여부는 소관 부서 심사를 거쳐 정해져서, 지금 전액 감면된다고 말씀드리기는 어렵습니다.",
+      "tone": "calm"
+    },
+    {
+      "seq": 10,
+      "speaker": "customer",
+      "text": "아 진짜 이 멍청한 놈이 말귀를 못 알아듣네. 너 같은 게 무슨 상담을 한다고.",
+      "tone": "shouting",
+      "labels": {
+        "call_guard": [
+          {
+            "type": "insult",
+            "phrase": "멍청한 놈이 말귀를 못 알아듣네"
+          },
+          {
+            "type": "insult",
+            "phrase": "너 같은 게 무슨 상담을 한다고"
+          }
+        ]
+      }
+    },
+    {
+      "seq": 11,
+      "speaker": "agent",
+      "text": "고객님, 불편하신 마음은 이해합니다. 다만 업무와 무관한 표현은 삼가 주시기 바랍니다.",
+      "tone": "calm"
+    },
+    {
+      "seq": 12,
+      "speaker": "customer",
+      "text": "뭘 삼가? 거기 찾아가서 가만 안 둔다 진짜.",
+      "tone": "shouting",
+      "labels": {
+        "call_guard": [
+          {
+            "type": "threat",
+            "phrase": "찾아가서 가만 안 둔다"
+          }
+        ]
+      }
+    },
+    {
+      "seq": 13,
+      "speaker": "agent",
+      "text": "계속 이런 표현을 하시면 통화가 종료될 수 있음을 안내드립니다.",
+      "tone": "calm"
+    },
+    {
+      "seq": 14,
+      "speaker": "customer",
+      "text": "알았어요. 알았다고요. 그래서 신청은 어떻게 하는데요.",
+      "tone": "tense"
+    },
+    {
+      "seq": 15,
+      "speaker": "agent",
+      "text": "네, 소관 부서 확인 후 접수 방법을 다시 안내드리겠습니다. 연락드릴 수 있게 성함과 수도 사용하시는 주소를 말씀해 주시겠어요?",
+      "tone": "calm"
+    },
+    {
+      "seq": 16,
+      "speaker": "customer",
+      "text": "박성호요. 한별시 누리구 햇살로 45, 102동 1103호.",
+      "tone": "tense",
+      "labels": {
+        "pii": [
+          {
+            "pattern": "P6",
+            "span": "박성호"
+          },
+          {
+            "pattern": "P7",
+            "span": "한별시 누리구 햇살로 45, 102동 1103호"
+          }
+        ]
+      }
+    },
+    {
+      "seq": 17,
+      "speaker": "agent",
+      "text": "네, 확인했습니다. 수리 영수증은 지난주에 고치신 업체에서 받으신 게 있으실까요?",
+      "tone": "calm"
+    },
+    {
+      "seq": 18,
+      "speaker": "customer",
+      "text": "영수증은 있어요. 카드로 긁었으니까.",
+      "tone": "calm"
+    },
+    {
+      "seq": 19,
+      "speaker": "agent",
+      "text": "네, 그 영수증을 쓰시면 됩니다. 수리 확인서로 대신하셔도 되고요.",
+      "tone": "calm"
+    },
+    {
+      "seq": 20,
+      "speaker": "customer",
+      "text": "근데 얼마나 빠지는지는 대충이라도 몰라요?",
+      "tone": "calm"
+    },
+    {
+      "seq": 21,
+      "speaker": "agent",
+      "text": "감면액은 심사에 따라 달라져서 제가 금액을 말씀드리기는 어렵습니다. 산정 기준은 소관 부서에서 함께 안내받으실 수 있어요.",
+      "tone": "calm"
+    },
+    {
+      "seq": 22,
+      "speaker": "customer",
+      "text": "...아까는 제가 좀 심했네요. 요금 보고 너무 열받아서.",
+      "tone": "calm"
+    },
+    {
+      "seq": 23,
+      "speaker": "agent",
+      "text": "괜찮습니다. 정리하면 감면 신청서, 수리 영수증이나 수리 확인서, 신분증입니다. 소관 부서 확인 후 연락드리겠습니다.",
+      "tone": "calm"
+    },
+    {
+      "seq": 24,
+      "speaker": "customer",
+      "text": "네, 부탁합니다.",
+      "tone": "calm"
+    },
+    {
+      "seq": 25,
+      "speaker": "agent",
+      "text": "네, 이용해 주셔서 감사합니다.",
+      "tone": "calm"
+    }
+  ],
+  "expected": {
+    "pii_by_pattern": {
+      "P6": 1,
+      "P7": 1
+    },
+    "compliance": [],
+    "call_guard_by_type": {
+      "insult": 1,
+      "threat": 1
+    },
+    "customer_non_calm_turns": [
+      {
+        "seq": 2,
+        "tone": "tense"
+      },
+      {
+        "seq": 4,
+        "tone": "tense"
+      },
+      {
+        "seq": 6,
+        "tone": "raised"
+      },
+      {
+        "seq": 8,
+        "tone": "raised"
+      },
+      {
+        "seq": 10,
+        "tone": "shouting"
+      },
+      {
+        "seq": 12,
+        "tone": "shouting"
+      },
+      {
+        "seq": 14,
+        "tone": "tense"
+      },
+      {
+        "seq": 16,
+        "tone": "tense"
+      }
+    ],
+    "j": {
+      "blacklist_request": false,
+      "routing": "normal",
+      "why": "1차·2차 안내 뒤 진정했고 이후 협조했다 — 콜 가드 탐지는 있지만 상담원이 요청하지 않는 경계 사례"
+    }
+  },
+  "notes": [
+    "콜 가드 insult·threat 각 1건 — 5.1 단계 대응(1차·2차 안내)",
+    "통화 온도: 고객 톤이 올라갔다 내려오는 곡선"
+  ]
+}

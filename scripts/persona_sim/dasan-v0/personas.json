@@ -1,0 +1,88 @@
+{
+  "agents": {
+    "A01": {
+      "label": "신입 상담원",
+      "tenure_years": 0.3,
+      "style": "친절하지만 매뉴얼이 몸에 덜 뱄다 — 위반 주입 대상",
+      "tts_voice_hint": "여성, 20대, 밝은 톤",
+      "say_voice": "Yuna"
+    },
+    "A02": {
+      "label": "일반 상담원",
+      "tenure_years": 2,
+      "style": "매뉴얼 대체로 준수, 가끔 단정적 표현",
+      "tts_voice_hint": "남성, 30대, 차분",
+      "say_voice": "Reed"
+    },
+    "A03": {
+      "label": "베테랑 상담원",
+      "tenure_years": 7,
+      "style": "매뉴얼 준수, 톤이 거의 변하지 않는다 — J-5 배정 대상",
+      "tts_voice_hint": "여성, 40대, 낮고 일정",
+      "say_voice": "Shelley"
+    }
+  },
+  "customers": {
+    "C01": {
+      "label": "중국인 유학생",
+      "korean": "중급",
+      "temper": "밝음·간결",
+      "say_voice": "Flo"
+    },
+    "C02": {
+      "label": "베트남 출신 결혼이민자",
+      "korean": "중급(조사 누락·짧은 문장)",
+      "temper": "차분·조심스러움",
+      "say_voice": "Sandy"
+    },
+    "C03": {
+      "label": "내국인 직장인",
+      "korean": "모국어",
+      "temper": "급함·협조적",
+      "say_voice": "Eddy"
+    },
+    "C04": {
+      "label": "필리핀 출신 초보 부모",
+      "korean": "초급(영어 혼용)",
+      "temper": "밝음",
+      "say_voice": "Flo"
+    },
+    "C05": {
+      "label": "내국인 자영업자",
+      "korean": "모국어",
+      "temper": "다혈질 — 폭발 후 진정",
+      "say_voice": "Rocko"
+    },
+    "C06": {
+      "label": "반복 악성 민원인",
+      "korean": "모국어",
+      "temper": "모욕·성희롱·협박 반복 — 블랙리스트 후보",
+      "say_voice": "Grandpa"
+    },
+    "C07": {
+      "label": "내국인 재문의 민원인",
+      "korean": "모국어",
+      "temper": "욕설 없이 강하게 항의 — 톤만 튄다",
+      "say_voice": "Sandy"
+    },
+    "C08": {
+      "label": "내국인 70대 고령 세대원",
+      "korean": "모국어",
+      "temper": "지침·무기력 — 위기 신호",
+      "say_voice": "Grandma"
+    },
+    "C09": {
+      "label": "내국인 청년",
+      "korean": "모국어",
+      "temper": "무난",
+      "say_voice": "Eddy"
+    }
+  },
+  "tones": {
+    "calm": "기준 톤",
+    "tense": "약간 빠르고 높음 (SSML 예: rate 105% · pitch +1st)",
+    "raised": "목소리가 커짐 (rate 110% · pitch +3st · volume +4dB)",
+    "shouting": "고함 (rate 115% · pitch +5st · volume +8dB)",
+    "weary": "느리고 낮고 작음 (rate 85% · pitch -2st · volume -4dB)"
+  }
+}
