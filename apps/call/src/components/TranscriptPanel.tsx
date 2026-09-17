@@ -31,7 +31,7 @@ import {
   logSupervisorAlert,
   type SupervisorAlert,
 } from "../lib/customerRisk/supervisorAlert";
-import type { ManualSearchOutcome } from "../hooks/useGatewaySession";
+import type { ManualSearchOutcome } from "../hooks/useCallMediatorSession";
 import { useCallStore, type Utterance } from "../store/callStore";
 import { isCallGuardDistress } from "../types/contract";
 import type { TranscriptQuerySegment } from "../types/contract";

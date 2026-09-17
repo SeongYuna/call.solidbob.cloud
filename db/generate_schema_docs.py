@@ -39,7 +39,7 @@ class Column:
     # 서로게이트 PK 를 DB 가 채운다(AUTO_INCREMENT). 2026-08-27 추가 — 없으면 INSERT 때마다
     # "Field 'id' doesn't have a default value" 로 막힌다. 애플리케이션이 ID 를 만드는 코드는
     # 어디에도 없으므로 DB 가 채우는 것이 맞다.
-    # 예외: transcript_segment.segment_id 는 게이트웨이가 정해서 보내는 계약 값이라(7.3절) 켜지 않는다.
+    # 예외: transcript_segment.segment_id 는 콜 미디에이터가 정해서 보내는 계약 값이라(7.3절) 켜지 않는다.
     auto_increment: bool = False
 
 
@@ -109,7 +109,7 @@ TABLES: list[Table] = [
             Column("domain", "ENUM('finance','dasan','shopping','health')", nullable=False,
                    note="4개 데모 도메인 — 검색·F-2 라우팅 기준([1.4절](/docs/01/))"),
             Column("customer_id", "VARCHAR(64)", "FK", "customer.customer_id",
-                   note="게이트웨이가 발신 번호를 넘긴 통화만 채워진다(`decisions/304`). 재상담 이력·블랙리스트 요청의 연결 고리"),
+                   note="콜 미디에이터가 발신 번호를 넘긴 통화만 채워진다(`decisions/304`). 재상담 이력·블랙리스트 요청의 연결 고리"),
             Column("agent_id", "VARCHAR(20)", "FK", "agent.agent_id"),
             Column("started_at", "DATETIME", nullable=False),
             Column("ended_at", "DATETIME"),
@@ -127,7 +127,7 @@ TABLES: list[Table] = [
     Table(
         "transcript_segment", "전사 세그먼트 — 발화 1건 = 1행 (1NF: 통화 전체를 한 칸에 몰아넣지 않음). "
         "⚠ **PK 는 `(call_id, segment_id)` 복합키다**(2026-09-09, `_project/decisions/205`) — "
-        "`segment_id` 는 게이트웨이가 **통화 안에서** 매기는 순번이라(§7.3) 전역 유일하지 않다. "
+        "`segment_id` 는 콜 미디에이터가 **통화 안에서** 매기는 순번이라(§7.3) 전역 유일하지 않다. "
         "단독 PK 로 두었을 때 두 번째 통화의 1번 발화가 첫 통화의 1번 행을 덮어쓰는 것을 실제로 재현했다",
         cluster="통화",
         primary_key=("call_id", "segment_id"),

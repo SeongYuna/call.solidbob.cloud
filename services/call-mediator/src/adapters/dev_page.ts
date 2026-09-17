@@ -1,18 +1,18 @@
 // Requirement: A-3
 /**
  * `GET /dev` — 폰·PC 브라우저만으로 통화를 흉내 내는 개발용 페이지. 조서희 님이 frontend 브랜치에서
- * 만든 경로(`decisions/402`)를 정식 게이트웨이로 옮긴 것이다(`decisions/109`).
+ * 만든 경로(`decisions/402`)를 정식 콜 미디에이터로 옮긴 것이다(`decisions/109`).
  *
  * 브라우저 내장 음성 인식(Web Speech API)이 그 자리에서 글자로 바꿔 `WS /dev/text` 로 보낸다 — 오디오가
  * 서버로 오지 않아 **구글 STT·GCP 키·COST-1 캡과 무관**하다. 대신 품질은 브라우저 엔진 것이라
  * **배선 확인용이지 STT 품질 측정용이 아니다**(절대 원칙 2·10 — 이 경로의 결과를 수치로 인용하지 않는다).
  *
- * 토큰: 이 문은 DB 에 전사를 쓰므로 **과금 문과 같은 `GATEWAY_INGEST_TOKEN`** 을 요구한다. 브라우저는
+ * 토큰: 이 문은 DB 에 전사를 쓰므로 **과금 문과 같은 `CALL_MEDIATOR_INGEST_TOKEN`** 을 요구한다. 브라우저는
  * 헤더를 못 붙이므로 서브프로토콜(`bearer.<토큰>`)로 낸다 — URL 에 싣지 않는다. 페이지에는 비밀이 없고,
  * 개발자가 붙여 넣은 값은 이 탭의 sessionStorage 에만 둔다. 이 머신(루프백)에서 열면 토큰 없이 된다.
  *
  * 크롬(폰·PC) 기준. 마이크 권한은 HTTPS 또는 localhost 에서만 열린다 — 운영
- * `https://server.solidbob.cloud/gateway/dev` 는 이미 HTTPS 라 터널(ngrok)이 필요 없다.
+ * `https://server.solidbob.cloud/call-mediator/dev` 는 이미 HTTPS 라 터널(ngrok)이 필요 없다.
  */
 import { createHash } from "node:crypto";
 
@@ -21,7 +21,7 @@ export const DEV_PAGE_HTML = `<!doctype html>
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>CallGuard 게이트웨이 — 개발용 테스트 통화</title>
+<title>CallGuard 콜 미디에이터 — 개발용 테스트 통화</title>
 <style>
   body { font: 15px/1.5 system-ui, sans-serif; margin: 0; padding: 16px; background: #f6f7f9; color: #1d2330; }
   main { max-width: 560px; margin: 0 auto; }
@@ -40,10 +40,10 @@ export const DEV_PAGE_HTML = `<!doctype html>
 <body>
 <main>
   <h1>개발용 테스트 통화</h1>
-  <p class="note">브라우저 음성 인식이 글자로 바꿔 게이트웨이로 보냅니다. 서버가 마스킹한 결과만 대시보드에 뜹니다.
+  <p class="note">브라우저 음성 인식이 글자로 바꿔 콜 미디에이터로 보냅니다. 서버가 마스킹한 결과만 대시보드에 뜹니다.
   구글 STT 가 아니므로 <b>품질 측정용이 아닙니다</b>. 크롬에서 여세요.</p>
 
-  <label for="token">게이트웨이 입력 토큰 (GATEWAY_INGEST_TOKEN — 이 탭에만 보관, 이 머신에서 열면 비워도 됩니다)</label>
+  <label for="token">콜 미디에이터 입력 토큰 (CALL_MEDIATOR_INGEST_TOKEN — 이 탭에만 보관, 이 머신에서 열면 비워도 됩니다)</label>
   <input id="token" type="password" autocomplete="off" spellcheck="false">
 
   <label for="speaker">화자</label>
@@ -64,8 +64,8 @@ export const DEV_PAGE_HTML = `<!doctype html>
   $("callId").value = "test-web-" + stamp;
   try { $("token").value = sessionStorage.getItem("callguard:ingestToken") || ""; } catch (e) {}
 
-  // /gateway/dev 로 열었으면 같은 접두어로 붙는다(운영 Ingress 경로).
-  const prefix = location.pathname.startsWith("/gateway/") ? "/gateway" : "";
+  // /call-mediator/dev 로 열었으면 같은 접두어로 붙는다(운영 Ingress 경로).
+  const prefix = location.pathname.startsWith("/call-mediator/") ? "/call-mediator" : "";
   let ws = null, rec = null, running = false, interimLine = null;
 
   const setStatus = (t) => { $("status").textContent = t; };
@@ -100,7 +100,7 @@ export const DEV_PAGE_HTML = `<!doctype html>
     const url = (location.protocol === "https:" ? "wss://" : "ws://") + location.host + prefix + "/dev/text?" + q;
     // 토큰은 URL 이 아니라 서브프로토콜로 — 서버는 "callguard" 만 되돌려 준다.
     ws = token ? new WebSocket(url, ["callguard", "bearer." + token]) : new WebSocket(url);
-    setStatus("게이트웨이에 연결 중…");
+    setStatus("콜 미디에이터에 연결 중…");
     ws.onopen = () => {
       running = true;
       $("start").textContent = "통화 종료"; $("start").className = "stop";

@@ -5,7 +5,7 @@
       "server",
       "ai",
       "jekyll",
-      "gateway",
+      "call-mediator",
       "tag-check"
     ]
   },

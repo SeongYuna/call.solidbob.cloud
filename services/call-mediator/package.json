@@ -1,7 +1,7 @@
 {
-  "name": "callguard-gateway",
+  "name": "callguard-call-mediator",
   "private": true,
-  "description": "A-1~A-4 게이트웨이 — 오디오 중계 + Google STT 스트리밍 + server 전달",
+  "description": "A-1~A-4 콜 미디에이터 — 오디오 중계 + Google STT 스트리밍 + server 전달",
   "type": "module",
   "engines": {
     "node": ">=22.18"

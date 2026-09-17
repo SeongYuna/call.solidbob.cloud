@@ -9,9 +9,9 @@ date: 2026-09-14
 requirement:
   - "A-2"
 paths:
-  - "services/gateway/src/adapters/google_stt.ts"
-  - "services/gateway/src/adapters/ws_server.ts"
-  - "services/gateway/src/domain/diarization.ts"
+  - "services/call-mediator/src/adapters/google_stt.ts"
+  - "services/call-mediator/src/adapters/ws_server.ts"
+  - "services/call-mediator/src/domain/diarization.ts"
 ---
 
 ## 무엇을

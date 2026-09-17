@@ -1,5 +1,5 @@
 ---
-title: "게이트웨이 알림 3종 켜기 — 검색 중 · 콜 가드 · 필요서류"
+title: "콜 미디에이터 알림 3종 켜기 — 검색 중 · 콜 가드 · 필요서류"
 assignee: "장민석"
 role: "infra"
 status: "done"
@@ -11,7 +11,7 @@ requirement:
   - "C-6"
   - "F-2"
 paths:
-  - "services/gateway/src/main.ts"
+  - "services/call-mediator/src/main.ts"
 ---
 
 ## 무엇을
@@ -21,6 +21,6 @@ paths:
 
 ## 완료 조건
 
-- [x] 켰을 때의 동작은 기존 테스트가 이미 본다 — `gateway` typecheck 통과 · 101 pass
-- [x] 게이트웨이 이미지 `0.1.3` → `0.1.4`
+- [x] 켰을 때의 동작은 기존 테스트가 이미 본다 — `call-mediator` typecheck 통과 · 101 pass
+- [x] 콜 미디에이터 이미지 `0.1.3` → `0.1.4`
 - [ ] 운영 반영 뒤 실제 통화에서 화면에 세 신호가 뜨는지(구글 STT 경로 미검증 — `/dev` 경로로 본다)

@@ -13,10 +13,10 @@ from hub.app.dtos.call_start_dto import CallDomain
 
 
 class CallStartRequest(BaseModel):
-    call_id: str = Field(min_length=1, max_length=40, description="게이트웨이가 정한 통화 식별자")
+    call_id: str = Field(min_length=1, max_length=40, description="콜 미디에이터가 정한 통화 식별자")
     domain: CallDomain = "dasan"
     stt_engine: str = Field(default="google-stt", min_length=1, max_length=30,
-                            description="전사 엔진. 가짜 게이트웨이면 'mock' 처럼 사실대로 적는다")
+                            description="전사 엔진. 가짜 콜 미디에이터면 'mock' 처럼 사실대로 적는다")
     channel_count: int = Field(default=1, ge=1, le=2, description="V1 실측: 전부 1(모노)")
     started_at: datetime | None = Field(default=None, description="없으면 서버가 받은 시각")
     caller_phone: str | None = Field(

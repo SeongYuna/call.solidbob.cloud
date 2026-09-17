@@ -105,7 +105,7 @@
 | 3 | 보안 그룹 | `assist-db` | 5432 ← `assist-web` |
 | 4 | IAM 역할 | `callguard-ec2-role` | S3 + SSM |
 | 5 | S3 버킷 | `assist-apne2` | 데이터셋·모델·골든셋 |
-| 6 | VPC 엔드포인트 | `assist-s3-gw` | **Gateway** 유형, 무료 |
+| 6 | VPC 엔드포인트 | `assist-s3-gw` | **CallMediator** 유형, 무료 |
 | 7 | RDS | `callguard-pg` | PostgreSQL 17, db.t4g.micro, 20GiB |
 | 8 | EC2 | `assist-gpu-01` | **g4dn.xlarge**, Ubuntu DLAMI |
 | 9 | EBS 루트 | (EC2 에 포함) | **gp3 150 GiB**, 암호화 O |
@@ -128,7 +128,7 @@
 | klue-roberta-base (5주차 대조군) | ~0.25GB | — |
 | CUDA 컨텍스트 (프로세스 2개) | ~1.0GB | ~2.0GB |
 | Elasticsearch (힙 2g) | — | ~3.0GB |
-| FastAPI server · Node 게이트웨이 · Caddy | — | ~1.0GB |
+| FastAPI server · Node 콜 미디에이터 · Caddy | — | ~1.0GB |
 | k3s · containerd · OS | — | ~1.5GB |
 | **합계 / 가용** | **~4.0 / 16GB** | **~8.5 / 16GiB** |
 
@@ -410,7 +410,7 @@ s3://assist-apne2/
 
 한 번 전처리하면 원본은 자주 읽지 않습니다. 약 45% 절감됩니다.
 
-### 5-5. Gateway VPC 엔드포인트 ⚠ 무료이니 반드시
+### 5-5. CallMediator VPC 엔드포인트 ⚠ 무료이니 반드시
 
 콘솔 → **VPC** → 왼쪽 **엔드포인트** → **엔드포인트 생성**
 
@@ -418,12 +418,12 @@ s3://assist-apne2/
 |---|---|
 | 이름 | `assist-s3-gw` |
 | 서비스 범주 | AWS 서비스 |
-| 서비스 | 검색창에 `s3` → **`com.amazonaws.ap-northeast-2.s3`** 중 **유형이 `Gateway`** 인 것 |
+| 서비스 | 검색창에 `s3` → **`com.amazonaws.ap-northeast-2.s3`** 중 **유형이 `CallMediator`** 인 것 |
 | VPC | 기본 VPC |
 | 라우팅 테이블 | 기본 라우팅 테이블 **체크** |
 | 정책 | 전체 액세스 |
 
-> ⚠ **반드시 `Gateway` 유형을 고르십시오.** 같은 이름으로 `Interface` 유형도 나오는데, 그건 **시간당 요금이 붙습니다.** Gateway 는 무료입니다.
+> ⚠ **반드시 `CallMediator` 유형을 고르십시오.** 같은 이름으로 `Interface` 유형도 나오는데, 그건 **시간당 요금이 붙습니다.** CallMediator 는 무료입니다.
 
 이걸 만들면 S3 트래픽이 인터넷 게이트웨이를 안 거치고 VPC 안에서 처리됩니다. 무료이고 더 빠르고 더 안전합니다.
 
@@ -1443,7 +1443,7 @@ kubectl logs -n assist deploy/caddy | tail -20   # certificate obtained
 
 ### 18-3. 관리자 화면(Vercel) · 구글 OAuth (2026-09-15 추가 — 운영에서 완주 확인)
 
-관리자 화면 `apps/admin` 은 **AWS 가 아니라 Vercel** 에 있다(`decisions/112`). 서버·게이트웨이와
+관리자 화면 `apps/admin` 은 **AWS 가 아니라 Vercel** 에 있다(`decisions/112`). 서버·콜 미디에이터와
 배포 경로가 다르므로 여기 따로 적는다. 아래는 2026-09-15 에 실제로 끝까지 돌려 본 순서다.
 
 **① 구글 OAuth 클라이언트** — 콘솔 → API 및 서비스 → 사용자 인증 정보
@@ -1546,7 +1546,7 @@ PR #94 에서 `admin`·`kxu6` 가 `Deployment rate limited — retry in 24 hours
 
 > ⚠ **Vercel 체크는 main 룰셋의 필수 통과 검사가 아니다** (필수는 다섯 — `CLAUDE.md` §7).
 > 빨간 X 가 떠도 **머지는 막히지 않는다.** 머지 버튼이 잠겼다면 Vercel 이 아니라
-> `server`·`ai`·`jekyll`·`gateway`·`tag-check` 중 무엇이 걸렸는지 본다.
+> `server`·`ai`·`jekyll`·`call-mediator`·`tag-check` 중 무엇이 걸렸는지 본다.
 
 **이 설정은 콘솔에만 있다.** 저장소에 `vercel.json` 이 없어 **이 표가 유일한 기록**이다 —
 같은 날 `branch-protection.json`·`ruleset-main.json` 이 어긋나 있던 것과 같은 구조다.
@@ -1633,7 +1633,7 @@ curl -fsS $B/hub/calls/$C/transcript
 >
 > ⚠ **`0.1.10` 도 스키마가 바뀐다**(`decisions/311`·`313`) — `call_summary_revision` · `app_setting` 신설(27 → 29). **이미지를 올리기 전에**
 > `db/migrations/2026-09-15-summary-revision-app-setting.sql` 을 넣는다(`blacklist_entry_expiry_change` 가 먼저여야 한다 — 파일이 확인하고 멈춘다).
-> 안 넣으면 요약 재수정(`…/summary-revision(s)`)·배정(`/hub/routing-decisions`·`/hub/routing-settings`)만 500. 6번 기대값은 29. `0.1.10` 은 게이트웨이 `0.1.4` 와 같이 나간다.
+> 안 넣으면 요약 재수정(`…/summary-revision(s)`)·배정(`/hub/routing-decisions`·`/hub/routing-settings`)만 500. 6번 기대값은 29. `0.1.10` 은 콜 미디에이터 `0.1.4` 와 같이 나간다.
 
 > ⚠ **`0.1.5` 는 DB 스키마가 바뀐다**(2026-09-14, `decisions/304`·`305`) — `customer_id` 길이 64 · `admin_account.agent_id` ·
 > `closure` 재정의 + `closure_item`. 17장대로 **이미지를 올리기 전에** 스키마를 넣는다. **데이터가 있는 운영 DB 에는 `schema.sql` 이 아니라
@@ -1652,42 +1652,85 @@ curl -fsS $B/hub/calls/$C/transcript
 > ⚠ **11번이 남긴 `test-` 행은 운영 DB 에 그대로 남는다.** 지우는 API 는 없다 — 필요하면 17장처럼 서버 파드에서
 > `masking_event`·`call_guard_flag`·`voice_outlier` → `transcript_segment` → `call` 순서로 지운다(외래키).
 
-### 19-1. 게이트웨이 (2026-09-11 추가)
+### 19-1. 콜 미디에이터 (2026-09-11 추가)
 
-게이트웨이(`services/gateway`)는 **같은 노드에 따로 뜬다** — Deployment `callguard-gateway`, 밖에서는 Ingress
-`/gateway` 경로(`infra/k8s/base/gateway.yaml` · `ingress.yaml`). 0장 사양표가 이미 «Node 게이트웨이» 를 넣고 계산했다.
-이미지는 `release.yml` 이 server 와 따로 굽는다(`kustomization.yaml` 의 `callguard-gateway` newTag).
+> **이름이 바뀌었다 (2026-09-17, `_project/decisions/115`).** 이 절의 「콜 미디에이터」·`call-mediator` 는 09-17 이전 기록의
+> 「게이트웨이」·`gateway` 다. 옛 진행 기록·결정 기록은 그 시점의 이름 그대로 둔다.
+> ⚠ **머지·배포 전까지 운영은 아직 `/gateway/*` 로 돈다** — 아래 「개명 전환」을 마치면 이 경고를 지운다.
+
+#### 개명 전환 — 사람이 하는 일 (순서를 지킨다)
+
+**머지 전**
+
+1. **Docker Hub 에 빈 공개 레포 `callguard-call-mediator`** 를 만든다. 없는 레포는 레지스트리가 **401** 을 돌려줘
+   `tag-check` 가 「판정 불가」로 죽는다(09-17 실측 — 있는 레포의 없는 태그는 404 라 통과한다).
+2. **시크릿을 값 그대로 새 이름으로 복사**한다(인스턴스, SSM 세션). 안 하면 배포가 새 토큰을 만들어 Vercel 의 뷰 토큰이 무효가 된다.
+
+   ```bash
+   K="sudo k3s kubectl -n callguard"
+   I=$($K get secret gateway-tokens -o jsonpath='{.data.GATEWAY_INGEST_TOKEN}' | base64 -d)
+   V=$($K get secret gateway-tokens -o jsonpath='{.data.GATEWAY_VIEW_TOKEN}' | base64 -d)
+   $K create secret generic call-mediator-tokens \
+     --from-literal=CALL_MEDIATOR_INGEST_TOKEN="$I" --from-literal=CALL_MEDIATOR_VIEW_TOKEN="$V"
+   ```
+3. **Vercel `call-solidbob-cloud-kxu6`(call.solidbob.cloud) Production 에 변수 둘을 추가**한다 — 옛 변수는 아직 지우지 않는다.
+
+   ```
+   VITE_CALL_MEDIATOR_WS_URL        = wss://server.solidbob.cloud/call-mediator/ws?token=<뷰 토큰 그대로>
+   VITE_CALL_MEDIATOR_DEMO_BASE_URL = wss://server.solidbob.cloud/call-mediator
+   ```
+
+**PR 을 연 직후**
+
+4. **main 룰셋 필수 검사 `gateway` → `call-mediator`**(Settings → Rules → Rulesets). 안 하면 없어진 검사를 기다리며 머지가 잠긴다.
+
+**배포 뒤**
+
+5. `curl -s https://server.solidbob.cloud/call-mediator/health` 가 `"status":"ok"`.
+6. 옛 오브젝트를 지운다 — 적용 스크립트에 prune 이 없어 옛 파드가 남는다.
+
+   ```bash
+   sudo k3s kubectl -n callguard delete deploy/callguard-gateway svc/callguard-gateway secret/gateway-tokens
+   ```
+7. Vercel 의 옛 변수 `VITE_GATEWAY_WS_URL`·`VITE_GATEWAY_DEMO_BASE_URL` 삭제 · 로컬 `.env` 의 `GATEWAY_*` 세 키를 `CALL_MEDIATOR_*` 로.
+
+> 홍보 페이지(`call-solidbob-cloud`, www)도 `VITE_CALL_MEDIATOR_WS_URL` 을 읽지만 **`/dev/text` 의 base** 로 쓴다 —
+> 넣는다면 값은 `wss://server.solidbob.cloud/call-mediator` 다(`/ws?token=` 이 아니다).
+
+콜 미디에이터(`services/call-mediator`)는 **같은 노드에 따로 뜬다** — Deployment `callguard-call-mediator`, 밖에서는 Ingress
+`/call-mediator` 경로(`infra/k8s/base/call-mediator.yaml` · `ingress.yaml`). 0장 사양표가 이미 «Node 콜 미디에이터» 를 넣고 계산했다.
+이미지는 `release.yml` 이 server 와 따로 굽는다(`kustomization.yaml` 의 `callguard-call-mediator` newTag).
 
 ```bash
-# 12. 게이트웨이 설정 — 기대: status ok, 아래 넷이 전부 true
-curl -s $B/gateway/health
+# 12. 콜 미디에이터 설정 — 기대: status ok, 아래 넷이 전부 true
+curl -s $B/call-mediator/health
 #   stt_credentials_configured  구글 키 파일(gcp-stt-credentials 시크릿, /var/run/gcp 에 마운트)
-#   stt_caps_configured         COST-1 2차 캡 — gateway.yaml 에 값으로 적었다(600초/일 · 3600초/월)
-#   ingest_token_configured · view_token_configured   gateway-tokens 시크릿
+#   stt_caps_configured         COST-1 2차 캡 — call-mediator.yaml 에 값으로 적었다(600초/일 · 3600초/월)
+#   ingest_token_configured · view_token_configured   call-mediator-tokens 시크릿
 
 # 13. 문 두 개가 잠겨 있는가 — 토큰 없이 밖에서 치면 둘 다 401 이어야 한다
 #     --http1.1 필수: 운영은 HTTP/2 로 협상하는데 HTTP/2 는 Upgrade 를 못 싣는다 → 잠겼든 열렸든 404 가 나온다
 curl --http1.1 -s -o /dev/null -w '%{http_code}\n' -H 'Connection: Upgrade' -H 'Upgrade: websocket' \
-  -H 'Sec-WebSocket-Version: 13' -H 'Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==' $B/gateway/ws
+  -H 'Sec-WebSocket-Version: 13' -H 'Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==' $B/call-mediator/ws
 curl --http1.1 -s -o /dev/null -w '%{http_code}\n' -H 'Connection: Upgrade' -H 'Upgrade: websocket' \
-  -H 'Sec-WebSocket-Version: 13' -H 'Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==' "$B/gateway/ingest?call_id=test-x&speaker=agent"
+  -H 'Sec-WebSocket-Version: 13' -H 'Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==' "$B/call-mediator/ingest?call_id=test-x&speaker=agent"
 ```
 
 - **토큰은 사람이 만들지 않는다.** 배포가 없을 때만 인스턴스 안에서 만든다(`secret.example.yaml` ③). 꺼내는 법·교체법도 거기 있다.
   `/ingest` 토큰(진짜 비밀)은 오디오 생산자에게만, `/ws` 토큰은 대시보드에 준다 — **둘을 같은 값으로 두지 않는다**
-- 12번이 `true` 넷이 아니면 게이트웨이는 떠 있어도 **전부 거절한다**(fail-closed). 릴리스 스모크 테스트가 이것을 본다
-- `/gateway/dev` 는 브라우저 음성 인식으로 테스트하는 개발용 페이지다(`decisions/109`). **페이지는 토큰 없이 열리지만**
-  (비밀이 없다) 그 페이지가 붙는 `/gateway/dev/text` 는 `/ingest` 와 같은 토큰을 요구한다 — 14번으로 확인한다:
+- 12번이 `true` 넷이 아니면 콜 미디에이터는 떠 있어도 **전부 거절한다**(fail-closed). 릴리스 스모크 테스트가 이것을 본다
+- `/call-mediator/dev` 는 브라우저 음성 인식으로 테스트하는 개발용 페이지다(`decisions/109`). **페이지는 토큰 없이 열리지만**
+  (비밀이 없다) 그 페이지가 붙는 `/call-mediator/dev/text` 는 `/ingest` 와 같은 토큰을 요구한다 — 14번으로 확인한다:
   ```bash
   # 14. 개발용 페이지 — 기대: 200, 그리고 글자 입력 문은 401
-  curl -s -o /dev/null -w '%{http_code}\n' $B/gateway/dev
+  curl -s -o /dev/null -w '%{http_code}\n' $B/call-mediator/dev
   curl --http1.1 -s -o /dev/null -w '%{http_code}\n' -H 'Connection: Upgrade' -H 'Upgrade: websocket' \
-    -H 'Sec-WebSocket-Version: 13' -H 'Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==' "$B/gateway/dev/text?call_id=test-x&speaker=agent"
+    -H 'Sec-WebSocket-Version: 13' -H 'Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==' "$B/call-mediator/dev/text?call_id=test-x&speaker=agent"
   ```
-- ⚠ **새 이미지 저장소는 Docker Hub 에서 공개로 바꾼다.** k3s 는 인증 없이 받는다. 2026-09-11 첫 게이트웨이 배포가
+- ⚠ **새 이미지 저장소는 Docker Hub 에서 공개로 바꾼다.** k3s 는 인증 없이 받는다. 2026-09-11 첫 콜 미디에이터 배포가
   비공개 저장소(익명 pull 401) 때문에 ImagePullBackOff 로 멈췄고, 10분이 지나 Deployment 가 «진행 기한 초과» 로 표시돼
   **공개로 바꾼 뒤 첫 재실행도 `rollout status` 가 바로 실패했다** — 파드가 뜬 뒤 한 번 더 돌려야 초록이 된다
-- 13번이 101 이면 문이 열려 있다 — `gateway-tokens` 가 비었거나 루프백 판정이 뚫린 것이다. 거기서 멈춘다.
+- 13번이 101 이면 문이 열려 있다 — `call-mediator-tokens` 가 비었거나 루프백 판정이 뚫린 것이다. 거기서 멈춘다.
   **404 는 «잠김»이 아니라 «업그레이드가 안 됐다»** 는 뜻이다 — `--http1.1` 을 빠뜨렸거나(HTTP/2) 경로가 틀렸다. 다시 친다.
   `Sec-WebSocket-Key` 는 16바이트여야 한다(위 값은 RFC 6455 예시) — 아니면 문이 열려 있어도 400 이다
 >

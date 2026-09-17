@@ -58,7 +58,7 @@ GCP 쿼터 하드 리밋 + `STT_MAX_SECONDS_PER_DAY`/`_MONTH`([w1-stt-billing-qu
 | 생성 1회 토큰·지연 | `eval_generation.py` 실측(96문항, 로컬 Apple Silicon) | **운영 T4 미측정** |
 | 통화당 트리거 | 트리거 v1 이 고객 확정 발화마다 발동 → AI Hub 다산 대화셋 1,009개의 **고객 턴 수** | 텍스트 대화셋이다. 실제 통화의 턴 수가 아니다 |
 | 발화 길이 | 다산콜DB 역할별 중앙값(민원인 5.86s · 상담사 8.66s, 09-09 통화 온도 측정) | ⚠ **연기된 시나리오 음성** |
-| STT 캡 | `infra/k8s/base/gateway.yaml` 일 600s · 월 3,600s | — |
+| STT 캡 | `infra/k8s/base/call-mediator.yaml` 일 600s · 월 3,600s | — |
 
 ### 읽는 법
 

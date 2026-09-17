@@ -1,6 +1,6 @@
 // Requirement: A-1, A-3, COST-1, 7.3절
 /**
- * 게이트웨이가 바깥에 요구하는 것. 구현체는 `adapters/` 에 있고 `main.ts` 가 꽂는다.
+ * 콜 미디에이터가 바깥에 요구하는 것. 구현체는 `adapters/` 에 있고 `main.ts` 가 꽂는다.
  *
  * 테스트는 이 인터페이스를 가짜로 구현해 구글·서버 없이 돈다 — 서버 쪽 `hub` 포트와 같은 방식이다.
  */
@@ -51,11 +51,11 @@ export interface CallStartRequest {
   call_id: string;
   stt_engine: string;
   channel_count: number;
-  /** ⚠ 평문 발신 번호(C-5 P4). 서버가 곧바로 HMAC 으로 바꾼다(`decisions/304`). 이 게이트웨이는 로그에 남기지 않는다. */
+  /** ⚠ 평문 발신 번호(C-5 P4). 서버가 곧바로 HMAC 으로 바꾼다(`decisions/304`). 이 콜 미디에이터는 로그에 남기지 않는다. */
   caller_phone?: string;
 }
 
-/** 마스킹 **전** 원문. 게이트웨이 → 서버로만 가고 그 밖으로는 나가지 않는다 (SEC-1). */
+/** 마스킹 **전** 원문. 콜 미디에이터 → 서버로만 가고 그 밖으로는 나가지 않는다 (SEC-1). */
 export interface RawTranscript {
   call_id: string;
   segment_id: number;
@@ -77,7 +77,7 @@ export interface RecommendRequest {
   is_final: boolean;
   utterance_end_ms: number;
   /**
-   * 이 게이트웨이가 STT final 을 **받은** 시각 — `utterance_end_ms` 와 같은 통화 시작 기준 ms.
+   * 이 콜 미디에이터가 STT final 을 **받은** 시각 — `utterance_end_ms` 와 같은 통화 시작 기준 ms.
    * 서버 트리거가 발동 시각으로 쓴다(없으면 «발화 종료 + 346ms» 모형). `w4-trigger-arrival-time`
    */
   received_at_ms: number;
@@ -134,7 +134,7 @@ export interface RecommendationPending {
   segment_id: string;
 }
 
-export type GatewayMessage =
+export type CallMediatorMessage =
   | { type: "transcript"; payload: MaskedTranscript }
   | { type: "recommendation_pending"; payload: RecommendationPending }
   | { type: "recommendation"; payload: RecommendPayload }
@@ -142,7 +142,7 @@ export type GatewayMessage =
   | { type: "closure"; payload: ClosurePayload };
 
 export interface Broadcaster {
-  publish(callId: string, message: GatewayMessage): void;
+  publish(callId: string, message: CallMediatorMessage): void;
 }
 
 // ── 사용량 장부 ─────────────────────────────────────────────────────────────

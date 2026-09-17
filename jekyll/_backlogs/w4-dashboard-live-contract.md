@@ -16,13 +16,13 @@ paths:
 ## 무엇을
 
 2026-09-14 에 **백엔드가 먼저 나간** 기능들의 프론트 연결을 끝낸다.
-[미결 항목](/open-items/) 「조서희 님께 — 대시보드가 받아야 할 서버·게이트웨이 계약(2026-09-14)」이 원본이다.
+[미결 항목](/open-items/) 「조서희 님께 — 대시보드가 받아야 할 서버·콜 미디에이터 계약(2026-09-14)」이 원본이다.
 
 ## 붙일 것 넷
 
-- [x] **「검색 중」 신호 수신** — 게이트웨이가 추천 요청 직전에 `recommendation_pending` 을 쏜다
+- [x] **「검색 중」 신호 수신** — 콜 미디에이터가 추천 요청 직전에 `recommendation_pending` 을 쏜다
       ([w4-recommendation-pending-contract](/backlog/w4-recommendation-pending-contract/)).
-      2026-09-15 `realGatewayClient.ts`에 파싱 추가(`call_guard`도 같이). ⚠ 게이트웨이 쪽은
+      2026-09-15 `realCallMediatorClient.ts`에 파싱 추가(`call_guard`도 같이). ⚠ 콜 미디에이터 쪽은
       여전히 꺼 둔 상태라 실제로 켜지기 전까지는 라이브 트래픽으로 확인 못 했다
 - [ ] **통화 목록**(`GET /hub/calls`) — REST 함수(`coreClient.ts`)는 만들었으나 재상담 이력
       화면(`CallHistoryPanel`·`CallSummaryPanel`)은 여전히 mock 시나리오 위에서 돈다.
@@ -35,7 +35,7 @@ paths:
       /hub/blacklist-entries(/release)`를 로그인 직후 실제로 부른다
 - [x] **F-2 필요서류 체크리스트** — `decisions/305` 로 다산 규칙표가 들어왔다. 2026-09-15에
       프론트 계약(`ClosureEvent`)을 그 형식(`procedure`·`verdict complete/incomplete`·
-      `detected`·`conditional`)에 맞췄다 — 게이트웨이가 새 형식 전송을 켜면 바로 받는다
+      `detected`·`conditional`)에 맞췄다 — 콜 미디에이터가 새 형식 전송을 켜면 바로 받는다
 
 ## 왜 지금
 
@@ -47,7 +47,7 @@ paths:
 
 네 기능이 **mock 을 끄고도** 라이브 모드에서 동작하고, 안 되는 것은 «안 된다» 로 화면에 드러난다
 (조용히 빈 목록을 보여주지 않는다). **2026-09-15 진행 상황**: 블랙리스트·F-2 계약·검색 중 신호
-셋은 붙였다(라이브 게이트웨이로 아직 실측은 못 함). 통화 목록만 남았고, 그 과정에서 계약
+셋은 붙였다(라이브 콜 미디에이터로 아직 실측은 못 함). 통화 목록만 남았고, 그 과정에서 계약
 불일치 두 건을 추가로 발견했다 — **카드 피드백**(`POST /hub/cards/{id}/feedback`)은 추천
 카드 응답에 `card_id`가 없어 호출할 수 없고, **관리자 지식베이스 갭 화면**은 mock
 집계(`{query, found}`)와 실제 계약(`{module, description, status}`)의 모양이 달라 다시

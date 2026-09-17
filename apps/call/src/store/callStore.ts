@@ -26,7 +26,7 @@ import {
   type CallRecord,
 } from "../lib/api/coreClient";
 import { getScenarioById } from "../mock/scenarios";
-import type { GatewayMode } from "../lib/ws";
+import type { CallMediatorMode } from "../lib/ws";
 import { sliceByCodepoints } from "../lib/text/codepoints";
 import type { TargetLanguage } from "../lib/language/languageMeta";
 import {
@@ -96,7 +96,7 @@ export interface CardAdoption {
 }
 
 export interface CallState {
-  mode: GatewayMode;
+  mode: CallMediatorMode;
   connected: boolean;
   error: string | null;
   phase: CallPhase;
@@ -162,7 +162,7 @@ export interface CallState {
   resumeCall: () => void;
   applyClosure: (event: ClosureEvent) => void;
   settleClosure: (procedure: ClosureEvent["procedure"]) => void;
-  setStatus: (mode: GatewayMode, connected: boolean) => void;
+  setStatus: (mode: CallMediatorMode, connected: boolean) => void;
   setError: (message: string) => void;
   applyTranslation: (
     transcriptSegmentId: string,

@@ -1,11 +1,11 @@
 // Requirement: A-1, A-2
 /**
- * WAV 파일을 **실시간 속도로** 게이트웨이 `/ingest` 에 흘려 넣는다 — 통화를 흉내 내는 생산자.
+ * WAV 파일을 **실시간 속도로** 콜 미디에이터 `/ingest` 에 흘려 넣는다 — 통화를 흉내 내는 생산자.
  *
  *   node scripts/stream_wav.ts <파일.wav> [--speaker customer] [--call-id test-...] \
  *       [--url ws://localhost:8080] [--max-seconds 30] [--speed 1] [--watch]
  *
- * - 모노 → 연결 하나(`--speaker`). `--speaker auto` 는 모노에 두 사람이 섞인 녹음 — 게이트웨이가 구글 화자 분리로
+ * - 모노 → 연결 하나(`--speaker`). `--speaker auto` 는 모노에 두 사람이 섞인 녹음 — 콜 미디에이터가 구글 화자 분리로
  *   가르고 **먼저 말한 사람을 상담원**으로 친다(추측이다, `decisions/303`). 스테레오 → **채널을 갈라 연결 둘**(0번 agent · 1번 customer,
  *   `channels=2`). 데모의 물리 2채널이 이 모양이다(A-2).
  * - `--max-seconds` 가 기본 30초다. 구글 스트리밍은 쓴 만큼 과금되고 일 캡이 600초다(COST-1).
@@ -14,7 +14,7 @@
  *
  * 자체 녹음은 쓰지 않는다(절대 원칙 7) — AI Hub 처럼 출처가 해결된 음성만 넣는다.
  *
- * 이 머신 밖 게이트웨이에 붙을 때는 환경변수 `GATEWAY_INGEST_TOKEN`(과금 문)·`GATEWAY_VIEW_TOKEN`(`--watch`)을
+ * 이 머신 밖 콜 미디에이터에 붙을 때는 환경변수 `CALL_MEDIATOR_INGEST_TOKEN`(과금 문)·`CALL_MEDIATOR_VIEW_TOKEN`(`--watch`)을
  * **헤더로** 보낸다. 명령줄 인자로 받지 않는다 — 셸 기록에 비밀이 남는다.
  *
  * 환경변수 `CALLER_PHONE` 을 주면 발신 번호로 `X-Caller-Phone` 헤더에 싣는다 — 서버가 HMAC 으로 바꿔 재상담 이력·
@@ -130,7 +130,7 @@ function open(url: string, token = "", extra: Record<string, string> = {}): Prom
   return new Promise((resolve, reject) => {
     const headers = { ...extra, ...(token ? { authorization: `Bearer ${token}` } : {}) };
     const ws = new WebSocket(url, { headers });
-    ws.once("unexpected-response", (_req, res) => reject(new Error(`게이트웨이가 거절했다 (HTTP ${res.statusCode})`)));
+    ws.once("unexpected-response", (_req, res) => reject(new Error(`콜 미디에이터가 거절했다 (HTTP ${res.statusCode})`)));
     ws.once("open", () => resolve(ws));
     ws.once("error", reject);
   });
@@ -146,7 +146,7 @@ async function streamChannel(args: Args, wav: Wav, speaker: Args["speaker"], pcm
   const phone = (process.env.CALLER_PHONE ?? "").trim();
   const ws = await open(
     `${args.url}/ingest?${query}`,
-    process.env.GATEWAY_INGEST_TOKEN ?? "",
+    process.env.CALL_MEDIATOR_INGEST_TOKEN ?? "",
     phone ? { "x-caller-phone": phone } : {},
   );
   const closed = new Promise<{ code: number; reason: string }>((resolve) =>
@@ -168,14 +168,14 @@ async function streamChannel(args: Args, wav: Wav, speaker: Args["speaker"], pcm
     ws.send(JSON.stringify({ type: "end" }));
   }
   const result = await closed;
-  // 게이트웨이가 먼저 닫으면(한도·거절) 마지막 몇 청크는 소켓에 들어갔어도 STT 로는 안 갔다.
+  // 콜 미디에이터가 먼저 닫으면(한도·거절) 마지막 몇 청크는 소켓에 들어갔어도 STT 로는 안 갔다.
   const seconds = (sent / (wav.sampleRate * 2)).toFixed(1);
   console.log(`[${speaker}] ${seconds}초 보냄 — 닫힘 ${result.code}${result.reason ? ` (${result.reason})` : ""}`);
 }
 
 function watch(args: Args): Promise<WebSocket> {
   const url = `${args.url}/ws?call_id=${encodeURIComponent(args.callId)}`;
-  return open(url, process.env.GATEWAY_VIEW_TOKEN ?? "").then((ws) => {
+  return open(url, process.env.CALL_MEDIATOR_VIEW_TOKEN ?? "").then((ws) => {
     const started = Date.now();
     ws.on("message", (data) => {
       const message = JSON.parse(data.toString()) as { type: string; payload: Record<string, unknown> };

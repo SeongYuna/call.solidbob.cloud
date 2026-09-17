@@ -91,7 +91,7 @@ def test_빈_텍스트는_422다():
         app.dependency_overrides.clear()
 
 
-def test_게이트웨이_도착_시각을_트리거까지_그대로_넘긴다():
+def test_콜_미디에이터_도착_시각을_트리거까지_그대로_넘긴다():
     """`received_at_ms` 가 트리거 발동 시각의 측정값이다 (w4-trigger-arrival-time)."""
     seen = []
 

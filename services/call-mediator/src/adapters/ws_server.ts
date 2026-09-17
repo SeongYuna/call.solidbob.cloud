@@ -1,6 +1,6 @@
 // Requirement: A-1, A-2, A-3, SEC-1
 /**
- * 게이트웨이의 바깥 표면. 포트 하나에 셋이 있다.
+ * 콜 미디에이터의 바깥 표면. 포트 하나에 셋이 있다.
  *
  * | 경로 | 누가 | 무엇이 흐르나 |
  * |---|---|---|
@@ -9,22 +9,22 @@
  * | `GET /dev` · `WS /dev/text?call_id=&speaker=` | 개발자 브라우저 | → 브라우저 음성 인식 결과 글자(`decisions/109`) |
  * | `GET /health` | 쿠버네티스·사람 | ← 설정 여부·사용량 (값·주소는 싣지 않는다, SEC-2) |
  *
- * **운영에서는 `https://server.solidbob.cloud/gateway/…` 로 열린다**(Ingress 경로 `/gateway`). 밖에 여는 주소가
- * 그 도메인 하나라서다(런북 16-2·18). 접두어는 여기서 떼므로 `/gateway/ws` 와 `/ws` 가 같다 — Traefik
+ * **운영에서는 `https://server.solidbob.cloud/call-mediator/…` 로 열린다**(Ingress 경로 `/call-mediator`). 밖에 여는 주소가
+ * 그 도메인 하나라서다(런북 16-2·18). 접두어는 여기서 떼므로 `/call-mediator/ws` 와 `/ws` 가 같다 — Traefik
  * 미들웨어(CRD)에 기대지 않으려는 것이다.
  *
  * 생산자는 지금은 `scripts/stream_wav.ts`(AI Hub 녹음 재생)다. 브라우저 마이크 캡처는
  * `apps/dashboard` 몫이고, 같은 `/ingest` 계약으로 붙는다.
  *
- * 대시보드 쪽은 **받기만 한다** — `realGatewayClient.ts` 가 보내는 메시지가 없다. `call_id` 를
+ * 대시보드 쪽은 **받기만 한다** — `realCallMediatorClient.ts` 가 보내는 메시지가 없다. `call_id` 를
  * 안 주면 모든 통화를 받는다(상담원 한 명 데모). 형식은 그 파서가 이미 기다리는 것 그대로다.
  *
  * 접속은 두 겹으로 거른다.
  * ① **토큰** (`domain/access.ts`) — 이 머신 밖에서 오면 **문마다 다른** 토큰이 맞아야 한다.
- *    `/ingest`·`/dev/text`(둘 다 DB 에 전사를 쓴다)는 `GATEWAY_INGEST_TOKEN` 을 `Authorization: Bearer` 나
+ *    `/ingest`·`/dev/text`(둘 다 DB 에 전사를 쓴다)는 `CALL_MEDIATOR_INGEST_TOKEN` 을 `Authorization: Bearer` 나
  *    서브프로토콜 `bearer.<토큰>` 으로만 — URL 에 비밀을 싣지 않는다. 브라우저(`/dev`)는 서브프로토콜로 낸다.
  *    프록시 헤더가 붙은 루프백 요청은 «이 머신» 으로 치지 않는다(ngrok 같은 터널).
- *    `/ws` 는 `GATEWAY_VIEW_TOKEN` 을 헤더나 `?token=` 으로(브라우저 WebSocket 은 헤더를 못 붙인다).
+ *    `/ws` 는 `CALL_MEDIATOR_VIEW_TOKEN` 을 헤더나 `?token=` 으로(브라우저 WebSocket 은 헤더를 못 붙인다).
  *    `/health` 는 거르지 않는다(쿠버네티스 프로브가 토큰 없이 부른다 — 자막·과금과 무관한 숫자만 싣는다).
  * ② **`Origin`** — 있으면 허용 목록과 대조한다. 토큰을 가진 페이지라도 남의 사이트면 막는다.
  */
@@ -41,7 +41,7 @@ import {
   SUBPROTOCOL,
 } from "../domain/access.ts";
 import { DEV_PAGE_HEADERS, DEV_PAGE_HTML } from "./dev_page.ts";
-import type { Broadcaster, GatewayMessage, Logger, Speaker } from "../app/ports.ts";
+import type { Broadcaster, CallMediatorMessage, Logger, Speaker } from "../app/ports.ts";
 
 // ── 대시보드 구독 ────────────────────────────────────────────────────────────
 
@@ -57,7 +57,7 @@ export class DashboardHub implements Broadcaster {
     return this.subscribers.size;
   }
 
-  publish(callId: string, message: GatewayMessage): void {
+  publish(callId: string, message: CallMediatorMessage): void {
     const text = JSON.stringify(message);
     for (const [socket, filter] of this.subscribers) {
       if ((filter === null || filter === callId) && socket.readyState === socket.OPEN) {
@@ -69,7 +69,7 @@ export class DashboardHub implements Broadcaster {
 
 // ── 서버 ─────────────────────────────────────────────────────────────────────
 
-export interface GatewayServerDeps {
+export interface CallMediatorServerDeps {
   registry: CallRegistry;
   dashboards: DashboardHub;
   allowedOrigins: readonly string[];
@@ -93,7 +93,7 @@ const CALL_ID = /^[A-Za-z0-9_.:-]{1,40}$/;
 
 /**
  * 경로 → 문. `audio`·`text` 는 전사를 DB 에 쓰므로 과금 문 토큰(`ingest`)을, `view` 는 대시보드 토큰을 쓴다.
- * `/dashboard` 는 조서희 님 게이트웨이(frontend 브랜치, `decisions/402`)가 쓰던 대시보드 경로다 — 그쪽 안내대로
+ * `/dashboard` 는 조서희 님 콜 미디에이터(frontend 브랜치, `decisions/402`)가 쓰던 대시보드 경로다 — 그쪽 안내대로
  * 붙인 대시보드가 그대로 붙게 별칭으로 받는다(`decisions/109`).
  */
 const ROUTES: Record<string, "audio" | "text" | "view"> = {
@@ -106,13 +106,13 @@ const ROUTES: Record<string, "audio" | "text" | "view"> = {
 /** 글자 한 건 상한. 브라우저 인식 결과 한 문장은 수백 자를 넘지 않는다 — 넘으면 잘못된 입력이다. */
 const MAX_TEXT_CHARS = 2000;
 
-/** 운영 Ingress 가 붙이는 경로. `ingress.yaml` 의 `/gateway` 와 같아야 한다. */
-export const PUBLIC_PREFIX = "/gateway";
+/** 운영 Ingress 가 붙이는 경로. `ingress.yaml` 의 `/call-mediator` 와 같아야 한다. */
+export const PUBLIC_PREFIX = "/call-mediator";
 
 /** 연결 유지 ping 간격. 프록시(Traefik)는 오래 조용한 연결을 끊는다 — 대기 중인 대시보드가 그렇다. */
 const HEARTBEAT_MS = 25_000;
 
-/** `/gateway/ws` → `/ws`. 접두어가 없으면 그대로. */
+/** `/call-mediator/ws` → `/ws`. 접두어가 없으면 그대로. */
 export function routePath(pathname: string): string {
   if (pathname === PUBLIC_PREFIX) {
     return "/";
@@ -121,7 +121,7 @@ export function routePath(pathname: string): string {
 }
 const SAMPLE_RATES = new Set([8000, 16000, 22050, 24000, 44100, 48000]);
 
-export function createGatewayServer(deps: GatewayServerDeps): Server {
+export function createCallMediatorServer(deps: CallMediatorServerDeps): Server {
   // 브라우저가 서브프로토콜로 토큰을 내면 `callguard` 를 골라 되돌려 준다 — 토큰 항목은 절대 되돌리지 않는다.
   const handleProtocols = (protocols: Set<string>): string | false => (protocols.has(SUBPROTOCOL) ? SUBPROTOCOL : false);
   const ingestWss = new WebSocketServer({ noServer: true, maxPayload: 1 << 20, handleProtocols });
@@ -152,7 +152,7 @@ export function createGatewayServer(deps: GatewayServerDeps): Server {
   server.on("close", () => clearInterval(heartbeat));
 
   server.on("upgrade", (req: IncomingMessage, socket: Duplex, head: Buffer) => {
-    const url = new URL(req.url ?? "/", "http://gateway.local");
+    const url = new URL(req.url ?? "/", "http://call-mediator.local");
     const path = routePath(url.pathname);
     const origin = req.headers.origin;
     if (origin !== undefined && !deps.allowedOrigins.includes(origin)) {
@@ -201,8 +201,8 @@ export function createGatewayServer(deps: GatewayServerDeps): Server {
   return server;
 }
 
-function handleHttp(req: IncomingMessage, res: ServerResponse, deps: GatewayServerDeps): void {
-  const url = new URL(req.url ?? "/", "http://gateway.local");
+function handleHttp(req: IncomingMessage, res: ServerResponse, deps: CallMediatorServerDeps): void {
+  const url = new URL(req.url ?? "/", "http://call-mediator.local");
   if (req.method === "GET" && routePath(url.pathname) === "/health") {
     res.writeHead(200, { "content-type": "application/json" });
     res.end(JSON.stringify(deps.health()));
@@ -264,7 +264,7 @@ function callerPhoneOf(req: IncomingMessage): { callerPhone?: string } {
   return value.length > 0 && value.length <= 32 ? { callerPhone: value } : {};
 }
 
-async function acceptIngest(ws: WebSocket, url: URL, deps: GatewayServerDeps, req: IncomingMessage): Promise<void> {
+async function acceptIngest(ws: WebSocket, url: URL, deps: CallMediatorServerDeps, req: IncomingMessage): Promise<void> {
   const params = parseIngest(url, true);
   if (typeof params === "string") {
     closeWith(ws, CLOSE_POLICY, params);
@@ -329,7 +329,7 @@ async function acceptIngest(ws: WebSocket, url: URL, deps: GatewayServerDeps, re
  * `WS /dev/text` — 브라우저 음성 인식이 이미 글자로 바꾼 결과를 받는다(`decisions/109`).
  * 메시지: `{"text": "...", "is_final": true|false}` · 끝낼 때 `{"type":"end"}`. 바이너리는 받지 않는다.
  */
-async function acceptText(ws: WebSocket, url: URL, deps: GatewayServerDeps): Promise<void> {
+async function acceptText(ws: WebSocket, url: URL, deps: CallMediatorServerDeps): Promise<void> {
   const params = parseIngest(url);
   if (typeof params === "string") {
     closeWith(ws, CLOSE_POLICY, params);

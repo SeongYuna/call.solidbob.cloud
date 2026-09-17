@@ -42,7 +42,7 @@ Root 단독 운영이라 대안이 **Root 액세스 키뿐**인데 그건 계정
 - [x] `.github/workflows/release.yml`
 - [x] ~~탄력적 IP 부착~~ — **붙이지 않기로 했다**(2026-09-09). IP 갱신을 매일 수동으로 한다
 - [x] Docker Hub Access Token + GitHub Secrets 4개 (2026-09-09)
-- [x] **첫 배포 실검증 (2026-09-14)** — PR #74 에서 네 잡(`plan`·`image`·`gateway-image`·`deploy`)이
+- [x] **첫 배포 실검증 (2026-09-14)** — PR #74 에서 네 잡(`plan`·`image`·`call-mediator-image`·`deploy`)이
       전부 통과했다(117초). 운영 `/health` 스포크 4종(`masking`·`closure_gate`·`retrieval`·`trigger`) 유지 확인
 - [x] 부팅 시 자동 수렴 systemd 유닛 — `infra/systemd/callguard-converge.service` · `converge.sh`
 - [ ] 자동 중지 cron (런북 21-1)

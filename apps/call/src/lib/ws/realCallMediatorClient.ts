@@ -14,7 +14,7 @@ import type {
   Speaker,
   TranscriptEvent,
 } from "../../types/contract";
-import type { GatewayClient, GatewayListener, WrapUpSegment } from "./types";
+import type { CallMediatorClient, CallMediatorListener, WrapUpSegment } from "./types";
 
 type ParsedMessage =
   | { kind: "transcript"; payload: TranscriptEvent }
@@ -23,14 +23,14 @@ type ParsedMessage =
   | { kind: "call_guard"; payload: { segment_id: string; flags: CallGuardFlag[] } }
   | { kind: "closure"; payload: ClosureEvent };
 
-export class RealGatewayClient implements GatewayClient {
+export class RealCallMediatorClient implements CallMediatorClient {
   readonly mode = "live" as const;
   private socket: WebSocket | null = null;
-  private listeners: GatewayListener | null = null;
+  private listeners: CallMediatorListener | null = null;
 
   constructor(private readonly url: string) {}
 
-  connect(listeners: GatewayListener): void {
+  connect(listeners: CallMediatorListener): void {
     this.disconnect();
     this.listeners = listeners;
     listeners.onStatus({ mode: "live", connected: false });
@@ -38,7 +38,7 @@ export class RealGatewayClient implements GatewayClient {
     try {
       this.socket = new WebSocket(this.url);
     } catch {
-      listeners.onError("게이트웨이에 연결하지 못했습니다.");
+      listeners.onError("콜 미디에이터에 연결하지 못했습니다.");
       return;
     }
 
@@ -51,7 +51,7 @@ export class RealGatewayClient implements GatewayClient {
     });
 
     this.socket.addEventListener("error", () => {
-      this.listeners?.onError("게이트웨이 연결에 문제가 생겼습니다.");
+      this.listeners?.onError("콜 미디에이터 연결에 문제가 생겼습니다.");
     });
 
     this.socket.addEventListener("close", () => {
@@ -69,7 +69,7 @@ export class RealGatewayClient implements GatewayClient {
 
   /**
    * B-6 수동 검색 — `POST /hub/search`(REST). 웹소켓 계약이 아니라 별도 REST
-   * 호출이라 게이트웨이 연결 여부와 무관하게 바로 부른다(`w4-dashboard-live-contract`).
+   * 호출이라 콜 미디에이터 연결 여부와 무관하게 바로 부른다(`w4-dashboard-live-contract`).
    * `call_id`는 검색 자체에는 쓰이지 않는다(서버 계약에 없음) — 결과를 그
    * 통화에 붙이는 것은 호출부(스토어) 몫이다.
    */
@@ -121,13 +121,13 @@ export class RealGatewayClient implements GatewayClient {
     try {
       parsed = JSON.parse(raw) as unknown;
     } catch {
-      listeners.onError("게이트웨이 메시지를 읽지 못했습니다.");
+      listeners.onError("콜 미디에이터 메시지를 읽지 못했습니다.");
       return;
     }
 
-    const message = parseGatewayMessage(parsed);
+    const message = parseCallMediatorMessage(parsed);
     if (message === null) {
-      listeners.onError("알 수 없는 게이트웨이 메시지입니다.");
+      listeners.onError("알 수 없는 콜 미디에이터 메시지입니다.");
       return;
     }
 
@@ -153,7 +153,7 @@ export class RealGatewayClient implements GatewayClient {
   }
 }
 
-export function parseGatewayMessage(value: unknown): ParsedMessage | null {
+export function parseCallMediatorMessage(value: unknown): ParsedMessage | null {
   const body = unwrapPayload(value);
   if (body === null) {
     return null;
@@ -208,7 +208,7 @@ function parseByKind(
   return payload === null ? null : { kind, payload };
 }
 
-/** `services/gateway`의 `RecommendationPending` — 「검색 중」 신호. 값은 문자열(7.3절). */
+/** `services/call-mediator`의 `RecommendationPending` — 「검색 중」 신호. 값은 문자열(7.3절). */
 function parseRecommendationPending(body: Record<string, unknown>): { call_id: string } | null {
   const call_id = readString(body, "call_id");
   return call_id === null ? null : { call_id };

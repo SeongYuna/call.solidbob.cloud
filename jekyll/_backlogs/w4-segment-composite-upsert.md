@@ -23,7 +23,7 @@ paths:
 ## 무엇을
 
 운영 `server.solidbob.cloud` 에 **통화를 만드는 엔드포인트가 없다** — 새 통화 ID 로 `POST /hub/transcripts`
-를 보내면 500 이고, 게이트웨이 쪽에서는 그 구간이 조용히 버려진다(2026-09-11 보고).
+를 보내면 500 이고, 콜 미디에이터 쪽에서는 그 구간이 조용히 버려진다(2026-09-11 보고).
 
 `POST /hub/calls` 는 09-10 에 이미 코드로 있다([w3-call-start-api](/backlog/w3-call-start-api/),
 `_project/decisions/301`). 운영에 없는 이유는 이미지 태그가 `0.1.1` 그대로라 새 이미지가 구워지지

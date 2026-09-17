@@ -18,7 +18,7 @@ model: sonnet
 | 위치 | 내용 |
 |---|---|
 | `jekyll/` | 기록·제안서 사이트 (Markdown, YAML, Liquid, SCSS) |
-| 향후 | Python/FastAPI · Node.js WebSocket 게이트웨이 · React(웹 대시보드, Flutter 앱은 중단) · Elasticsearch |
+| 향후 | Python/FastAPI · Node.js WebSocket 콜 미디에이터 · React(웹 대시보드, Flutter 앱은 중단) · Elasticsearch |
 
 ## 리뷰 절차
 

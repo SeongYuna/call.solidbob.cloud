@@ -3,7 +3,7 @@
 
 - `phrase`·`span` 은 **마스킹된 자막 기준**이다(MANUAL-5.5). 이 어댑터는 원문을 손에 넣을 경로가 없다
 - `(call_id, segment_id)` 가 `transcript_segment` 를 참조한다 — 전사가 먼저 저장돼 있어야 한다.
-  게이트웨이는 `POST /hub/transcripts` 응답을 받은 뒤에 검사를 부른다
+  콜 미디에이터는 `POST /hub/transcripts` 응답을 받은 뒤에 검사를 부른다
 - `span` 이 없는 신호는 저장하지 않고 거부한다. 컬럼이 NOT NULL 이고, 위치를 0 으로 지어내지 않는다
 """
 

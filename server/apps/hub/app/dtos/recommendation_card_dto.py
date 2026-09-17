@@ -41,7 +41,7 @@ class RecommendationCards:
     trigger_at_ms: int
     cards: tuple[Card, ...] = field(default_factory=tuple)
     internal_latency_ms: int | None = None  # 코어 내부 처리 (트리거 → 카드 완성)
-    e2e_latency_ms: int | None = None  # 발화 종료 → 화면 표시. 게이트웨이/대시보드가 채운다
+    e2e_latency_ms: int | None = None  # 발화 종료 → 화면 표시. 콜 미디에이터/대시보드가 채운다
 
     @property
     def no_relevant_document(self) -> bool:

@@ -585,7 +585,7 @@ F-2 의 RAG 는 **"안내가 빠졌는지 검증할 근거를 가져온다"**. �
        │
    WebSocket (양방향)
        │
-[Node.js 게이트웨이]
+[Node.js 콜 미디에이터]
        │  - 오디오 청크 중계
        │  - 자막/카드/경고 푸시
        │
@@ -625,7 +625,7 @@ F-2 의 RAG 는 **"안내가 빠졌는지 검증할 근거를 가져온다"**. �
 |---|---|---|
 | Python | 전체 백엔드 | 필수 |
 | FastAPI | 검색·생성·게이트 API | 필수 |
-| Node.js | WebSocket 게이트웨이 | 필수 |
+| Node.js | WebSocket 콜 미디에이터 | 필수 |
 | WebSocket | 실시간 양방향 통신 | 필수 |
 | Google STT | 스트리밍 음성인식 + 화자분리 | 필수 |
 | Elasticsearch | nori + dense_vector 하이브리드 검색 | 필수 |
@@ -735,7 +735,7 @@ C-5 마스킹  -     -     -     -     -   ← 재현율 곡선 추가
 | **내부 처리 지연** | 트리거 발동 → 카드 표시 | p95 ≤ 1,000ms |
 | **E2E 체감 지연** | 발화 종료 → 카드 표시 | **측정·기록 (목표 미설정)** |
 
-E2E에는 STT 부분 결과 반환 지연, 게이트웨이 홉, 브라우저 렌더링이 포함된다. 이 구간은 통제 밖이므로 목표를 걸지 않되, **통제 가능한 구간과 아닌 구간을 분리했다는 사실 자체를 성과로 기록한다.**
+E2E에는 STT 부분 결과 반환 지연, 콜 미디에이터 홉, 브라우저 렌더링이 포함된다. 이 구간은 통제 밖이므로 목표를 걸지 않되, **통제 가능한 구간과 아닌 구간을 분리했다는 사실 자체를 성과로 기록한다.**
 
 **내부 처리 예산**
 
@@ -950,7 +950,7 @@ F-2(필요서류 체크리스트)가 참조하는 필수 항목 정의도 이 �
 
 | 담당 | 인원 | 디렉터리 · 브랜치 | 범위 |
 |---|---|---|---|
-| **AWS·인프라** | 정성윤 | `services/gateway/` · `infra/` · `PM` | Node.js WebSocket 게이트웨이, Google STT 연동, 화자 분리, PostgreSQL 스키마, Docker·배포, 레이턴시 측정 인프라, **CI 운영** |
+| **AWS·인프라** | 정성윤 | `services/call-mediator/` · `infra/` · `PM` | Node.js WebSocket 콜 미디에이터, Google STT 연동, 화자 분리, PostgreSQL 스키마, Docker·배포, 레이턴시 측정 인프라, **CI 운영** |
 | **AI** | 류준 | `ai/` · `ai` | 청킹·BM25·리랭크·임베딩, 트리거 판정, 생성 모듈, 컴플라이언스 분류기, **A-5 통번역**, **C-6 콜 가드**, **D-5 감정분석**, 평가 하네스 |
 | **서버** | 장민석 | `server/` · `server` | 파이프라인 배선, 클린 아키텍처, 계약(포트·DTO), **C-5 마스킹**(2026-08-27 이관 — `decisions/019`), **F-2 게이트** |
 | **프론트엔드** | 조서희 | `apps/call/`(옛 `apps/dashboard`) · `frontend` | React 대시보드(자막·원문 병기·서류 카드·경고), WebSocket 클라이언트, 데모 시나리오, 결과 시각화 |
@@ -980,7 +980,7 @@ F-2(필요서류 체크리스트)가 참조하는 필수 항목 정의도 이 �
 1주차에 모듈 간 스키마를 확정한다. 이것이 병렬 작업의 전제 조건이다.
 
 > **값의 타입 — 응답은 전부 문자열이다 (2026-09-10 조서희·장민석 합의, 2026-09-15 절 머리로 올림).**
-> 서버 HTTP 응답과, 게이트웨이가 그 응답을 그대로 실어 보내는 WS `payload`(`transcript`·`recommendation`·`call_guard`·`closure`) 모두 —
+> 서버 HTTP 응답과, 콜 미디에이터가 그 응답을 그대로 실어 보내는 WS `payload`(`transcript`·`recommendation`·`call_guard`·`closure`) 모두 —
 > 불리언은 `"true"`/`"false"`, 숫자는 `"3150"`, **`null` 은 그대로 `null`**, 배열·객체 구조는 유지한다.
 > 요청은 원래 타입(정수·불리언)과 숫자 문자열 둘 다 받는다. 변환은 서버 `schemas/_types.py` `StrField` 한 곳이고 DB·DTO 는 원래 타입이다.
 > 예외는 `GET /health` 하나(배포 검증 항목이라 불리언 유지, 런북 19장). `/openapi.json` 이 `string` 으로 공표한다 — 화면은 그것을 기준으로 붙인다.
@@ -1035,43 +1035,43 @@ F-2(필요서류 체크리스트)가 참조하는 필수 항목 정의도 이 �
 > `conditional` 은 조건부 추가 서류다 — **판정에 넣지 않는다**(조건 충족 여부를 게이트가 모른다). `detected` 가 `"true"` 면
 > 서류 안내 여부를 **상담원 발화 키워드로 자동 판정**한 것이다 — 부정 문맥(「필요 없어요」)을 모른다. 규칙은 조건 없는 조항 25개뿐이다.
 
-게이트웨이(`services/gateway`)가 위 셋 사이를 잇는 메시지 셋 (2026-09-14 추가):
+콜 미디에이터(`services/call-mediator`)가 위 셋 사이를 잇는 메시지 셋 (2026-09-14 추가):
 
 ```json
-// 통화 시작 — 게이트웨이 → 서버 POST /hub/calls. 첫 채널이 열릴 때 한 번(화자가 둘이어도).
+// 통화 시작 — 콜 미디에이터 → 서버 POST /hub/calls. 첫 채널이 열릴 때 한 번(화자가 둘이어도).
 // 실패하면 채널을 열지 않는다 — transcript_segment.call_id 외래키 때문에 전사 저장이 전부 실패한다 (decisions/301)
 {"call_id": "c_001", "stt_engine": "google-stt", "channel_count": 2}
 
-// 추천 요청 — 게이트웨이 → 서버 POST /hub/recommendations. 마스킹 **후** 본문으로.
-// received_at_ms: 게이트웨이가 STT final 을 받은 시각(utterance_end_ms 와 같은 통화 기준 ms).
+// 추천 요청 — 콜 미디에이터 → 서버 POST /hub/recommendations. 마스킹 **후** 본문으로.
+// received_at_ms: 콜 미디에이터가 STT final 을 받은 시각(utterance_end_ms 와 같은 통화 기준 ms).
 // 트리거가 발동 시각(trigger_at_ms)으로 쓴다 — 없으면 "발화 종료 + 346ms" 모형값이다
 {"call_id": "c_001", "segment_id": 17, "speaker": "customer", "text": "카드번호는 **** 입니다",
  "is_final": true, "utterance_end_ms": 3100, "received_at_ms": 3480}
 
-// 발신 번호(선택) — 게이트웨이는 /ingest 헤더 X-Caller-Phone 으로 받아 통화 시작에 caller_phone 으로 싣는다.
+// 발신 번호(선택) — 콜 미디에이터는 /ingest 헤더 X-Caller-Phone 으로 받아 통화 시작에 caller_phone 으로 싣는다.
 // 서버가 곧바로 HMAC 으로 바꿔 call.customer_id 에 두고 응답에는 customer_linked 만 싣는다 (decisions/304)
 {"call_id": "c_001", "stt_engine": "google-stt", "channel_count": 2, "caller_phone": "010-0000-0000"}
 
-// 「검색 중」 — 게이트웨이 → 대시보드 WS. 추천을 **요청했다**는 뜻이지 발동했다는 뜻이 아니다(판정은 서버).
+// 「검색 중」 — 콜 미디에이터 → 대시보드 WS. 추천을 **요청했다**는 뜻이지 발동했다는 뜻이 아니다(판정은 서버).
 // 뒤따르는 카드의 fired 가 "false" 면 대시보드가 로딩을 거둔다. 값은 전부 문자열
 {"type": "recommendation_pending", "payload": {"call_id": "c_001", "segment_id": "17"}}
 ```
 
 ```json
-// 콜 가드(C-6) — 게이트웨이 → 대시보드 WS. 고객 확정 발화마다 POST /hub/call-guard-checks 응답 그대로, 잡힌 게 있을 때만
+// 콜 가드(C-6) — 콜 미디에이터 → 대시보드 WS. 고객 확정 발화마다 POST /hub/call-guard-checks 응답 그대로, 잡힌 게 있을 때만
 {"type": "call_guard", "payload": {"call_id": "c_001", "segment_id": "17",
   "flags": [{"category": "insult", "phrase": "***", "span": ["3", "5"], "source_doc_id": "DASAN-MANUAL-5.1"}]}}
 
-// 필요서류 체크리스트(F-2) — 게이트웨이 → 대시보드 WS. 위 판정 JSON 그대로. 추천 1순위 조항을 절차로 잡고
+// 필요서류 체크리스트(F-2) — 콜 미디에이터 → 대시보드 WS. 위 판정 JSON 그대로. 추천 1순위 조항을 절차로 잡고
 // 상담원 확정 발화가 쌓일 때마다 POST /hub/required-docs-checks 로 다시 판정한다
 {"type": "closure", "payload": { /* 필요서류 체크리스트 판정 */ }}
 ```
 
-> ✅ **「검색 중」 · `call_guard` · `closure` 셋 다 2026-09-15 켰다**(게이트웨이 `0.1.4` — `announcePending`·`announceCallGuard`·`announceClosure`).
+> ✅ **「검색 중」 · `call_guard` · `closure` 셋 다 2026-09-15 켰다**(콜 미디에이터 `0.1.4` — `announcePending`·`announceCallGuard`·`announceClosure`).
 > `apps/call` 실서버 파서가 main 에 들어와(PR #88) 세 `type` 과 새 `closure` 형식을 받는다. 그 전에는 모르는 `type` 으로 오류 배너가 떴다.
 > `category` 는 DDL 정본(`insult·threat·sexual·distress`)이다 — 프론트 mock 의 `폭언·욕설·위협` 과 다르다.
 
-**허브 HTTP 표면 (2026-09-14)** — 게이트웨이가 아니라 화면이 직접 부르는 것. 값은 전부 문자열이다.
+**허브 HTTP 표면 (2026-09-14)** — 콜 미디에이터가 아니라 화면이 직접 부르는 것. 값은 전부 문자열이다.
 
 | 경로 | 누가 | 무엇 |
 |---|---|---|
@@ -1089,7 +1089,7 @@ F-2(필요서류 체크리스트)가 참조하는 필수 항목 정의도 이 �
 | `GET /hub/blacklist-entries?active_only` · `POST …/{id}/release {reason}` | **관리자 로그인** | 해제는 지우지 않고 기록 |
 | `POST /hub/blacklist-entries/{id}/expiry {expires_in_days, reason}` · `GET …/{id}/expiry-changes` | **관리자 로그인** | 만료를 «지금부터 N일 뒤»(1~365)로 — 연장·단축 모두. **누적 상한 승인일 + 365일**(넘으면 422) · 사유 필수(마스킹) · 이력이 쌓인다 · 해제된 등록 409(`decisions/309`) |
 | `GET /hub/call-guard-flags?call_id&category&limit&offset` | **관리자 로그인** | 콜 가드 로그 |
-| `POST /hub/routing-decisions` `{call_id, candidates[]}` | 교환기·게이트웨이(인증 없음) | J-5 인입 전 배정 판정 — 적용 중 블랙리스트 고객이면 근속 기준 이상 후보를 고른다. `{assigned_agent_id, is_blacklisted, fell_back, reason, customer_identified, veteran_years, unknown_candidates}` · `routing_log` 기록 · 통화 없음 404(`decisions/313`) |
+| `POST /hub/routing-decisions` `{call_id, candidates[]}` | 교환기·콜 미디에이터(인증 없음) | J-5 인입 전 배정 판정 — 적용 중 블랙리스트 고객이면 근속 기준 이상 후보를 고른다. `{assigned_agent_id, is_blacklisted, fell_back, reason, customer_identified, veteran_years, unknown_candidates}` · `routing_log` 기록 · 통화 없음 404(`decisions/313`) |
 | `GET·PUT /hub/routing-settings` `{veteran_years}` | **관리자 로그인** | 베테랑 근속 기준(0.5~40년). 저장값 없으면 기본 3년 `saved: "false"`(`decisions/313`) |
 | `POST /hub/blacklist-retention/purge` | **관리자 로그인** | 끝난 뒤 180일 지난 만료 변경 사유 · 반려 요청 사유·자막을 표시로 비운다. 행은 남는다 · 멱등 · `{retention_days, cutoff, expiry_change_reasons_purged, rejected_requests_purged}`(`decisions/312`) |
 | `POST /admin/agent-tokens` `{agent_id}` · `GET /admin/agent-tokens?agent_id` · `POST /admin/agent-tokens/{id}/revoke` | **관리자 로그인** | 상담원 토큰 발급·목록·폐기. **원문 `token` 은 발급 응답에만 한 번** — 목록·폐기 응답에는 없다. 만료 없음(폐기로만 끊는다) |

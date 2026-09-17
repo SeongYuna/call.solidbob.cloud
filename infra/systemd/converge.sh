@@ -53,8 +53,8 @@ fi
 [ -s "$CACHE" ] || { log "적용할 매니페스트가 없다"; exit 1; }
 kubectl apply -f "$CACHE"
 kubectl -n callguard rollout status deploy/callguard-server --timeout=180s
-# 게이트웨이도 본다 (2026-09-15). 전에는 server 만 봐서 **부팅 시 게이트웨이가 못 떠도
+# 콜 미디에이터도 본다 (2026-09-15). 전에는 server 만 봐서 **부팅 시 콜 미디에이터가 못 떠도
 # 「완료」를 찍었다** — release.yml 의 배포는 둘 다 보는데 부팅 경로만 하나였다.
-# 09-11 게이트웨이 도입 때 갱신이 누락된 것이다. 게이트웨이가 죽으면 전화가 안 들어온다.
-kubectl -n callguard rollout status deploy/callguard-gateway --timeout=180s
+# 09-11 콜 미디에이터 도입 때 갱신이 누락된 것이다. 콜 미디에이터가 죽으면 전화가 안 들어온다.
+kubectl -n callguard rollout status deploy/callguard-call-mediator --timeout=180s
 log "완료"

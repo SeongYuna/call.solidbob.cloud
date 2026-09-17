@@ -48,7 +48,7 @@ export type RequiredDocsType = string;
 /**
  * ⚠ 이 타입은 와이어 그대로가 아니라 **파싱 이후의 내부 표현**이다. 7.3절 규칙상
  * 실제 응답의 `is_final`·`utterance_end_ms`는 문자열(`"true"`·`"3100"`)로 온다 —
- * 그 경계는 `lib/ws/realGatewayClient.ts`의 `readBoolean`/`readNumber`,
+ * 그 경계는 `lib/ws/realCallMediatorClient.ts`의 `readBoolean`/`readNumber`,
  * `lib/api/coreClient.ts`의 `*Wire` 타입 + `toBool`/`toNum`이 따로 맡아서 여기 도달하기
  * 전에 이미 네이티브 타입으로 바뀐다. UI·mock은 전부 이 파싱 후 타입을 전제로 짜여
  * 있으므로, 필드를 `string`으로 바꾸는 건 계약을 맞추는 게 아니라 그 경계를 무너뜨리는
@@ -218,7 +218,7 @@ export type ClosureVerdict = "complete" | "incomplete";
  * 걷어내고 `procedure`(필요서류 조항 ID·추천 카드 `source.doc_id`와 같은 체계) +
  * `verdict: complete/incomplete`로 바꿨다. 계약 예시(`server/apps/hub/app/dtos/closure_verdict_dto.py`):
  * `{"call_id","procedure","procedure_title","evidence","verdict","missing","source","detected"}`.
- * 값은 전부 문자열로 온다(다른 계약 3종과 같다) — 파싱은 `lib/ws/realGatewayClient.ts`가 한다.
+ * 값은 전부 문자열로 온다(다른 계약 3종과 같다) — 파싱은 `lib/ws/realCallMediatorClient.ts`가 한다.
  */
 export interface ClosureEvent {
   call_id: string;

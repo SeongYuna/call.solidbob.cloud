@@ -6,7 +6,7 @@
      "evidence": {"신분증": false}, "verdict": "incomplete", "missing": ["신분증"],
      "source": {"doc_id": "DASAN-TERM-4.3", "title": "주민등록초본 발급 — 필요서류"}, "detected": true}
 
-- `procedure` 는 필요서류 조항 ID 다 — 추천 카드의 `source.doc_id` 와 같은 체계라 게이트웨이가 그대로 넘긴다.
+- `procedure` 는 필요서류 조항 ID 다 — 추천 카드의 `source.doc_id` 와 같은 체계라 콜 미디에이터가 그대로 넘긴다.
 - verdict·missing 이 evidence 와 맞는지는 이 DTO 가 검사하지 않는다. 규칙은 closure_gate 스포크의 domain 이 갖고
   골든셋으로 evaluation 이 채점한다(절대 규칙 — 1건이라도 어긋나면 실패). 허브는 도메인 로직을 갖지 않는다.
 - 2026-09-14 `decisions/305` — `closure_type`(금융·쇼핑 처리유형)·`approved/blocked` 를 걷어냈다.

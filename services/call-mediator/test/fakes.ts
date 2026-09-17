@@ -8,7 +8,7 @@ import {
   type ClosurePayload,
   type RequiredDocsCheckRequest,
   type CallStartRequest,
-  type GatewayMessage,
+  type CallMediatorMessage,
   type HubPort,
   type LedgerStore,
   type Logger,
@@ -170,16 +170,16 @@ export class FakeHub implements HubPort {
 }
 
 export class CaptureBroadcaster implements Broadcaster {
-  readonly messages: Array<{ callId: string; message: GatewayMessage }> = [];
+  readonly messages: Array<{ callId: string; message: CallMediatorMessage }> = [];
 
-  publish(callId: string, message: GatewayMessage): void {
+  publish(callId: string, message: CallMediatorMessage): void {
     this.messages.push({ callId, message });
   }
 
-  ofType<T extends GatewayMessage["type"]>(type: T): Array<Extract<GatewayMessage, { type: T }>> {
+  ofType<T extends CallMediatorMessage["type"]>(type: T): Array<Extract<CallMediatorMessage, { type: T }>> {
     return this.messages
       .map((item) => item.message)
-      .filter((message): message is Extract<GatewayMessage, { type: T }> => message.type === type);
+      .filter((message): message is Extract<CallMediatorMessage, { type: T }> => message.type === type);
   }
 }
 

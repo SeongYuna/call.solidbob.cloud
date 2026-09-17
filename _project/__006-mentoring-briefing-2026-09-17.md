@@ -21,7 +21,7 @@
 | 기간 | 2026-08-20 ~ 10-27. 오늘 **5주차 첫날**(4주차 09-10~09-16 종료). 마감까지 **40일** |
 | 성공 조건 | **STT 오류 내성 실험 + 검색 품질 개선 수치** (F-2 는 조건부·추가 성과) |
 | 사수 대상 | **B(필요서류 검색) · E(평가 하네스) · C-5(개인정보 마스킹)** |
-| 운영 | AWS EC2(k3s) + RDS + 게이트웨이 + 프론트 3종 Vercel 전부 떠 있다. **머지 = 배포**가 서버 쪽에서 실제로 돈다(09-15 완주) |
+| 운영 | AWS EC2(k3s) + RDS + 콜 미디에이터 + 프론트 3종 Vercel 전부 떠 있다. **머지 = 배포**가 서버 쪽에서 실제로 돈다(09-15 완주) |
 | 검색(B) | BM25 운영 **Recall@5 0.833** · 로컬 임베딩+리랭커 **0.979** — 목표 0.70 통과. **운영은 아직 BM25**(모델 미탑재) |
 | C-5 | 로컬 규칙+NER **누락 0** · **운영은 규칙만이라 골든셋 기준 4건 뚫려 있다** — 절대 규칙 위반 상태가 운영에 남아 있다 |
 | 오류 내성(E-3) | 0~20% 곡선 **쟀다**(09-15). 단 주입기가 실측 편집의 46.9% 를 못 흉내 내 **낙관 상한** |
@@ -36,7 +36,7 @@
 | 1 (08-20~) | 기반·전제 확인 | 6개 전부 달성 |
 | 2 | 베이스라인(BM25)·골든셋 50 | 달성 |
 | 3 | 실시간화·C-5·골든셋 150 | 골든셋 150 ✅ · C-5 규칙 ✅ · **실시간 STT 는 4주차(09-11)에 됐다** |
-| 4 (09-10~09-16) | 검색 품질(dense·RRF·청킹) | **로드맵 항목 4건 로컬 완료**(류준 09-15) + 로드맵에 없던 일이 대부분: 게이트웨이·블랙리스트(J)·관리자 로그인·운영 배포·스키마 따라잡기·통화 후 처리·프론트 실연동 |
+| 4 (09-10~09-16) | 검색 품질(dense·RRF·청킹) | **로드맵 항목 4건 로컬 완료**(류준 09-15) + 로드맵에 없던 일이 대부분: 콜 미디에이터·블랙리스트(J)·관리자 로그인·운영 배포·스키마 따라잡기·통화 후 처리·프론트 실연동 |
 | **5 (09-17~)** | **오류 내성 실험 (핵심 주차)** | 곡선은 이미 09-15 에 쟀다(w5 4건 done). 남은 w5 는 A-5 WER(막힘)·분류기 대조(막힘)·합성 통화(진행 중) |
 | 6 | 생성·컴플라이언스 · **코어 기준선 통과 확인** | 생성·컴플라이언스는 로컬 done. **판정 티켓 `w6-core-baseline-check` todo** |
 | 7 | 운영 관점 · **F-2 체크포인트** | postcall·캐시·토큰 비용 done. **F-2 체크포인트·지연 측정 todo** |
@@ -50,13 +50,13 @@
 
 | 블록 | 코드 | 로컬 측정 | **운영** | 화면 |
 |---|---|---|---|---|
-| **A-1~A-4 STT·게이트웨이** | `services/gateway`(Node, 토큰 2종, COST-1 캡) | 09-11 ngrok → 운영 백엔드 → 대시보드 E2E 성공 | **배포됨** `/gateway/*`, gateway `0.1.4`(main 은 `0.1.5`) | 라이브 모드는 `?gateway=` 로만. **공개 데모는 mock** |
+| **A-1~A-4 STT·콜 미디에이터** | `services/call-mediator`(Node, 토큰 2종, COST-1 캡) | 09-11 ngrok → 운영 백엔드 → 대시보드 E2E 성공 | **배포됨** `/call-mediator/*`, call-mediator `0.1.4`(main 은 `0.1.5`) | 라이브 모드는 `?call_mediator=` 로만. **공개 데모는 mock** |
 | **A-5 통번역(차별점)** | ⓑ(서툰 한국어 전사)만 1차 범위 · 8kHz 페널티 분리만 됨 | **측정 불가 — 외국인 화자 음성 0건** | — | mock 시나리오 |
 | **B 필요서류 검색(메인)** | BM25 + KoE5 dense + bge 리랭커 + LRU 캐시 | Recall@5 **0.979**(임베딩+리랭커) / 0.833(BM25) | **BM25 만**(이미지에 torch 없음). 지식베이스 98조항 ES 적재 ✅ · `document` 98행 ✅ | 카드·수동 검색 실연동 |
 | **B-4~B-6 생성** | `ai/apps/generation` kanana(`decisions/207`) | 원출력 환각 카드 96→27/96, 화면 노출 0 | **미반영**(ollama 파드 없음, 켜면 p95 +0.9~1.0s 로 예산 초과) | 조항 스니펫 그대로 |
 | **C-1~C-4 컴플라이언스** | 규칙 v1 스포크 + 서버 배선 | 골든셋 1.0(상한), 실제 상담원 발화 과탐지 2/4,952 | 배선됨 | **경고 UI 미연결**(`w6-compliance-alert-ui`) |
 | **C-5 마스킹(사수)** | 규칙(P1~P5·P6 폴백) + `ai/apps/pii_ner`(NER) | 규칙만 누락 4 · 규칙+NER **누락 0** (n=28) · 곡선 0/0/1/1/1 | **규칙만 → 4건 뚫림** | 마스킹 자막 실연동 |
-| **C-6 콜 가드** | `POST /hub/call-guard-checks` + 저장 + 게이트웨이 알림 | 1.0/1.0 (n=15, 자기충족) | 배포됨, 알림 켜짐(0.1.4) | 4종 배너(distress 분리) |
+| **C-6 콜 가드** | `POST /hub/call-guard-checks` + 저장 + 콜 미디에이터 알림 | 1.0/1.0 (n=15, 자기충족) | 배포됨, 알림 켜짐(0.1.4) | 4종 배너(distress 분리) |
 | **D-1~D-3 통화 후** | 규칙 발췌 초안 → 확정 → 재수정(+이력) | D-2 유형 제안 0.872(AI Hub 1,009) — **운영은 유형 null** | `0.1.10` 배포됨 | 확정·재수정 폼 실연동 |
 | **D-4 공백 리포트** | 수집·조회·해제 API | — | 배포됨 | 관리자 갭 탭 실연동(09-16) |
 | **D-5 통화 온도** | `ai/apps/voice_signal` 규칙(화자별 로버스트 z) | **측정 불가 — 음성 골든셋 없음**, 가설 2 반대로 나옴 | **호출부 없음** | mock |
@@ -107,11 +107,11 @@
 - **서버 `0.1.5 → 0.1.10` 운영 배포 6회** — 통화 시작·전사 복합키·F-2 다산 규칙표·블랙리스트 API·상담원 토큰·통화 후 초안/확정/재수정·만료 연장·보존 정리·J-5 판정 API. 운영 DB **22 → 29 테이블**(마이그레이션 4개, 이름 일치 확인).
 - **관리자 화면 신설·운영 로그인 성공** — `admin.solidbob.cloud` · 세션 Redis 파드 · 첫 관리자 행.
 - **AI 로드맵 4~7주차 대부분 로컬 완료** — 임베딩·리랭커·청킹 비교·NER·오류 주입기·곡선 2종·생성·컴플라이언스·통화 후 요약·캐시·토큰 비용.
-- **프론트 실연동** — mock 위에서만 돌던 화면(통화 목록·자막·수동 검색·블랙리스트·콜가드 집계·요약 확정·상담기록 재생·카드 피드백·지식베이스 갭)을 `/hub/*` 에 붙였다. `?gateway=` 허용 목록 구멍도 막았다.
+- **프론트 실연동** — mock 위에서만 돌던 화면(통화 목록·자막·수동 검색·블랙리스트·콜가드 집계·요약 확정·상담기록 재생·카드 피드백·지식베이스 갭)을 `/hub/*` 에 붙였다. `?call_mediator=` 허용 목록 구멍도 막았다.
 - **테스트 음성 S3 보관**(`decisions/110`) · `document` 98행 적재 · 발신 번호 유출 검사 깜빡임 수정.
 - **09-16**: 합성 통화 대본 10건 + 재생기(류준, `origin/ai` 미머지) · 카드 피드백·갭 탭 화면 연결(조서희, PR #96 머지).
 
-테스트 규모(09-15 실측): server **783** + integration 20 · ai **392** · gateway **101~107** · 계약 4+3종 KEPT.
+테스트 규모(09-15 실측): server **783** + integration 20 · ai **392** · call-mediator **101~107** · 계약 4+3종 KEPT.
 
 ---
 
@@ -154,8 +154,8 @@
 **계약·설계 결정**
 - `admin_account.agent_id` 를 무엇으로 채울지(선택지 셋) — 이것 없이는 승인·해제·연장이 409.
 - 상담원 토큰을 어디까지 걸지(카드 피드백은 설계상 걸면 안 됨) · 토큰 만료 없음.
-- J-5 배정 판정을 누가 부르나(게이트웨이 `/dev` 콜이 통화 시작 직후 부를지) + 인증.
-- D-5 를 누가 부르나(게이트웨이가 F0 특징값을 보낼지).
+- J-5 배정 판정을 누가 부르나(콜 미디에이터 `/dev` 콜이 통화 시작 직후 부를지) + 인증.
+- D-5 를 누가 부르나(콜 미디에이터가 F0 특징값을 보낼지).
 - 「감정분석」 대체 용어 · `distress_count` 미저장 판단 · 블랙리스트 만료 기간 · 베테랑 「3년」 근거 · 원문 열람 기능 폐기 여부 · 블랙컨슈머 수동 분류 카드 결정 기록.
 - 상담기록 목록에 요약 미리보기 넣을지 · 공개 데모 라이브 전환(A/B/C).
 - 학습 방향: 「모델을 학습하지 않는다」가 확정되면 결정 기록 + 티켓 3건 정리.
@@ -172,15 +172,15 @@
 [Cloudflare DNS 회색 구름] → server.solidbob.cloud → EC2 1대 (Amazon Linux 2023, k3s)
      ├ Traefik Ingress + cert-manager(Let's Encrypt)
      ├ Deployment callguard-server   seongyuna/callguard-server:0.1.10 운영 (main newTag 0.1.13)   ← server/ + ai/apps 한 컨테이너
-     ├ Deployment callguard-gateway  seongyuna/callguard-gateway:0.1.4 운영 (main 0.1.5, ai 브랜치 0.1.6)  Ingress /gateway
+     ├ Deployment callguard-call-mediator  seongyuna/callguard-call-mediator:0.1.4 운영 (main 0.1.5, ai 브랜치 0.1.6)  Ingress /call-mediator
      ├ StatefulSet elasticsearch-0   seongyuna/callguard-es:9.5.1 (nori, ClusterIP, 볼륨)  지식베이스 98조항
      ├ Deployment redis              관리자 세션 5분, 볼륨 없음(decisions/112)
-     └ 시크릿 server-env · gcp-stt-credentials · gateway-tokens (저장소 밖)
+     └ 시크릿 server-env · gcp-stt-credentials · call-mediator-tokens (저장소 밖)
 [RDS] callguard-pg  PostgreSQL 17, db.t4g.micro, SSL 강제 — 29 테이블 (09-15 이름 일치 확인)
 [S3]  assist-apne2  uploads/ (테스트 음성, decisions/110) · IAM 역할 callguard-ec2-role (정적 키 없음)
-[CI]  test.yml(4잡) · tag-check.yml · release.yml(plan→image/gateway-image/es-image→k3s-deploy, OIDC callguard-deploy-role main 한정, SSM 적용)
+[CI]  test.yml(4잡) · tag-check.yml · release.yml(plan→image/call-mediator-image/es-image→k3s-deploy, OIDC callguard-deploy-role main 한정, SSM 적용)
       · pages.yml(docs.solidbob.cloud) · main 룰셋 필수 검사 5종 · 복원본 .github/ruleset-main.json
-[부팅] infra/systemd/converge.sh — main tarball 을 렌더해 적용, server·gateway 롤아웃 둘 다 본다
+[부팅] infra/systemd/converge.sh — main tarball 을 렌더해 적용, server·call-mediator 롤아웃 둘 다 본다
 ```
 
 - **컨테이너 하나·도메인 하나**(`decisions/105`) · **콘솔로 세웠다** — `infra/terraform/` 은 설계서, `destroy→apply` 재현 경로 없음.
@@ -193,7 +193,7 @@
 | 릴리스 태그 게이트 fail-closed · PR 시점 검사(`tag-check.yml`) · `sha-` 전환 기각 | `decisions/111` |
 | 룰셋 필수 검사 5종 · `ruleset-main.json`·`branch-protection.json` 라이브와 일치 | 09-15 |
 | OIDC 신뢰 정책 실물 확인(`main` 한정, ID 고정형, 유일 역할) | 09-15 |
-| CI 결함 5건 — ES 이미지 잡 · converge 게이트웨이 롤아웃 · 중복 CI · 보호 사본 · 이미지에서 tests 제외 | `decisions/114` |
+| CI 결함 5건 — ES 이미지 잡 · converge 콜 미디에이터 롤아웃 · 중복 CI · 보호 사본 · 이미지에서 tests 제외 | `decisions/114` |
 | 「머지 = 배포」 서버 경로 완주 · 배포 프로브 넣고 걷음 | `w4-swagger-deploy-probe` |
 | `admin.solidbob.cloud` · 세션 Redis 파드 · OAuth 키 · CORS · 첫 관리자 행 → 운영 로그인 성공 | `decisions/112`, 런북 16-3·17-4·18-3 |
 | 운영 DB 마이그레이션 4개 적용 · 29 테이블 확인 · `document` 98행 적재 | 런북 17-3, 09-15 |
@@ -212,9 +212,9 @@
 **🟠 이번 주**
 5. `w4-aws-resource-hygiene` — RDS 권장 사항 2건(퍼블릭 액세스·백업 보존이면 즉시) · Enhanced Monitoring 의도 확인 · 7월 잔재(두 번째 VPC·`admin-security`·`launch-wizard-1`) 정리.
 6. **DNS 정리** — 자리표시자 `ai` 레코드 삭제 · `docs` CNAME 을 `seongyuna.github.io` 로 · `api`(Railway, TLS 미발급) 정리.
-7. **미머지 브랜치 셋을 main 에** — `PM`(런북 18-4) · `origin/ai`(합성 통화 + gateway `0.1.6`) · `origin/frontend`(09-16 로그·STATE). 태그 충돌 주의(ai 가 gateway 0.1.6 선점).
+7. **미머지 브랜치 셋을 main 에** — `PM`(런북 18-4) · `origin/ai`(합성 통화 + call-mediator `0.1.6`) · `origin/frontend`(09-16 로그·STATE). 태그 충돌 주의(ai 가 call-mediator 0.1.6 선점).
 8. **0.1.13 릴리스 성공 확인** — PR #94 머지로 `0.1.13`·`0.1.5` 가 구워졌어야 한다. 이 머신에 `gh` 가 없어 이 문서에서는 확인하지 못했다. 운영 `/admin/auth/test` 가 404 인지도 같이 본다.
-9. **STT 일 캡 600초 = 하루 약 4통화** — 시연·리허설 일정에 맞춰 캡(`gateway.yaml`)과 GCP 쿼터를 조정할지.
+9. **STT 일 캡 600초 = 하루 약 4통화** — 시연·리허설 일정에 맞춰 캡(`call-mediator.yaml`)과 GCP 쿼터를 조정할지.
 10. `w2-stt-batch` 실행 검증(오디오 있는 머신) · `speaker=auto` 실제 구글 응답 검증(`decisions/303`).
 
 **🟡 6주차 판정 전까지**
@@ -237,14 +237,14 @@
 |---|---|
 | GPU 인스턴스를 켜서 모델(NER·임베딩·리랭커·kanana)을 운영에 올릴지, 아니면 「운영은 BM25+규칙, 품질 수치는 로컬 측정」으로 발표할지 | 비용($142 vs $597) · C-5 절대 규칙 · 4.3절 지연 예산(kanana 켜면 초과) |
 | 공개 데모를 라이브로(B) 할지 mock 유지(A) 할지 | 「주소를 아는 사람은 자막을 본다」 수용 여부 · 상담원 로그인 없음 |
-| J-5 판정·D-5 를 게이트웨이가 부르게 할지 | 계약(§7.3)·인증 |
+| J-5 판정·D-5 를 콜 미디에이터가 부르게 할지 | 계약(§7.3)·인증 |
 | 자동 중지 + 수동 DNS 갱신을 유지할지, EIP($3.6/월)를 붙일지 | 운영 손질 vs 비용 |
 
 ### 7-5. 비용·리스크
 
 - 예산 **$400**, 런북 정가 근사치 6주 **≈ $198**(GPU 8h×5일 기준). **실제 청구액은 이 문서에서 확인하지 않았다** — Cost Explorer 를 본다.
 - 24/7 로 켜면 $597 → 예산 초과. 자동 중지 상태 확인(7-3 ②)이 곧 예산 관리다.
-- 인스턴스에만 있는 것: 클러스터 구성(AMI 없음) · 업로드 토큰 · 게이트웨이 토큰 · **OIDC 신뢰 정책 원문**(코드로 없음, 콘솔 유일본).
+- 인스턴스에만 있는 것: 클러스터 구성(AMI 없음) · 업로드 토큰 · 콜 미디에이터 토큰 · **OIDC 신뢰 정책 원문**(코드로 없음, 콘솔 유일본).
 - 「만들지 말 것」(NAT·EKS·ALB·Kinesis·ElastiCache·Multi-AZ·device plugin·직접 VPC)은 전부 지켜지고 있다.
 
 ---
@@ -278,19 +278,19 @@
 
 | 브랜치 | main 대비 | 내용 |
 |---|---|---|
-| `origin/main` `6e755a8` | — | PR #96(frontend) 까지. `newTag` server `0.1.13` · gateway `0.1.5` · es `9.5.1` |
+| `origin/main` `6e755a8` | — | PR #96(frontend) 까지. `newTag` server `0.1.13` · call-mediator `0.1.5` · es `9.5.1` |
 | `PM` `c0b828b` | +1 | 런북 18-4(Vercel 대조표) · 09-15-21 로그 |
-| `origin/ai` `4c52035` | +2 | 합성 통화 대본·재생기 · **gateway `0.1.6`** · 09-16 로그 2건 · `w5-persona-sim-scripts` |
+| `origin/ai` `4c52035` | +2 | 합성 통화 대본·재생기 · **call-mediator `0.1.6`** · 09-16 로그 2건 · `w5-persona-sim-scripts` |
 | `origin/frontend` `6e61764` | +1 | 09-16 로그 · STATE `apps/` 줄 |
 | `origin/server` | 0 | main 과 같다 |
 
-셋 다 PR 을 내면 된다. `ai` 는 gateway 태그를 먼저 집었으므로 다른 갈래가 `0.1.6` 을 쓰지 않는다.
+셋 다 PR 을 내면 된다. `ai` 는 call-mediator 태그를 먼저 집었으므로 다른 갈래가 `0.1.6` 을 쓰지 않는다.
 
 ---
 
 ## 11. 데이터 흐름 — 어디로 들어와서 어디로 나가는가 (코드 실물 기준, 09-17 추가)
 
-> 근거: `services/gateway/src/adapters/hub_http.ts`(게이트웨이→서버 호출 5개) · `app/call_registry.ts`(발화 처리 순서) ·
+> 근거: `services/call-mediator/src/adapters/hub_http.ts`(콜 미디에이터→서버 호출 5개) · `app/call_registry.ts`(발화 처리 순서) ·
 > `server/apps/*/adapter/inbound/api/v1/*_router.py`(라우터 34개) · `outbound/postgres/*_repository.py`(INSERT 대상) ·
 > `apps/call/src/lib/api/coreClient.ts` · `apps/admin/src/lib/api/hubClient.ts` · `db/schema.sql`(29 테이블).
 
@@ -298,8 +298,8 @@
 
 | 문 | 무엇 | 누가 |
 |---|---|---|
-| `WS /gateway/ingest` | 오디오 PCM16, 화자별 채널 (`speaker=auto` 는 모노 화자 분리) | 오디오 생산자 — `scripts/stream_wav.ts`. 전화 사업자는 없다 |
-| `GET /gateway/dev` · `WS /gateway/dev/text` | 브라우저 음성 인식이 글자로 바꾼 발화 | 개발자 폰·PC · 합성 대본 재생기(`origin/ai`) |
+| `WS /call-mediator/ingest` | 오디오 PCM16, 화자별 채널 (`speaker=auto` 는 모노 화자 분리) | 오디오 생산자 — `scripts/stream_wav.ts`. 전화 사업자는 없다 |
+| `GET /call-mediator/dev` · `WS /call-mediator/dev/text` | 브라우저 음성 인식이 글자로 바꾼 발화 | 개발자 폰·PC · 합성 대본 재생기(`origin/ai`) |
 | 상담원 화면 REST | 수동 검색어 · 블랙리스트 요청 · 통화 종료·요약 확정·재수정 · 카드 채택 | `apps/call` |
 | 관리자 화면 REST | 승인·해제·연장 · 근속 기준 · 상담원 토큰 발급 · 보존 정리 · 갭 해제 | `apps/admin`(구글 로그인) |
 | `POST /hub/uploads/ticket` | 테스트 음성 → S3 presign | 팀원 브라우저 페이지 |
@@ -308,7 +308,7 @@
 ### 11-2. 실시간 한 발화의 흐름
 
 ```
-오디오 ─WS /ingest─▶ 게이트웨이 ─▶ Google STT (interim / final)
+오디오 ─WS /ingest─▶ 콜 미디에이터 ─▶ Google STT (interim / final)
   첫 채널 열릴 때        POST /hub/calls                 → call (+customer — 발신 번호는 HMAC 식별자로만)
   final 발화마다         POST /hub/transcripts   원문 → C-5 마스킹 → transcript_segment · masking_event
                              ▲ 원문이 존재하는 유일한 구간(SEC-1). 응답부터는 마스킹본만
@@ -323,11 +323,11 @@
                          POST …/summary-revision         → call_summary_revision(이력) · 후속조치 superseded
 ```
 
-- 게이트웨이 → 서버 호출은 **다섯**이 전부다: `calls` · `transcripts` · `recommendations` · `call-guard-checks` · `required-docs-checks`.
-- 게이트웨이 → 대시보드 WS 메시지는 **여섯**이 전부다: `transcript` · `recommendation_pending` · `recommendation` · `call_guard` · `closure` · `end`.
+- 콜 미디에이터 → 서버 호출은 **다섯**이 전부다: `calls` · `transcripts` · `recommendations` · `call-guard-checks` · `required-docs-checks`.
+- 콜 미디에이터 → 대시보드 WS 메시지는 **여섯**이 전부다: `transcript` · `recommendation_pending` · `recommendation` · `call_guard` · `closure` · `end`.
 - 값은 전부 문자열(§7.3, `StrField`) — 화면 파서가 그 전제다.
 
-### 11-3. 화면이 직접 부르는 REST (게이트웨이를 거치지 않음)
+### 11-3. 화면이 직접 부르는 REST (콜 미디에이터를 거치지 않음)
 
 - **상담원** `apps/call`: `GET /hub/calls`(목록·`?customer_id=` 재상담 이력) · `GET /hub/calls/{id}/transcript` · `GET /hub/calls/{id}/record`(요약·카드·판정 재생) · `POST /hub/search` · `POST /hub/cards/{id}/feedback` · `POST /hub/blacklist-requests`(상담원 토큰) · `close` / `summary-confirmation` / `summary-revision`.
 - **관리자** `apps/admin`: `GET/POST /hub/blacklist-requests(/decision)` · `GET /hub/blacklist-entries` + `/release` · `/expiry` · `/expiry-changes` · `POST /hub/blacklist-retention/purge` · `GET /hub/call-guard-flags` · `GET/PATCH /hub/knowledge-gaps` · `GET/PUT /hub/routing-settings` · `GET /hub/calls` · `/admin/agent-tokens`(발급·목록·폐기) · `/admin/auth/*`.
@@ -340,7 +340,7 @@
 | Elasticsearch `callguard-kb-single` | 지식베이스 98조항, nori BM25 (**운영엔 벡터 없음**) |
 | S3 `assist-apne2/uploads/` | 테스트 음성 (`decisions/110`) |
 | Redis 파드 | 관리자 access 세션 5분, 휘발 |
-| 게이트웨이 hostPath 장부 | STT 사용 초 (COST-1 2차 캡) |
+| 콜 미디에이터 hostPath 장부 | STT 사용 초 (COST-1 2차 캡) |
 | **저장하지 않는 것** | 마스킹 전 원문(SEC-1) · 오디오 · 발신 번호 평문 · `distress_count`(`decisions/205`) |
 
 ### 11-5. 오프라인 흐름 (사람이 돌린다)
@@ -348,17 +348,17 @@
 - `knowledge-base/dasan/` → `scripts/index_knowledge_base.py --to-es --recreate` → ES 인덱스 (운영은 파드 안에서, 런북 15-1) · `scripts/seed_documents.py` → RDS `document`(근거 조항 FK, 런북 17-3).
 - `golden-set/v1-150.json` → `scripts/run_eval.py --runs 3 --record` → `eval_run`·`eval_result` — **수치의 유일한 정식 출처**(§5).
 - AI Hub 원본 `data/raw/`(커밋 금지) → `scripts/transcribe_batch.py` → `data/processed/` · 오류 주입기 `measure_error_tolerance.py` → 곡선.
-- 합성 대본 `scripts/persona_sim/dasan-v0/` → `services/gateway/scripts/replay_persona_call.ts` → `/dev/text?producer=script`(`origin/ai`, 미머지).
+- 합성 대본 `scripts/persona_sim/dasan-v0/` → `services/call-mediator/scripts/replay_persona_call.ts` → `/dev/text?producer=script`(`origin/ai`, 미머지).
 - 모델 가중치: 로컬 `PII_NER_MODEL_DIR`·`RETRIEVAL_*_MODEL_DIR` 로만 켜진다 — 운영 이미지에 없다.
 
 ### 11-6. 들어오는데 나갈 곳이 없거나, 나가야 하는데 들어오는 곳이 없는 것
 
 | 데이터 | 상태 |
 |---|---|
-| C-1~C-4 위반 (`POST /hub/compliance-checks`) | 서버 엔드포인트만 있다. **게이트웨이도 화면도 부르지 않는다** → 경고가 화면에 못 나간다(`w6-compliance-alert-ui`) |
-| J-5 배정 판정 (`POST /hub/routing-decisions`) | **부르는 곳이 없다**(교환기 없음, 게이트웨이 미호출) → `routing_log` 빈 채. 인증도 없다 |
+| C-1~C-4 위반 (`POST /hub/compliance-checks`) | 서버 엔드포인트만 있다. **콜 미디에이터도 화면도 부르지 않는다** → 경고가 화면에 못 나간다(`w6-compliance-alert-ui`) |
+| J-5 배정 판정 (`POST /hub/routing-decisions`) | **부르는 곳이 없다**(교환기 없음, 콜 미디에이터 미호출) → `routing_log` 빈 채. 인증도 없다 |
 | D-5 통화 온도 (`voice_outlier`) | 저장 포트만 있고 **오디오 특징값을 서버로 보내는 입구가 없다**(서버는 텍스트만 받는다) |
-| F-2 게이트 원형 (`POST /hub/closure-checks`) | 게이트웨이는 `required-docs-checks` 만 부른다 → 호출부 없음 |
+| F-2 게이트 원형 (`POST /hub/closure-checks`) | 콜 미디에이터는 `required-docs-checks` 만 부른다 → 호출부 없음 |
 | A-5 번역·TTS · 감정 | 입구·출구 둘 다 없다. 상담기록 재생에서 늘 빈 칸 |
 | D-4 「못 찾았다」 신고 (`POST /hub/knowledge-gaps`) | 입력 API 는 있으나 **상담원 화면이 부르지 않는다** — 관리자 조회·해제만 붙어 있다 |
 | NER·임베딩·리랭커·생성 | 코드 경로는 있으나 **운영 이미지에 모델이 없어** 규칙·BM25·스니펫으로 내려간다(§7-3 ①) |
@@ -425,9 +425,9 @@
 | # | 무엇 | 확인 | 어떻게 닫나 |
 |---|---|---|---|
 | 1 | **matplotlib 시각화** — 3.1절 «필수» 도구, 10.2절·5주차 로드맵의 「오류율별 성능 곡선 · 레이턴시 분포 · 오류 축 둘(STT 품질 × 숙련도)을 한 그림에」 | 저장소에 matplotlib 호출 **0건**, PNG 는 ERD 뿐 | `scripts/plot_curves.py` — 하네스 JSON 만 입력. 오류율 0~20% × Recall@5·C-5 재현율 한 그림 → `jekyll/assets/` + 캡션에 측정일·커밋·표본 수. 숙련도 축은 A-5 데이터 뒤 |
-| 2 | **D-6 통화 종료 즉시 핵심 제시** — rev.5 신설, 7주차 | `# Requirement: D-6` **0건**. 그런데 `POST /hub/calls/{id}/close` 가 즉시 규칙 발췌 초안을 준다 | 결정 기록 「close 즉시 초안이 D-6」 + 주석. **close 를 누가 부르나**(프론트 버튼 / 게이트웨이 채널 닫힘 자동) — §11-6 과 같은 자리 |
+| 2 | **D-6 통화 종료 즉시 핵심 제시** — rev.5 신설, 7주차 | `# Requirement: D-6` **0건**. 그런데 `POST /hub/calls/{id}/close` 가 즉시 규칙 발췌 초안을 준다 | 결정 기록 「close 즉시 초안이 D-6」 + 주석. **close 를 누가 부르나**(프론트 버튼 / 콜 미디에이터 채널 닫힘 자동) — §11-6 과 같은 자리 |
 | 3 | **B-4 생성 스트리밍** — 4.3절 「첫 토큰 500ms, 카드 점진 표시」 | `ollama_chat.py:55` `stream: False` 고정 | 생성을 운영에 켜기로 할 때만. 안 켜면 「미착수 · 예산표 생성 행 미측정」 명시 |
-| 4 | **프론트 자동화 테스트(QUA-1)** — 요구 표는 `apps/call/test` Jest 명시 | `apps/call`·`apps/admin` 테스트 파일 0 · `package.json` test 없음 · CI 에 `apps` 잡 없음 | vitest 최소 범위 — WS 파서 4종이 §7.3 문자열 계약을 읽는지 + `isAllowedGatewayUrl`. `test.yml` 에 `apps` 잡 + 룰셋 + `ruleset-main.json` |
+| 4 | **프론트 자동화 테스트(QUA-1)** — 요구 표는 `apps/call/test` Jest 명시 | `apps/call`·`apps/admin` 테스트 파일 0 · `package.json` test 없음 · CI 에 `apps` 잡 없음 | vitest 최소 범위 — WS 파서 4종이 §7.3 문자열 계약을 읽는지 + `isAllowedCallMediatorUrl`. `test.yml` 에 `apps` 잡 + 룰셋 + `ruleset-main.json` |
 | 5 | **2.1절 「고객 원문 병기 + 숙련도」 칸** | mock 시나리오에만 있고 실서버 계약에 필드 없음 | 결정 기록 `4xx` — 라이브 모드에서 두 칸은 빈칸(숙련도 라벨은 데이터셋 것이지 고객 판정이 아니다). 마스킹 원문 토글 폐기도 같은 기록에 |
 | 6 | **8주차 로드맵 산출물** — 아키텍처 다이어그램 · **실패 사례 분석** · **데이터 한계(5.5절)** · 성능 리포트 | 티켓 어디에도 명시 없음 | `w8-presentation`·`w8-final-docs` 본문에 산출물 넷을 적는다 |
 | 7 | **J KPI 집계 API** — `routing_log` 의 목적이 「떨어뜨린 건수를 센다」인데 세는 곳 없음 | `GET /hub/routing-stats` 없음 | `{total, fell_back, blacklisted}` 문자열, `require_admin`, **상담원 단위로 쪼개지 않는다**(부록 A-1). J-5 호출부(§11-6) 없이는 값이 0 |
@@ -439,7 +439,7 @@
 | 8 | **`/health` 에 배포 이미지 태그** | `server/main.py:376` `version="0.1.0"` 고정. 프로브 삭제 뒤 밖에서 태그를 알 방법 없음 | Dockerfile `ARG APP_VERSION` → `release.yml` `build-args` → `config.py` → `/health` `version`. 없으면 `unknown`(지어내지 않는다). 런북 가드 대상 |
 | 9 | **`/health` 가 DB 에 `SELECT 1`** — 지금 `postgres_configured` 는 환경변수 «있음»만 본다 | 런북 19장·09-14 사건 둘 다 「`/health` ok 인데 DB 는 안 붙음」 | `{"configured","reachable"}` 로 넓힌다. 실패해도 `status: ok`(k8s probe 가 재시작하지 않게). ES 도 같은 모양 |
 | 10 | **`display_hint` 채우는 경로 없음**(늘 null) — 관리자 블랙리스트 목록이 HMAC 만 보여 준다 | `blacklist_request_create_schema.py:33` 「채우는 경로 없다」 | 발신 번호 → HMAC 만드는 자리에서 뒤 4자리 `****1234` 를 같이 저장. 원문은 남기지 않는다 |
-| 11 | **상담원 인증 구멍** — `agent.role="admin"` 을 호출자가 본문에 실어 주장하면 승인 통과 | `open-items:220`. 재료(`require_agent`·`require_admin`)는 09-15 에 생겼으나 승인·해제·연장에 붙었는지 미확인, **토큰 만료 없음** | 승인·해제·연장에 `require_admin` 확인 → 라우터 34개를 «게이트웨이/상담원/관리자/무인증» 표로 → 만료 컬럼 + 기본값(예시값) |
+| 11 | **상담원 인증 구멍** — `agent.role="admin"` 을 호출자가 본문에 실어 주장하면 승인 통과 | `open-items:220`. 재료(`require_agent`·`require_admin`)는 09-15 에 생겼으나 승인·해제·연장에 붙었는지 미확인, **토큰 만료 없음** | 승인·해제·연장에 `require_admin` 확인 → 라우터 34개를 «콜 미디에이터/상담원/관리자/무인증» 표로 → 만료 컬럼 + 기본값(예시값) |
 | 12 | **보존 기간 셋 미정** — 추천 저장(308) · 만료 변경 이력 사유(309) · 반려 요청 사유(205) | 전례는 블랙리스트 문장 180일(312)뿐, 그 값도 근거 없음 | 결정 기록 하나로 묶고 같은 purge 엔드포인트가 세 테이블을 비운다. 추천은 본문만 비우고 건수는 남긴다 |
 | 13 | **F-2 게이트 호출 시점** — 요청 시만인지, close 에서 최종 판정을 한 번 더인지 | `docs/architecture.md §6` 미결. 코드는 둘 다 반쯤(`closure_router` + `required-docs-checks`) | 권고 「close 에서 최종 `missing` 을 초안에 싣는다」 — #2 D-6 와 같은 자리 |
 | 14 | **계약 테스트가 필드명·타입을 단언하는가** — `score` 어긋남이 3주 간 원인 | 전사·종결 라우터 테스트 미점검. 알려진 어긋남 둘(`ClosureType` 「사고·보상」·`segment_id` 예시) | 세 라우터 테스트에 키 집합 + 전부 문자열 단언 1건씩 |
@@ -451,7 +451,7 @@
 ### 13-4. 문서가 실물과 어긋난 곳 — `w8-final-docs` 에 넣을 목록 (대장 G 절)
 
 - **런북이 원안 그대로인 곳**: g4dn.xlarge · Ubuntu DLAMI · `assist-gpu-01` · `assist-key` · EIP · 네임스페이스 `assist` — 실물은 Amazon Linux 2023 · EIP 없음 · `callguard`. 0장 자원표 · 7-2 · 20 · 21-2 · VRAM 표 전면 대조. 5-3 데이터셋 프리픽스 ↔ `data/README.md` 통일.
-- **낡은 서술**: `.claude/rules/call.md:86`(게이트웨이 0줄) · `README.md:16`(게이트웨이·코어 없음) · `infra/CLAUDE.md §3` 「아직 없는 것」(Dockerfile 있음·Caddy 폐기) · `docs/architecture.md §6` 미결 4건(도메인 라우팅 폐기 반영) · `jekyll/docs/03` 표 「nori+dense_vector+RRF」(206 비채택 반영) · `CLAUDE.md` 서류 문의 174건·69종 → 146건·64종 · `docs/06` 지표표 빈 값·F-3 잔존 · `jekyll/sprints/` 01 뿐.
+- **낡은 서술**: `.claude/rules/call.md:86`(콜 미디에이터 0줄) · `README.md:16`(콜 미디에이터·코어 없음) · `infra/CLAUDE.md §3` 「아직 없는 것」(Dockerfile 있음·Caddy 폐기) · `docs/architecture.md §6` 미결 4건(도메인 라우팅 폐기 반영) · `jekyll/docs/03` 표 「nori+dense_vector+RRF」(206 비채택 반영) · `CLAUDE.md` 서류 문의 174건·69종 → 146건·64종 · `docs/06` 지표표 빈 값·F-3 잔존 · `jekyll/sprints/` 01 뿐.
 - **STATE.md 낡은 줄**: 「현재 3주차」 → 5주차 · 이미지 태그 `0.1.10/0.1.4` → main `0.1.13/0.1.5` · 「A(STT) 코드 0줄」 · 「운영 `document` 비어 있음」(09-15 채움).
 - **결정 기록 미작성**: 파이프라인(SSM·OIDC·렌더) `1xx` · 런북 부록 B 9건 · D-6 · 보존 기간 · 상담원 토큰 범위 · 블랙컨슈머 카드 `4xx` · 「감정분석」 대체 용어 `2xx`.
 - **작은 것**: `// Requirement: J-3` 주석 0건(`RequestsTab.tsx`·`EntriesTab.tsx`) · `ERD.png` 미갱신(29 테이블) · `fetchCallList` 낡은 주석 · nori 복합명사 사용자 사전 · `check_session_end.py` 에 STATE 검사 붙일지.
@@ -462,7 +462,7 @@
 2. 모델 운영 반영 → C-5 절대 규칙 운영 회복 → E2E 지연 실측 → 레이턴시 그림 → 6주차 기준선 판정
 3. 생성을 켤지 → 켜면 스트리밍 · 안 켜면 예산표 생성 행 「미측정」
 4. F-2·D 골든셋 케이스 → 하네스 숫자 → `w7-f2-checkpoint` → `w8-f2-wrapup`
-5. 컴플라이언스 WS 메시지 계약 → 게이트웨이 호출 → 경고 화면 → 파서 테스트
+5. 컴플라이언스 WS 메시지 계약 → 콜 미디에이터 호출 → 경고 화면 → 파서 테스트
 6. J-5 호출 → `routing_log` 행 → KPI API → 현황판
 7. E-4 게이트(`w2-baseline-gate`)는 4·2 뒤에 켜야 「미구현 때문에 계속 빨강」이 안 된다
 
@@ -495,7 +495,7 @@
 `open-items.markdown` 열린 체크박스 98건 중 아래는 **끝났거나 폐기됐다.** 지우지 않고 `[x]` + 「닫힘 — 근거」 한 줄로 닫는다(절대 원칙 8). `w8-final-docs` 범위.
 
 - **B-0 폐기로 무의미**: 143(검색 v1+분류기) · 144(dasan 보강) · 145·149(B-0 표본) · 146(골든셋 문체 차이 — `source` 필드로 갈라 뒀으니 측정은 가능, 판단만 남음) · 137(`RetrievalPort` 도메인) · 127(도메인별 인덱스) · 138(nori 개선 폭 — 206 이 BM25 대조군을 쟀다).
-- **이미 구현·결정됨**: 120(청킹 비교 → `w4-chunking-compare` done) · 122(계약 어긋남 → 09-10·09-15 문자열 정본) · 124(하네스 C-5·F-2 배선 → `w2-eval-wiring-c5-f2`) · 125(NER → `ai/apps/pii_ner`) · 132(수동 검색·통화 후 메시지 → §7.3 허브 HTTP 표면) · 134(`generation`·`compliance` 위치 → 302) · 155(통화 목록 API → `w4-call-list-api`) · 157(C-6 계약 → 게이트웨이 `call_guard`) · 184(게이트웨이 EC2 → 09-11 배포) · 185(운영 배포 CI → `release.yml`) · 194(`score` 방어 코드 → 서버가 고쳤다) · 201(카드 피드백 500 → 308) · 204(ngrok 인증 → 터널 닫음) · 214(C-6 갈래 → 09-15 프론트 4종) · 215(J 계약·어댑터 → `w4-blacklist-api`) · 285(조서희 계약 전달 → 09-15·16 처리) · 325(태그 안 올린 머지 → 111 게이트) · 590(PR #86 순서 → 머지됨) · 597(관리자 가드 500 → 코드 수정, 운영 확인만 §13-3 #17) · 177(DNS 공지 → 런북 18장).
+- **이미 구현·결정됨**: 120(청킹 비교 → `w4-chunking-compare` done) · 122(계약 어긋남 → 09-10·09-15 문자열 정본) · 124(하네스 C-5·F-2 배선 → `w2-eval-wiring-c5-f2`) · 125(NER → `ai/apps/pii_ner`) · 132(수동 검색·통화 후 메시지 → §7.3 허브 HTTP 표면) · 134(`generation`·`compliance` 위치 → 302) · 155(통화 목록 API → `w4-call-list-api`) · 157(C-6 계약 → 콜 미디에이터 `call_guard`) · 184(콜 미디에이터 EC2 → 09-11 배포) · 185(운영 배포 CI → `release.yml`) · 194(`score` 방어 코드 → 서버가 고쳤다) · 201(카드 피드백 500 → 308) · 204(ngrok 인증 → 터널 닫음) · 214(C-6 갈래 → 09-15 프론트 4종) · 215(J 계약·어댑터 → `w4-blacklist-api`) · 285(조서희 계약 전달 → 09-15·16 처리) · 325(태그 안 올린 머지 → 111 게이트) · 590(PR #86 순서 → 머지됨) · 597(관리자 가드 500 → 코드 수정, 운영 확인만 §13-3 #17) · 177(DNS 공지 → 런북 18장).
 - **`origin/main` 에서 이미 닫힘(PM 미머지)**: 565(갭 탭 재설계) · 588(`contract.ts` — 오판으로 정정).
 - **보류로 닫을 것**: 135(Neo4j — 저장소에 언급 0건, 도입 안 함) · 153(스케줄러 — 지킬 칸반 유지) · 160(G-2 계약 — `w8-extension-pick` 뒤).
 

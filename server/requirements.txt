@@ -25,7 +25,7 @@ python-dotenv==1.2.3   # uvicorn --env-file (CLAUDE.md 실행 명령) 이 요구
 #     (asyncpg 는 $1 형식이라 전 쿼리를 고쳐야 한다). 2026-08-27 전환 — decisions/018
 psycopg[binary]==3.2.10
 
-# --- STT (A-1) — 게이트웨이가 보낸 오디오를 처리하는 경로 ---
+# --- STT (A-1) — 콜 미디에이터가 보낸 오디오를 처리하는 경로 ---
 google-cloud-speech==2.40.0
 
 # --- 테스트 음성 보관 (A-6, 2026-09-14 `_project/decisions/110`) ---
