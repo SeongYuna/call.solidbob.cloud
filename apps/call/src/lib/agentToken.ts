@@ -41,3 +41,27 @@ export function readAgentToken(): string | null {
     return null;
   }
 }
+
+/** 로그인 화면이 검증에 성공한 토큰을 저장한다 — URL 캡처와 같은 자리에 쓴다. */
+export function writeAgentToken(token: string): void {
+  if (typeof window === "undefined") {
+    return;
+  }
+  try {
+    window.sessionStorage.setItem(STORAGE_KEY, token.trim());
+  } catch {
+    // 프라이빗 모드 등에서 저장이 막혀도 이번 방문에서는 어차피 못 쓴다 — 조용히 넘어간다
+  }
+}
+
+/** 로그아웃 — 이 탭의 토큰을 지운다. 다른 탭 세션에는 영향이 없다(sessionStorage 스코프). */
+export function clearAgentToken(): void {
+  if (typeof window === "undefined") {
+    return;
+  }
+  try {
+    window.sessionStorage.removeItem(STORAGE_KEY);
+  } catch {
+    // 지울 것도 없었던 셈이니 조용히 넘어간다
+  }
+}
