@@ -1,5 +1,6 @@
-import { useEffect, useState, type ReactElement } from "react";
+import { useState, type ReactElement } from "react";
 import { AgentCallBox } from "./components/AgentCallBox";
+import { AgentLoginScreen } from "./components/AgentLoginScreen";
 import { AgentStandbyScreen } from "./components/AgentStandbyScreen";
 import { AppHeader } from "./components/AppHeader";
 import { CallSummaryHost } from "./components/CallSummaryPanel";
@@ -7,8 +8,8 @@ import { ForcePasswordSetup } from "./components/ForcePasswordSetup";
 import { CallMediatorOverrideBanner } from "./components/CallMediatorOverrideBanner";
 import { TermsPanel } from "./components/TermsPanel";
 import { TranscriptPanel } from "./components/TranscriptPanel";
+import { useAgentAuth } from "./hooks/useAgentAuth";
 import { useCallMediatorSession } from "./hooks/useCallMediatorSession";
-import { captureAgentTokenFromUrl } from "./lib/agentToken";
 import { useAgentCallSession } from "./lib/useAgentCallSession";
 import { getMockAgentAccount } from "./mock/agentAuth";
 import { useCallStore } from "./store/callStore";
@@ -17,6 +18,7 @@ export function App(): ReactElement {
   const { startCall, replay, leaveToStandby, manualSearch, endCall, wrapUp } =
     useCallMediatorSession();
   const agentCall = useAgentCallSession();
+  const agentAuth = useAgentAuth();
   const [voluntaryPassword, setVoluntaryPassword] = useState(false);
 
   // "통화받기"를 누르면 AgentCallBox가 사라지고 대시보드(상담기록)가 보인다 —
@@ -29,9 +31,6 @@ export function App(): ReactElement {
     endCall();
   }
 
-  useEffect(() => {
-    captureAgentTokenFromUrl();
-  }, []);
   const phase = useCallStore((state) => state.phase);
   const shell = useCallStore((state) => state.shell);
   const viewMode = useCallStore((state) => state.viewMode);
@@ -43,7 +42,7 @@ export function App(): ReactElement {
   // 상담기록은 「요약 보기」・「자막 보기」 두 화면을 오갈 수 있다 — historyView가 고른다.
   const showSummary =
     phase === "wrapup" || (viewMode === "history" && historyView === "record");
-  const agentName = getMockAgentAccount().name;
+  const agentName = agentAuth.agentId ?? getMockAgentAccount().name;
 
   function closeSummary(): void {
     if (viewMode === "history") {
@@ -54,6 +53,24 @@ export function App(): ReactElement {
       return;
     }
     resumeCall();
+  }
+
+  if (agentAuth.status === "checking") {
+    return (
+      <div className="app-viewport">
+        <div className="app-shell" />
+      </div>
+    );
+  }
+
+  if (agentAuth.status === "unauthenticated") {
+    return (
+      <div className="app-viewport">
+        <div className="app-shell">
+          <AgentLoginScreen error={agentAuth.error} onLogin={agentAuth.login} />
+        </div>
+      </div>
+    );
   }
 
   if (voluntaryPassword) {
@@ -100,6 +117,7 @@ export function App(): ReactElement {
             onResetPassword={() => {
               setVoluntaryPassword(true);
             }}
+            onLogout={agentAuth.agentId !== null ? agentAuth.logout : undefined}
           />
         ) : (
           <>

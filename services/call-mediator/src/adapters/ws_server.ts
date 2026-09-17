@@ -6,7 +6,7 @@
  * |---|---|---|
  * | `WS /ingest?call_id=&speaker=&sample_rate=&channels=` | 오디오 생산자 | → PCM16LE 모노 바이너리. `speaker=auto` 는 모노 녹음 화자 분리(`decisions/303`) |
  * | `WS /ws[?call_id=]` (별칭 `/dashboard`) | 대시보드 | ← `{type, payload}` JSON (마스킹된 결과만) |
- * | `GET /dev` · `WS /dev/text?call_id=&speaker=` | 개발자 브라우저 | → 브라우저 음성 인식 결과 글자(`decisions/109`) |
+ * | `GET /dev` · `WS /dev/text?call_id=&speaker=[&producer=script]` | 개발자 브라우저 · 합성 대본 재생기 | → 이미 글자가 된 발화(`decisions/109`). `producer=script` 는 `scripts/replay_persona_call.ts` |
  * | `GET /health` | 쿠버네티스·사람 | ← 설정 여부·사용량 (값·주소는 싣지 않는다, SEC-2) |
  *
  * **운영에서는 `https://server.solidbob.cloud/call-mediator/…` 로 열린다**(Ingress 경로 `/call-mediator`). 밖에 여는 주소가
@@ -31,7 +31,7 @@
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from "node:http";
 import type { Duplex } from "node:stream";
 import { WebSocketServer, type WebSocket, type RawData } from "ws";
-import type { CallRegistry, Channel, ChannelSpeaker } from "../app/call_registry.ts";
+import type { CallRegistry, Channel, ChannelSpeaker, TextProducer } from "../app/call_registry.ts";
 import {
   bearerFromSubprotocols,
   bearerToken,
@@ -187,7 +187,7 @@ export function createCallMediatorServer(deps: CallMediatorServerDeps): Server {
     if (route === "text") {
       textWss.handleUpgrade(req, socket, head, (ws) => {
         track(ws);
-        void acceptText(ws, url, deps);
+        void acceptText(ws, url, deps, req);
       });
       return;
     }
@@ -329,7 +329,7 @@ async function acceptIngest(ws: WebSocket, url: URL, deps: CallMediatorServerDep
  * `WS /dev/text` — 브라우저 음성 인식이 이미 글자로 바꾼 결과를 받는다(`decisions/109`).
  * 메시지: `{"text": "...", "is_final": true|false}` · 끝낼 때 `{"type":"end"}`. 바이너리는 받지 않는다.
  */
-async function acceptText(ws: WebSocket, url: URL, deps: CallMediatorServerDeps): Promise<void> {
+async function acceptText(ws: WebSocket, url: URL, deps: CallMediatorServerDeps, req: IncomingMessage): Promise<void> {
   const params = parseIngest(url);
   if (typeof params === "string") {
     closeWith(ws, CLOSE_POLICY, params);
@@ -373,6 +373,8 @@ async function acceptText(ws: WebSocket, url: URL, deps: CallMediatorServerDeps)
     sampleRate: params.sampleRate,
     channelCount: params.channelCount,
     source: "text",
+    textProducer: textProducerOf(url),
+    ...callerPhoneOf(req),
   });
   if (!result.ok) {
     deps.log.warn(`글자 채널 거절 call=${params.callId} speaker=${params.speaker} — ${result.reason}`);
@@ -380,7 +382,7 @@ async function acceptText(ws: WebSocket, url: URL, deps: CallMediatorServerDeps)
     return;
   }
   channel = result.channel;
-  deps.log.info(`글자 채널 열림 call=${params.callId} speaker=${params.speaker} (web-speech)`);
+  deps.log.info(`글자 채널 열림 call=${params.callId} speaker=${params.speaker} (${textProducerOf(url)})`);
   for (const item of early.splice(0)) {
     channel.pushText(item.text, item.isFinal);
   }
@@ -388,6 +390,14 @@ async function acceptText(ws: WebSocket, url: URL, deps: CallMediatorServerDeps)
     await channel.close();
     closeWith(ws, CLOSE_NORMAL, "끝");
   }
+}
+
+/**
+ * 글자를 누가 만들었나 — 통화 기록의 엔진 이름이 된다. 아는 값 하나(`script`)만 받고 나머지는 브라우저 음성 인식으로 친다:
+ * 호출자가 엔진 이름을 지어 넣게 두면 «google» 이라고 적어 STT 를 거친 척할 수 있다.
+ */
+function textProducerOf(url: URL): TextProducer {
+  return url.searchParams.get("producer") === "script" ? "script" : "web-speech";
 }
 
 function parseTextMessage(data: RawData): { text: string; isFinal: boolean } | null {

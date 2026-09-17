@@ -1,0 +1,180 @@
+{
+  "id": "SYN-002",
+  "version": "dasan-v0",
+  "source": "synthetic",
+  "generated_by": "Claude Code (claude-opus-5) · 2026-09-16 · 사람 검토 전",
+  "title": "결혼이민자 전입신고 필요서류",
+  "length_class": "medium",
+  "turn_count": 19,
+  "caller_number": "01000000102",
+  "agent_persona": "A02",
+  "customer_persona": "C02",
+  "procedure": {
+    "doc_ids": [
+      "DASAN-TERM-4.4",
+      "DASAN-TERM-1.5",
+      "DASAN-TERM-1.4",
+      "DASAN-MANUAL-3.3"
+    ],
+    "required_documents": [
+      "신고서",
+      "신고인 신분증(외국인등록증 원본)",
+      "세대주 확인(세대주 신분증 또는 세대주 확인서)"
+    ]
+  },
+  "turns": [
+    {
+      "seq": 1,
+      "speaker": "agent",
+      "text": "네, 한별시 통합민원콜센터 상담원입니다. 무엇을 도와드릴까요?",
+      "tone": "calm"
+    },
+    {
+      "seq": 2,
+      "speaker": "customer",
+      "text": "안녕하세요. 저 이사 했어요. 새 집으로. 전입신고 해야 돼요? 뭐 가져가요?",
+      "tone": "calm"
+    },
+    {
+      "seq": 3,
+      "speaker": "agent",
+      "text": "네, 이사하셨으면 전입신고를 하셔야 해요. 필요한 서류가 세대주인지에 따라 달라서 먼저 여쭤볼게요. 새 집에서 세대주가 고객님이세요?",
+      "tone": "calm"
+    },
+    {
+      "seq": 4,
+      "speaker": "customer",
+      "text": "세대주... chủ hộ? 무슨 뜻이에요? 잘 몰라요.",
+      "tone": "calm"
+    },
+    {
+      "seq": 5,
+      "speaker": "agent",
+      "text": "세대주는 주민등록상 세대를 대표하는 분이에요.",
+      "tone": "calm"
+    },
+    {
+      "seq": 6,
+      "speaker": "customer",
+      "text": "아, 남편이요. 남편이 대표예요. 저는 아내.",
+      "tone": "calm"
+    },
+    {
+      "seq": 7,
+      "speaker": "agent",
+      "text": "그러면 남편분이 대표예요. 가져오실 것은 신고서, 고객님 신분증, 그리고 남편분 신분증이나 세대주 확인서예요.",
+      "tone": "calm"
+    },
+    {
+      "seq": 8,
+      "speaker": "customer",
+      "text": "제 신분증 외국인등록증 돼요? 여권도 있어요.",
+      "tone": "calm"
+    },
+    {
+      "seq": 9,
+      "speaker": "agent",
+      "text": "네, 외국인등록증도 주민등록증과 같은 절차로 접수돼요. 사본 말고 원본으로 가져오세요.",
+      "tone": "calm"
+    },
+    {
+      "seq": 10,
+      "speaker": "customer",
+      "text": "네. 알겠어요.",
+      "tone": "calm"
+    },
+    {
+      "seq": 11,
+      "speaker": "agent",
+      "text": "연락드릴 수 있게 성함과 주소를 여쭤봐도 될까요?",
+      "tone": "calm"
+    },
+    {
+      "seq": 12,
+      "speaker": "customer",
+      "text": "제 이름은 응우옌 티 란이에요. 주소는 한별시 가온구 새솔로 12, 305호예요.",
+      "tone": "calm",
+      "labels": {
+        "pii": [
+          {
+            "pattern": "P6",
+            "span": "응우옌 티 란"
+          },
+          {
+            "pattern": "P7",
+            "span": "한별시 가온구 새솔로 12, 305호"
+          }
+        ]
+      }
+    },
+    {
+      "seq": 13,
+      "speaker": "agent",
+      "text": "네, 감사합니다. 방문이 어려우시면 인터넷으로 신고하셔도 돼요. 그때는 남편분 확인이 인터넷 안에서 돼요.",
+      "tone": "calm"
+    },
+    {
+      "seq": 14,
+      "speaker": "customer",
+      "text": "온라인 한국어 어려워요. 그냥 가요. 통역 있어요?",
+      "tone": "calm"
+    },
+    {
+      "seq": 15,
+      "speaker": "agent",
+      "text": "한국어로 소통이 어려우시면 통역 지원을 안내해 드릴 수 있어요. 소관 부서 확인 후 다시 안내드리겠습니다. 연락받으실 번호 알려 주시겠어요?",
+      "tone": "calm"
+    },
+    {
+      "seq": 16,
+      "speaker": "customer",
+      "text": "공일공, 공공공공, 공일공이예요.",
+      "tone": "calm",
+      "labels": {
+        "pii": [
+          {
+            "pattern": "P4",
+            "span": "공일공, 공공공공, 공일공이"
+          }
+        ]
+      }
+    },
+    {
+      "seq": 17,
+      "speaker": "agent",
+      "text": "네, 확인했습니다. 정리하면 신고서, 고객님 외국인등록증 원본, 남편분 신분증이나 세대주 확인서, 이렇게 세 가지예요.",
+      "tone": "calm"
+    },
+    {
+      "seq": 18,
+      "speaker": "customer",
+      "text": "신고서, 제 등록증, 남편 신분증. 네 알겠어요. 감사합니다.",
+      "tone": "calm"
+    },
+    {
+      "seq": 19,
+      "speaker": "agent",
+      "text": "네, 이용해 주셔서 감사합니다.",
+      "tone": "calm"
+    }
+  ],
+  "expected": {
+    "pii_by_pattern": {
+      "P4": 1,
+      "P6": 1,
+      "P7": 1
+    },
+    "compliance": [],
+    "call_guard_by_type": {},
+    "customer_non_calm_turns": [],
+    "j": {
+      "blacklist_request": false,
+      "routing": "normal"
+    }
+  },
+  "notes": [
+    "상담원이 세대주 여부(조건)를 먼저 묻는지 — 매뉴얼 3.3",
+    "한글 수사로 부른 전화번호(P4)는 마스킹 ② 단계 검증용",
+    "베트남어 단어 한 개(chủ hộ) — A-5 통번역이 필요한 순간을 보여 준다. 번역은 아직 없다"
+  ]
+}

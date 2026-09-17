@@ -13,12 +13,14 @@ interface AgentStandbyScreenProps {
   agentName: string;
   onStartCall: () => void;
   onResetPassword: () => void;
+  onLogout?: () => void;
 }
 
 export function AgentStandbyScreen({
   agentName,
   onStartCall,
   onResetPassword,
+  onLogout,
 }: AgentStandbyScreenProps): ReactElement {
   const [now, setNow] = useState(() => new Date());
   const [menuOpen, setMenuOpen] = useState(false);
@@ -104,6 +106,19 @@ export function AgentStandbyScreen({
                 >
                   비밀번호 재설정
                 </button>
+                {onLogout !== undefined ? (
+                  <button
+                    type="button"
+                    role="menuitem"
+                    className="standby-reset-pw"
+                    onClick={() => {
+                      setMenuOpen(false);
+                      onLogout();
+                    }}
+                  >
+                    로그아웃
+                  </button>
+                ) : null}
               </div>
             ) : null}
           </div>

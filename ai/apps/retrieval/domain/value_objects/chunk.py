@@ -12,6 +12,11 @@ from dataclasses import dataclass
 DOMAINS = ("dasan",)
 DOC_TYPES = ("TERM", "MANUAL", "POLICY")
 
+# 추천·검색 후보에서 **빼는** 문서 종류. POLICY 는 센터 내부 처리 규정(「F-2 가 이 도메인에 적용되지 않는 이유」 등)이라
+# 상담원 화면에 띄울 안내가 아니고 골든셋 정답에도 없다(v1-150 정답 97건 중 0건). 2026-09-17 로컬 E2E 에서 인감증명 통화의
+# 1순위 카드가 POLICY-1 이 되어 필요서류 판정이 0건이었다. 색인에는 남겨 둔다 — 지우면 되돌릴 때 재적재가 필요하다.
+NON_RECOMMENDABLE_DOC_TYPES = ("POLICY",)
+
 # 도메인 접두어(knowledge-base 폴더명 ↔ 문서 ID 접두어). domain.md §3 의 표와 같다.
 DOMAIN_BY_PREFIX = {"DASAN": "dasan"}
 

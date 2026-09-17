@@ -432,6 +432,23 @@ export async function revokeAgentToken(accessToken: string, tokenId: string): Pr
   return toAgentTokenItem(wire);
 }
 
+// ── GET /admin/agents — 이름으로 토큰 발급 대상을 고르는 목록 ───────────────
+
+export interface AgentSummary {
+  agentId: string;
+  displayName: string;
+}
+
+interface AgentSummaryWire {
+  agent_id: string;
+  display_name: string;
+}
+
+export async function fetchAgents(accessToken: string): Promise<AgentSummary[]> {
+  const wire = await authedGet<{ agents: AgentSummaryWire[] }>("/admin/agents", accessToken);
+  return wire.agents.map((a) => ({ agentId: a.agent_id, displayName: a.display_name }));
+}
+
 // ── /hub/routing-settings — J-5 베테랑 배정 기준 (`decisions/313`) ──────────
 
 export interface RoutingSetting {

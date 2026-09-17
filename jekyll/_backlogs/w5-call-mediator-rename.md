@@ -24,7 +24,7 @@ paths:
 ## 완료 조건
 
 - [x] 저장소 개명 + 검증(call-mediator 101/101 · 프론트 2종 빌드 · server·ai pytest · 계약 · 사이트 링크)
-- [ ] Docker Hub 레포 `callguard-call-mediator` 생성 (없으면 `tag-check` 가 401 로 죽는다)
+- [x] Docker Hub 레포 `callguard-call-mediator` 생성 (없으면 `tag-check` 가 401 로 죽는다)
 - [ ] EC2 시크릿 `call-mediator-tokens` 를 옛 값 그대로 복사
 - [ ] Vercel `kxu6` 에 `VITE_CALL_MEDIATOR_WS_URL` · `VITE_CALL_MEDIATOR_DEMO_BASE_URL` 추가
 - [ ] PR 연 뒤 main 룰셋 필수 검사 `gateway` → `call-mediator`

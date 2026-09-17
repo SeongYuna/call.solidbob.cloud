@@ -453,6 +453,28 @@ test("/ingest?speaker=auto — 화자 분리 채널을 연다. /dev/text 는 aut
   }
 });
 
+test("/dev/text?producer=script — 합성 대본 재생은 엔진을 synthetic-script 로 적고 발신 번호 헤더를 싣는다", async () => {
+  const gw = await startCallMediator();
+  try {
+    const script = await connect(`ws://${gw.base}/dev/text?call_id=test-syn-1&speaker=customer&producer=script`, {
+      "x-caller-phone": "010-0000-0666",
+    });
+    await waitFor(() => gw.hub.calls.length === 1);
+    assert.equal(gw.hub.calls[0]!.stt_engine, "synthetic-script");
+    assert.equal(gw.hub.calls[0]!.caller_phone, "010-0000-0666");
+    script.close();
+
+    // 모르는 producer 는 브라우저 음성 인식으로 친다 — 엔진 이름을 호출자가 지어 넣지 못한다.
+    const other = await connect(`ws://${gw.base}/dev/text?call_id=test-syn-2&speaker=customer&producer=google`);
+    await waitFor(() => gw.hub.calls.length === 2);
+    assert.equal(gw.hub.calls[1]!.stt_engine, "web-speech");
+    other.close();
+    assert.ok(gw.log.warnings.every((w) => !w.includes("0666")));
+  } finally {
+    await gw.close();
+  }
+});
+
 test("/ingest — 발신 번호는 X-Caller-Phone 헤더로만 통화 시작에 간다 (쿼리로는 받지 않는다)", async () => {
   const gw = await startCallMediator();
   try {
