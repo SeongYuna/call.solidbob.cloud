@@ -64,6 +64,8 @@ class TestDense:
         assert call["knn"]["field"] == es_index.EMBEDDING_FIELD
         assert call["knn"]["k"] == 5 and call["knn"]["num_candidates"] == 100
         assert call["collapse"] == {"field": "doc_id"}  # 채점 단위가 조항이다
+        # BM25 와 같이 내부 규정 조항은 후보에서 뺀다(2026-09-17) — dense 로 바꿔도 1순위에 올라오지 않게
+        assert call["knn"]["filter"] == {"bool": {"must_not": [{"terms": {"doc_type": ["POLICY"]}}]}}
         assert es_index.EMBEDDING_FIELD in call["source_excludes"]
         assert emb.seen == ["등본 서류"]  # 접두어는 임베더가 붙인다 — 어댑터가 두 번 붙이지 않는다
         assert docs == [RetrievedDoc(doc_id="D-1", title="제목", snippet="본문", score=0.9)]

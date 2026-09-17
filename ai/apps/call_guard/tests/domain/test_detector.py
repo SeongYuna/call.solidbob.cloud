@@ -49,6 +49,31 @@ def test_성적_표현을_잡는다():
     assert "sexual" in _cats("목소리 들어보니까 아가씨인가 본데 얼굴 한번 봅시다")
 
 
+@pytest.mark.parametrize("text", [
+    "종료? 해 봐. 목소리만 예뻐 가지고.",
+    "끝나고 나랑 술이나 한잔하면 생각해 보지.",
+])
+def test_합성_통화에서_놓친_성적_표현(text):
+    """2026-09-17 로컬 E2E·QA-2 — 「만」이 패턴을 끊고, 「나랑 술」은 「만나자 술」 모양이 아니었다."""
+    assert "sexual" in _cats(text)
+
+
+@pytest.mark.parametrize("text", [
+    "아 진짜 이 멍청한 놈이 말귀를 못 알아듣네.",
+    "너 같은 게 무슨 상담을 한다고.",
+])
+def test_합성_통화에서_놓친_모독(text):
+    assert "insult" in _cats(text)
+
+
+@pytest.mark.parametrize("text", [
+    "목소리가 잘 안 들려요 다시 말씀해 주세요",
+    "차 한잔 마시고 다시 전화할게요",
+])
+def test_성적_표현_새_규칙이_일상_표현을_잡지_않는다(text):
+    assert detect(text) == []
+
+
 # ── distress — 폭언과 다르게 다뤄야 하는 갈래 ────────────────────────────
 @pytest.mark.parametrize("text", [
     "진짜 다 필요없고 그냥 죽어버리고 싶어요",
@@ -57,6 +82,27 @@ def test_성적_표현을_잡는다():
 ])
 def test_위기_신호를_잡는다(text):
     assert "distress" in _cats(text)
+
+
+@pytest.mark.parametrize("text", [
+    "이것도 안 되고 돈도 뺏기고... 그냥 다 끝내고 싶어요.",
+    "그냥 다 그만두고 없어지고 싶어요",
+    "더 이상 살고 싶지 않아요",
+])
+def test_합성_통화에서_놓친_위기_신호(text):
+    """2026-09-17 로컬 E2E — SYN-009 「그냥 다 끝내고 싶어요」가 `flags: []` 였다.
+    5.4 조 대응(끊지 않고 연결)으로 이어져야 하는 갈래라 놓치는 비용이 가장 크다."""
+    assert "distress" in _cats(text)
+
+
+@pytest.mark.parametrize("text", [
+    "서류 준비를 오늘 안에 다 끝내고 싶어서요",
+    "신청을 다 끝내고 싶은데 뭐가 남았나요",
+    "통화 빨리 끝내고 싶은데 간단히 말해 주세요",
+])
+def test_일을_끝내고_싶다는_말은_위기_신호가_아니다(text):
+    """「다 끝내고 싶」 규칙을 넣으면서 생긴 함정 — 목적어(서류·신청)가 있으면 일 이야기다."""
+    assert "distress" not in _cats(text)
 
 
 @pytest.mark.parametrize("text", [

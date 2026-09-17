@@ -13,7 +13,9 @@
  * 채널의 입력은 둘이다(`ChannelSpec.source`).
  * - `audio` — PCM 을 받아 구글 STT 로 전사한다. COST-1 캡을 쓴다
  * - `text`  — 브라우저가 이미 글자로 바꿔 보낸다(`/dev`, Web Speech API — `decisions/109`, 402 에서 옮김).
- *             구글을 부르지 않으므로 캡을 쓰지 않는다. 통화 기록에는 엔진을 사실대로 `web-speech` 로 적는다
+ *             구글을 부르지 않으므로 캡을 쓰지 않는다. 통화 기록에는 엔진을 사실대로 `web-speech` 로 적는다.
+ *             합성 대본 재생기(`textProducer: "script"`)도 이 문으로 들어오고, 엔진은 `synthetic-script` 로 적는다 —
+ *             사람의 말을 받아쓴 것이 아니라는 것을 기록에 남긴다
  *
  * SEC-1 — 원문(`RawTranscript`)은 `hub.ingestTranscript` 에만 들어간다. 대시보드로 가는 것은
  * **서버가 마스킹해 돌려준 응답**뿐이고, 서버가 실패하면 그 결과는 아무 데도 가지 않는다.
@@ -47,6 +49,8 @@ export interface ChannelSpec {
   channelCount: number;
   /** 기본 `audio`. `text` 는 브라우저 음성 인식 결과(글자)를 받는다. */
   source?: "audio" | "text";
+  /** 글자 채널을 누가 채우나 — 기본 `web-speech`. 통화 기록 엔진 이름만 가른다. */
+  textProducer?: TextProducer;
   /**
    * 발신 번호(선택) — 통화를 **처음 여는** 채널의 것만 서버로 간다(통화 시작은 한 번). 재상담 이력·블랙리스트가
    * 고객을 잇는 재료다(`decisions/304`). ⚠ 평문이다 — 로그·대시보드로 보내지 않는다.
@@ -56,6 +60,10 @@ export interface ChannelSpec {
 
 /** 글자 입력 채널이 `call.stt_engine` 에 적는 이름 — 구글 STT 가 아니라는 것을 기록에 남긴다. */
 export const TEXT_ENGINE_NAME = "web-speech";
+/** 합성 대본 재생(`scripts/persona_sim/`)이 적는 이름 — 사람도 STT 도 거치지 않았다. */
+export const SCRIPT_ENGINE_NAME = "synthetic-script";
+
+export type TextProducer = "web-speech" | "script";
 /** 화자 분리 채널이 엔진 이름 뒤에 붙인다 — 화자가 추측이라는 것을 통화 기록에 남긴다(`call.stt_engine` 30자 안). */
 export const DIARIZE_ENGINE_SUFFIX = "+diarize";
 
@@ -178,7 +186,9 @@ export class CallRegistry {
     this.calls.set(spec.callId, call);
     const engine =
       (spec.source ?? "audio") === "text"
-        ? TEXT_ENGINE_NAME
+        ? spec.textProducer === "script"
+          ? SCRIPT_ENGINE_NAME
+          : TEXT_ENGINE_NAME
         : `${this.deps.stt.name}${spec.speaker === "auto" ? DIARIZE_ENGINE_SUFFIX : ""}`;
     call.started = this.deps.hub
       .startCall({

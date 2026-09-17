@@ -30,6 +30,17 @@ node scripts/stream_wav.ts <파일.wav> --speaker customer --watch
 1번을 `customer` 로 갈라 연결 둘로 보낸다. 모노에 두 사람이 섞인 녹음은 `--speaker auto` — 아래 「화자 분리」. 기본 30초까지만 보낸다(`--max-seconds`) — 쓴 만큼 과금된다.
 자체 녹음은 쓰지 않는다(절대 원칙 7).
 
+### 통화 흉내 — 합성 대본 재생 (2026-09-16)
+
+```bash
+node scripts/replay_persona_call.ts --list
+node scripts/replay_persona_call.ts SYN-004 --watch --speak
+```
+
+`scripts/persona_sim/dasan-v0/` 의 상담원·고객 대본을 두 채널(`/dev/text?producer=script`)로 말하는 속도에 맞춰 흘린다 —
+부분 결과를 어절째 늘려 보내고 끝에 확정한다. `--speak` 는 이 맥의 `say` 로 소리를 낸다. 통화 기록 엔진은 `synthetic-script`.
+구글 STT 를 부르지 않는다(COST-1 무관). **STT 품질·지연 측정용이 아니다**(절대 원칙 10). 시연 절차는 `scripts/persona_sim/README.md`.
+
 ## 운영 (2026-09-11)
 
 | | |
@@ -129,7 +140,7 @@ node scripts/stream_wav.ts <파일.wav> --speaker customer --watch
   (`plan.md` 7.3절). ⚠ **꺼 두었다**(`main.ts` `announcePending: false`) — `apps/call` 파서가 모르는 `type` 에 오류
   배너를 띄운다. 수신 코드가 들어가면 켠다
 
-### `GET /dev` · `WS /dev/text?call_id=&speaker=` — 개발용 테스트 통화 (`decisions/109`)
+### `GET /dev` · `WS /dev/text?call_id=&speaker=[&producer=script]` — 개발용 테스트 통화 (`decisions/109`)
 
 조서희 님이 frontend 브랜치에서 만든 경로(`decisions/402`)를 옮겨 왔다. **GCP 키·구글 STT·ngrok 없이** 폰으로 바로 테스트한다.
 
@@ -141,6 +152,8 @@ node scripts/stream_wav.ts <파일.wav> --speaker customer --watch
 - ngrok 같은 터널로 열면 요청이 루프백으로 들어오지만 **프록시 헤더가 붙어 있어 «이 머신» 으로 치지 않는다** — 토큰이 필요하다
 - 페이지는 CSP(스크립트는 해시로만)·틀 금지·캐시 금지로 나간다. 비밀이 없다
 - 대시보드 경로 `/dashboard` 도 `/ws` 와 같다(조서희 님 게이트웨이가 쓰던 경로)
+- **`producer=script`**(2026-09-16) — 합성 대본 재생기(`scripts/replay_persona_call.ts`)가 붙는다. 엔진을 `synthetic-script` 로 적는다.
+  모르는 값은 무시하고 `web-speech` 로 친다 — 호출자가 엔진 이름을 지어 넣지 못한다. 헤더 `X-Caller-Phone` 은 `/ingest` 와 똑같이 받는다
 
 ### `GET /health`
 

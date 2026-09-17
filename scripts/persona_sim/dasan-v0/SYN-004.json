@@ -1,0 +1,211 @@
+{
+  "id": "SYN-004",
+  "version": "dasan-v0",
+  "source": "synthetic",
+  "generated_by": "Claude Code (claude-opus-5) · 2026-09-16 · 사람 검토 전",
+  "title": "필리핀 출신 부모 아동수당 신청",
+  "length_class": "medium",
+  "turn_count": 19,
+  "caller_number": "01000000104",
+  "agent_persona": "A01",
+  "customer_persona": "C04",
+  "procedure": {
+    "doc_ids": [
+      "DASAN-TERM-4.13",
+      "DASAN-TERM-1.5",
+      "DASAN-TERM-6.12"
+    ],
+    "required_documents": [
+      "신청서",
+      "신청인 신분증",
+      "아동과의 관계를 확인할 수 있는 서류",
+      "입금 계좌 정보"
+    ]
+  },
+  "turns": [
+    {
+      "seq": 1,
+      "speaker": "agent",
+      "text": "네, 한별시 통합민원콜센터입니다. 무엇을 도와드릴까요?",
+      "tone": "calm"
+    },
+    {
+      "seq": 2,
+      "speaker": "customer",
+      "text": "Hello... 안녕하세요. 저 아기 있어요. 돈, 음, child... 아동수당? 받고 싶어요.",
+      "tone": "calm"
+    },
+    {
+      "seq": 3,
+      "speaker": "agent",
+      "text": "네, 아동수당 신청 문의시군요. 천천히 말씀하셔도 괜찮아요. 고객님이 아기 어머니세요?",
+      "tone": "calm"
+    },
+    {
+      "seq": 4,
+      "speaker": "customer",
+      "text": "Yes, 네, 엄마예요. 아기 3개월.",
+      "tone": "calm"
+    },
+    {
+      "seq": 5,
+      "speaker": "agent",
+      "text": "네. 아동수당은 신청서, 신청하시는 분 신분증, 아기와의 관계를 확인할 수 있는 서류, 그리고 입금받으실 계좌 정보가 필요해요.",
+      "tone": "calm"
+    },
+    {
+      "seq": 6,
+      "speaker": "customer",
+      "text": "관계... 서류? 무슨... I don't understand.",
+      "tone": "calm"
+    },
+    {
+      "seq": 7,
+      "speaker": "agent",
+      "text": "엄마와 아기가 가족인 걸 보여 주는 서류예요. 한국어가 어려우시면 통역도 도와드릴 수 있어요.",
+      "tone": "calm"
+    },
+    {
+      "seq": 8,
+      "speaker": "customer",
+      "text": "네. 계좌는... 제 통장 번호 000000104104 이에요.",
+      "tone": "calm",
+      "labels": {
+        "pii": [
+          {
+            "pattern": "P3",
+            "span": "000000104104"
+          }
+        ]
+      }
+    },
+    {
+      "seq": 9,
+      "speaker": "agent",
+      "text": "계좌번호는 신청서에 적어 주시면 돼요. 전화로는 말씀 안 하셔도 괜찮습니다.",
+      "tone": "calm"
+    },
+    {
+      "seq": 10,
+      "speaker": "customer",
+      "text": "아 그리고 아기 태어난 때부터 돈 다 나와요? 3개월 전부터?",
+      "tone": "calm"
+    },
+    {
+      "seq": 11,
+      "speaker": "agent",
+      "text": "네, 걱정 마세요. 태어난 달부터 소급해서 전부 다 나옵니다.",
+      "tone": "calm",
+      "labels": {
+        "compliance": [
+          {
+            "type": "C-1",
+            "phrase": "태어난 달부터 소급해서 전부 다 나옵니다",
+            "expected_alternative_source": "DASAN-MANUAL-1.6"
+          }
+        ]
+      }
+    },
+    {
+      "seq": 12,
+      "speaker": "customer",
+      "text": "진짜요? 좋아요! 인터넷 했어요. 문자 왔어요. 인증번호 104104. 이거 어디 넣어요?",
+      "tone": "calm",
+      "labels": {
+        "pii": [
+          {
+            "pattern": "P5",
+            "span": "104104"
+          }
+        ]
+      }
+    },
+    {
+      "seq": 13,
+      "speaker": "agent",
+      "text": "인증번호는 신청하고 계신 화면에 직접 입력하시고, 다른 사람에게는 알려 주지 마세요. 그리고 앞에서 말씀드린 것 정정할게요. 아동수당은 신청하신 달부터 지급돼서, 태어난 달부터 지급된다고 약속드릴 수는 없어요.",
+      "tone": "calm"
+    },
+    {
+      "seq": 14,
+      "speaker": "customer",
+      "text": "Oh... okay. 빨리 할게요.",
+      "tone": "calm"
+    },
+    {
+      "seq": 15,
+      "speaker": "agent",
+      "text": "외국에 오래 가 계시면 돈이 멈출 수 있어요. 연락처 남겨 주시겠어요?",
+      "tone": "calm"
+    },
+    {
+      "seq": 16,
+      "speaker": "customer",
+      "text": "010 0000 0104. 이름 제니 레예스.",
+      "tone": "calm",
+      "labels": {
+        "pii": [
+          {
+            "pattern": "P4",
+            "span": "010 0000 0104"
+          },
+          {
+            "pattern": "P6",
+            "span": "제니 레예스"
+          }
+        ]
+      }
+    },
+    {
+      "seq": 17,
+      "speaker": "agent",
+      "text": "네, 제니 레예스 고객님. 신청서, 신분증, 아기와의 관계 확인 서류, 계좌 정보, 네 가지 꼭 챙기세요.",
+      "tone": "calm",
+      "labels": {
+        "pii": [
+          {
+            "pattern": "P6",
+            "span": "제니 레예스"
+          }
+        ]
+      }
+    },
+    {
+      "seq": 18,
+      "speaker": "customer",
+      "text": "Thank you!",
+      "tone": "calm"
+    },
+    {
+      "seq": 19,
+      "speaker": "agent",
+      "text": "네, 감사합니다.",
+      "tone": "calm"
+    }
+  ],
+  "expected": {
+    "pii_by_pattern": {
+      "P3": 1,
+      "P4": 1,
+      "P5": 1,
+      "P6": 2
+    },
+    "compliance": [
+      {
+        "seq": 11,
+        "type": "C-1"
+      }
+    ],
+    "call_guard_by_type": {},
+    "customer_non_calm_turns": [],
+    "j": {
+      "blacklist_request": false,
+      "routing": "normal"
+    }
+  },
+  "notes": [
+    "초급 한국어 + 영어 혼용",
+    "C-1 위반(소급 지급 약속) 후 정정 — 직접 금지한 조항은 DASAN-TERM-4.13",
+    "인증번호(P5)는 문맥 조건 — '인증번호' 단어가 앞에 있다"
+  ]
+}

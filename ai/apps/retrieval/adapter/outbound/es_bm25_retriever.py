@@ -33,6 +33,7 @@ from hub.app.dtos.retrieved_doc_dto import RetrievedDoc
 from hub.app.ports.output.retrieval_port import RetrievalPort
 
 from retrieval.adapter.outbound.es_index import SINGLE_INDEX
+from retrieval.domain.value_objects.chunk import NON_RECOMMENDABLE_DOC_TYPES
 
 # BM25 가 훑을 필드. 가중치를 주지 않는다 — 위 "왜 이렇게 단순한가" 참고.
 SEARCH_FIELDS = ("title", "text")
@@ -61,10 +62,14 @@ class EsBm25Retriever(RetrievalPort):
         match: dict[str, Any] = {
             "multi_match": {"query": utterance, "fields": list(SEARCH_FIELDS)}
         }
-        if self._domain is None:
-            return match
-        # filter 절이라 점수에 영향을 주지 않는다 — 도메인은 후보를 좁힐 뿐 순위를 바꾸지 않는다.
-        return {"bool": {"must": [match], "filter": [{"term": {"domain": self._domain}}]}}
+        # must_not·filter 절은 점수에 영향을 주지 않는다 — 후보를 좁힐 뿐 순위를 바꾸지 않는다.
+        query: dict[str, Any] = {
+            "must": [match],
+            "must_not": [{"terms": {"doc_type": list(NON_RECOMMENDABLE_DOC_TYPES)}}],
+        }
+        if self._domain is not None:
+            query["filter"] = [{"term": {"domain": self._domain}}]
+        return {"bool": query}
 
     async def retrieve(self, utterance: str, top_k: int = 5) -> list[RetrievedDoc]:
         """상위 top_k 조항. 빈 발화면 검색하지 않는다.

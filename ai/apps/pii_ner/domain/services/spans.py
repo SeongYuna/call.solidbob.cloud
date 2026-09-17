@@ -183,6 +183,12 @@ def detect_entities(text: str, tags: Iterable[TokenTag]) -> list[EntitySpan]:
     return merge_spans([*person_spans(text, tags), *address_spans(text, tags)])
 
 
+# 붙이지 않는 한 글자 어절 — 감탄사·대명사·부사·수 관형사. 쪼개진 이름의 첫 글자(성씨)가 아니다.
+# 2026-09-17 AI Hub 실제 발화에서 「네 이제」→「네이제」·「네 제 이름은」→「네제이름은」 을 모델이 인명으로 태깅했다.
+# 「이·한·전」 은 흔한 성씨라 넣지 않는다(`"이 민준"` 을 놓치는 쪽이 더 나쁘다 — 「이 지원」 같은 과잉은 남는다).
+_FUNCTION_SYLLABLES = frozenset("네예아어음응그저제또좀잘더꼭안못다두세뭐왜즉단및등위앞뒤옆속곳때것수중후내외첫새온총각")
+
+
 def join_split_syllables(text: str) -> tuple[str, list[int]]:
     """**1음절 한글 어절**을 이웃 어절에 붙인 사본과, 사본 글자 → 원문 글자 오프셋 표.
 
@@ -198,7 +204,7 @@ def join_split_syllables(text: str) -> tuple[str, list[int]]:
 
     def one_syllable(i: int) -> bool:
         a, b = words[i]
-        return b - a == 1 and bool(_HANGUL.match(text[a]))
+        return b - a == 1 and bool(_HANGUL.match(text[a])) and text[a] not in _FUNCTION_SYLLABLES
 
     def hangul_word(i: int) -> bool:
         a, b = words[i]

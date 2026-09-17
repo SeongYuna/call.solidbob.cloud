@@ -17,6 +17,7 @@ from hub.app.dtos.retrieved_doc_dto import RetrievedDoc
 from hub.app.ports.output.retrieval_port import RetrievalPort
 
 from retrieval.adapter.outbound.es_index import EMBEDDING_FIELD, SINGLE_INDEX
+from retrieval.domain.value_objects.chunk import NON_RECOMMENDABLE_DOC_TYPES
 
 
 class QueryEmbedder(Protocol):
@@ -45,6 +46,8 @@ class EsDenseRetriever(RetrievalPort):
             "query_vector": vector,
             "k": top_k,
             "num_candidates": max(self._num_candidates, top_k),
+            # BM25 와 같은 후보 제외(내부 규정 조항) — knn 의 filter 는 근사 탐색 **전에** 걸려 k 개를 온전히 채운다
+            "filter": {"bool": {"must_not": [{"terms": {"doc_type": list(NON_RECOMMENDABLE_DOC_TYPES)}}]}},
         }
 
     async def retrieve(self, utterance: str, top_k: int = 5) -> list[RetrievedDoc]:
