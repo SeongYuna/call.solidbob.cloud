@@ -12,6 +12,8 @@ import {
   type CallGuardCheckRequest,
   type CallGuardPayload,
   type ClosurePayload,
+  type ComplianceCheckRequest,
+  type CompliancePayload,
   type RequiredDocsCheckRequest,
   type HubPort,
   type MaskedTranscript,
@@ -55,6 +57,14 @@ export class HttpHub implements HubPort {
       throw new HubError("콜 가드 응답 형식이 계약과 다르다", null);
     }
     return body as CallGuardPayload;
+  }
+
+  async checkCompliance(request: ComplianceCheckRequest): Promise<CompliancePayload> {
+    const body = await this.post("/hub/compliance-checks", request);
+    if (typeof body !== "object" || body === null || !Array.isArray((body as { findings?: unknown }).findings)) {
+      throw new HubError("컴플라이언스 응답 형식이 계약과 다르다", null);
+    }
+    return body as CompliancePayload;
   }
 
   async checkRequiredDocs(request: RequiredDocsCheckRequest): Promise<ClosurePayload> {

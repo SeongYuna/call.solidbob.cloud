@@ -32,7 +32,8 @@ SCRIPTS.append(dict(
     id="SYN-002", title="결혼이민자 전입신고 필요서류",
     agent="A02", customer="C02", caller_number="01000000102",
     doc_ids=["DASAN-TERM-4.4", "DASAN-TERM-1.5", "DASAN-TERM-1.4", "DASAN-MANUAL-3.3"],
-    required_documents=["신고서", "신고인 신분증(외국인등록증 원본)", "세대주 확인(세대주 신분증 또는 세대주 확인서)"],
+    required_documents=["신고서", "신고인 신분증(외국인등록증 원본)"],
+    conditional_documents=["세대주 확인(세대주 신분증 또는 세대주 확인서)"],  # 규칙표 4.4 conditional
     j={"blacklist_request": False, "routing": "normal"},
     notes=["상담원이 세대주 여부(조건)를 먼저 묻는지 — 매뉴얼 3.3", "한글 수사로 부른 전화번호(P4)는 마스킹 ② 단계 검증용", "베트남어 단어 한 개(chủ hộ) — A-5 통번역이 필요한 순간을 보여 준다. 번역은 아직 없다"],
     turns=[
@@ -64,7 +65,8 @@ SCRIPTS.append(dict(
     id="SYN-003", title="어머니 인감증명서 대리 발급",
     agent="A01", customer="C03", caller_number="01000000103",
     doc_ids=["DASAN-TERM-4.5", "DASAN-MANUAL-3.4"],
-    required_documents=["위임장(위임인 인감 날인)", "위임인 인감증명 관련 서류", "대리인 신분증"],
+    required_documents=["신분증"],  # 규칙표 4.5 — 갈래 공통 서류만 필수(09-18)
+    conditional_documents=["위임장(위임인 인감 날인)", "위임인 인감증명 관련 서류", "대리인 신분증"],  # 대리 발급
     j={"blacklist_request": False, "routing": "normal"},
     notes=["C-3 위반 직후 필요서류 카드가 떠서 상담원이 정정하는 흐름", "주민등록번호가 구분자 없이 붙어 나온다(P1 주 실패 모드)"],
     turns=[
@@ -125,7 +127,7 @@ SCRIPTS.append(dict(
     id="SYN-005", title="누수 요금 감면 — 한 번 폭발하고 진정",
     agent="A02", customer="C05", caller_number="01000000105",
     doc_ids=["DASAN-TERM-3.7", "DASAN-TERM-3.3", "DASAN-MANUAL-5.1", "DASAN-MANUAL-1.6"],
-    required_documents=["감면 신청서", "누수 수리 확인 서류(수리 영수증 또는 수리 확인서)", "신분증"],
+    required_documents=["감면 신청서", "누수 수리 사실을 확인할 수 있는 서류(수리 영수증 또는 수리 확인서)", "신분증"],
     j={"blacklist_request": False, "routing": "normal",
        "why": "1차·2차 안내 뒤 진정했고 이후 협조했다 — 콜 가드 탐지는 있지만 상담원이 요청하지 않는 경계 사례"},
     notes=["콜 가드 insult·threat 각 1건 — 5.1 단계 대응(1차·2차 안내)", "통화 온도: 고객 톤이 올라갔다 내려오는 곡선"],
@@ -165,7 +167,7 @@ SCRIPTS.append(dict(
     id="SYN-006", title="과태료 문의 — 성희롱·모욕·협박, 통화 종료 후 블랙리스트 요청",
     agent="A01", customer="C06", caller_number="01000000666",
     doc_ids=["DASAN-TERM-4.20", "DASAN-MANUAL-5.1", "DASAN-MANUAL-5.2", "DASAN-MANUAL-5.3", "DASAN-MANUAL-5.5"],
-    required_documents=["이의신청서", "소명 자료"],
+    required_documents=[],  # 4.20 은 「— 필요서류」 조항이 아니라 규칙표에 없다(09-18) — 판정 0건이 정상,
     j={"blacklist_request": True, "routing": "normal",
        "request_reason_by_agent": "통화 내내 성적 표현·인격 모독·방문 협박 반복, 1차·2차 안내 후에도 지속되어 종료",
        "admin_decision_scenario": "approve",
@@ -197,7 +199,7 @@ SCRIPTS.append(dict(
     id="SYN-007", title="같은 민원인 3일 뒤 재인입 — 베테랑 배정",
     agent="A03", customer="C06", caller_number="01000000666",
     doc_ids=["DASAN-TERM-4.20", "DASAN-MANUAL-5.1"],
-    required_documents=["이의신청서", "소명 자료"],
+    required_documents=[],  # 4.20 은 「— 필요서류」 조항이 아니라 규칙표에 없다(09-18) — 판정 0건이 정상,
     j={"blacklist_request": False, "routing": "veteran",
        "precondition": "SYN-006 의 블랙리스트 요청이 승인되어 이 발신 번호가 active 상태",
        "why": "J-5 — 인입 전 판정으로 근속 기준 이상 상담원에게 배정. 베테랑이 없으면 일반 배정으로 떨어지고 그 사실이 로그에 남아야 한다"},
@@ -252,7 +254,8 @@ SCRIPTS.append(dict(
     id="SYN-009", title="고령 세대원 재난지원금 — 사칭 문자 피해 의심과 위기 신호",
     agent="A01", customer="C08", caller_number="01000000109",
     doc_ids=["DASAN-TERM-6.2", "DASAN-TERM-6.12", "DASAN-MANUAL-5.4", "DASAN-MANUAL-1.2"],
-    required_documents=["신청서", "신청인 신분증", "주민등록등본", "입금 계좌 정보", "위임장", "세대주 신분증"],
+    required_documents=["신청서", "신청인 신분증", "가구 구성을 확인할 수 있는 서류(주민등록등본)", "입금 계좌 정보"],
+    conditional_documents=["위임장", "세대주 신분증"],  # 규칙표 6.2 conditional(세대주 아닌 사람이 신청)
     j={"blacklist_request": False, "routing": "normal",
        "why": "distress 는 블랙리스트 사유가 아니다(decisions/204) — 요청 화면이 전문 기관 연결 안내를 띄워야 한다"},
     notes=["톤이 올라가지 않고 가라앉는다(weary) — 통화 온도 이상치가 아래 방향으로 나는지",
@@ -346,7 +349,7 @@ SCRIPTS.append(dict(
     id="SYN-012", title="과태료 이의신청 — 처음부터 끝까지 화가 난 민원인",
     agent="A03", customer="C11", caller_number="01000000112",
     doc_ids=["DASAN-TERM-4.20"],
-    required_documents=["이의신청서", "소명 자료"],
+    required_documents=[],  # 4.20 은 「— 필요서류」 조항이 아니라 규칙표에 없다(09-18) — 판정 0건이 정상,
     j={"blacklist_request": False, "routing": "normal"},
     notes=["D-5 기대: **튀는 구간 0** — 통화 내내 높은 톤이면 그것이 이 사람의 기준선이다(절대 임계값을 쓰지 않는 이유)",
            "욕설·협박 없음 — 콜 가드 0건, 블랙리스트 대상 아님"],
@@ -381,7 +384,8 @@ SCRIPTS.append(dict(
     id="SYN-013", title="장애인콜택시 대리 신청 — 지친 보호자가 두 번 가라앉음",
     agent="A03", customer="C12", caller_number="01000000113",
     doc_ids=["DASAN-TERM-2.5", "DASAN-MANUAL-3.4"],
-    required_documents=["신청서", "신분증", "장애인등록증 또는 복지카드", "보행상 장애 판정 확인 서류", "위임장", "대리인 신분증"],
+    required_documents=["신청서", "신분증", "장애인등록증 또는 복지카드", "보행상 장애 판정을 확인할 수 있는 서류"],
+    conditional_documents=["위임장", "대리인 신분증"],  # 규칙표 2.5 conditional(대리 신청)
     j={"blacklist_request": False, "routing": "normal"},
     notes=["D-5 기대: 고객 weary 두 턴만 이상치 — 톤이 **아래로** 튀는 경우",
            "위기 신호(자해 암시)는 넣지 않았다 — 지침·무기력만"],

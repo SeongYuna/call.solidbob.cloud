@@ -21,6 +21,9 @@ docker run -d --name callguard-postgres -e POSTGRES_DB=callguard -e POSTGRES_USE
   -e TZ=Asia/Seoul -p 127.0.0.1:5432:5432 -v callguard-pg:/var/lib/postgresql/data postgres:17
 docker exec callguard-postgres psql -U callguard -d callguard -c "CREATE DATABASE callguard_e2e"
 docker exec -i callguard-postgres psql -U callguard -d callguard_e2e -q -v ON_ERROR_STOP=1 < db/schema.sql
+#    그리고 지식베이스 조항을 `document` 테이블에 넣는다 — 없으면 추천 카드·콜 가드의 `source_doc_id` 가 전부 NULL 로 남는다(FK, B-6 출처).
+#    UPSERT 라 여러 번 돌려도 된다. 98조항이어야 한다(2026-09-18 확인)
+DATABASE_URL=postgresql://callguard:callguard-dev@127.0.0.1:5432/callguard_e2e .venv/bin/python scripts/seed_documents.py
 
 # ③ 로컬 env — 저장소의 .env 를 덮어쓰지 않는다. 검사용 파일을 따로 둔다 (값은 전부 개발용, 비밀 아님)
 cat > /tmp/e2e.env <<'EOF'

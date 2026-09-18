@@ -15,6 +15,9 @@
       "DASAN-MANUAL-3.4"
     ],
     "required_documents": [
+      "신분증"
+    ],
+    "conditional_documents": [
       "위임장(위임인 인감 날인)",
       "위임인 인감증명 관련 서류",
       "대리인 신분증"

@@ -89,7 +89,8 @@ def build(s):
         "title": s["title"], "length_class": ("short" if len(turns) <= 9 else "medium" if len(turns) <= 19 else "long"), "turn_count": len(turns),
         "caller_number": s["caller_number"],
         "agent_persona": s["agent"], "customer_persona": s["customer"],
-        "procedure": {"doc_ids": s["doc_ids"], "required_documents": s["required_documents"]},
+        "procedure": {"doc_ids": s["doc_ids"], "required_documents": s["required_documents"],
+                      **({"conditional_documents": s["conditional_documents"]} if s.get("conditional_documents") else {})},
         "turns": turns,
         "expected": {
             "pii_by_pattern": dict(sorted(pii_c.items())),

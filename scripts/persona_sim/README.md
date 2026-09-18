@@ -122,6 +122,7 @@ SYN-007 은 **SYN-006 의 요청이 승인돼 그 번호가 `active` 일 때만*
 - **콜 가드는 «턴 × 갈래» 로 센다** — 한 턴에 같은 갈래 문구가 둘이어도 1. 문구(span) 경계로 채점하지 않는다 — 규칙은 같은 협박을
   「찾아가」·「가만 안 둬」 둘로 잡기도 한다(QA-2)
 - `customer_non_calm_turns` 는 톤이 calm 이 아닌 고객 턴 전부다. **의도한 연기이지 측정값이 아니다**
+- **`procedure.required_documents` 는 규칙표(`server/apps/closure_gate/domain/value_objects/closure_rule.py`)의 기본 서류 이름을 그대로 쓴다**(2026-09-18, E2E 「서류 목록 일치」 판정 기준). 조건부 서류(대리·미성년자·세대주 아님 등)는 `conditional_documents` 에 따로 둔다 — 규칙표가 conditional 로 다루어 필수로 세지 않기 때문이다. 괄호 안 보충(「(외국인등록증 원본)」)은 판정에서 뺀다. 규칙표에 없는 조항(4.5·4.9·2.6 등)은 TERM.md 문구 그대로
 
 ## 이 대본으로 **말할 수 없는 것** (절대 원칙 2·10)
 

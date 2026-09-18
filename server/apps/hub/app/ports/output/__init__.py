@@ -13,6 +13,7 @@ dependencies/ 에서 결합한다. **이 포트들이 유일한 계약이다** �
 from .call_start_record_port import CallStartRecordPort
 from .card_feedback_port import CardFeedbackPort
 from .closure_gate_port import ClosureGatePort
+from .compliance_flag_record_port import ComplianceFlagRecordPort
 from .compliance_port import CompliancePort
 from .domain_routing_port import DomainRoutingPort
 from .generation_port import GenerationPort
@@ -33,6 +34,7 @@ __all__ = [
     "CallStartRecordPort",
     "CardFeedbackPort",
     "ClosureGatePort",
+    "ComplianceFlagRecordPort",
     "CompliancePort",
     "DomainRoutingPort",
     "GenerationPort",

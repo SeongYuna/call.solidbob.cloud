@@ -14,10 +14,7 @@
       "DASAN-TERM-4.20",
       "DASAN-MANUAL-5.1"
     ],
-    "required_documents": [
-      "이의신청서",
-      "소명 자료"
-    ]
+    "required_documents": []
   },
   "turns": [
     {

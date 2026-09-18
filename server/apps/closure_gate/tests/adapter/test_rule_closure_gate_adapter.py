@@ -21,10 +21,10 @@ def test_규칙표_서류만_싣고_근거_조항과_조건부_서류를_붙인�
     assert v.conditional and v.detected is False and v.reason == "r"
 
 
-def test_지원하는_절차는_25개다():
-    assert len(SUPPORTED_PROCEDURES) == 25
+def test_지원하는_절차는_29개다():
+    assert len(SUPPORTED_PROCEDURES) == 29  # 2026-09-18 2.6·4.5·4.9·4.12 추가
 
 
 def test_자동_판정_어댑터는_규칙_없는_절차를_거절한다():
     with pytest.raises(UnknownProcedure):
-        KeywordRequiredDocsDetectionAdapter().detect("DASAN-TERM-2.6", ("신분증",))
+        KeywordRequiredDocsDetectionAdapter().detect("DASAN-TERM-3.4", ("신분증",))  # 3.4 는 EXCLUDED(신청·해지 서류가 다르다)

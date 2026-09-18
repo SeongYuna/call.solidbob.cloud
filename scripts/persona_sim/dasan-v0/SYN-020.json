@@ -17,7 +17,9 @@
       "DASAN-MANUAL-3.2"
     ],
     "required_documents": [
-      "아버지 신분증",
+      "신분증(아버님 본인)"
+    ],
+    "conditional_documents": [
       "위임장",
       "대리인 신분증"
     ]

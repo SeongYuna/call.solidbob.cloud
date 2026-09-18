@@ -18,7 +18,9 @@
     "required_documents": [
       "환급 신청서",
       "신분증",
-      "환급 계좌 정보",
+      "환급 계좌 정보"
+    ],
+    "conditional_documents": [
       "위임장",
       "계좌 명의자 신분증"
     ]
