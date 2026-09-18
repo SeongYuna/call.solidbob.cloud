@@ -105,6 +105,16 @@ export interface CallGuardCheckRequest {
 /** `POST /hub/call-guard-checks` 응답 그대로 — `{call_id, segment_id, flags: [{category, phrase, span, source_doc_id}]}`. */
 export type CallGuardPayload = Record<string, unknown> & { flags: unknown[] };
 
+/** C-1~C-4 컴플라이언스 검사 — **마스킹 후** 상담원 발화만(고객 발화는 C-6 몫). 판정은 서버 규칙이 한다. */
+export interface ComplianceCheckRequest {
+  call_id: string;
+  segment_id: number;
+  agent_utterance: string;
+}
+
+/** `POST /hub/compliance-checks` 응답 그대로 — `{call_id, segment_id, findings: [{rule_code, phrase, alternative_source?}]}`. 빈 배열은 「잡힌 것 없음」이지 「안전함」이 아니다(부록 A-1). */
+export type CompliancePayload = Record<string, unknown> & { findings: unknown[] };
+
 export class HubError extends Error {
   readonly status: number | null;
 
@@ -120,6 +130,7 @@ export interface HubPort {
   ingestTranscript(raw: RawTranscript): Promise<MaskedTranscript>;
   recommend(request: RecommendRequest): Promise<RecommendPayload>;
   checkCallGuard(request: CallGuardCheckRequest): Promise<CallGuardPayload>;
+  checkCompliance(request: ComplianceCheckRequest): Promise<CompliancePayload>;
   checkRequiredDocs(request: RequiredDocsCheckRequest): Promise<ClosurePayload>;
 }
 
@@ -139,6 +150,7 @@ export type CallMediatorMessage =
   | { type: "recommendation_pending"; payload: RecommendationPending }
   | { type: "recommendation"; payload: RecommendPayload }
   | { type: "call_guard"; payload: CallGuardPayload }
+  | { type: "compliance"; payload: CompliancePayload }
   | { type: "closure"; payload: ClosurePayload };
 
 export interface Broadcaster {

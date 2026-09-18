@@ -119,6 +119,28 @@ test("HttpHub — 콜 가드 검사는 /hub/call-guard-checks 로 보내고, fla
   }
 });
 
+test("HttpHub — 컴플라이언스 검사는 /hub/compliance-checks 로 보내고, findings 배열이 없으면 계약 위반이다", async () => {
+  const seen: Array<{ path: string; payload: unknown }> = [];
+  let reply: unknown = { call_id: "test-1", segment_id: "2", findings: [] };
+  const server = createServer(async (req, res) => {
+    seen.push({ path: req.url ?? "", payload: await body(req) });
+    res.writeHead(200, { "content-type": "application/json" });
+    res.end(JSON.stringify(reply));
+  });
+  await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
+  const hub = new HttpHub(`http://127.0.0.1:${(server.address() as AddressInfo).port}`);
+  const request = { call_id: "test-1", segment_id: 2, agent_utterance: "마스킹된 상담원 발화" };
+  try {
+    const payload = await hub.checkCompliance(request);
+    assert.deepEqual(payload.findings, []);
+    assert.deepEqual(seen, [{ path: "/hub/compliance-checks", payload: request }]);
+    reply = { call_id: "test-1" };
+    await assert.rejects(hub.checkCompliance(request), HubError);
+  } finally {
+    server.close();
+  }
+});
+
 test("HttpHub — 필요서류 판정은 /hub/required-docs-checks 로 보내고, procedure 가 없으면 계약 위반이다", async () => {
   const seen: Array<{ path: string; payload: unknown }> = [];
   let reply: unknown = { call_id: "test-1", procedure: "DASAN-TERM-4.3", verdict: "incomplete" };

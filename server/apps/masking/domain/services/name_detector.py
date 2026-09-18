@@ -8,7 +8,8 @@
 그때까지 **이름이 흐르는 말버릇이 있을 때만** 잡는다. 네 갈래다.
 
 1. **문맥** — `"제 이름은 김민준이고"`·`"성함이 홍길동입니다"`. 띄어 쓴 외국인 이름(`"이름 제니 레예스"`)은 세 어절까지 본다
-2. **자기소개** — `"저는 최지훈이고요"`. 「저는」 은 흔한 말이라 **이름을 밝히는 어미**가 붙을 때만
+2. **자기소개** — `"저는 최지훈이고요"`·`"저는 강민재고요"`. 「저는」 은 흔한 말이라 **이름을 밝히는 어미**가 붙을 때만.
+   가족 호칭(`"아버지는 강영식이에요"`)도 같은 자리로 본다(2026-09-18)
 3. **호칭** — `"그 김민준 씨가"`·`"김도윤 고객님"`·`"제니 레예스 고객님"`. 상담원이 고객을 부르는 자리다
 4. **이름만 답한 발화** — `"박성호요."`·`"한지영이요."`. 앞 턴의 「성함이?」 에 답한 모양이라 발화(문장) 첫머리만 본다
 
@@ -36,7 +37,15 @@ _CONTEXT = re.compile(
 )
 # 자기소개 — 뒤 어절이 이름을 밝히는 어미로 끝나야 한다(`"저는 괜찮아요"` 는 이름이 아니다)
 _SELF_INTRO = re.compile(r"(?:^|(?<=[\s,.]))(?:저는|전)\s+(?=[가-힣])")
-_INTRO_ENDINGS = ("이고요", "이구요", "이고", "입니다", "이에요", "예요", "이라고", "라고", "인데요", "이며")
+# 가족 호칭 — `"아버지는 강영식이에요"`(SYN-020, 2026-09-18 E2E 에서 원문으로 남았다). 「저는」 과 같은 자리다
+_FAMILY_INTRO = re.compile(
+    r"(?:^|(?<=[\s,.]))(?:아버지|어머니|아버님|어머님|아빠|엄마|남편|아내|집사람|배우자|아들|딸|형|누나|오빠|언니|동생|"
+    r"할머니|할아버지|자녀|손자|손녀|며느리|사위|장인|장모|시어머니|시아버지)(?:분|님)?(?:은|는|이|가)\s+(?=[가-힣])"
+)
+# 이름을 밝히는 어미. **긴 것부터** 본다 — `"강민재고요"` 는 「이고요」 가 아니라 「고요」 다(모음으로 끝나는 이름).
+_INTRO_ENDINGS = tuple(sorted((
+    "이고요", "이구요", "이고", "입니다", "이에요", "이예요", "예요", "에요", "이라고", "라고", "인데요", "이며", "고요", "구요", "이야", "야",
+), key=len, reverse=True))
 
 # 이름 뒤에 붙는 조사·서술어. **긴 것부터** 벗겨야 `"이고요"` 가 `"이고"` 로, `"이고"` 가 `"이"` 로 잘리지 않는다.
 # 홑글자 `"고"` 는 넣지 않는다 — `"바꾸고"` 가 `"바꾸"` 로 남아 이름이 되어버린다.
@@ -83,9 +92,11 @@ _NOT_NAMES = frozenset((
     "성함", "이름", "명의", "명의자", "어느분", "어느", "어떤분", "누구신지", "배우자", "가족분", "남편분", "아드님",
     "따님", "어머님", "아버님", "할머님", "할아버님", "지하철", "어떤거",
     "신고자", "제보자", "조부모", "이메일", "현재", "노래방", "편의점",
+    # 2026-09-18 합성 대본 24건·가족 호칭 문맥에서 걸린 것
+    "고객님", "선택은", "장애인", "임산부", "고령자", "유공자",
 ))
 # 이름이 이렇게 끝나지 않는다 — 서술·관형 어미(`"친근하네"`·`"다른가"`·`"하는데"`)
-_NOT_NAME_TAILS = ("하네", "네", "는가", "른가", "인가", "은가", "던것", "는데", "에", "되면", "주신", "해본")
+_NOT_NAME_TAILS = ("하네", "네", "는가", "른가", "인가", "은가", "던것", "는데", "에", "되면", "르면", "으면", "주신", "해본")
 # 장소 접미사(`"기흥역"`·`"신월동"`·`"도봉구"`) — **이름만 답한 발화에만** 쓴다. 문맥·호칭 뒤에서는 `"홍길동"`·`"김소리"` 처럼
 # 진짜 이름이 이렇게 끝난다(첫 판이 전부에 걸어 두 이름을 놓쳤다). 「호·원·도」 는 여기에도 넣지 않는다 — `"박성호"`
 _PLACE_TAILS = ("역", "동", "구", "군", "읍", "면", "리", "점", "층", "길", "방")
@@ -153,13 +164,28 @@ def _context_names(text: str) -> list[PiiSpan]:
     found: list[PiiSpan] = []
     for m in _CONTEXT.finditer(text):
         found += _after_context(text, m.end())
-    for m in _SELF_INTRO.finditer(text):
-        tok = re.match(r"[가-힣]{3,10}", text[m.end():])
-        if tok and tok.group().endswith(_INTRO_ENDINGS):
-            name = _strip_particles(tok.group())
-            if 2 <= len(name) <= 4 and _starts_with_surname(name) and not _is_not_name(name):
-                found.append(_span(m.end(), len(name)))
+    for m in list(_SELF_INTRO.finditer(text)) + list(_FAMILY_INTRO.finditer(text)):
+        span = _introduced_name(text, m.end())
+        if span is not None:
+            found.append(span)
     return found
+
+
+def _introduced_name(text: str, pos: int) -> PiiSpan | None:
+    """「저는」·「아버지는」 뒤 어절이 이름을 밝히는 어미로 끝나면 그 이름. 성씨 포함 3자(복성 4자)만 —
+    `"저는 강남구요"`·`"저는 서울시민이고요"` 를 이름으로 보지 않는다(짧은 답 규칙과 같은 기준)."""
+    tok = re.match(r"[가-힣]{3,10}", text[pos:])
+    if tok is None:
+        return None
+    ending = next((e for e in _INTRO_ENDINGS if tok.group().endswith(e)), None)
+    if ending is None:
+        return None
+    name = tok.group()[: -len(ending)]
+    want = 4 if name[:2] in _SURNAMES_2 else 3
+    place = name.endswith(_PLACE_TAILS) or name.startswith(WIDE_AREA_NAMES)
+    if len(name) == want and _starts_with_surname(name) and not _is_not_name(name) and not place:
+        return _span(pos, len(name))
+    return None
 
 
 def _honorific_names(text: str) -> list[PiiSpan]:
@@ -179,14 +205,17 @@ def _honorific_names(text: str) -> list[PiiSpan]:
             continue
         # 두 어절 — 외국인 이름(`"제니 레예스 고객님"`). 성씨 검사를 할 수 없으니 **문장 첫머리**일 때만 받는다
         before = text[:start].rstrip()
-        # 외국인 이름 어절은 한국어 조사·어미로 끝나지 않는다(`"요금이 체납되면 고객님"` 을 막는다)
-        korean_tail = any(w.endswith(("이", "가", "은", "는", "을", "를", "면", "고", "서", "도", "로", "요", "다", "과", "와", "본", "신"))
-                          for w in words)
+        # 외국인 이름 어절은 한국어 조사·어미로 끝나지 않는다(`"요금이 체납되면 고객님"` 을 막는다).
+        # 둘째 어절에서는 「이」 를 빼고 본다 — `"다나카 유이 고객님"`(SYN-017) 처럼 이름이 「이」 로 끝난다. 첫 어절의 「이」 는 주격 조사다
+        _tails = ("이", "가", "은", "는", "을", "를", "면", "고", "서", "도", "로", "요", "다", "과", "와", "본", "신")
+        korean_tail = words[0].endswith(_tails) or words[1].endswith(_tails[1:]) or len(words[0]) < 2
         if (before == "" or before.endswith((",", ".", "?", "!", "네"))) and not korean_tail and not any(_is_not_name(w) for w in words):
             found.append(_span(start, len(words[0])))
             found.append(_span(start + len(words[0]) + 1, len(words[1])))
-        elif _starts_with_surname(words[1]) and not _is_not_name(words[1]):
-            found.append(_span(start + len(words[0]) + 1, len(words[1])))  # `"그 김민준 씨"` 의 「그」 는 이름이 아니다
+        elif (len(words[1]) == (4 if words[1][:2] in _SURNAMES_2 else 3)
+              and _starts_with_surname(words[1]) and not _is_not_name(words[1])):
+            # `"그 김민준 씨"` 의 「그」 는 이름이 아니다. 한 어절 호칭과 같은 길이 기준 — `"신청은 위임장과 고객님"` 의 「위임장과」(SYN-020)
+            found.append(_span(start + len(words[0]) + 1, len(words[1])))
     return found
 
 

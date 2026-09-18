@@ -5,6 +5,8 @@ import {
   type Broadcaster,
   type CallGuardCheckRequest,
   type CallGuardPayload,
+  type ComplianceCheckRequest,
+  type CompliancePayload,
   type ClosurePayload,
   type RequiredDocsCheckRequest,
   type CallStartRequest,
@@ -84,6 +86,12 @@ export class FakeHub implements HubPort {
   readonly ingested: RawTranscript[] = [];
   readonly recommended: RecommendRequest[] = [];
   readonly guarded: CallGuardCheckRequest[] = [];
+  readonly complianceChecked: ComplianceCheckRequest[] = [];
+  /** 컴플라이언스가 잡을 표현 — 상담원 발화에 들어 있으면 findings 에 싣는다. */
+  compliancePhrase = "무조건";
+  failCompliance: number | null = null;
+  /** 추천 응답 카드의 근거 조항을 순서대로 — 주면 `topDocId` 보다 우선한다. */
+  cardDocIds: string[] | null = null;
   /** 콜 가드가 잡을 표현 — 본문에 들어 있으면 flags 에 싣는다. */
   guardPhrase = "병신";
   failGuard: number | null = null;
@@ -131,7 +139,12 @@ export class FakeHub implements HubPort {
           domain: null,
           call_id: request.call_id,
           trigger_at_ms: String(request.utterance_end_ms),
-          cards: this.topDocId === null ? [] : [{ title: "t", summary: "s", source: { doc_id: this.topDocId, title: "t" }, similarity_score: "0.9" }],
+          cards: (this.cardDocIds ?? (this.topDocId === null ? [] : [this.topDocId])).map((docId) => ({
+            title: "t",
+            summary: "s",
+            source: { doc_id: docId, title: "t" },
+            similarity_score: "0.9",
+          })),
           internal_latency_ms: "1",
         }
       : { fired: "false", domain: null, call_id: null, trigger_at_ms: null, cards: null, internal_latency_ms: null };
@@ -149,6 +162,19 @@ export class FakeHub implements HubPort {
       verdict: informed ? "complete" : "incomplete",
       missing: informed ? [] : ["신분증"],
       detected: "true",
+    };
+  }
+
+  async checkCompliance(request: ComplianceCheckRequest): Promise<CompliancePayload> {
+    if (this.failCompliance !== null) {
+      throw new HubError("compliance", this.failCompliance);
+    }
+    this.complianceChecked.push(request);
+    const hit = request.agent_utterance.includes(this.compliancePhrase);
+    return {
+      call_id: request.call_id,
+      segment_id: String(request.segment_id),
+      findings: hit ? [{ rule_code: "C-1", phrase: this.compliancePhrase, alternative_source: { doc_id: "DASAN-TERM-1.4", title: "권장 대체 표현" } }] : [],
     };
   }
 

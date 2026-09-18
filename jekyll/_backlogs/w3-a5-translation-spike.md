@@ -8,7 +8,7 @@ priority: 8
 date: 2026-08-28
 requirement:
   - "A-5"
-note: "모델 학습(정성윤 · 개인 PC) 후 진행 예정 — 숙련도 등급별 WER/CER 정확도 측정"
+note: "막힘 — AI Hub 505·71479 미신청(외국인 화자 음성 0건). 학습은 하지 않는다(decisions/210) — 사전학습 STT 로 숙련도 등급별 WER/CER 측정"
 ---
 
 ## 무엇을

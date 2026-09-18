@@ -1,0 +1,243 @@
+{
+  "id": "SYN-012",
+  "version": "dasan-v0",
+  "source": "synthetic",
+  "generated_by": "Claude Code (claude-opus-5) · 2026-09-16 · 사람 검토 전",
+  "title": "과태료 이의신청 — 처음부터 끝까지 화가 난 민원인",
+  "length_class": "long",
+  "turn_count": 24,
+  "caller_number": "01000000112",
+  "agent_persona": "A03",
+  "customer_persona": "C11",
+  "procedure": {
+    "doc_ids": [
+      "DASAN-TERM-4.20"
+    ],
+    "required_documents": []
+  },
+  "turns": [
+    {
+      "seq": 1,
+      "speaker": "agent",
+      "text": "네, 한별시 통합민원콜센터입니다. 무엇을 도와드릴까요?",
+      "tone": "calm"
+    },
+    {
+      "seq": 2,
+      "speaker": "customer",
+      "text": "주차 과태료가 날아왔는데요, 저는 거기 잠깐 짐만 내렸다고요!",
+      "tone": "raised"
+    },
+    {
+      "seq": 3,
+      "speaker": "agent",
+      "text": "불편하셨겠습니다. 부과 내용에 이의가 있으시면 이의신청을 하실 수 있습니다.",
+      "tone": "calm"
+    },
+    {
+      "seq": 4,
+      "speaker": "customer",
+      "text": "이의신청을 왜 제가 해야 돼요? 단속한 사람이 잘못한 거잖아요!",
+      "tone": "raised"
+    },
+    {
+      "seq": 5,
+      "speaker": "agent",
+      "text": "이의신청은 이의신청서와 소명 자료로 접수하시면 됩니다.",
+      "tone": "calm"
+    },
+    {
+      "seq": 6,
+      "speaker": "customer",
+      "text": "소명 자료가 뭔데요? 제가 뭘 증명해야 되는데요!",
+      "tone": "raised"
+    },
+    {
+      "seq": 7,
+      "speaker": "agent",
+      "text": "짐을 내리던 상황을 보여 줄 수 있는 자료면 됩니다. 인정 여부는 심사에서 정해집니다.",
+      "tone": "calm"
+    },
+    {
+      "seq": 8,
+      "speaker": "customer",
+      "text": "사진도 안 찍었는데 그걸 어떻게 보여 줘요!",
+      "tone": "raised"
+    },
+    {
+      "seq": 9,
+      "speaker": "agent",
+      "text": "가지고 계신 자료로 사정을 적어서 내시면 심사에서 함께 봅니다.",
+      "tone": "calm"
+    },
+    {
+      "seq": 10,
+      "speaker": "customer",
+      "text": "그래서 취소가 된다는 거예요 안 된다는 거예요!",
+      "tone": "raised"
+    },
+    {
+      "seq": 11,
+      "speaker": "agent",
+      "text": "감경이나 취소 여부는 심사 결과로 정해져서 제가 미리 말씀드릴 수는 없습니다.",
+      "tone": "calm"
+    },
+    {
+      "seq": 12,
+      "speaker": "customer",
+      "text": "아니 그걸 모르면 전화를 왜 받아요!",
+      "tone": "raised"
+    },
+    {
+      "seq": 13,
+      "speaker": "agent",
+      "text": "답답하시겠습니다. 사전납부 감경 제도가 있는 경우에는 기한 안에 납부하셔야 적용된다는 점도 함께 안내드립니다.",
+      "tone": "calm"
+    },
+    {
+      "seq": 14,
+      "speaker": "customer",
+      "text": "돈을 먼저 내라는 거예요? 억울한데 왜 먼저 내요!",
+      "tone": "raised"
+    },
+    {
+      "seq": 15,
+      "speaker": "agent",
+      "text": "먼저 내시라는 말씀이 아니라, 그런 제도가 있다는 안내입니다. 선택은 고객님이 하시면 됩니다.",
+      "tone": "calm"
+    },
+    {
+      "seq": 16,
+      "speaker": "customer",
+      "text": "기한은 언제까지인데요!",
+      "tone": "raised"
+    },
+    {
+      "seq": 17,
+      "speaker": "agent",
+      "text": "기한은 소관 부서 확인 후 안내드리겠습니다.",
+      "tone": "calm"
+    },
+    {
+      "seq": 18,
+      "speaker": "customer",
+      "text": "그것도 확인해야 돼요? 정말 답답하네요!",
+      "tone": "raised"
+    },
+    {
+      "seq": 19,
+      "speaker": "agent",
+      "text": "네, 정확하게 안내드리려고 확인하는 것입니다. 연락받으실 번호를 알려 주시겠어요?",
+      "tone": "calm"
+    },
+    {
+      "seq": 20,
+      "speaker": "customer",
+      "text": "공일공 공공공공 공일일이요! 빨리 연락 주세요!",
+      "tone": "raised",
+      "labels": {
+        "pii": [
+          {
+            "pattern": "P4",
+            "span": "공일공 공공공공 공일일이"
+          }
+        ]
+      }
+    },
+    {
+      "seq": 21,
+      "speaker": "agent",
+      "text": "네, 확인했습니다. 이의신청서와 소명 자료를 준비해 주시고, 기한은 확인 후 연락드리겠습니다.",
+      "tone": "calm"
+    },
+    {
+      "seq": 22,
+      "speaker": "customer",
+      "text": "알았어요! 꼭 연락 주세요!",
+      "tone": "raised"
+    },
+    {
+      "seq": 23,
+      "speaker": "agent",
+      "text": "네, 이용해 주셔서 감사합니다.",
+      "tone": "calm"
+    },
+    {
+      "seq": 24,
+      "speaker": "customer",
+      "text": "네!",
+      "tone": "raised"
+    }
+  ],
+  "expected": {
+    "pii_by_pattern": {
+      "P4": 1
+    },
+    "compliance": [],
+    "call_guard_by_type": {},
+    "customer_non_calm_turns": [
+      {
+        "seq": 2,
+        "tone": "raised"
+      },
+      {
+        "seq": 4,
+        "tone": "raised"
+      },
+      {
+        "seq": 6,
+        "tone": "raised"
+      },
+      {
+        "seq": 8,
+        "tone": "raised"
+      },
+      {
+        "seq": 10,
+        "tone": "raised"
+      },
+      {
+        "seq": 12,
+        "tone": "raised"
+      },
+      {
+        "seq": 14,
+        "tone": "raised"
+      },
+      {
+        "seq": 16,
+        "tone": "raised"
+      },
+      {
+        "seq": 18,
+        "tone": "raised"
+      },
+      {
+        "seq": 20,
+        "tone": "raised"
+      },
+      {
+        "seq": 22,
+        "tone": "raised"
+      },
+      {
+        "seq": 24,
+        "tone": "raised"
+      }
+    ],
+    "call_temperature": {
+      "customer_expected_outlier_turns": [],
+      "customer_calm_turns": [],
+      "customer_turns": 12,
+      "note": "의도한 연기(tts 운율 지시)에서 나온 기대값이다 — 측정값이 아니다. raised·tense 는 채점에서 뺀다"
+    },
+    "j": {
+      "blacklist_request": false,
+      "routing": "normal"
+    }
+  },
+  "notes": [
+    "D-5 기대: **튀는 구간 0** — 통화 내내 높은 톤이면 그것이 이 사람의 기준선이다(절대 임계값을 쓰지 않는 이유)",
+    "욕설·협박 없음 — 콜 가드 0건, 블랙리스트 대상 아님"
+  ]
+}

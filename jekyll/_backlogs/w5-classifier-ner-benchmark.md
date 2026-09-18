@@ -2,9 +2,9 @@
 title: "분류기·NER 대조군 실측 — KcELECTRA vs klue/roberta-base"
 assignee: "류준"
 role: "ai"
-status: "todo"
+status: "done"
 sprint: 5
-note: "09-15 막힘 — 컴플라이언스 학습 데이터 0건 · 파인튜닝은 정성윤 님 개인 PC 몫"
+note: "닫음(2026-09-18) — 측정 불가: 모델을 학습하지 않는다(decisions/210). 파인튜닝 전제가 사라져 대조군 비교를 할 수 없다"
 priority: 54
 date: 2026-09-15
 requirement:
@@ -13,6 +13,10 @@ requirement:
 paths:
   - "ai/apps/*"
 ---
+
+> **2026-09-18 닫음 — 측정 불가 (학습 안 함, `_project/decisions/210`).** 두 모델 모두 파인튜닝이 전제였는데
+> 팀이 모델을 학습하지 않기로 했다. 비교는 하지 않았고 수치도 없다 — 지우지 않고 남긴다(절대 원칙 8). 라벨 데이터가 생겨
+> `210` 의 선택지 C 가 열리면 다시 연다. 아래는 닫기 전 원문이다.
 
 ## 무엇을
 

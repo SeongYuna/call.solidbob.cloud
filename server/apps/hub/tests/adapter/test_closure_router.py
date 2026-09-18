@@ -40,7 +40,7 @@ def test_기본_배선으로_실제_규칙이_판정한다():
 def test_규칙표에_없는_절차는_판정하지_않고_422다():
     """판정할 규칙이 없는 것이지 서류가 빠진 것이 아니다 — complete 도 incomplete 도 거짓말이다."""
     with TestClient(app) as client:
-        r = client.post("/hub/closure-checks", json={**BODY, "procedure": "DASAN-TERM-2.6"})
+        r = client.post("/hub/closure-checks", json={**BODY, "procedure": "DASAN-TERM-3.4"})  # 3.4 는 EXCLUDED — 2.6 은 09-18 규칙이 생겼다
     assert r.status_code == 422
     assert "complete" not in r.text
 
@@ -60,7 +60,7 @@ def test_자동_판정_경로는_상담원_발화로_누락을_찾는다():
     with TestClient(app) as client:
         r = client.post("/hub/required-docs-checks", json=body)
         empty = client.post("/hub/required-docs-checks", json={**body, "agent_utterances": []})
-        unknown = client.post("/hub/required-docs-checks", json={**body, "procedure": "DASAN-TERM-4.9"})
+        unknown = client.post("/hub/required-docs-checks", json={**body, "procedure": "DASAN-TERM-3.4"})
     assert r.status_code == 200
     assert r.json()["missing"] == ["신고인 신분증"] and r.json()["detected"] == "true"
     assert empty.json()["missing"] == ["신고서", "신고인 신분증"]

@@ -4,13 +4,19 @@
  * 상담원 대시보드(`apps/call`, 라이브 모드)는 받는 메시지가 실제 통화와 같으니 **프론트를 고치지 않고** 그대로 그린다.
  *
  *   node scripts/replay_persona_call.ts --list
- *   node scripts/replay_persona_call.ts SYN-004 [--url ws://localhost:8080] [--speak] [--watch] [--speed 1] [--dry-run]
+ *   node scripts/replay_persona_call.ts SYN-004 [--url ws://localhost:8080] [--speak [say|google]] [--watch] [--speed 1] [--dry-run]
  *       [--close --core-url http://localhost:8000]
+ *   node scripts/replay_persona_call.ts --prefetch [SYN-004]      # 재생 없이 Google TTS 캐시만 채운다(전 대본 또는 하나)
  *
  * - 두 화자를 **채널 둘**로 연다(`speaker=agent` · `speaker=customer`, `channels=2`) — 데모의 물리 2채널과 같은 모양이다.
  * - 턴마다 부분 결과(`is_final:false`)를 어절째 늘려 보내고 끝에 확정을 보낸다(`persona_replay/plan.ts`).
- * - `--speak` 는 이 맥에서 `say` 로 소리를 낸다(무료, 키 없음). 음성은 `personas.json` 의 `say_voice`, 없으면 `Yuna`.
+ * - `--speak` / `--speak say` 는 이 맥에서 `say` 로 소리를 낸다(무료, 키 없음). 음성은 `personas.json` 의 `say_voice`, 없으면 `Yuna`.
  *   톤(`tone`)은 말하는 속도로만 흉내 낸다 — **D-5 통화 온도의 성능 근거가 아니다**(절대 원칙 10).
+ * - `--speak google` 은 Google Cloud TTS(ko-KR WaveNet)로 낸다 — `persona_replay/google_tts.ts`. 재생 전에 대본 전체를
+ *   캐시(`data/processed/synthetic-voice/google/`)에 채우고, 있는 것은 **API 를 부르지 않는다**. 키는 환경변수
+ *   `GOOGLE_TTS_API_KEY` 뿐이고(`.env`), 월 문자 한도 `GOOGLE_TTS_MAX_CHARS_PER_MONTH`(기본 900,000)를 넘기면 부르기 전에 멈춘다
+ *   (`persona_replay/tts_budget.ts`, COST-1 과 같은 2단 가드). 키가 없는데 캐시도 없으면 **`say` 로 조용히 넘어가지 않고** 실패한다.
+ *   발급·설정·비용은 `scripts/persona_sim/TTS.md`.
  * - `--watch` 는 `/ws?call_id=` 를 함께 열어 대시보드가 받는 것(마스킹된 자막·카드·콜 가드·필요서류)을 찍는다.
  * - `--close --core-url <서버>` 는 재생이 끝나면 `POST /hub/calls/{id}/close` 로 통화 후 요약 초안을 만든다(D-1~D-3).
  *   본문에는 **`/ws` 로 받은 마스킹본만** 싣는다 — 대본 원문을 보내지 않는다(SEC-1). 그래서 `--watch` 와 같은 뷰 토큰이 필요하다.
@@ -30,16 +36,34 @@ import { readdir, readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { WebSocket } from "ws";
 import { gapBefore, planTurn, readTurns, sayRate, type ScriptTurn, type Speaker } from "./persona_replay/plan.ts";
+import { pickVoice } from "./persona_replay/google_voices.ts";
+import {
+  buildSsml,
+  cacheStem,
+  ENV_API_KEY,
+  findPlayer,
+  synthesizeToCache,
+  TtsBudgetExceeded,
+  type Player,
+} from "./persona_replay/google_tts.ts";
+import { capFromEnv, TtsBudget, TtsLedgerFile } from "./persona_replay/tts_budget.ts";
 
-const SCRIPTS_DIR = fileURLToPath(new URL("../../../scripts/persona_sim/dasan-v0/", import.meta.url));
+const REPO_ROOT = fileURLToPath(new URL("../../../", import.meta.url));
+const SCRIPTS_DIR = `${REPO_ROOT}scripts/persona_sim/dasan-v0/`;
 const FALLBACK_VOICE = "Yuna";
+/** Google TTS 캐시·장부. `data/processed/` 는 gitignore 다. `GOOGLE_TTS_CACHE_DIR` 로 캐시 위치만 바꿀 수 있다. */
+const TTS_CACHE_ROOT = (process.env.GOOGLE_TTS_CACHE_DIR ?? "").trim() || `${REPO_ROOT}data/processed/synthetic-voice/google`;
+const TTS_LEDGER_PATH = `${REPO_ROOT}data/processed/tts-usage.json`;
+
+type SpeakEngine = "off" | "say" | "google";
 
 interface Args {
   target: string;
   url: string;
   callId: string;
   speed: number;
-  speak: boolean;
+  speak: SpeakEngine;
+  prefetch: boolean;
   watch: boolean;
   dryRun: boolean;
   list: boolean;
@@ -59,6 +83,8 @@ interface MaskedFinal {
 interface Persona {
   label?: string;
   say_voice?: string;
+  tts_voice_hint?: string;
+  google_tts_voice?: string;
 }
 
 interface Script {
@@ -80,7 +106,8 @@ function parseArgs(argv: string[]): Args {
     url: "ws://localhost:8080",
     callId: "",
     speed: 1,
-    speak: false,
+    speak: "off",
+    prefetch: false,
     watch: false,
     dryRun: false,
     list: false,
@@ -100,7 +127,17 @@ function parseArgs(argv: string[]): Args {
       args.speed = Number(value);
       i += 1;
     } else if (flag === "--speak") {
-      args.speak = true;
+      // 값이 따라오면(say|google) 그것, 아니면 say — `--speak --watch` 처럼 다음 플래그가 오는 경우를 가른다
+      if (value === "say" || value === "google") {
+        args.speak = value;
+        i += 1;
+      } else if (value === "" || value.startsWith("--")) {
+        args.speak = "say";
+      } else {
+        throw new Error(`--speak 는 say 또는 google 이다: ${value}`);
+      }
+    } else if (flag === "--prefetch") {
+      args.prefetch = true;
     } else if (flag === "--watch") {
       args.watch = true;
     } else if (flag === "--dry-run") {
@@ -121,6 +158,9 @@ function parseArgs(argv: string[]): Args {
   }
   if (args.close && args.coreUrl === "") {
     throw new Error("--close 는 --core-url(서버 주소)이 있어야 한다 — 콜 미디에이터 주소와 다르다");
+  }
+  if (args.prefetch && args.speak === "say") {
+    throw new Error("--prefetch 는 Google TTS 캐시를 채우는 것이다 — --speak say 와 같이 쓸 수 없다");
   }
   return args;
 }
@@ -271,10 +311,83 @@ function speak(text: string, voice: string, rate: number): ChildProcess {
   return spawn("say", ["-v", voice, "-r", String(rate), text], { stdio: "ignore" });
 }
 
+function play(player: Player, file: string, rate: number): ChildProcess {
+  return spawn(player.command, player.args(file, rate), { stdio: "ignore" });
+}
+
+function newBudget(): TtsBudget {
+  return new TtsBudget(new TtsLedgerFile(TTS_LEDGER_PATH), capFromEnv(process.env));
+}
+
+/**
+ * 대본 한 편의 턴 전부를 Google TTS 캐시에 채운다 — 있는 턴은 API 를 부르지 않는다. 돌려주는 값은 seq → mp3 경로.
+ * 재생 **전에** 한꺼번에 하는 이유: 턴마다 합성하면 API 왕복(수백 ms)이 말 사이 틈으로 끼어 대화가 어색해진다.
+ */
+async function prepareGoogleAudio(
+  script: Script,
+  turns: ScriptTurn[],
+  personas: Record<string, Persona>,
+  budget: TtsBudget,
+): Promise<Map<number, string>> {
+  const apiKey = (process.env[ENV_API_KEY] ?? "").trim();
+  const dir = `${TTS_CACHE_ROOT}/${script.id}`;
+  const files = new Map<number, string>();
+  let synthesized = 0;
+  let cached = 0;
+  let chars = 0;
+  for (const turn of turns) {
+    const personaId = turn.speaker === "agent" ? script.agent_persona : script.customer_persona;
+    const choice = pickVoice(personaId, personas[personaId ?? ""] ?? {});
+    const req = { ssml: buildSsml(turn.text, turn.tone), voice: choice.voice, pitch: choice.pitch };
+    try {
+      const out = await synthesizeToCache({ req, dir, stem: cacheStem(turn.seq, turn.speaker), apiKey, budget });
+      files.set(turn.seq, out.path);
+      if (out.cached) {
+        cached += 1;
+      } else {
+        synthesized += 1;
+        chars += out.chars;
+      }
+    } catch (error) {
+      if (error instanceof TtsBudgetExceeded) {
+        const usage = await budget.used();
+        throw new Error(
+          `${script.id} #${turn.seq} 에서 멈췄다 — ${error.message}. ` +
+            `장부 ${usage.month}: ${usage.used.toLocaleString()}/${usage.cap.toLocaleString()}자 (${TTS_LEDGER_PATH})`,
+        );
+      }
+      throw error;
+    }
+  }
+  const usage = await budget.used();
+  console.log(
+    `  ♪ Google TTS ${script.id}: 캐시 ${cached} · 새로 합성 ${synthesized}(${chars.toLocaleString()}자) · ` +
+      `이번 달 누계 ${usage.used.toLocaleString()}/${usage.cap.toLocaleString()}자`,
+  );
+  return files;
+}
+
+async function prefetch(target: string): Promise<void> {
+  const ids = target === "" ? (await readdir(SCRIPTS_DIR)).filter((f) => /^SYN-\d{3}\.json$/.test(f)).map((f) => f.replace(/\.json$/, "")).sort() : [target];
+  const personas = await loadPersonas();
+  const budget = newBudget();
+  if ((process.env[ENV_API_KEY] ?? "").trim() === "") {
+    console.warn(`${ENV_API_KEY} 가 비어 있다 — 캐시에 이미 있는 턴만 확인하고, 없는 턴에서 멈춘다`);
+  }
+  for (const id of ids) {
+    const { script, turns } = await loadScript(id);
+    await prepareGoogleAudio(script, turns, personas, budget);
+  }
+}
+
 async function main(): Promise<void> {
   const args = parseArgs(process.argv.slice(2));
   if (args.list) {
     await listScripts();
+    return;
+  }
+  if (args.prefetch) {
+    await prefetch(args.target);
     return;
   }
   if (args.target === "") {
@@ -285,10 +398,22 @@ async function main(): Promise<void> {
   const callId = args.callId || `${script.id.toLowerCase()}-${Date.now()}`;
   const phone = (process.env.CALLER_PHONE ?? script.caller_number ?? "").trim();
 
-  let voices = args.speak ? installedKoreanVoices() : null;
-  if (args.speak && (voices === null || !voices.has(FALLBACK_VOICE))) {
+  let voices = args.speak === "say" ? installedKoreanVoices() : null;
+  if (args.speak === "say" && (voices === null || !voices.has(FALLBACK_VOICE))) {
     console.warn(`--speak 는 macOS say 와 한국어 음성(${FALLBACK_VOICE})이 있어야 한다 — 소리 없이 흘린다`);
     voices = null;
+  }
+  // Google TTS — 소켓을 열기 전에 캐시를 채운다(키·예산·플레이어 문제로 실패하면 통화 행이 생기기 전에 멈춘다)
+  let player: Player | null = null;
+  let googleFiles = new Map<number, string>();
+  if (args.speak === "google" && args.dryRun) {
+    console.log("  ♪ dry-run 이라 Google TTS 도 부르지 않는다 — 캐시를 채우려면 --prefetch");
+  } else if (args.speak === "google") {
+    player = findPlayer();
+    if (player === null) {
+      throw new Error("--speak google 은 afplay(macOS) 또는 ffplay 가 있어야 한다");
+    }
+    googleFiles = await prepareGoogleAudio(script, turns, personas, newBudget());
   }
   const voiceOf = (speaker: Speaker): string => {
     const id = speaker === "agent" ? script.agent_persona : script.customer_persona;
@@ -327,7 +452,13 @@ async function main(): Promise<void> {
     console.log(`#${String(turn.seq).padStart(2)} [${turn.speaker === "agent" ? "상담원" : "고객  "}|${turn.tone}] ${turn.text}`);
 
     const started = Date.now();
-    const voice = voices !== null ? speak(turn.text, voiceOf(turn.speaker), Math.round(sayRate(turn.tone) * args.speed)) : null;
+    const googleFile = googleFiles.get(turn.seq);
+    const voice =
+      player !== null && googleFile !== undefined
+        ? play(player, googleFile, args.speed)
+        : voices !== null
+          ? speak(turn.text, voiceOf(turn.speaker), Math.round(sayRate(turn.tone) * args.speed))
+          : null;
     const spoken = voice ? new Promise<void>((resolve) => voice.once("exit", () => resolve())) : Promise.resolve();
     for (const interim of plan.interims) {
       await sleep(started + interim.offsetMs - Date.now());

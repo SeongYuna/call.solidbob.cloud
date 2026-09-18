@@ -18,7 +18,7 @@
     ],
     "required_documents": [
       "감면 신청서",
-      "누수 수리 확인 서류(수리 영수증 또는 수리 확인서)",
+      "누수 수리 사실을 확인할 수 있는 서류(수리 영수증 또는 수리 확인서)",
       "신분증"
     ]
   },
@@ -250,6 +250,20 @@
         "tone": "tense"
       }
     ],
+    "call_temperature": {
+      "customer_expected_outlier_turns": [
+        10,
+        12
+      ],
+      "customer_calm_turns": [
+        18,
+        20,
+        22,
+        24
+      ],
+      "customer_turns": 12,
+      "note": "의도한 연기(tts 운율 지시)에서 나온 기대값이다 — 측정값이 아니다. raised·tense 는 채점에서 뺀다"
+    },
     "j": {
       "blacklist_request": false,
       "routing": "normal",

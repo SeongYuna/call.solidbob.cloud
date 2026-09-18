@@ -14,6 +14,7 @@ function setup(
     caps?: { perDay: number; perMonth: number };
     announcePending?: boolean;
     announceCallGuard?: boolean;
+    announceCompliance?: boolean;
     announceClosure?: boolean;
   } = {},
 ) {
@@ -39,6 +40,7 @@ function setup(
     drainTimeoutMs: 500,
     announcePending: opts.announcePending,
     announceCallGuard: opts.announceCallGuard,
+    announceCompliance: opts.announceCompliance,
     announceClosure: opts.announceClosure,
   });
   return {
@@ -438,4 +440,65 @@ test("F-2 — 켜면 판정을 순서대로 closure 로 보내고, 규칙 없는
   assert.ok(verdicts.every(([procedure]) => procedure === "DASAN-TERM-4.3"));
   assert.equal(hub.docsChecked.filter((r) => r.procedure === "DASAN-TERM-2.6").length, 0);
   assert.ok(log.warnings.every((w) => !w.includes("필요서류 판정 실패")));
+});
+
+test("C-1~C-4 — 상담원 확정 발화만 마스킹본으로 검사한다. 고객 발화는 검사하지 않고, 기본으로는 화면에 안 보낸다", async () => {
+  const { registry, hub, stt, broadcaster } = setup();
+  const agent = await openOk(registry, "test-1", "agent", 2);
+  const customer = await openOk(registry, "test-1", "customer", 2);
+  stt.streams[1]!.emit("연납 되나요", true, 1000);
+  await tick(20);
+  stt.streams[0]!.emit("무조건 됩니다 010-1234-5678", true, 2000);
+  await agent.close();
+  await customer.close();
+
+  assert.deepEqual(
+    hub.complianceChecked.map((r) => [r.segment_id, r.agent_utterance]),
+    [[2, "무조건 됩니다 ***-****-****"]], // 상담원 발화만, 마스킹본만 (SEC-1)
+  );
+  assert.equal(broadcaster.ofType("compliance").length, 0);
+});
+
+test("C-1~C-4 — 켜면 잡힌 위반만 compliance 로 보낸다. 서버가 실패해도 통화는 계속되고 경고만 남긴다", async () => {
+  const { registry, hub, stt, broadcaster, log } = setup({ announceCompliance: true });
+  const agent = await openOk(registry, "test-1", "agent");
+  stt.last().emit("무조건 됩니다", true, 1000);
+  stt.last().emit("신분증 가져오세요", true, 2000);
+  await tick(10);
+  hub.failCompliance = 503;
+  stt.last().emit("무조건 감면돼요", true, 3000);
+  await agent.close();
+
+  const sent = broadcaster.ofType("compliance");
+  assert.equal(sent.length, 1);
+  assert.deepEqual(sent[0]!.payload.findings, [
+    { rule_code: "C-1", phrase: "무조건", alternative_source: { doc_id: "DASAN-TERM-1.4", title: "권장 대체 표현" } },
+  ]);
+  assert.equal(broadcaster.ofType("transcript").length, 3); // 실패한 발화의 자막도 나갔다
+  assert.ok(log.warnings.some((w) => w.includes("컴플라이언스 검사 실패") && w.includes("503")));
+});
+
+test("F-2 — 1순위 카드가 절차가 아니면(422) 다음 카드로 내려가 규칙 있는 첫 조항을 절차로 잡는다", async () => {
+  const { registry, hub, stt, broadcaster } = setup({ announceClosure: true });
+  hub.cardDocIds = ["DASAN-POLICY-1", "DASAN-TERM-4.4", "DASAN-TERM-6.2", "DASAN-TERM-4.3"];
+  hub.notProcedures.add("DASAN-POLICY-1");
+  hub.notProcedures.add("DASAN-TERM-4.4");
+  const agent = await openOk(registry, "test-1", "agent", 2);
+  const customer = await openOk(registry, "test-1", "customer", 2);
+  stt.streams[1]!.emit("재난지원금 뭐 필요해요", true, 1000);
+  await tick(30);
+  stt.streams[0]!.emit("신분증 가져오세요", true, 2000);
+  await agent.close();
+  await customer.close();
+
+  // 422 두 번(순서대로) → 6.2 채택. 4.3 은 묻지 않는다 — 규칙 있는 첫 조항에서 멈춘다
+  assert.deepEqual(
+    hub.docsChecked.map((r) => r.procedure),
+    ["DASAN-TERM-6.2", "DASAN-TERM-6.2"],
+  );
+  assert.ok(broadcaster.ofType("closure").every((m) => m.payload.procedure === "DASAN-TERM-6.2"));
+  // 다음 추천이 같은 후보를 주면 다시 묻지 않는다(이미 판정 중)
+  stt.streams[1]!.emit("그리고요", true, 3000);
+  await tick(30);
+  assert.equal(hub.docsChecked.length, 2);
 });

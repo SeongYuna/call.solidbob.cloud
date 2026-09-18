@@ -1,0 +1,196 @@
+{
+  "id": "SYN-014",
+  "version": "dasan-v0",
+  "source": "synthetic",
+  "generated_by": "Claude Code (claude-opus-5) · 2026-09-16 · 사람 검토 전",
+  "title": "지방세 감면 문의 — 끝까지 차분한 긴 통화(대조군)",
+  "length_class": "long",
+  "turn_count": 22,
+  "caller_number": "01000000114",
+  "agent_persona": "A03",
+  "customer_persona": "C13",
+  "procedure": {
+    "doc_ids": [
+      "DASAN-TERM-4.12"
+    ],
+    "required_documents": [
+      "신청서",
+      "감면 사유를 확인할 수 있는 증명서"
+    ]
+  },
+  "turns": [
+    {
+      "seq": 1,
+      "speaker": "agent",
+      "text": "네, 한별시 통합민원콜센터입니다. 무엇을 도와드릴까요?",
+      "tone": "calm"
+    },
+    {
+      "seq": 2,
+      "speaker": "customer",
+      "text": "지방세 감면을 받을 수 있는지 문의드리려고요.",
+      "tone": "calm"
+    },
+    {
+      "seq": 3,
+      "speaker": "agent",
+      "text": "네, 어떤 사유로 감면을 생각하고 계신지 먼저 여쭤봐도 될까요? 사유에 따라 필요한 서류가 달라서요.",
+      "tone": "calm"
+    },
+    {
+      "seq": 4,
+      "speaker": "customer",
+      "text": "다자녀 가정이라서 받을 수 있는지 궁금해요.",
+      "tone": "calm"
+    },
+    {
+      "seq": 5,
+      "speaker": "agent",
+      "text": "감면은 신청서와 감면 사유를 확인할 수 있는 증명서로 신청하시는데, 다자녀 사유에 해당하는 증명서는 소관 부서 확인 후 안내드리겠습니다.",
+      "tone": "calm"
+    },
+    {
+      "seq": 6,
+      "speaker": "customer",
+      "text": "네. 가족관계증명서 같은 거겠죠?",
+      "tone": "calm"
+    },
+    {
+      "seq": 7,
+      "speaker": "agent",
+      "text": "그럴 가능성이 있지만, 정확한 서류는 확인 후 안내드리겠습니다.",
+      "tone": "calm"
+    },
+    {
+      "seq": 8,
+      "speaker": "customer",
+      "text": "알겠습니다. 신청 기한이 따로 있나요?",
+      "tone": "calm"
+    },
+    {
+      "seq": 9,
+      "speaker": "agent",
+      "text": "기한이 지난 감면은 소급 적용되지 않을 수 있어서, 가능하면 빨리 신청하시는 것이 좋습니다.",
+      "tone": "calm"
+    },
+    {
+      "seq": 10,
+      "speaker": "customer",
+      "text": "작년 것도 신청할 수 있을까요?",
+      "tone": "calm"
+    },
+    {
+      "seq": 11,
+      "speaker": "agent",
+      "text": "작년분 적용 여부도 소관 부서 확인 후 안내드리겠습니다.",
+      "tone": "calm"
+    },
+    {
+      "seq": 12,
+      "speaker": "customer",
+      "text": "네, 그렇게 해 주세요.",
+      "tone": "calm"
+    },
+    {
+      "seq": 13,
+      "speaker": "agent",
+      "text": "감면 금액은 심사에 따라 달라져서 제가 미리 말씀드리기는 어렵습니다.",
+      "tone": "calm"
+    },
+    {
+      "seq": 14,
+      "speaker": "customer",
+      "text": "네, 이해했습니다.",
+      "tone": "calm"
+    },
+    {
+      "seq": 15,
+      "speaker": "agent",
+      "text": "온라인 신청이 가능한지도 함께 확인해 드릴까요?",
+      "tone": "calm"
+    },
+    {
+      "seq": 16,
+      "speaker": "customer",
+      "text": "네, 온라인으로 할 수 있으면 좋겠어요.",
+      "tone": "calm"
+    },
+    {
+      "seq": 17,
+      "speaker": "agent",
+      "text": "네, 함께 확인하겠습니다. 연락드릴 번호를 말씀해 주시겠어요?",
+      "tone": "calm"
+    },
+    {
+      "seq": 18,
+      "speaker": "customer",
+      "text": "공일공 공공공공 공일일사입니다.",
+      "tone": "calm",
+      "labels": {
+        "pii": [
+          {
+            "pattern": "P4",
+            "span": "공일공 공공공공 공일일사"
+          }
+        ]
+      }
+    },
+    {
+      "seq": 19,
+      "speaker": "agent",
+      "text": "네, 확인했습니다. 신청서와 감면 사유 증명서를 준비해 주시면 됩니다.",
+      "tone": "calm"
+    },
+    {
+      "seq": 20,
+      "speaker": "customer",
+      "text": "알겠습니다. 감사합니다.",
+      "tone": "calm"
+    },
+    {
+      "seq": 21,
+      "speaker": "agent",
+      "text": "네, 이용해 주셔서 감사합니다.",
+      "tone": "calm"
+    },
+    {
+      "seq": 22,
+      "speaker": "customer",
+      "text": "수고하세요.",
+      "tone": "calm"
+    }
+  ],
+  "expected": {
+    "pii_by_pattern": {
+      "P4": 1
+    },
+    "compliance": [],
+    "call_guard_by_type": {},
+    "customer_non_calm_turns": [],
+    "call_temperature": {
+      "customer_expected_outlier_turns": [],
+      "customer_calm_turns": [
+        2,
+        4,
+        6,
+        8,
+        10,
+        12,
+        14,
+        16,
+        18,
+        20,
+        22
+      ],
+      "customer_turns": 11,
+      "note": "의도한 연기(tts 운율 지시)에서 나온 기대값이다 — 측정값이 아니다. raised·tense 는 채점에서 뺀다"
+    },
+    "j": {
+      "blacklist_request": false,
+      "routing": "normal"
+    }
+  },
+  "notes": [
+    "D-5 기대: 튀는 구간 0 — 차분한 통화에서 가짜 이상치가 나오지 않는지 본다"
+  ]
+}

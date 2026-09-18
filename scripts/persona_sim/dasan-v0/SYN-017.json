@@ -1,0 +1,173 @@
+{
+  "id": "SYN-017",
+  "version": "dasan-v0",
+  "source": "synthetic",
+  "generated_by": "Claude Code (claude-fable-5-1) · 2026-09-18 · 사람 검토 전",
+  "title": "일본 출신 어머니의 자녀 도서관 회원 가입",
+  "length_class": "medium",
+  "turn_count": 15,
+  "caller_number": "01000000117",
+  "agent_persona": "A06",
+  "customer_persona": "C16",
+  "procedure": {
+    "doc_ids": [
+      "DASAN-TERM-4.18",
+      "DASAN-TERM-1.4",
+      "DASAN-TERM-1.5",
+      "DASAN-MANUAL-3.3"
+    ],
+    "required_documents": [
+      "신분증"
+    ],
+    "conditional_documents": [
+      "보호자 동의서",
+      "가족관계를 확인할 수 있는 서류",
+      "보호자 신분증(외국인등록증 원본)"
+    ]
+  },
+  "turns": [
+    {
+      "seq": 1,
+      "speaker": "agent",
+      "text": "네, 한별시 통합민원콜센터입니다. 무엇을 도와드릴까요?",
+      "tone": "calm"
+    },
+    {
+      "seq": 2,
+      "speaker": "customer",
+      "text": "すみません... 저, 일본 사람이에요. 한국어 조금. としょかん, 도서관, 아이 카드 만들고 싶어요.",
+      "tone": "calm"
+    },
+    {
+      "seq": 3,
+      "speaker": "agent",
+      "text": "네, 괜찮아요. 천천히 말씀하세요. 한국어가 어려우시면 통역 지원도 안내해 드릴 수 있어요. 통역이 필요하세요?",
+      "tone": "calm"
+    },
+    {
+      "seq": 4,
+      "speaker": "customer",
+      "text": "아, 지금은 괜찮아요. 천천히 말해 주세요.",
+      "tone": "calm"
+    },
+    {
+      "seq": 5,
+      "speaker": "agent",
+      "text": "네. 도서관 회원 카드, 누가 쓰나요? 고객님이요, 아이요?",
+      "tone": "calm"
+    },
+    {
+      "seq": 6,
+      "speaker": "customer",
+      "text": "こども... 아이요. 아이 여덟 살. 초등학교.",
+      "tone": "calm"
+    },
+    {
+      "seq": 7,
+      "speaker": "agent",
+      "text": "네. 아이는 미성년자예요. 그래서 서류가 세 개 필요해요. 하나, 보호자 동의서. 둘, 가족관계 확인 서류. 셋, 보호자 신분증이에요.",
+      "tone": "calm"
+    },
+    {
+      "seq": 8,
+      "speaker": "customer",
+      "text": "가족... 관계? 무슨 서류예요? 잘 몰라요.",
+      "tone": "calm"
+    },
+    {
+      "seq": 9,
+      "speaker": "agent",
+      "text": "엄마와 아이가 가족인 것을 보여 주는 서류예요. 어떤 서류가 되는지는 소관 부서 확인 후 안내드릴게요.",
+      "tone": "calm"
+    },
+    {
+      "seq": 10,
+      "speaker": "customer",
+      "text": "네. 제 신분증은 외국인등록증 있어요. 괜찮아요?",
+      "tone": "calm"
+    },
+    {
+      "seq": 11,
+      "speaker": "agent",
+      "text": "네, 외국인등록증 괜찮아요. 방문할 때 원본으로 가져오세요. 복사본은 안 돼요.",
+      "tone": "calm"
+    },
+    {
+      "seq": 12,
+      "speaker": "customer",
+      "text": "원본, 네. 알겠어요. 연락 주세요. 저 이름 다나카 유이. 전화 010 0000 0117.",
+      "tone": "calm",
+      "labels": {
+        "pii": [
+          {
+            "pattern": "P6",
+            "span": "다나카 유이"
+          },
+          {
+            "pattern": "P4",
+            "span": "010 0000 0117"
+          }
+        ]
+      }
+    },
+    {
+      "seq": 13,
+      "speaker": "agent",
+      "text": "네, 다나카 유이 고객님. 정리할게요. 보호자 동의서, 가족관계 확인 서류, 외국인등록증 원본. 세 개예요.",
+      "tone": "calm",
+      "labels": {
+        "pii": [
+          {
+            "pattern": "P6",
+            "span": "다나카 유이"
+          }
+        ]
+      }
+    },
+    {
+      "seq": 14,
+      "speaker": "customer",
+      "text": "세 개. ありがとうございます, 감사합니다.",
+      "tone": "calm"
+    },
+    {
+      "seq": 15,
+      "speaker": "agent",
+      "text": "네, 이용해 주셔서 감사합니다.",
+      "tone": "calm"
+    }
+  ],
+  "expected": {
+    "pii_by_pattern": {
+      "P4": 1,
+      "P6": 2
+    },
+    "compliance": [],
+    "call_guard_by_type": {},
+    "customer_non_calm_turns": [],
+    "call_temperature": {
+      "customer_expected_outlier_turns": [],
+      "customer_calm_turns": [
+        2,
+        4,
+        6,
+        8,
+        10,
+        12,
+        14
+      ],
+      "customer_turns": 7,
+      "note": "의도한 연기(tts 운율 지시)에서 나온 기대값이다 — 측정값이 아니다. raised·tense 는 채점에서 뺀다"
+    },
+    "j": {
+      "blacklist_request": false,
+      "routing": "normal"
+    }
+  },
+  "notes": [
+    "필요서류가 갈리는 절차 — 성인은 신분증뿐, 미성년자는 보호자 동의서·가족관계 서류가 붙는다(4.18). 조건(누가 가입하나)을 먼저 묻는다",
+    "A06 은 통역 지원을 **먼저** 안내하고 짧은 문장으로 말한다. 요건을 줄이지 않는다(1.5)",
+    "일본어 단어 소량(としょかん·こども) — A-5 통번역이 필요한 순간. 번역은 아직 없다",
+    "외국인 이름 P6 두 어절 · 주소 P7 · 전화 P4"
+  ]
+}

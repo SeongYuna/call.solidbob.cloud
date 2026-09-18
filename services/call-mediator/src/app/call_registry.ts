@@ -1,4 +1,4 @@
-// Requirement: A-1, A-2, A-3, COST-1, SEC-1
+// Requirement: A-1, A-2, A-3, C-1, C-6, F-2, COST-1, SEC-1
 /**
  * 통화와 채널을 들고 파이프라인을 잇는다 — 오디오 → STT → 서버(마스킹·저장) → 대시보드.
  *
@@ -92,6 +92,11 @@ export interface RegistryDeps {
    */
   announceCallGuard?: boolean;
   /**
+   * 잡힌 컴플라이언스 위반(C-1~C-4)을 `compliance` 메시지로 대시보드에 보낼까. 기본 false — 대시보드 파서
+   * (`apps/call` realCallMediatorClient)가 아직 이 타입을 받지 않는다(2026-09-18). **검사는 끄지 않는다.**
+   */
+  announceCompliance?: boolean;
+  /**
    * F-2 필요서류 판정을 `closure` 메시지로 대시보드에 보낼까. 기본 false — 대시보드 파서가 아직 옛 종결 형식
    * (`closure_type`·`approved/blocked`)만 받는다. **판정·저장은 끄지 않는다.**
    */
@@ -105,8 +110,8 @@ interface CallState {
   readonly channels: Map<ChannelSpeaker, Channel>;
   started: Promise<boolean>;
   /**
-   * F-2 — 이 통화에서 판정 중인 절차(필요서류 조항 ID). 추천 카드 1순위의 `source.doc_id` 에서 온다.
-   * 서버가 규칙이 없다고 한(422) 조항은 `notProcedures` 로 옮겨 다시 묻지 않는다.
+   * F-2 — 이 통화에서 판정 중인 절차(필요서류 조항 ID). 추천 카드를 순서대로 내려가며 서버가 규칙을 아는 첫 조항이다
+   * (`adoptProcedure`). 서버가 규칙이 없다고 한(422) 조항은 `notProcedures` 로 옮겨 다시 묻지 않는다.
    */
   readonly procedures: Set<string>;
   readonly notProcedures: Set<string>;
@@ -405,6 +410,8 @@ export class Channel {
       if (item.raw.speaker === "customer") {
         this.track(this.checkCallGuard(item, masked.text));
       } else {
+        // C-1~C-4 — 상담원 발화만 검사한다(고객 발화는 C-6). 판정·저장은 서버 몫
+        this.track(this.checkCompliance(item, masked.text));
         // F-2 — 상담원이 서류를 안내했을 수 있다. 판정 중인 절차를 전부 다시 본다
         this.call.agentFinals.push(masked.text);
         for (const procedure of this.call.procedures) {
@@ -473,6 +480,46 @@ export class Channel {
   }
 
   /**
+   * C-1~C-4 — 상담원 final 의 **마스킹된 본문**을 검사한다. 판정은 서버 규칙이 한다. 화자로 거르는 것은 판정이 아니라
+   * 계약이다(검사 대상이 상담원 발화뿐). 실패해도 통화는 계속된다. 다음 자막을 막지 않도록 줄 밖에서 돈다.
+   */
+  private async checkCompliance(item: QueuedResult, maskedText: string): Promise<void> {
+    try {
+      const payload = await this.deps.hub.checkCompliance({
+        call_id: this.callId,
+        segment_id: item.segmentId,
+        agent_utterance: maskedText,
+      });
+      if (this.deps.announceCompliance === true && payload.findings.length > 0) {
+        this.deps.broadcaster.publish(this.callId, { type: "compliance", payload });
+      }
+    } catch (error) {
+      this.deps.log.warn(`컴플라이언스 검사 실패 call=${this.callId} segment=${item.segmentId} status=${statusOf(error)}`);
+    }
+  }
+
+  /**
+   * F-2 — 추천 카드를 순서대로 내려가며 서버가 규칙을 아는 첫 조항을 절차로 잡는다(상한 `MAX_PROCEDURE_CANDIDATES` 장).
+   * 「절차 아님」(422)은 건너뛰고 다음 카드를 묻는다 — 절차를 지어내지는 않는다(서버가 규칙을 아는 조항만 절차가 된다).
+   * 이미 판정 중인 절차가 후보에 있으면 거기서 멈춘다. 순위 자체가 틀린 것은 검색 몫이다(`decisions/208`).
+   */
+  private async adoptProcedure(candidates: string[]): Promise<void> {
+    for (const candidate of candidates) {
+      if (this.call.procedures.has(candidate)) {
+        return;
+      }
+      if (this.call.notProcedures.has(candidate)) {
+        continue;
+      }
+      this.call.procedures.add(candidate);
+      await this.checkRequiredDocs(candidate);
+      if (!this.call.notProcedures.has(candidate)) {
+        return; // 규칙이 있는 조항 — 여기서 멈춘다
+      }
+    }
+  }
+
+  /**
    * 트리거 v1 은 final 도착 기반이다(`w3-trigger-v1`). 판정은 서버가 하고 여기서는 **마스킹된 본문**
    * 을 넘기기만 한다. 다음 자막을 막지 않도록 줄 밖에서 돈다.
    */
@@ -494,10 +541,9 @@ export class Channel {
         received_at_ms: item.receivedAtMs,
       });
       this.deps.broadcaster.publish(this.callId, { type: "recommendation", payload });
-      const procedure = topSourceDocId(payload);
-      if (procedure !== null && !this.call.procedures.has(procedure) && !this.call.notProcedures.has(procedure)) {
-        this.call.procedures.add(procedure);
-        this.track(this.checkRequiredDocs(procedure));
+      const candidates = sourceDocIds(payload);
+      if (candidates.length > 0) {
+        this.track(this.adoptProcedure(candidates));
       }
     } catch (error) {
       this.deps.log.warn(`추천 요청 실패 call=${this.callId} segment=${item.segmentId} status=${statusOf(error)}`);
@@ -505,14 +551,23 @@ export class Channel {
   }
 }
 
-/** 추천 응답 1순위 카드의 근거 조항 ID. 카드가 없거나 모양이 다르면 null — 절차를 지어내지 않는다. */
-function topSourceDocId(payload: Record<string, unknown>): string | null {
+/** 절차 후보로 보는 추천 카드 수 — 서버 추천이 상위 5장을 준다. */
+const MAX_PROCEDURE_CANDIDATES = 5;
+
+/** 추천 응답 카드의 근거 조항 ID 를 순서대로(중복 제거, 상한 5). 카드가 없거나 모양이 다르면 빈 배열 — 절차를 지어내지 않는다. */
+function sourceDocIds(payload: Record<string, unknown>): string[] {
   const cards = payload["cards"];
-  if (!Array.isArray(cards) || cards.length === 0) {
-    return null;
+  if (!Array.isArray(cards)) {
+    return [];
   }
-  const source = (cards[0] as { source?: { doc_id?: unknown } } | null)?.source;
-  return typeof source?.doc_id === "string" && source.doc_id.length > 0 ? source.doc_id : null;
+  const ids: string[] = [];
+  for (const card of cards.slice(0, MAX_PROCEDURE_CANDIDATES)) {
+    const source = (card as { source?: { doc_id?: unknown } } | null)?.source;
+    if (typeof source?.doc_id === "string" && source.doc_id.length > 0 && !ids.includes(source.doc_id)) {
+      ids.push(source.doc_id);
+    }
+  }
+  return ids;
 }
 
 function statusOf(error: unknown): string {

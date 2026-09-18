@@ -1,0 +1,139 @@
+{
+  "id": "SYN-021",
+  "version": "dasan-v0",
+  "source": "synthetic",
+  "generated_by": "Claude Code (claude-fable-5-1) · 2026-09-18 · 사람 검토 전",
+  "title": "버스에 두고 내린 가방 — 보관 여부를 단정하는 상담원",
+  "length_class": "short",
+  "turn_count": 9,
+  "caller_number": "01000000121",
+  "agent_persona": "A05",
+  "customer_persona": "C14",
+  "procedure": {
+    "doc_ids": [
+      "DASAN-TERM-2.9",
+      "DASAN-MANUAL-1.1"
+    ],
+    "required_documents": [
+      "신분증(본인)"
+    ]
+  },
+  "turns": [
+    {
+      "seq": 1,
+      "speaker": "agent",
+      "text": "네, 한별시 통합민원콜센터입니다! 무엇을 도와드릴까요?",
+      "tone": "calm"
+    },
+    {
+      "seq": 2,
+      "speaker": "customer",
+      "text": "버스에 가방을 두고 내렸어요. 노트북 들어 있어서 급해요. 어디로 찾으러 가면 돼요?",
+      "tone": "tense"
+    },
+    {
+      "seq": 3,
+      "speaker": "agent",
+      "text": "아이고, 많이 놀라셨겠어요! 어느 노선, 몇 시쯤, 어디서 내리셨는지 알려 주시면 조회를 안내해 드릴게요. 그 정도면 틀림없이 보관돼 있을 거예요!",
+      "tone": "calm",
+      "labels": {
+        "compliance": [
+          {
+            "type": "C-1",
+            "phrase": "틀림없이 보관돼 있을 거예요",
+            "expected_alternative_source": "DASAN-MANUAL-1.4"
+          }
+        ]
+      }
+    },
+    {
+      "seq": 4,
+      "speaker": "customer",
+      "text": "틀림없이요? 그걸 어떻게 알아요. 아무튼 1120번, 8시 반쯤, 한별역에서 내렸어요.",
+      "tone": "tense"
+    },
+    {
+      "seq": 5,
+      "speaker": "agent",
+      "text": "아, 제가 성급하게 말씀드렸어요. 보관 여부는 습득 기관에 접수돼야 알 수 있어서 조회를 해 봐야 해요. 노선·시각·정류장으로 조회 방법을 안내드릴게요.",
+      "tone": "calm"
+    },
+    {
+      "seq": 6,
+      "speaker": "customer",
+      "text": "네네, 빨리요. 찾으면 그냥 가서 받으면 되죠?",
+      "tone": "tense"
+    },
+    {
+      "seq": 7,
+      "speaker": "agent",
+      "text": "수령하실 때는 본인 신분증이 필요해요. 보관 기간이 정해져 있으니 확인되면 바로 가시는 게 좋아요. 조회처는 소관 부서 확인 후 문자로 드릴게요. 번호 알려 주시겠어요?",
+      "tone": "calm"
+    },
+    {
+      "seq": 8,
+      "speaker": "customer",
+      "text": "공일공 공공공공 공일이일이요.",
+      "tone": "tense",
+      "labels": {
+        "pii": [
+          {
+            "pattern": "P4",
+            "span": "공일공 공공공공 공일이일"
+          }
+        ]
+      }
+    },
+    {
+      "seq": 9,
+      "speaker": "agent",
+      "text": "네, 확인했어요. 신분증 챙기시고요, 이용해 주셔서 감사합니다!",
+      "tone": "calm"
+    }
+  ],
+  "expected": {
+    "pii_by_pattern": {
+      "P4": 1
+    },
+    "compliance": [
+      {
+        "seq": 3,
+        "type": "C-1"
+      }
+    ],
+    "call_guard_by_type": {},
+    "customer_non_calm_turns": [
+      {
+        "seq": 2,
+        "tone": "tense"
+      },
+      {
+        "seq": 4,
+        "tone": "tense"
+      },
+      {
+        "seq": 6,
+        "tone": "tense"
+      },
+      {
+        "seq": 8,
+        "tone": "tense"
+      }
+    ],
+    "call_temperature": {
+      "customer_expected_outlier_turns": [],
+      "customer_calm_turns": [],
+      "customer_turns": 4,
+      "note": "의도한 연기(tts 운율 지시)에서 나온 기대값이다 — 측정값이 아니다. raised·tense 는 채점에서 뺀다"
+    },
+    "j": {
+      "blacklist_request": false,
+      "routing": "normal"
+    }
+  },
+  "notes": [
+    "TERM-2.9: 보관 여부를 단정하지 않는다 — A05 가 「틀림없이」 로 어긴다(C-1) → 정정",
+    "수령 시 본인 신분증, 대리 수령은 위임장·대리인 신분증 — 고객이 본인이라 본인 신분증만",
+    "C14 재촉 — 콜 가드 0건"
+  ]
+}

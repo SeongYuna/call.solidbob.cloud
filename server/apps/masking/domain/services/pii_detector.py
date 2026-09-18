@@ -45,6 +45,25 @@ def _to_source_span(pattern: str, start: int, end: int, index_map: list[int]) ->
     return PiiSpan(pattern=pattern, start=index_map[start], end=index_map[end - 1] + 1)
 
 
+# 낭독형 휴대전화 뒤에 붙은 「이에요」·「이요」 의 「이」 가 2 로 바뀌어 11자리가 12자리 계좌(P3)로 읽힌다
+# (합성 대본 SYN-011~021 「공일공 공공공공 공일일육이에요」, 2026-09-18). 라벨만 P4 로 바로잡고 **구간은 넓은 쪽을 둔다** —
+# 「이」 가 진짜 끝자리 2 일 수도 있어서다(누락 0건 > 과잉 억제).
+_MOBILE = re.compile(r"01[016789]\d{7,8}")
+_COPULA_AFTER_I = ("에요", "예요", "요", "고", "구", "라", "며", "면", "야", "죠", "지", "니")
+
+
+def _read_mobile_with_copula(name: str, m: re.Match[str], normalized: str, digits: str) -> str:
+    if name != "P3":
+        return name
+    run = digits[m.start():m.end()]
+    mobile = _MOBILE.match(run)
+    if mobile is None or mobile.end() != len(run) - 1:
+        return name
+    if normalized[m.end() - 1] == "이" and normalized[m.end():].startswith(_COPULA_AFTER_I):
+        return "P4"
+    return name
+
+
 def _detect_numeric(text: str) -> list[PiiSpan]:
     normalized, index_map = strip_separators(text)
     digits, _ = sino_to_digits(normalized)  # ② 보조 — 낭독형 숫자를 잡기 위해서만 쓴다
@@ -52,7 +71,8 @@ def _detect_numeric(text: str) -> list[PiiSpan]:
     found: list[PiiSpan] = []
     for name, rule in _NUMERIC_RULES:
         for m in rule.finditer(digits):
-            found.append(_to_source_span(name, m.start(), m.end(), index_map))
+            label = _read_mobile_with_copula(name, m, normalized, digits)
+            found.append(_to_source_span(label, m.start(), m.end(), index_map))
     return found
 
 
