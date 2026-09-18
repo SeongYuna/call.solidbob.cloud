@@ -1,0 +1,171 @@
+{
+  "id": "SYN-024",
+  "version": "dasan-v0",
+  "source": "synthetic",
+  "generated_by": "Claude Code (claude-fable-5-1) · 2026-09-18 · 사람 검토 전",
+  "title": "생애최초 주택 취득세 신고 — 근거 없는 안내와 세 번 되묻는 민원인",
+  "length_class": "medium",
+  "turn_count": 15,
+  "caller_number": "01000000124",
+  "agent_persona": "A02",
+  "customer_persona": "C15",
+  "procedure": {
+    "doc_ids": [
+      "DASAN-TERM-4.9",
+      "DASAN-MANUAL-1.3",
+      "DASAN-MANUAL-1.4",
+      "DASAN-MANUAL-3.2"
+    ],
+    "required_documents": [
+      "신고서",
+      "계약서",
+      "신분증",
+      "감면 자격을 확인할 수 있는 서류"
+    ]
+  },
+  "turns": [
+    {
+      "seq": 1,
+      "speaker": "agent",
+      "text": "네, 한별시 통합민원콜센터입니다. 무엇을 도와드릴까요?",
+      "tone": "calm"
+    },
+    {
+      "seq": 2,
+      "speaker": "customer",
+      "text": "처음으로 집을 샀는데요, 취득세 신고할 때 뭘 내야 하는지랑, 생애최초 감면이라는 게 있다던데 그것도 같이 여쭤보려고요.",
+      "tone": "calm"
+    },
+    {
+      "seq": 3,
+      "speaker": "agent",
+      "text": "네, 취득세 신고와 감면 문의시군요. 부동산 취득세 신고는 신고서, 계약서, 신분증이 필요해요.",
+      "tone": "calm"
+    },
+    {
+      "seq": 4,
+      "speaker": "customer",
+      "text": "세 가지요. 그럼 감면은요? 따로 뭐 내야 해요?",
+      "tone": "calm"
+    },
+    {
+      "seq": 5,
+      "speaker": "agent",
+      "text": "제가 알기로는 감면은 신고할 때 자동으로 적용돼서 따로 내실 건 없어요.",
+      "tone": "calm",
+      "labels": {
+        "compliance": [
+          {
+            "type": "C-3",
+            "phrase": "제가 알기로는",
+            "expected_alternative_source": "DASAN-MANUAL-1.4"
+          }
+        ]
+      }
+    },
+    {
+      "seq": 6,
+      "speaker": "customer",
+      "text": "자동이요? 그건 어디에 나와 있는 거예요? 확실한 근거가 있는 건가요?",
+      "tone": "calm"
+    },
+    {
+      "seq": 7,
+      "speaker": "agent",
+      "text": "죄송합니다, 근거 없이 말씀드렸어요. 지침상 감면 대상은 감면 자격을 확인할 수 있는 서류를 추가로 제출하셔야 해요. 자동 적용이 아닙니다.",
+      "tone": "calm"
+    },
+    {
+      "seq": 8,
+      "speaker": "customer",
+      "text": "그러니까 신고서, 계약서, 신분증에 감면 서류 하나 더. 네 가지 맞죠? 한 번 더 확인할게요.",
+      "tone": "calm"
+    },
+    {
+      "seq": 9,
+      "speaker": "agent",
+      "text": "네, 네 가지 맞습니다. 감면 자격 서류가 구체적으로 무엇인지는 소관 부서 확인 후 안내드리겠습니다.",
+      "tone": "calm"
+    },
+    {
+      "seq": 10,
+      "speaker": "customer",
+      "text": "신고 기한은요? 그것도 확실하게 알고 싶어요.",
+      "tone": "calm"
+    },
+    {
+      "seq": 11,
+      "speaker": "agent",
+      "text": "취득일부터 정해진 기한 안에 신고하셔야 하는데, 정확한 날짜는 확인 후 함께 안내드릴게요. 「반드시 언제까지」 식으로 제가 단정하지는 않겠습니다.",
+      "tone": "calm"
+    },
+    {
+      "seq": 12,
+      "speaker": "customer",
+      "text": "네. 마지막으로 한 번만 더요. 신고서, 계약서, 신분증, 감면 서류. 이 넷이면 되는 거죠?",
+      "tone": "calm"
+    },
+    {
+      "seq": 13,
+      "speaker": "agent",
+      "text": "네, 그 네 가지입니다. 연락받으실 번호를 알려 주시면 감면 서류 종류와 기한을 확인해서 연락드릴게요.",
+      "tone": "calm"
+    },
+    {
+      "seq": 14,
+      "speaker": "customer",
+      "text": "공일공 공공공공 공일이사예요. 문자로 주세요.",
+      "tone": "calm",
+      "labels": {
+        "pii": [
+          {
+            "pattern": "P4",
+            "span": "공일공 공공공공 공일이사"
+          }
+        ]
+      }
+    },
+    {
+      "seq": 15,
+      "speaker": "agent",
+      "text": "네, 확인했습니다. 이용해 주셔서 감사합니다.",
+      "tone": "calm"
+    }
+  ],
+  "expected": {
+    "pii_by_pattern": {
+      "P4": 1
+    },
+    "compliance": [
+      {
+        "seq": 5,
+        "type": "C-3"
+      }
+    ],
+    "call_guard_by_type": {},
+    "customer_non_calm_turns": [],
+    "call_temperature": {
+      "customer_expected_outlier_turns": [],
+      "customer_calm_turns": [
+        2,
+        4,
+        6,
+        8,
+        10,
+        12,
+        14
+      ],
+      "customer_turns": 7,
+      "note": "의도한 연기(tts 운율 지시)에서 나온 기대값이다 — 측정값이 아니다. raised·tense 는 채점에서 뺀다"
+    },
+    "j": {
+      "blacklist_request": false,
+      "routing": "normal"
+    }
+  },
+  "notes": [
+    "TERM-4.9: 부동산 취득세는 신고서·계약서·신분증, 감면 대상은 감면 자격 서류 추가",
+    "A02 가 「제가 알기로는」 으로 근거 없는 안내(C-3, 1.3) → 고객이 되묻자 정정",
+    "C15 가 서류 목록을 세 번 확인한다 — 상담원이 마지막에 전체를 다시 짚는다(3.2)"
+  ]
+}

@@ -1,0 +1,179 @@
+{
+  "id": "SYN-016",
+  "version": "dasan-v0",
+  "source": "synthetic",
+  "generated_by": "Claude Code (claude-fable-5-1) · 2026-09-18 · 사람 검토 전",
+  "title": "자동차세 연납 문의 — 단정하는 상담원과 세 번 되묻는 민원인",
+  "length_class": "medium",
+  "turn_count": 15,
+  "caller_number": "01000000116",
+  "agent_persona": "A05",
+  "customer_persona": "C15",
+  "procedure": {
+    "doc_ids": [
+      "DASAN-TERM-4.8",
+      "DASAN-TERM-4.7",
+      "DASAN-MANUAL-1.1",
+      "DASAN-MANUAL-1.6"
+    ],
+    "required_documents": []
+  },
+  "turns": [
+    {
+      "seq": 1,
+      "speaker": "agent",
+      "text": "네, 한별시 통합민원콜센터입니다! 무엇을 도와드릴까요?",
+      "tone": "calm"
+    },
+    {
+      "seq": 2,
+      "speaker": "customer",
+      "text": "자동차세를 미리 내면 깎아 준다는 게 있다고 들었는데, 그게 맞나요?",
+      "tone": "calm"
+    },
+    {
+      "seq": 3,
+      "speaker": "agent",
+      "text": "네네, 맞아요! 연납 제도예요. 지금 신청하시면 무조건 공제됩니다.",
+      "tone": "calm",
+      "labels": {
+        "compliance": [
+          {
+            "type": "C-1",
+            "phrase": "무조건 공제됩니다",
+            "expected_alternative_source": "DASAN-MANUAL-1.4"
+          }
+        ]
+      }
+    },
+    {
+      "seq": 4,
+      "speaker": "customer",
+      "text": "무조건이요? 저는 작년에 중고로 산 차인데 그래도요?",
+      "tone": "calm"
+    },
+    {
+      "seq": 5,
+      "speaker": "agent",
+      "text": "아, 제가 단정해서 말씀드렸네요. 연납은 신청 시기에 따라 공제율이 달라지고, 연중에 차를 처분하시면 정산이 생겨요. 고객님 차량에 적용되는 공제액은 조회 후 확인하셔야 해요.",
+      "tone": "calm"
+    },
+    {
+      "seq": 6,
+      "speaker": "customer",
+      "text": "그러니까 저한테도 적용되는 건 맞는 거죠? 다시 한번만요.",
+      "tone": "calm"
+    },
+    {
+      "seq": 7,
+      "speaker": "agent",
+      "text": "연납 신청 자체는 하실 수 있고, 적용되는 공제액은 조회를 해 봐야 확실히 알 수 있어요. 확실히 깎이긴 해요!",
+      "tone": "calm",
+      "labels": {
+        "compliance": [
+          {
+            "type": "C-1",
+            "phrase": "확실히 깎이긴 해요",
+            "expected_alternative_source": "DASAN-MANUAL-1.4"
+          }
+        ]
+      }
+    },
+    {
+      "seq": 8,
+      "speaker": "customer",
+      "text": "음... 방금은 조회를 해 봐야 안다고 하셨잖아요. 확실히 깎인다는 건 어디서 나온 말이에요?",
+      "tone": "calm"
+    },
+    {
+      "seq": 9,
+      "speaker": "agent",
+      "text": "죄송합니다, 제가 또 단정했어요. 정확히는 신청 시기에 따라 공제율이 정해지고, 고객님 차량의 공제액은 과세 정보를 조회해야 알 수 있어요. 미리 금액을 말씀드릴 수는 없습니다.",
+      "tone": "calm"
+    },
+    {
+      "seq": 10,
+      "speaker": "customer",
+      "text": "네, 그럼 세 번째로 묻는 건데요. 신청은 어디서 하고, 언제까지 해야 해요?",
+      "tone": "calm"
+    },
+    {
+      "seq": 11,
+      "speaker": "agent",
+      "text": "신청 시기와 접수 방법은 소관 부서 확인 후 안내드리겠습니다. 연락받으실 번호를 알려 주시겠어요?",
+      "tone": "calm"
+    },
+    {
+      "seq": 12,
+      "speaker": "customer",
+      "text": "공일공 공공공공 공일일육이에요. 문자로 주시면 좋겠어요.",
+      "tone": "calm",
+      "labels": {
+        "pii": [
+          {
+            "pattern": "P4",
+            "span": "공일공 공공공공 공일일육"
+          }
+        ]
+      }
+    },
+    {
+      "seq": 13,
+      "speaker": "agent",
+      "text": "네, 확인했어요. 정리하면 연납 신청은 가능하고, 공제율은 신청 시기에 따라, 공제액은 조회 후 확인이에요.",
+      "tone": "calm"
+    },
+    {
+      "seq": 14,
+      "speaker": "customer",
+      "text": "네, 이번엔 알겠습니다.",
+      "tone": "calm"
+    },
+    {
+      "seq": 15,
+      "speaker": "agent",
+      "text": "네, 이용해 주셔서 감사합니다!",
+      "tone": "calm"
+    }
+  ],
+  "expected": {
+    "pii_by_pattern": {
+      "P4": 1
+    },
+    "compliance": [
+      {
+        "seq": 3,
+        "type": "C-1"
+      },
+      {
+        "seq": 7,
+        "type": "C-1"
+      }
+    ],
+    "call_guard_by_type": {},
+    "customer_non_calm_turns": [],
+    "call_temperature": {
+      "customer_expected_outlier_turns": [],
+      "customer_calm_turns": [
+        2,
+        4,
+        6,
+        8,
+        10,
+        12,
+        14
+      ],
+      "customer_turns": 7,
+      "note": "의도한 연기(tts 운율 지시)에서 나온 기대값이다 — 측정값이 아니다. raised·tense 는 채점에서 뺀다"
+    },
+    "j": {
+      "blacklist_request": false,
+      "routing": "normal"
+    }
+  },
+  "notes": [
+    "A05 가 「무조건」·「확실히」 로 두 번 단정한다(C-1) — 첫 번째는 고객이 되물어 정정, 두 번째도 스스로 정정",
+    "TERM-4.8: 연납 공제율은 신청 시기에 따라 다르고 개별 공제액은 조회 후 확인 — 상담원이 비율을 못 박지 않는다",
+    "C15 는 같은 질문을 세 번 한다 — 톤은 끝까지 calm, 콜 가드 0건"
+  ]
+}

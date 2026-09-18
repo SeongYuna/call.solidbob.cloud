@@ -20,6 +20,27 @@
       "style": "매뉴얼 준수, 톤이 거의 변하지 않는다 — J-5 배정 대상",
       "tts_voice_hint": "여성, 40대, 낮고 일정",
       "say_voice": "Shelley"
+    },
+    "A04": {
+      "label": "무뚝뚝·사무적 상담원",
+      "tenure_years": 4,
+      "style": "공감 표현 없이 짧게 끊어 말한다. 내용은 매뉴얼대로 — 태도 조항이 없어 위반 라벨 없음",
+      "tts_voice_hint": "남성, 40대, 낮고 건조",
+      "say_voice": "Reed"
+    },
+    "A05": {
+      "label": "과잉 친절·단정형 상담원",
+      "tenure_years": 1,
+      "style": "말이 많고 「무조건」·「확실히」·「틀림없이」 로 단정한다 — C-1 반복 주입 대상, 지적받으면 바로 정정",
+      "tts_voice_hint": "여성, 20대, 높고 빠름",
+      "say_voice": "Sandy"
+    },
+    "A06": {
+      "label": "외국어 응대 지향 상담원",
+      "tenure_years": 3,
+      "style": "쉬운 말·짧은 문장, 통역 지원을 먼저 안내한다. 요건은 줄이지도 늘리지도 않는다(TERM-1.5)",
+      "tts_voice_hint": "여성, 30대, 또렷하고 느림",
+      "say_voice": "Shelley"
     }
   },
   "customers": {
@@ -76,6 +97,72 @@
       "korean": "모국어",
       "temper": "무난",
       "say_voice": "Eddy"
+    },
+    "C10": {
+      "label": "평소엔 차분하다가 두 번 폭발하는 민원인",
+      "korean": "모국어",
+      "temper": "차분 → 폭발 → 진정 (두 번)",
+      "say_voice": "Rocko"
+    },
+    "C11": {
+      "label": "처음부터 끝까지 화가 난 민원인",
+      "korean": "모국어",
+      "temper": "통화 내내 높은 톤 — 기준선 자체가 높다",
+      "say_voice": "Eddy"
+    },
+    "C12": {
+      "label": "지친 고령 보호자",
+      "korean": "모국어",
+      "temper": "차분하다가 두 번 가라앉는다",
+      "say_voice": "Grandma"
+    },
+    "C13": {
+      "label": "차분한 민원인",
+      "korean": "모국어",
+      "temper": "끝까지 차분 — 대조군",
+      "say_voice": "Sandy"
+    },
+    "C14": {
+      "label": "급한 직장인",
+      "korean": "모국어",
+      "temper": "재촉하고 말을 끊는다 — 욕설 없음",
+      "tts_voice_hint": "남성, 30대, 빠름",
+      "say_voice": "Eddy"
+    },
+    "C15": {
+      "label": "의심 많은 민원인",
+      "korean": "모국어",
+      "temper": "같은 것을 세 번 확인한다 — 차분하지만 집요",
+      "tts_voice_hint": "여성, 50대, 느리고 또박또박",
+      "say_voice": "Shelley"
+    },
+    "C16": {
+      "label": "일본 출신 초급 한국어 화자",
+      "korean": "초급(일본어 단어 혼용·조사 누락)",
+      "temper": "정중·조심스러움",
+      "tts_voice_hint": "여성, 30대, 부드러움",
+      "say_voice": "Flo"
+    },
+    "C17": {
+      "label": "말이 옆길로 새는 고령 민원인",
+      "korean": "모국어",
+      "temper": "온화하고 말이 길다 — 본론에서 자꾸 벗어난다",
+      "tts_voice_hint": "남성, 70대, 느림",
+      "say_voice": "Grandpa"
+    },
+    "C18": {
+      "label": "조용히 비꼬는 민원인",
+      "korean": "모국어",
+      "temper": "욕설 없이 비꼰다 — 톤은 끝까지 calm(C-6·D-5 대조군)",
+      "tts_voice_hint": "여성, 40대, 낮고 건조",
+      "say_voice": "Sandy"
+    },
+    "C19": {
+      "label": "가족 대리인",
+      "korean": "모국어",
+      "temper": "협조적이지만 묻지 않은 개인정보를 줄줄 부른다 — P1·P2·P3 표본",
+      "tts_voice_hint": "남성, 50대, 보통",
+      "say_voice": "Rocko"
     }
   },
   "tones": {

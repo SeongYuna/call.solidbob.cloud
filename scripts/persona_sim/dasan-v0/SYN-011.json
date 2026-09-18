@@ -1,0 +1,235 @@
+{
+  "id": "SYN-011",
+  "version": "dasan-v0",
+  "source": "synthetic",
+  "generated_by": "Claude Code (claude-opus-5) · 2026-09-16 · 사람 검토 전",
+  "title": "수도 폐전 정산 — 중간에 두 번 폭발하고 가라앉음",
+  "length_class": "long",
+  "turn_count": 26,
+  "caller_number": "01000000111",
+  "agent_persona": "A03",
+  "customer_persona": "C10",
+  "procedure": {
+    "doc_ids": [
+      "DASAN-TERM-3.14",
+      "DASAN-TERM-3.3"
+    ],
+    "required_documents": [
+      "신청서",
+      "신분증",
+      "소유 또는 점유 관계를 확인할 수 있는 서류"
+    ]
+  },
+  "turns": [
+    {
+      "seq": 1,
+      "speaker": "agent",
+      "text": "네, 한별시 통합민원콜센터입니다. 무엇을 도와드릴까요?",
+      "tone": "calm"
+    },
+    {
+      "seq": 2,
+      "speaker": "customer",
+      "text": "가게를 정리해서 수도를 끊으려고 하는데요, 어떻게 하면 되나요?",
+      "tone": "calm"
+    },
+    {
+      "seq": 3,
+      "speaker": "agent",
+      "text": "네, 급수를 중지하시는 폐전 신청 문의시군요. 신청서와 신분증, 그리고 소유나 점유 관계를 확인할 수 있는 서류가 필요합니다.",
+      "tone": "calm"
+    },
+    {
+      "seq": 4,
+      "speaker": "customer",
+      "text": "임대로 쓰던 가게라서 계약서가 있어요. 그걸로 되나요?",
+      "tone": "calm"
+    },
+    {
+      "seq": 5,
+      "speaker": "agent",
+      "text": "점유 관계를 확인하는 서류로 보시면 되는데, 인정 여부는 소관 부서 확인 후 안내드리겠습니다.",
+      "tone": "calm"
+    },
+    {
+      "seq": 6,
+      "speaker": "customer",
+      "text": "네, 알겠어요. 그런데 지난달 요금이 아직 안 나왔던데요.",
+      "tone": "calm"
+    },
+    {
+      "seq": 7,
+      "speaker": "agent",
+      "text": "폐전 시점까지의 사용료는 정산 대상이라 마지막 사용분이 따로 청구될 수 있습니다.",
+      "tone": "calm"
+    },
+    {
+      "seq": 8,
+      "speaker": "customer",
+      "text": "아니 가게 문을 닫은 지가 언젠데 아직도 요금을 내라고요? 장사도 안 했는데 그게 말이 됩니까!",
+      "tone": "shouting"
+    },
+    {
+      "seq": 9,
+      "speaker": "agent",
+      "text": "많이 당황스러우셨겠습니다. 폐전 신청 전까지는 계량기 기준으로 사용량이 잡혀서, 정산 금액은 검침 이력을 확인해야 알 수 있습니다.",
+      "tone": "calm"
+    },
+    {
+      "seq": 10,
+      "speaker": "customer",
+      "text": "검침 이력이요. 네, 그건 어디서 확인하나요?",
+      "tone": "calm"
+    },
+    {
+      "seq": 11,
+      "speaker": "agent",
+      "text": "고지서의 수용가 번호로 요금 조회가 가능합니다. 번호를 가지고 계시면 조회 방법을 안내드릴게요.",
+      "tone": "calm"
+    },
+    {
+      "seq": 12,
+      "speaker": "customer",
+      "text": "고지서는 집에 있어요. 나중에 볼게요.",
+      "tone": "calm"
+    },
+    {
+      "seq": 13,
+      "speaker": "agent",
+      "text": "네. 신청하실 때 고지서도 함께 가져가시면 확인이 빠릅니다.",
+      "tone": "calm"
+    },
+    {
+      "seq": 14,
+      "speaker": "customer",
+      "text": "그리고 다시 가게를 열면 그때는 바로 쓸 수 있는 거죠?",
+      "tone": "calm"
+    },
+    {
+      "seq": 15,
+      "speaker": "agent",
+      "text": "재사용하실 때는 급수 재개 절차가 따로 필요합니다. 그 절차는 소관 부서 확인 후 안내드리겠습니다.",
+      "tone": "calm"
+    },
+    {
+      "seq": 16,
+      "speaker": "customer",
+      "text": "또 절차가 있어요? 한 번에 알려 주면 되지 왜 매번 따로따로 하라는 거예요!",
+      "tone": "shouting"
+    },
+    {
+      "seq": 17,
+      "speaker": "agent",
+      "text": "번거롭게 해 드려 죄송합니다. 재개 절차에 필요한 것도 함께 확인해서 한 번에 안내드리겠습니다.",
+      "tone": "calm"
+    },
+    {
+      "seq": 18,
+      "speaker": "customer",
+      "text": "네, 그렇게 해 주세요.",
+      "tone": "calm"
+    },
+    {
+      "seq": 19,
+      "speaker": "agent",
+      "text": "연락드릴 번호를 말씀해 주시겠어요?",
+      "tone": "calm"
+    },
+    {
+      "seq": 20,
+      "speaker": "customer",
+      "text": "공일공 공공공공 공일일일이요.",
+      "tone": "calm",
+      "labels": {
+        "pii": [
+          {
+            "pattern": "P4",
+            "span": "공일공 공공공공 공일일일"
+          }
+        ]
+      }
+    },
+    {
+      "seq": 21,
+      "speaker": "agent",
+      "text": "네, 확인했습니다. 폐전 신청서, 신분증, 임대차 계약서 같은 점유 확인 서류를 준비해 주세요.",
+      "tone": "calm"
+    },
+    {
+      "seq": 22,
+      "speaker": "customer",
+      "text": "알겠습니다. 계약서 사본도 되나요?",
+      "tone": "calm"
+    },
+    {
+      "seq": 23,
+      "speaker": "agent",
+      "text": "사본 인정 여부도 소관 부서 확인 후 함께 안내드리겠습니다.",
+      "tone": "calm"
+    },
+    {
+      "seq": 24,
+      "speaker": "customer",
+      "text": "네, 연락 기다릴게요.",
+      "tone": "calm"
+    },
+    {
+      "seq": 25,
+      "speaker": "agent",
+      "text": "네, 이용해 주셔서 감사합니다.",
+      "tone": "calm"
+    },
+    {
+      "seq": 26,
+      "speaker": "customer",
+      "text": "수고하세요.",
+      "tone": "calm"
+    }
+  ],
+  "expected": {
+    "pii_by_pattern": {
+      "P4": 1
+    },
+    "compliance": [],
+    "call_guard_by_type": {},
+    "customer_non_calm_turns": [
+      {
+        "seq": 8,
+        "tone": "shouting"
+      },
+      {
+        "seq": 16,
+        "tone": "shouting"
+      }
+    ],
+    "call_temperature": {
+      "customer_expected_outlier_turns": [
+        8,
+        16
+      ],
+      "customer_calm_turns": [
+        2,
+        4,
+        6,
+        10,
+        12,
+        14,
+        18,
+        20,
+        22,
+        24,
+        26
+      ],
+      "customer_turns": 13,
+      "note": "의도한 연기(tts 운율 지시)에서 나온 기대값이다 — 측정값이 아니다. raised·tense 는 채점에서 뺀다"
+    },
+    "j": {
+      "blacklist_request": false,
+      "routing": "normal"
+    }
+  },
+  "notes": [
+    "D-5 기대: 고객 shouting 두 턴만 이상치 — 나머지는 기준선",
+    "콜 가드 0건이 정상(욕설 없음)"
+  ]
+}

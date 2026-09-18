@@ -251,6 +251,21 @@
         "tone": "weary"
       }
     ],
+    "call_temperature": {
+      "customer_expected_outlier_turns": [
+        2,
+        4,
+        6,
+        8,
+        10,
+        12,
+        18,
+        20
+      ],
+      "customer_calm_turns": [],
+      "customer_turns": 10,
+      "note": "의도한 연기(tts 운율 지시)에서 나온 기대값이다 — 측정값이 아니다. raised·tense 는 채점에서 뺀다"
+    },
     "j": {
       "blacklist_request": false,
       "routing": "normal",

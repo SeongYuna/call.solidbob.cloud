@@ -1,0 +1,267 @@
+{
+  "id": "SYN-020",
+  "version": "dasan-v0",
+  "source": "synthetic",
+  "generated_by": "Claude Code (claude-fable-5-1) · 2026-09-18 · 사람 검토 전",
+  "title": "아버지 경로 우대용 교통카드 대리 신청 — 묻지 않은 개인정보를 부르는 아들",
+  "length_class": "long",
+  "turn_count": 23,
+  "caller_number": "01000000120",
+  "agent_persona": "A01",
+  "customer_persona": "C19",
+  "procedure": {
+    "doc_ids": [
+      "DASAN-TERM-2.6",
+      "DASAN-MANUAL-3.4",
+      "DASAN-MANUAL-1.2",
+      "DASAN-MANUAL-3.2"
+    ],
+    "required_documents": [
+      "아버지 신분증",
+      "위임장",
+      "대리인 신분증"
+    ]
+  },
+  "turns": [
+    {
+      "seq": 1,
+      "speaker": "agent",
+      "text": "네, 한별시 통합민원콜센터입니다. 무엇을 도와드릴까요?",
+      "tone": "calm"
+    },
+    {
+      "seq": 2,
+      "speaker": "customer",
+      "text": "아버지 교통카드요, 어르신들 지하철 무료로 타는 그 카드. 아버지가 다리가 안 좋으셔서 제가 대신 만들어 드리려고요.",
+      "tone": "calm"
+    },
+    {
+      "seq": 3,
+      "speaker": "agent",
+      "text": "네, 경로 우대용 교통카드 대리 신청 문의시군요. 신청하시는 분이 아버님 본인이 아니라 아드님이신 거죠?",
+      "tone": "calm"
+    },
+    {
+      "seq": 4,
+      "speaker": "customer",
+      "text": "네, 제가요. 아버지 주민번호는 4501011000000이고요, 필요하시죠?",
+      "tone": "calm",
+      "labels": {
+        "pii": [
+          {
+            "pattern": "P1",
+            "span": "4501011000000"
+          }
+        ]
+      }
+    },
+    {
+      "seq": 5,
+      "speaker": "agent",
+      "text": "아, 주민등록번호는 전화로 말씀 안 하셔도 돼요. 저희가 받지 않습니다.",
+      "tone": "calm"
+    },
+    {
+      "seq": 6,
+      "speaker": "customer",
+      "text": "아 그래요? 그럼 뭐가 필요해요?",
+      "tone": "calm"
+    },
+    {
+      "seq": 7,
+      "speaker": "agent",
+      "text": "경로 우대용은 아버님 신분증으로 신청하시는데, 아드님이시면 가족이니까 위임장은 필요 없어요. 아버님 신분증만 가져가시면 돼요.",
+      "tone": "calm",
+      "labels": {
+        "compliance": [
+          {
+            "type": "C-3",
+            "phrase": "위임장은 필요 없어요",
+            "expected_alternative_source": "DASAN-MANUAL-3.4"
+          }
+        ]
+      }
+    },
+    {
+      "seq": 8,
+      "speaker": "customer",
+      "text": "오, 편하네요. 그럼 아버지 신분증만 들고 가면 되는 거죠?",
+      "tone": "calm"
+    },
+    {
+      "seq": 9,
+      "speaker": "agent",
+      "text": "죄송합니다, 제가 방금 잘못 안내드렸어요. 대리 신청은 가족이어도 위임장과 대리인 신분증이 필요합니다. 아버님 신분증, 위임장, 그리고 고객님 신분증, 세 가지예요.",
+      "tone": "calm"
+    },
+    {
+      "seq": 10,
+      "speaker": "customer",
+      "text": "아 위임장이 필요하구나. 알겠어요. 발급 수수료는 제 카드로 내면 되죠? 카드번호 9410 0000 0000 0121이에요.",
+      "tone": "calm",
+      "labels": {
+        "pii": [
+          {
+            "pattern": "P2",
+            "span": "9410 0000 0000 0121"
+          }
+        ]
+      }
+    },
+    {
+      "seq": 11,
+      "speaker": "agent",
+      "text": "카드번호도 전화로 말씀 안 하셔도 됩니다. 수수료와 재발급 기준은 발급 기관 안내를 따르셔야 해서, 발급처에서 확인하시면 돼요.",
+      "tone": "calm"
+    },
+    {
+      "seq": 12,
+      "speaker": "customer",
+      "text": "아 네네. 혹시 환급 같은 거 있으면 제 계좌 000000120120으로 넣어 주시면 되고요.",
+      "tone": "calm",
+      "labels": {
+        "pii": [
+          {
+            "pattern": "P3",
+            "span": "000000120120"
+          }
+        ]
+      }
+    },
+    {
+      "seq": 13,
+      "speaker": "agent",
+      "text": "계좌번호도 저희가 받지 않아요. 지금 신청하시는 건 카드 발급이라 계좌 정보는 필요 없습니다.",
+      "tone": "calm"
+    },
+    {
+      "seq": 14,
+      "speaker": "customer",
+      "text": "아, 그렇군요. 제가 너무 다 말씀드렸네요. 습관이 돼서.",
+      "tone": "calm"
+    },
+    {
+      "seq": 15,
+      "speaker": "agent",
+      "text": "괜찮습니다. 전화로는 성함과 연락처만 있으면 돼요.",
+      "tone": "calm"
+    },
+    {
+      "seq": 16,
+      "speaker": "customer",
+      "text": "저는 강민재고요, 아버지는 강영식이에요. 연락처는 010-0000-0120입니다.",
+      "tone": "calm",
+      "labels": {
+        "pii": [
+          {
+            "pattern": "P6",
+            "span": "강민재"
+          },
+          {
+            "pattern": "P6",
+            "span": "강영식"
+          },
+          {
+            "pattern": "P4",
+            "span": "010-0000-0120"
+          }
+        ]
+      }
+    },
+    {
+      "seq": 17,
+      "speaker": "agent",
+      "text": "네, 강민재 고객님. 위임장 양식은 소관 부서 확인 후 안내드리겠습니다.",
+      "tone": "calm",
+      "labels": {
+        "pii": [
+          {
+            "pattern": "P6",
+            "span": "강민재"
+          }
+        ]
+      }
+    },
+    {
+      "seq": 18,
+      "speaker": "customer",
+      "text": "네. 그리고 아버지가 장애 등급도 있으신데 그건 상관없죠?",
+      "tone": "calm"
+    },
+    {
+      "seq": 19,
+      "speaker": "agent",
+      "text": "장애인 우대용은 신분증과 장애인등록증이 필요해서 종류가 달라요. 어느 쪽으로 신청하실지는 아버님과 상의하셔서 정하시면 되고, 둘 다 대리 신청은 위임장과 고객님 신분증이 필요합니다.",
+      "tone": "calm"
+    },
+    {
+      "seq": 20,
+      "speaker": "customer",
+      "text": "아, 그럼 장애인 쪽으로 할 수도 있겠네요. 일단 알겠습니다.",
+      "tone": "calm"
+    },
+    {
+      "seq": 21,
+      "speaker": "agent",
+      "text": "네. 다시 정리하면 아버님 신분증, 위임장, 고객님 신분증이고, 장애인 우대용으로 하시면 장애인등록증이 추가예요.",
+      "tone": "calm"
+    },
+    {
+      "seq": 22,
+      "speaker": "customer",
+      "text": "네, 감사합니다.",
+      "tone": "calm"
+    },
+    {
+      "seq": 23,
+      "speaker": "agent",
+      "text": "네, 이용해 주셔서 감사합니다.",
+      "tone": "calm"
+    }
+  ],
+  "expected": {
+    "pii_by_pattern": {
+      "P1": 1,
+      "P2": 1,
+      "P3": 1,
+      "P4": 1,
+      "P6": 3
+    },
+    "compliance": [
+      {
+        "seq": 7,
+        "type": "C-3"
+      }
+    ],
+    "call_guard_by_type": {},
+    "customer_non_calm_turns": [],
+    "call_temperature": {
+      "customer_expected_outlier_turns": [],
+      "customer_calm_turns": [
+        2,
+        4,
+        6,
+        8,
+        10,
+        12,
+        14,
+        16,
+        18,
+        20,
+        22
+      ],
+      "customer_turns": 11,
+      "note": "의도한 연기(tts 운율 지시)에서 나온 기대값이다 — 측정값이 아니다. raised·tense 는 채점에서 뺀다"
+    },
+    "j": {
+      "blacklist_request": false,
+      "routing": "normal"
+    }
+  },
+  "notes": [
+    "TERM-2.6: 경로 우대용은 신분증, 대리 신청은 위임장·대리인 신분증 추가",
+    "A01 이 「가족이면 위임장은 필요 없어요」 로 C-3 위반(3.4) → 다음 턴에 스스로 정정",
+    "고객이 **묻지 않았는데** 아버지 주민번호(P1)·본인 카드번호(P2)·계좌(P3)를 부른다 — 상담원은 받지 않는다고 말한다. C-2 는 아니다(상담원이 요구하지 않았다)",
+    "P1 은 붙은 13자리, P2 는 띄어 쓴 16자리, P3 는 「계좌」 문맥어 있음 — 골든셋 0건 패턴 셋을 한 통화에 모았다"
+  ]
+}

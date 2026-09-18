@@ -747,3 +747,17 @@ Environment Variables → **Production 만** → Deployments → Redeploy(`VITE_
 - [ ] **운영 전환이 아직이다** — 저장소는 전부 바꿨고 검증도 통과했지만 **운영은 `/gateway/*` 로 돈다.** 사람이 할 일 일곱 가지와 순서는 런북 19-1 「개명 전환」·[w5-call-mediator-rename](/backlog/w5-call-mediator-rename/). 순서를 어기면 ① Docker Hub 레포가 없어 `tag-check` 가 401 로 죽거나 ② 룰셋이 없어진 `gateway` 검사를 기다리며 머지가 잠기거나 ③ 새 토큰이 만들어져 Vercel 뷰 토큰이 무효가 된다
 - [ ] **류준 님 `origin/ai` 의 `services/gateway/` 미머지 작업** — 합성 통화 재생기와 태그 `0.1.6`. main 을 받을 때 경로(`services/call-mediator/`)·이미지 이름·태그(`0.2.x`)·`/dev/text` 주소(`/call-mediator/dev/text`)를 맞춰야 한다
 - [ ] **개발자용 런타임 오버라이드 주소가 바뀌었다** — `?gateway=` → `?call_mediator=`, 저장 키도 바뀌어 **브라우저에 저장해 둔 옛 오버라이드는 무시된다.** 팀에 알린다
+
+### 합성 통화 확장 · E2E 24건에서 남은 것 (신규, 2026-09-18, 류준 · `decisions/209` 제안)
+
+- [ ] **Google TTS 키 발급 — 정성윤 님** — `scripts/persona_sim/TTS.md §1` 절차(Cloud Text-to-Speech API 사용 설정 → API 키 → **API 제한 TTS 하나만** → 콘솔 할당량 낮추기). 받은 키는 `.env` 의 `GOOGLE_TTS_API_KEY` 에. 첫 실행은 `--prefetch SYN-001`(7턴)로 작게. 아직 실제 호출 0건이라 Wavenet 이 SSML `volume` 을 얼마나 반영하는지·콘솔에서 문자 할당량을 낮출 수 있는지 미확인
+- [ ] **E2E 실패 21건의 시스템 결함 배정** (보고서 `data/processed/persona-e2e/2026-09-18-1618.md`, 로컬 규칙·BM25·NER 없음 — 측정값 아님) —
+  ① **콜 미디에이터가 `/hub/compliance-checks` 를 안 부른다**(라벨 있는 8건 전부 탐지 0, 09-17 과 동일 — 정성윤·장민석)
+  ② **`closure_rule.py` 에 TERM 4.5·4.20·4.12·2.6·4.9·6.12·3.3·4.8 규칙이 없다** — 대본이 고른 절차인데 판정이 영원히 없다(장민석)
+  ③ **필요서류 판정이 추천 1순위 카드 조항에만 걸린다**(`topSourceDocId`) — BM25 1순위가 틀리면 엉뚱한 절차(SYN-020 화면에 「지방세 환급」「장애인콜택시」 진행 중으로 뜸). 임베딩을 켜면(`decisions/208`) 줄겠지만 구조 자체를 볼 것(정성윤·류준)
+  ④ **C-5 누락 — SYN-020 #16 「저는 강민재고요, 아버지는 강영식이에요」** 이름 둘이 자막·DB 에 원문(SEC-1). 「~고요」 어미 자기소개 + 가족 호칭 문맥. 화면에서도 재현 확인(류준·장민석)
+  ⑤ `recommendation_card.source_doc_id` 가 전부 NULL — `document` 테이블 0행이라 FK 를 못 채운다(B-6 출처가 DB 에 안 남음)
+  ⑥ 대본↔규칙표 서류 이름 불일치 5건(SYN-002·005·013·015·017 — 「누수 수리 확인 서류」 vs 「누수 수리 사실을 확인할 수 있는 서류」 등) — 어느 쪽을 정본으로 맞출지
+  ⑦ 한글 수사 휴대전화(「공일공 공공공공 …」)가 P4 가 아니라 P3 로 잡힌다(가려지긴 함) · P6 과잉 「고객님이요」·「위임장과」
+- [ ] **대시보드 `AgentCallBox` 모달이 합성 통화 라이브 보기를 가린다 — 조서희** — 「통화 시작」 직후 마이크 데모 모달이 떠 뒤 자막이 흐리게만 보인다. `call_token` 없이 「통화받기」를 누르면 닫히긴 하지만(마이크 안 켬) 시연자가 알기 어렵다. 합성 통화(재생기)일 때 닫는 방법을 프론트에서 정할 것. 또 상담기록 목록이 `customer_id` 해시를 그대로 보여 준다
+- [ ] **작업 트리의 미커밋 D-5 파일** — `ai/apps/evaluation/metrics/call_temperature.py`·`ai/apps/evaluation/tests/test_call_temperature_metrics.py`(이전 세션, `w3-call-temperature`). 09-18 커밋에서 뺐다 — 검토 후 별도 커밋(서버 태그 올라감)
