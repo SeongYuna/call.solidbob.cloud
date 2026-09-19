@@ -2,7 +2,7 @@
 title: "컴포즈를 걷어내고 k3s 배포 준비 — 이미지 2종·Caddy·로컬 대체"
 assignee: "정성윤"
 role: "infra"
-status: "in-progress"
+status: "done"
 sprint: 3
 priority: 2
 date: 2026-09-08
@@ -49,8 +49,11 @@ paths:
 - [x] **ES 인덱스 적재 (2026-09-11)** — 이미지에 `knowledge-base/`·`scripts/` 가 없어 GitHub `main` tar 를
       파드 안에서 풀어 적재했다. `callguard-kb-single` · 청크 98개 · `_cat/indices` green docs.count 98.
       밖에서 `POST /hub/search` 200 확인. 절차는 런북 15-1
-- [ ] **AMI 스냅샷** — 지금 구성이 EC2 안에만 있다
-- [ ] 자동 중지 cron (지침서 21-1)
+- [x] ~~**AMI 스냅샷**~~ — **2026-09-19 뜨지 않기로 했다**(`_project/decisions/116` ③).
+      ⚠ **받아들인 대가**: 지금 구성은 EC2 안과 콘솔에만 있고 terraform 재현 경로도 없다 —
+      **인스턴스를 잃으면 노드를 손으로 반나절 넘게 다시 세워야 한다**(RDS·S3 는 별개라 데이터는 남는다).
+      116 의 「되돌리는 법」에 이것 하나만 되살리는 게 가장 싸다고 적어 두었다
+- [x] ~~자동 중지 cron (지침서 21-1)~~ — **2026-09-19 하지 않기로 했다**(`_project/decisions/116` ①)
 
 ## 실측 (2026-09-08, 로컬)
 

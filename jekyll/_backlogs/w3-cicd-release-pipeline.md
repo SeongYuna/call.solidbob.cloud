@@ -2,7 +2,7 @@
 title: "머지하면 배포되게 만든다 — GitHub Actions + OIDC + SSM"
 assignee: "정성윤"
 role: "infra"
-status: "in-progress"
+status: "done"
 sprint: 3
 priority: 2
 date: 2026-09-09
@@ -45,9 +45,11 @@ Root 단독 운영이라 대안이 **Root 액세스 키뿐**인데 그건 계정
 - [x] **첫 배포 실검증 (2026-09-14)** — PR #74 에서 네 잡(`plan`·`image`·`call-mediator-image`·`deploy`)이
       전부 통과했다(117초). 운영 `/health` 스포크 4종(`masking`·`closure_gate`·`retrieval`·`trigger`) 유지 확인
 - [x] 부팅 시 자동 수렴 systemd 유닛 — `infra/systemd/callguard-converge.service` · `converge.sh`
-- [ ] 자동 중지 cron (런북 21-1)
-- [ ] 결정 기록 — ⚠ **번호가 갈렸다.** 여기서 예약해 둔 `108` 은 **운영 DB RDS 이관**으로 나갔고,
-      태그 게이트는 `_project/decisions/111` 이 가져갔다. **파이프라인 자체(SSM·OIDC·렌더 방식)의 결정 기록은 아직 없다**
+- [x] ~~자동 중지 cron (런북 21-1)~~ — **2026-09-19 하지 않기로 했다**(`_project/decisions/116` ①)
+- [x] **결정 기록 — `_project/decisions/117` 로 썼다 (2026-09-19)**. 설계가 갈린 넷(저장소가 태그를 정한다 ·
+      인스턴스에서 git 을 안 쓴다 · SSM 통로 · OIDC 임시 자격증명)을 근거·되돌리는 법과 함께 남겼다.
+      ⚠ 그 과정에서 **본문의 「Root 단독 운영이라 대안이 Root 액세스 키뿐」이 사실이 아님**을 확인해 정정했다
+      (루트 액세스 키 0개 · 장기 키는 IAM 사용자 `admin` 것 하나, 09-19 실측). 결론은 그대로다
 
 ## 탄력적 IP 를 붙이지 않는다 (2026-09-09 결정)
 
