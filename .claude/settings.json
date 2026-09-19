@@ -15,7 +15,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/scripts/infra_runbook_guard.py\""
+            "command": "python3 -X utf8 \"$CLAUDE_PROJECT_DIR/.claude/scripts/infra_runbook_guard.py\""
           }
         ]
       }
@@ -25,7 +25,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"$CLAUDE_PROJECT_DIR/scripts/check_session_end.py\" --hook"
+            "command": "python3 -X utf8 \"$CLAUDE_PROJECT_DIR/scripts/check_session_end.py\" --hook"
           }
         ]
       }
