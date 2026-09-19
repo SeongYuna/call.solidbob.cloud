@@ -722,8 +722,8 @@ Environment Variables → **Production 만** → Deployments → Redeploy(`VITE_
 - [ ] **장민석 — `compliance_flag` 가 0행** — `/hub/compliance-checks` 를 직접 불러 C-2 가 잡혀도 저장이 안 됐다(설계인지 확인)
 - [ ] **콜 미디에이터(누구나 · 주 담당 정성윤) — 컴플라이언스 미배선** — `hub_http.ts` 가 `/hub/compliance-checks` 를 부르지 않고 방송 타입에도 없다. 콜 가드 배선을 본떠 상담원 확정 발화마다 호출 → `compliance` 방송. 조서희 님 `ComplianceWarningBanner` 계약 맞추기
 - [ ] **콜 미디에이터(누구나) — 필요서류 판정이 추천 1순위 한 번에 기댄다** — 오카드 한 번이면 엉뚱한 절차가 `incomplete` 로 계속 방송된다. 같은 절차가 두 번 이상 1순위일 때만 올리는 등. POLICY 가 1순위가 되던 경우는 검색에서 뺐다
-- [ ] **정성윤 — 자동 중지가 설정돼 있지 않다** — AL2023 에 `crontab` 이 없어 런북 21-1 명령이 안 먹는다(추정). 3일 연속 가동. **EIP 부터** 붙이고(없으면 재기동 시 서버 IP 가 바뀐다) EventBridge 스케줄 등으로
-- [ ] **정성윤 — EC2 t3.large 결정 기록 · Name 태그 · AMI 0개 · EBS 30GB 비암호화 · `ai` DNS 자리표시자 · 안 붙은 SG `launch-wizard-2`(22 전체 개방)** — 런북 0·20장과 어긋남. t3.large 는 `decisions/208`(NER·임베딩 운영) 자원 판단의 전제다
+- [x] **정성윤 — 자동 중지가 설정돼 있지 않다** — ✅ **2026-09-19 결정: 하지 않는다**(`_project/decisions/116`). 런북의 «24/7 이면 예산 초과» 경고는 **g4dn(GPU) 기준**이고 운영은 t3.large 라 급함이 내려간다. EIP·AMI 와 한 묶음으로 함께 안 한다. 원문 — AL2023 에 `crontab` 이 없어 런북 21-1 명령이 안 먹는다(추정). 3일 연속 가동. **EIP 부터** 붙이고 EventBridge 스케줄 등으로
+- [x] **정성윤 — EC2 t3.large 결정 기록 · Name 태그 · AMI 0개 · EBS 30GB 비암호화 · `ai` DNS 자리표시자 · 안 붙은 SG `launch-wizard-2`(22 전체 개방)** — ✅ **2026-09-19 결정: 여섯 전부 하지 않는다**(`_project/decisions/116` — 티켓도 만들지 않는다). **t3.large 라는 사실 자체는 그 결정 기록이 적었다**(런북 0·7-2 의 g4dn 전제가 운영과 다르다는 것, `decisions/208` 측정이 M5 맥 값이라 t3.large 재측정이 남는다는 것 포함). **받아들인 위험**: AMI 가 없고 terraform 재현 경로도 없어 **인스턴스를 잃으면 노드 재구축 반나절 이상**(RDS·S3 는 별개라 데이터는 남는다). `launch-wizard-2` 는 **어느 인스턴스에도 안 붙어 있어 실제 노출 0** — 「열린 SSH」로 인용하지 않는다. 되살리려면 런북 해당 절만 따르면 된다(③ AMI 하나가 가장 싸다)
 - [ ] **정성윤·류준 — `decisions/208` 합의** — torch CPU 휠을 서버 이미지에 넣을지 · 모델 파일 위치 · t3.large 재측정
 - [ ] **팀 — 운영 합성 통화 한 건(SYN-010)으로 콜 미디에이터→서버 경로 확인할지** — 운영 DB 에 `syn-` 통화 행이 남는다
 
@@ -744,8 +744,10 @@ Environment Variables → **Production 만** → Deployments → Redeploy(`VITE_
 
 ### `gateway` → `call-mediator` 개명에서 남은 것 (신규, 2026-09-17, 정성윤 · `decisions/115`)
 
-- [ ] **운영 전환이 아직이다** — 저장소는 전부 바꿨고 검증도 통과했지만 **운영은 `/gateway/*` 로 돈다.** 사람이 할 일 일곱 가지와 순서는 런북 19-1 「개명 전환」·[w5-call-mediator-rename](/backlog/w5-call-mediator-rename/). 순서를 어기면 ① Docker Hub 레포가 없어 `tag-check` 가 401 로 죽거나 ② 룰셋이 없어진 `gateway` 검사를 기다리며 머지가 잠기거나 ③ 새 토큰이 만들어져 Vercel 뷰 토큰이 무효가 된다
-- [ ] **류준 님 `origin/ai` 의 `services/gateway/` 미머지 작업** — 합성 통화 재생기와 태그 `0.1.6`. main 을 받을 때 경로(`services/call-mediator/`)·이미지 이름·태그(`0.2.x`)·`/dev/text` 주소(`/call-mediator/dev/text`)를 맞춰야 한다
+- [x] **운영 전환이 아직이다** — ✅ **2026-09-19 확인: 끝나 있었다.** 문서만 뒤처져 있었다. 밖에서 실측한 것 — `/call-mediator/health` 200 + 토큰 넷 true · `/call-mediator/dev` 200 · 토큰 없는 `/ws`·`/ingest` 401 · **배포 번들에 구워진 뷰 토큰으로 `/ws` 101**(= 시크릿을 옛 값 그대로 복사한 것이 맞다) · **옛 `/gateway/*` 404** · 프론트 번들에 `VITE_CALL_MEDIATOR_*` 구워짐(`gateway` 0회). 룰셋 전환도 된 것으로 본다 — 안 됐으면 PR #101·#102 가 없는 검사를 기다리며 잠겼을 것이다. **남은 것은 아래 한 줄뿐.** 원문 — 저장소는 전부 바꿨고 검증도 통과했지만 **운영은 `/gateway/*` 로 돈다.** 사람이 할 일 일곱 가지와 순서는 런북 19-1 「개명 전환」·[w5-call-mediator-rename](/backlog/w5-call-mediator-rename/)
+- [x] **옛 오브젝트 청소** — ✅ **2026-09-19 SSM 실측: 지울 것이 없었다.** 옛 `gateway` 이름의 Deployment·Service·Secret·Ingress 가 **0개**(시크릿은 `call-mediator-tokens`·`callguard-server-tls`·`gcp-stt-credentials`·`server-env` 넷뿐) · 로컬 `.env` 도 `CALL_MEDIATOR_*` 뿐 · **운영 이미지는 `callguard-server:0.1.18` · `callguard-call-mediator:0.2.1`**(파드 생성 09-18 08:23 UTC). 적용 스크립트에 prune 이 없어 남을 줄 알았는데 남지 않았다
+- [ ] **Vercel 옛 변수 둘 삭제 — 정성윤 (신규, 2026-09-19)** — `kxu6`(call.solidbob.cloud)의 `VITE_GATEWAY_WS_URL`·`VITE_GATEWAY_DEMO_BASE_URL`. 개명 전환 중 **마지막 한 줄**이다. 새 변수가 이미 번들에 구워져 돌고 있어 **지워도 화면에 영향 없다.** 콘솔에서만 보이고 CLI·토큰이 로컬에 없다
+- [x] **류준 님 `origin/ai` 의 `services/gateway/` 미머지 작업** — ✅ 2026-09-18 PR #102 로 들어왔다(`origin/ai` 끝 커밋 `c6fe2e7` 이 main 에 있고, 재생기는 `services/call-mediator/scripts/replay_persona_call.ts`). 원문 — 합성 통화 재생기와 태그 `0.1.6`. main 을 받을 때 경로·이미지 이름·태그(`0.2.x`)·`/dev/text` 주소를 맞춰야 한다
 - [ ] **개발자용 런타임 오버라이드 주소가 바뀌었다** — `?gateway=` → `?call_mediator=`, 저장 키도 바뀌어 **브라우저에 저장해 둔 옛 오버라이드는 무시된다.** 팀에 알린다
 
 ### 합성 통화 확장 · E2E 24건에서 남은 것 (신규, 2026-09-18, 류준 · `decisions/209` 제안)
@@ -766,3 +768,48 @@ Environment Variables → **Production 만** → Deployments → Redeploy(`VITE_
 - [ ] **장민석 님 검토 요청 — 09-18 서버 변경(`0.1.18`, `decisions/302` 로 류준이 고침)** — ① `closure_rule` 에서 `decisions/305` 가 EXCLUDED 로 뒀던 2.6·4.5·4.9·4.12 를 되살렸다(갈래 공통 서류만 필수, 갈래별은 conditional) — 305 취지와 맞는지 ② 이름 규칙의 가족 호칭 문맥이 「아버지가 장애인이에요」 류를 `_NOT_NAMES` 목록으로만 막는다(실제 발화 신규 오탐 0) ③ P4 재라벨이 뒤의 「이」 한 글자를 함께 가린다(의도) ④ **`compliance_flag` 저장 배선(신규)** — `compliance_rule` 카탈로그를 저장 직전 UPSERT 로 채우는 것(대안: `scripts/seed_compliance_rules.py`) · `default_severity` 전부 `medium`(등급 정의 없음) · 저장 실패를 응답에서 숨기는 정책(콜 가드는 500)
 - [ ] **대시보드 컴플라이언스 경고가 서버 결과가 아니라 프론트 로컬 규칙(`apps/call/src/lib/compliance/detectComplianceRisk.ts`)이다 — 조서희** — 서버는 이제 검사·저장까지 한다(콜 미디에이터 `0.2.1`). 콜 미디에이터 `compliance` 메시지 파서를 추가하면 `announceCompliance` 를 켤 수 있다(정성윤 — `main.ts`)
 - [ ] **4.20 과태료 이의신청·4.8·3.3·6.12 는 규칙표에 없다(의도)** — 「— 필요서류」 조항이 아니다. 대본 SYN-006·007·012 는 `required_documents` 를 비워 「판정 0건이 정상」. 4.20 본문의 이의신청서·소명 자료를 규칙으로 둘지는 장민석 님 판단
+
+### 09-19 세션에서 남긴 것 (신규, 2026-09-19, 정성윤)
+
+- [ ] **조서희 — `w1-platform-landing` 이 8-27 부터 `in-progress` 다** — 랜딩은 `www.solidbob.cloud` 로 떠 있고
+  3주차 다크 리디자인([w3-platform-landing-refresh](/backlog/w3-platform-landing-refresh/))까지 끝났는데 앞 티켓의
+  상태가 그대로다. **중복 티켓 경고는 뒤 티켓에 `depends_on` 을 달아 껐지만**(일부러 나눈 단계다), 상태는
+  `apps/` 전담인 조서희 님 몫이라 건드리지 않았다. 티켓 본문의 「아직 안 된 것」(아키텍처 문서에
+  `apps/platform` 을 올릴지)이 아직 살아 있으면 그것만 새 티켓으로 떼고 이 티켓은 닫는 쪽이 보드가 정직해진다
+- [x] **팀 — 운영 `document` 98행이 정말 있는지 한 번 센다** — ✅ **2026-09-19 SSM 실측 98행.** 런북 17-3 의
+  「09-15 적재 완료」가 맞았고 `STATE.md`·09-18 미결이 낡은 기록이었다. 적재를 다시 돌릴 필요 없다
+
+- [ ] **운영 DB 를 세어 보니 «저장된 적 없는 경로»가 드러났다 — 팀 (신규, 2026-09-19, 정성윤 SSM 실측)** —
+  공개 테이블 29개. `call` 13 · `transcript_segment` 11 · `masking_event` 5 · `call_guard_flag` 1 ·
+  **`recommendation_card` 0 · `closure` 0 · `compliance_flag` 0 · `compliance_rule` 0.**
+  즉 **운영에서 B(추천 카드)·F-2(필요서류 판정)·C-1~C-4(컴플라이언스) 가 한 번도 저장된 적이 없다.**
+  코드가 없어서가 아니라(셋 다 `0.1.18` 에 들어 있다) **그 경로를 타는 통화를 아직 안 걸어 봤기 때문**으로 보인다 —
+  09-17 점검의 「바깥 실제 접속 0건」과 같은 이야기다. **정할 것**: 시연 전에 운영으로 합성 통화 한 건
+  (SYN-010 등)을 태워 넷이 실제로 쌓이는지 볼지 — 운영 DB 에 `syn-` 행이 남는다(09-17 미결과 같은 건).
+  ⚠ 이건 **측정이 아니라 「안 돌아 본 것」의 확인**이다. 수치로 인용하지 않는다
+
+### 6주차 판정(09-30)을 앞두고 — 공식 수치가 2주 낡았다 (신규, 2026-09-19, 정성윤)
+
+주차 경계를 [마일스톤](/docs/08/) 기준으로 다시 세면 **오늘은 5주차**이고 **F·G·H·I 동결 판정은 6주차 종료 = 09-30**,
+남은 기간은 11일이다. `STATE.md` 가 「3주차」로 두 주 낡아 있어 이것이 가려져 있었다(같은 날 고쳤다).
+
+- [ ] **류준 님 — 현재 코드로 하네스 재측정 + `--record`** — 판정에 쓸 수 있는 공식 수치가 **09-09 값**뿐이고
+  거기서 **`masking` 이 ❌(누락 2)** 다. **지금 판정하면 C-5 절대 규칙 미달로 동결이 걸린다.**
+  그 뒤 들어온 dense·리랭커·NER·C-5 규칙 보강은 전부 로컬 측정이라 절대 원칙 2·5 상 인용할 수 없다.
+  이 저장소의 윈도 머신에는 ES·모델·`.venv` 가 없어 **돌릴 수 없다** — 맥이나 측정 인스턴스(런북 22장) 몫이다.
+  ```bash
+  docker build -t callguard-es:local infra/elasticsearch/
+  .venv/bin/python scripts/index_knowledge_base.py --to-es --recreate
+  ELASTICSEARCH_URL=http://localhost:9200 .venv/bin/python scripts/run_eval.py --runs 3 --record
+  ```
+  볼 것: ① `masking` 이 0 으로 갔는지 ② `NO_SAMPLES` 가 어디 남는지(C-5 표본은 일곱 패턴 다 있고
+  **F-2 `f2_case` 는 0건** — 09-19 골든셋 파일 실측) ③ 여러 번 중 **최저치**로 고정(절대 원칙 4)
+- [ ] **팀 — 무엇을 «기준선 구성»으로 삼을지 먼저 정한다** — 운영은 **규칙+BM25**, 로컬 최고는 **NER+dense+리랭커**다.
+  로컬 최고 수치로 「통과」를 선언하면 **운영에서 성립하지 않는 통과**가 된다. `decisions/208`(운영에 NER·임베딩을
+  올릴지)이 «제안» 인 채라 **그 결정이 곧 기준선의 정의**다. 판정( `w6-core-baseline-check` )보다 이게 앞선다
+- [ ] **F-2 는 잴 수 없는 상태로 7주차 체크포인트를 맞는다** — 골든셋에 `f2_case` 가 0건이라
+  「필수 항목 누락 0건 탐지」를 **판정할 근거가 없다.** 정할 것: ① 골든셋에 F-2 케이스를 넣어 측정 가능하게 할지
+  ② 계획대로 **설계 문서 전환**(`w7-f2-checkpoint`)을 미리 확정할지. **성공 조건은 F-2 가 아니므로 ②도 실패가 아니다**
+- [ ] **7주차 레이턴시가 지금 구조로는 또 「측정 불가」다** — 트리거는 이벤트 도착 시각이 없어 상수로 모형화 중이라
+  채점하면 `p50=p95=346`·발동률 1.0 이라는 **가짜 만점**이 나온다(`STATE.md`). 4.3절 지연 예산을 실제로 재려면
+  **콜 미디에이터가 발화 종료·카드 도착 시각을 실어 보내는 계측**이 먼저다 — 7주차에 시작하면 늦는다([w7-latency-budget](/backlog/w7-latency-budget/))

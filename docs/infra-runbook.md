@@ -1656,7 +1656,12 @@ curl -fsS $B/hub/calls/$C/transcript
 
 > **이름이 바뀌었다 (2026-09-17, `_project/decisions/115`).** 이 절의 「콜 미디에이터」·`call-mediator` 는 09-17 이전 기록의
 > 「게이트웨이」·`gateway` 다. 옛 진행 기록·결정 기록은 그 시점의 이름 그대로 둔다.
-> ⚠ **머지·배포 전까지 운영은 아직 `/gateway/*` 로 돈다** — 아래 「개명 전환」을 마치면 이 경고를 지운다.
+>
+> ✅ **운영 전환 끝났다 (2026-09-19 실측).** `/call-mediator/health` 200 + 토큰 넷 true · `/call-mediator/dev` 200 ·
+> 토큰 없는 `/call-mediator/ws`·`/ingest` 401 · 번들 뷰 토큰으로 `/ws` 101 · **옛 `/gateway/*` 404**.
+> 아래 「개명 전환」은 **6 까지 끝났다** — 09-19 SSM 실측으로 **옛 `gateway` 오브젝트가 0개**임을 확인했고
+> (지울 것이 없었다) 운영 이미지는 `callguard-server:0.1.18` · `callguard-call-mediator:0.2.1` 다.
+> 로컬 `.env` 도 `CALL_MEDIATOR_*` 뿐. **남은 것은 7 의 Vercel 옛 변수 둘 삭제뿐**이고 화면 동작에 영향이 없다.
 
 #### 개명 전환 — 사람이 하는 일 (순서를 지킨다)
 
