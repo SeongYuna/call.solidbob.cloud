@@ -25,10 +25,20 @@ import {
 export class HttpHub implements HubPort {
   private readonly baseUrl: string;
   private readonly timeoutMs: number;
+  private readonly headers: Record<string, string>;
 
-  constructor(baseUrl: string, timeoutMs = 5_000) {
+  /**
+   * `serviceToken` — server 쓰기 경로의 문(`INGEST_SERVICE_TOKEN`, `_project/decisions/120`).
+   * 2026-09-20 운영 왕복에서 이 경로들이 **토큰 없이 200** 이었다. 비어 있으면 헤더를 보내지 않는다 —
+   * server 가 아직 토큰을 요구하지 않는 이행기에도 같은 코드로 돈다. **값은 어디에도 로깅하지 않는다**(SEC-2).
+   */
+  constructor(baseUrl: string, timeoutMs = 5_000, serviceToken = "") {
     this.baseUrl = baseUrl.replace(/\/+$/, "");
     this.timeoutMs = timeoutMs;
+    this.headers = { "content-type": "application/json" };
+    if (serviceToken.length > 0) {
+      this.headers.authorization = `Bearer ${serviceToken}`;
+    }
   }
 
   async startCall(request: CallStartRequest): Promise<void> {
@@ -80,7 +90,7 @@ export class HttpHub implements HubPort {
     try {
       response = await fetch(`${this.baseUrl}${path}`, {
         method: "POST",
-        headers: { "content-type": "application/json" },
+        headers: this.headers,
         body: JSON.stringify(payload),
         signal: AbortSignal.timeout(this.timeoutMs),
       });

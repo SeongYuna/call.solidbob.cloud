@@ -32,6 +32,7 @@ import {
   type HubPort,
   type Logger,
   type RawTranscript,
+  type RecommendPayload,
   type Speaker,
   type SttEngine,
   type SttResult,
@@ -380,7 +381,7 @@ export class Channel {
     this.queue.push({
       segmentId,
       isFinal: result.isFinal,
-      receivedAtMs: Math.max(0, this.deps.nowMs() - this.openedAtMs + this.channelStartMs),
+      receivedAtMs: this.callClockMs(),
       raw: {
         call_id: this.callId,
         segment_id: segmentId,
@@ -523,6 +524,11 @@ export class Channel {
    * 트리거 v1 은 final 도착 기반이다(`w3-trigger-v1`). 판정은 서버가 하고 여기서는 **마스킹된 본문**
    * 을 넘기기만 한다. 다음 자막을 막지 않도록 줄 밖에서 돈다.
    */
+  /** 통화 시작 기준 ms — `utterance_end_ms`·`received_at_ms` 와 **같은 시계**다. 서로 뺄 수 있어야 해서 한 곳에 둔다. */
+  private callClockMs(): number {
+    return Math.max(0, this.deps.nowMs() - this.openedAtMs + this.channelStartMs);
+  }
+
   private async recommend(item: QueuedResult, maskedText: string): Promise<void> {
     if (this.deps.announcePending === true) {
       this.deps.broadcaster.publish(this.callId, {
@@ -540,7 +546,10 @@ export class Channel {
         utterance_end_ms: item.raw.utterance_end_ms,
         received_at_ms: item.receivedAtMs,
       });
-      this.deps.broadcaster.publish(this.callId, { type: "recommendation", payload });
+      this.deps.broadcaster.publish(this.callId, {
+        type: "recommendation",
+        payload: withE2eLatency(payload, item.raw.utterance_end_ms, this.callClockMs()),
+      });
       const candidates = sourceDocIds(payload);
       if (candidates.length > 0) {
         this.track(this.adoptProcedure(candidates));
@@ -549,6 +558,27 @@ export class Channel {
       this.deps.log.warn(`추천 요청 실패 call=${this.callId} segment=${item.segmentId} status=${statusOf(error)}`);
     }
   }
+}
+
+/**
+ * `e2e_latency_ms` = 발화 종료 → **방송 직전** (`_project/decisions/119`).
+ *
+ * 서버 DTO·DB 컬럼은 2026-09-09 부터 있었는데 **아무도 값을 넣지 않아 늘 null 이었다** — 서버는 방송 시각을 모른다.
+ * 그 시각을 아는 곳이 여기 하나라 여기서 채운다. **브라우저가 그리는 시간은 들어 있지 않다**(재지 않기로 했다).
+ * - 발동하지 않은 응답(`fired: "false"`)에는 넣지 않는다 — 카드가 없으면 「표시까지」가 없다
+ * - `utterance_end_ms` 가 없으면 넣지 않는다. 0 으로 지어내지 않는다(절대 원칙 2)
+ * - 서버 응답이 그렇듯 **문자열**로 싣는다(7.3절 — 값은 전부 문자열)
+ * ⚠ 합성 통화(`/dev/text`)는 STT 를 안 거쳐 이 값이 실제보다 짧다 — 보고할 때 「STT 미경유」를 붙인다(`decisions/209`).
+ */
+export function withE2eLatency(
+  payload: RecommendPayload,
+  utteranceEndMs: number | null | undefined,
+  broadcastAtMs: number,
+): RecommendPayload {
+  if (payload["fired"] !== "true" || typeof utteranceEndMs !== "number" || !Number.isFinite(utteranceEndMs)) {
+    return payload;
+  }
+  return { ...payload, e2e_latency_ms: String(Math.max(0, Math.round(broadcastAtMs - utteranceEndMs))) };
 }
 
 /** 절차 후보로 보는 추천 카드 수 — 서버 추천이 상위 5장을 준다. */

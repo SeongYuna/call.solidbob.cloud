@@ -40,7 +40,7 @@ const budget = new BudgetGuard(new JsonLedgerFile(config.usageFile), config.caps
 const dashboards = new DashboardHub();
 const stt: SttEngine = config.googleCredentialsReady ? new GoogleSttEngine(googleStreamFactory()) : new UnavailableStt();
 const registry = new CallRegistry({
-  hub: new HttpHub(config.coreApiUrl),
+  hub: new HttpHub(config.coreApiUrl, undefined, config.coreApiToken),
   stt,
   budget,
   broadcaster: dashboards,
