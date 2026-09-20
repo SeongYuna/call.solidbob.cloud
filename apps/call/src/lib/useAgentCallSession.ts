@@ -14,6 +14,7 @@
  */
 import { useCallback, useEffect, useRef, useState } from "react";
 import { readAgentCallToken } from "./agentCallToken";
+import { readSharedCallId } from "./sharedCallId";
 
 export type AgentCallStatus =
   | "idle"
@@ -125,7 +126,8 @@ export function useAgentCallSession(): AgentCallSession {
     }
 
     setStatus("connecting");
-    const callId = `test-web-agent-${Date.now()}`;
+    // `?call_id=` 로 열렸으면 그 통화에 붙는다 — 홍보 페이지(고객 쪽)와 같은 값이어야 한 통화가 된다(`sharedCallId.ts`)
+    const callId = readSharedCallId() ?? `test-web-agent-${Date.now()}`;
     const query = new URLSearchParams({ call_id: callId, speaker: "agent" });
     const ws = new WebSocket(`${base}/dev/text?${query}`, ["callguard", `bearer.${token}`]);
     wsRef.current = ws;

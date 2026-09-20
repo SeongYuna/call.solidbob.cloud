@@ -560,7 +560,10 @@ export const useCallStore = create<CallState>((set) => ({
   },
 
   setError: (message) => {
-    set({ error: message, connected: false });
+    // 연결 상태는 `setStatus` 만 바꾼다(2026-09-20). 전에는 여기서 `connected: false` 를 같이 세워,
+    // **읽지 못한 메시지 하나**에도 화면이 「연결 끊김」으로 바뀌었다 — 소켓은 열려 있고 이후 자막도 계속 들어오는데.
+    // 진짜 연결 실패는 소켓의 close 가 `setStatus(…, false)` 로 알린다(`realCallMediatorClient.ts`).
+    set({ error: message });
   },
 
   applyTranslation: (transcriptSegmentId, event) => {
