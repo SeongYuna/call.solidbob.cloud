@@ -17,6 +17,7 @@ from hub.adapter.inbound.api.schemas.recommendation_schema import SourceSchema
 from hub.app.dtos.compliance_dto import ComplianceCheckCommand
 from hub.app.ports.input.compliance_check_use_case import ComplianceCheckUseCase
 from hub.dependencies.compliance_provider import get_compliance_check_use_case
+from hub.app.ports.output.transcript_ingest_record_port import SegmentNotFoundError
 
 compliance_router = APIRouter(prefix="/hub", tags=["hub"])
 
@@ -36,6 +37,12 @@ async def check_compliance(
         )
     except ValueError as exc:
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=str(exc)) from exc
+    except SegmentNotFoundError as exc:
+        # 호출 순서 문제다 — 통화는 있는데 그 전사 구간이 아직 저장되지 않았다. 500(서버 결함)이 아니라 404 다
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"전사 구간이 없습니다: {exc.call_id}#{exc.segment_id} — POST /hub/transcripts 가 먼저 와야 한다",
+        ) from exc
 
     return ComplianceCheckResponse(
         call_id=result.call_id,

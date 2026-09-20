@@ -109,9 +109,31 @@ def test_도메인_라우팅이_없으면_건너뛰고_그대로_검색한다():
 
 def test_내부_지연을_잰다():
     """4.1절 p95 ≤1,000ms 채점 재료. 트리거 발동 → 카드 완성 구간."""
-    ticks = iter([10.0, 10.25])
+    # 시계는 넷 읽힌다 — 시작 · 검색 직전 · 검색 직후 · 생성 직후 (`decisions/119` ②)
+    ticks = iter([10.0, 10.0, 10.125, 10.25])
     result, _ = _run(clock=lambda: next(ticks))
     assert result.cards.internal_latency_ms == 250
+
+
+def test_검색과_생성을_따로_잰다():
+    """합만 남기면 「느리다」는 알아도 「어디가 느리다」를 못 짚는다 (`_project/decisions/119` ②).
+
+    4.3절 예산이 검색 150ms·리랭킹 200ms·생성 첫 토큰 500ms 로 쪼개져 있어 구간이 맞아야 대조된다.
+    """
+    ticks = iter([10.0, 10.0, 10.125, 10.25])
+    result, _ = _run(clock=lambda: next(ticks))
+    assert result.cards.retrieval_ms == 125
+    assert result.cards.generation_ms == 125
+    # 합이 내부 지연과 어긋나지 않는다 — 배선 시간이 끼면 합보다 크거나 같다
+    assert result.cards.retrieval_ms + result.cards.generation_ms <= result.cards.internal_latency_ms
+
+
+def test_라우팅_시간은_검색_구간에_섞이지_않는다():
+    """B-0 는 폐기됐지만 포트는 남아 있다 — 켜면 그 시간이 검색으로 잘못 잡히면 안 된다."""
+    ticks = iter([10.0, 10.5, 10.625, 10.75])   # 0.5초를 라우팅이 먹었다고 치자
+    result, _ = _run(clock=lambda: next(ticks), domain_routing=_Routing("dasan"))
+    assert result.cards.retrieval_ms == 125            # 라우팅 0.5초가 안 섞였다
+    assert result.cards.internal_latency_ms == 750     # 합계에는 들어 있다
 
 
 def test_미발동이면_지연을_재지_않는다():
@@ -151,15 +173,20 @@ def test_발동하면_저장하고_돌아온_card_id를_카드에_붙인다():
 
 
 def test_내부_지연은_저장_전에_잰다():
-    """DB 왕복을 4.1절 p95 채점 구간에 섞지 않는다 — 시계는 발동·완성 두 번만 읽힌다."""
+    """DB 왕복을 4.1절 p95 채점 구간에 섞지 않는다 — 시계는 **저장 전에** 다 읽힌다.
+
+    구간을 쪼개면서 시계가 둘 → 넷이 됐다(`decisions/119` ②). 늘어난 것은 구간 수이고,
+    **저장이 채점 구간 밖이라는 성질은 그대로**다 — 그것이 이 테스트가 지키는 것이다.
+    """
     log = []
+    ticks = iter([10.0, 10.0, 10.125, 10.25])
 
     def clock():
         log.append("clock")
-        return 10.0 if log.count("clock") == 1 else 10.25
+        return next(ticks)
 
     result, _ = _run(clock=clock, record=_Record(clock_log=log))
-    assert log == ["clock", "clock", "record"]
+    assert log == ["clock", "clock", "clock", "clock", "record"]   # 시계가 전부 record 앞에 있다
     assert result.cards.internal_latency_ms == 250
 
 

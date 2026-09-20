@@ -3,8 +3,9 @@
 
 - `phrase` 는 **마스킹된 상담원 발화 기준**이다. 이 어댑터는 원문을 손에 넣을 경로가 없다
 - `(call_id, segment_id)` 가 `transcript_segment` 를 참조한다 — 전사가 먼저 저장돼 있어야 한다.
-  콜 미디에이터는 `POST /hub/transcripts` 응답을 받은 뒤에 검사를 부른다. 없으면 `CallNotStartedError`
-  (23503) — 인터랙터가 잡아 로그로 남기고 응답은 그대로 내보낸다
+  콜 미디에이터는 `POST /hub/transcripts` 응답을 받은 뒤에 검사를 부른다. 없으면 `SegmentNotFoundError`
+  (23503) — **호출 순서 문제라 라우터가 404 로 돌려준다**(2026-09-20. 전에는 `CallNotStartedError` 로 올려
+  인터랙터가 삼켰다 — 통화는 있는데 「통화가 없다」고 적히고, 응답은 200 이라 저장 실패가 밖에서 안 보였다)
 - `rule_code` 는 `compliance_rule` 카탈로그(NOT NULL FK)를 참조하는데 **그 테이블을 채우는 경로가 없었다**
   (2026-09-18 확인 — 로컬 DB 0행, 시드 스크립트 없음). 그래서 저장 직전에 카탈로그 행을 **같은 트랜잭션에서
   UPSERT** 한다(`ON CONFLICT DO NOTHING` — 사람이 고친 label·suggestion 은 덮지 않는다).
@@ -19,7 +20,7 @@ from datetime import datetime, timezone
 
 from hub.app.dtos.compliance_finding_dto import ComplianceFinding
 from hub.app.ports.output.compliance_flag_record_port import ComplianceFlagRecordPort
-from hub.app.ports.output.transcript_ingest_record_port import CallNotStartedError
+from hub.app.ports.output.transcript_ingest_record_port import SegmentNotFoundError
 
 from .connection import ConnectionFactory
 
@@ -70,6 +71,6 @@ class PostgresComplianceFlagRepository(ComplianceFlagRecordPort):
                 except Exception as exc:
                     # 카탈로그는 방금 넣었으니 남은 외래키는 transcript_segment 하나 — 전사가 먼저 오지 않았다
                     if getattr(exc, "sqlstate", None) == _FOREIGN_KEY_VIOLATION:
-                        raise CallNotStartedError(call_id) from exc
+                        raise SegmentNotFoundError(call_id, segment_id) from exc
                     raise
             await conn.commit()

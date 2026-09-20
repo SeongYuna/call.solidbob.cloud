@@ -152,25 +152,44 @@ def main() -> int:
         from retrieval.adapter.outbound.es_bm25_retriever import EsBm25Retriever
 
         client = Elasticsearch(os.environ.get("ELASTICSEARCH_URL", "http://localhost:9200"))
-        dense, l1 = build_model_retriever(client, embed_model_dir=ROOT / "models" / "koe5", device=args.device)
-        rerank, l2 = build_model_retriever(client, embed_model_dir=ROOT / "models" / "koe5",
-                                           rerank_model_dir=ROOT / "models" / "bge-reranker-v2-m3", device=args.device)
-        if l1[:1] != ["retrieval_dense"] or l2[:2] != ["retrieval_dense", "rerank"]:
-            raise SystemExit(f"모델 검색을 못 띄웠다: {l1} {l2}")
+        retrievers = {"bm25": EsBm25Retriever(client)}
+        # 모델 계열은 **모델 파일이 있을 때만** 잰다(2026-09-21). 전에는 없으면 통째로 멈춰, 모델이 없는 머신에서는
+        # 운영 구성(BM25)의 곡선조차 못 냈다. 빠진 계열은 조용히 넘기지 않고 `meta.skipped` 와 화면에 남긴다 —
+        # 그림에 계열이 없는 이유가 「안 쟀다」인지 「잴 수 없었다」인지 뒤에서 구분할 수 있어야 한다.
+        if (ROOT / "models" / "koe5").is_dir():
+            dense, l1 = build_model_retriever(client, embed_model_dir=ROOT / "models" / "koe5", device=args.device)
+            if l1[:1] != ["retrieval_dense"]:
+                raise SystemExit(f"모델 검색을 못 띄웠다: {l1}")
+            retrievers["dense"] = dense
+            if (ROOT / "models" / "bge-reranker-v2-m3").is_dir():
+                rerank, l2 = build_model_retriever(client, embed_model_dir=ROOT / "models" / "koe5",
+                                                   rerank_model_dir=ROOT / "models" / "bge-reranker-v2-m3", device=args.device)
+                if l2[:2] != ["retrieval_dense", "rerank"]:
+                    raise SystemExit(f"리랭커를 못 띄웠다: {l2}")
+                retrievers["rerank-dense"] = rerank
+            else:
+                meta.setdefault("skipped", []).append("rerank-dense — models/bge-reranker-v2-m3 없음")
+        else:
+            meta.setdefault("skipped", []).append("dense · rerank-dense — models/koe5 없음")
         meta["device"] = args.device or "cpu"
-        print("\n[검색]")
-        result["retrieval"] = retrieval_curve(items, {"bm25": EsBm25Retriever(client), "dense": dense, "rerank-dense": rerank}, args.seeds)
+        print("\n[검색]" + (f"  ⚠ 건너뜀: {meta['skipped']}" if meta.get("skipped") else ""))
+        result["retrieval"] = retrieval_curve(items, retrievers, args.seeds)
 
     if args.only in (None, "masking"):
         from masking.adapter.outbound.rule_masking_adapter import RuleMaskingAdapter
-        from pii_ner.adapter.outbound.koelectra_ner_tagger import KoElectraNerTagger
-        from pii_ner.adapter.outbound.layered_masking_adapter import LayeredMaskingAdapter
 
         print("\n[C-5 마스킹]")
-        result["masking"] = masking_curve(items, {
-            "rule": RuleMaskingAdapter(),
-            "rule+ner": LayeredMaskingAdapter(RuleMaskingAdapter(), KoElectraNerTagger(ROOT / "models" / "koelectra-ner")),
-        }, args.seeds)
+        maskers = {"rule": RuleMaskingAdapter()}
+        if (ROOT / "models" / "koelectra-ner").is_dir():
+            # torch 를 끌어오는 import 라 모델이 있을 때만 한다 — 없는 머신에서도 규칙 곡선은 나와야 한다
+            from pii_ner.adapter.outbound.koelectra_ner_tagger import KoElectraNerTagger
+            from pii_ner.adapter.outbound.layered_masking_adapter import LayeredMaskingAdapter
+
+            maskers["rule+ner"] = LayeredMaskingAdapter(RuleMaskingAdapter(), KoElectraNerTagger(ROOT / "models" / "koelectra-ner"))
+        else:
+            meta.setdefault("skipped", []).append("rule+ner — models/koelectra-ner 없음")
+            print("  ⚠ 건너뜀: rule+ner — models/koelectra-ner 없음")
+        result["masking"] = masking_curve(items, maskers, args.seeds)
 
     out = ROOT / "data" / "processed" / "error-tolerance" / f"{meta['date']}-{args.only or 'all'}.json"
     out.parent.mkdir(parents=True, exist_ok=True)

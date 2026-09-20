@@ -68,6 +68,11 @@ spec:
               valueFrom: { secretKeyRef: { name: call-mediator-tokens, key: CALL_MEDIATOR_INGEST_TOKEN, optional: true } }
             - name: CALL_MEDIATOR_VIEW_TOKEN
               valueFrom: { secretKeyRef: { name: call-mediator-tokens, key: CALL_MEDIATOR_VIEW_TOKEN, optional: true } }
+            # server 쓰기 경로의 서비스 토큰(`_project/decisions/120`) — server 의 INGEST_SERVICE_TOKEN 과 **같은 값**.
+            # optional 이라 키가 없어도 뜬다(그때는 헤더를 안 보낸다). ⚠ **server-env 에 값을 넣기 전에 여기 먼저 넣는다** —
+            # 순서를 뒤집으면 미디에이터의 서버 호출이 전부 401 이 된다.
+            - name: CORE_API_TOKEN
+              valueFrom: { secretKeyRef: { name: call-mediator-tokens, key: CORE_API_TOKEN, optional: true } }
           ports:
             - { containerPort: 8080, protocol: TCP }
           readinessProbe:

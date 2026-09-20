@@ -63,15 +63,22 @@ class RecommendationInteractor(RecommendationUseCase):
         if self._domain_routing is not None:
             domain = (await self._domain_routing.classify(event.text)).domain
 
+        # 구간을 따로 잰다 — 4.3절 예산이 검색·리랭킹·생성으로 쪼개져 있는데 합만 남기면
+        # 「느리다」는 알아도 **「어디가 느리다」를 못 짚는다**(`_project/decisions/119` ②).
+        before_retrieval = self._clock()   # B-0 라우팅(폐기됨)이 켜져 있으면 그 시간이 검색에 섞이지 않게
         docs = await self._retrieval.retrieve(event.text, top_k=command.top_k)
+        after_retrieval = self._clock()
         cards = await self._generation.to_cards(event.text, docs)
+        after_generation = self._clock()
 
-        elapsed_ms = int((self._clock() - started) * 1000)
+        elapsed_ms = int((after_generation - started) * 1000)
         batch = RecommendationCards(
             call_id=event.call_id,
             trigger_at_ms=decision.at_ms or 0,
             cards=tuple(cards),
             internal_latency_ms=elapsed_ms,
+            retrieval_ms=int((after_retrieval - before_retrieval) * 1000),
+            generation_ms=int((after_generation - after_retrieval) * 1000),
         )
         if self._record is not None:
             card_ids = await self._record.record(batch)

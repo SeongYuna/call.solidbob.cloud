@@ -40,8 +40,13 @@ class RecommendationCards:
     call_id: str
     trigger_at_ms: int
     cards: tuple[Card, ...] = field(default_factory=tuple)
-    internal_latency_ms: int | None = None  # 코어 내부 처리 (트리거 → 카드 완성)
+    internal_latency_ms: int | None = None  # 코어 내부 처리 (트리거 → 카드 완성) = retrieval_ms + generation_ms + 배선
     e2e_latency_ms: int | None = None  # 발화 종료 → 화면 표시. 콜 미디에이터/대시보드가 채운다
+    # 4.3절 예산은 검색 150ms·리랭킹 200ms·생성 500ms 로 **쪼개져** 있는데 합 하나만 남기면
+    # 「어디가 느린지」를 못 짚는다(`decisions/119` ②). 그래서 두 구간을 따로 싣는다.
+    # **DB 컬럼은 아직 없다** — 방송·로그로만 흐른다(119 ③: 운영 `recommendation` 이 0행이라 마이그레이션을 미뤘다).
+    retrieval_ms: int | None = None
+    generation_ms: int | None = None
 
     @property
     def no_relevant_document(self) -> bool:

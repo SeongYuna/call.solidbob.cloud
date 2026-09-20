@@ -11,7 +11,7 @@ from hub.adapter.outbound.postgres.compliance_flag_repository import (
     PostgresComplianceFlagRepository,
 )
 from hub.app.dtos import ComplianceFinding, Source
-from hub.app.ports.output.transcript_ingest_record_port import CallNotStartedError
+from hub.app.ports.output.transcript_ingest_record_port import SegmentNotFoundError
 
 FINDING = ComplianceFinding(rule_code="C-1", phrase="무조건 됩니다",
                             alternative_source=Source(doc_id="DASAN-MANUAL-1.4", title="권장 대체 표현"))
@@ -79,10 +79,15 @@ def test_카탈로그_밖_코드는_저장하지_않는다():
     assert log == []
 
 
-def test_전사가_없으면_CallNotStartedError_다():
+def test_전사가_없으면_SegmentNotFoundError_다():
+    """통화는 있는데 **전사 구간**이 없는 것이다 — 전에는 `CallNotStartedError`(「통화가 없다」)로 올려 이름이 틀렸다.
+
+    2026-09-20 운영 왕복에서 이 상황이 응답 200 + 조용한 저장 실패로 나왔다. 어느 구간인지까지 싣는다.
+    """
     log = []
-    with pytest.raises(CallNotStartedError):
+    with pytest.raises(SegmentNotFoundError) as caught:
         asyncio.run(_repo(log, fail_insert=True).record("c_001", 7, (FINDING,)))
+    assert (caught.value.call_id, caught.value.segment_id) == ("c_001", 7)
     assert log[-1][0] != "commit"
 
 
@@ -118,11 +123,11 @@ def test_실제_DB에_위반이_전사를_참조해_저장된다(integration_set
             TranscriptEvent(call_id=call_id, segment_id=3, speaker="agent", text="무조건 됩니다", is_final=True)
         )
         await PostgresComplianceFlagRepository(connect).record(call_id, 3, (FINDING,))
-        # 전사가 없는 발화에 붙이면 외래키 — CallNotStartedError
+        # 전사가 없는 발화에 붙이면 외래키 — SegmentNotFoundError
         try:
             await PostgresComplianceFlagRepository(connect).record(call_id, 99, (FINDING,))
             missing = None
-        except CallNotStartedError as exc:
+        except SegmentNotFoundError as exc:
             missing = exc
         async with connect() as conn:
             async with conn.cursor() as cur:

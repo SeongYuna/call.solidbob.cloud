@@ -161,3 +161,48 @@ test("HttpHub — 필요서류 판정은 /hub/required-docs-checks 로 보내고
     server.close();
   }
 });
+
+test("HttpHub — 서비스 토큰이 있으면 Authorization 으로 보낸다 (decisions/120)", async () => {
+  // 2026-09-20 운영 왕복에서 server 의 쓰기 경로가 토큰 없이 200 이었다. server 가 문을 달았고(`INGEST_SERVICE_TOKEN`),
+  // 미디에이터는 같은 값을 헤더로 보낸다. 부르는 경로 **전부**에 실려야 한다 — 하나라도 빠지면 그 경로만 401 이 된다.
+  const seen: Array<{ path: string; auth: string | undefined }> = [];
+  const server = createServer(async (req, res) => {
+    await body(req);
+    seen.push({ path: req.url ?? "", auth: req.headers.authorization });
+    res.writeHead(200, { "content-type": "application/json" });
+    res.end(JSON.stringify(req.url === "/hub/transcripts" ? { text: "가림" } : { fired: "false", flags: [], findings: [] }));
+  });
+  await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
+  const hub = new HttpHub(`http://127.0.0.1:${(server.address() as AddressInfo).port}`, 5_000, "svc-token-abc");
+  try {
+    await hub.startCall({ call_id: "test-1", stt_engine: "google-stt", channel_count: 1 });
+    await hub.ingestTranscript({ call_id: "test-1", segment_id: 1, speaker: "agent", text: "원문", is_final: true, utterance_end_ms: 10 });
+    await hub.checkCallGuard({ call_id: "test-1", segment_id: 1, customer_utterance: "가림" });
+    await hub.checkCompliance({ call_id: "test-1", segment_id: 1, agent_utterance: "가림" });
+  } finally {
+    server.close();
+  }
+  assert.equal(seen.length, 4);
+  for (const hit of seen) {
+    assert.equal(hit.auth, "Bearer svc-token-abc", `${hit.path} 에 토큰이 안 실렸다`);
+  }
+});
+
+test("HttpHub — 서비스 토큰이 없으면 Authorization 을 보내지 않는다 (이행기)", async () => {
+  // server 가 아직 토큰을 요구하지 않는 동안에도 같은 코드로 돈다. 빈 `Bearer ` 를 보내면 server 가 401 로 읽는다.
+  let auth: string | undefined = "unset";
+  const server = createServer(async (req, res) => {
+    await body(req);
+    auth = req.headers.authorization;
+    res.writeHead(200, { "content-type": "application/json" });
+    res.end("{}");
+  });
+  await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
+  const hub = new HttpHub(`http://127.0.0.1:${(server.address() as AddressInfo).port}`);
+  try {
+    await hub.startCall({ call_id: "test-1", stt_engine: "google-stt", channel_count: 1 });
+  } finally {
+    server.close();
+  }
+  assert.equal(auth, undefined);
+});

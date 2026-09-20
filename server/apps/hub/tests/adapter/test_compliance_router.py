@@ -71,3 +71,26 @@ def test_빈_발화는_422다():
         assert r.status_code == 422
     finally:
         app.dependency_overrides.clear()
+
+
+def test_없는_전사_구간을_가리키면_404_다():
+    """2026-09-20 운영 왕복: 콜 가드는 **500**(FK 위반이 그대로), 컴플라이언스는 **200 + 조용한 저장 실패**였다.
+
+    같은 호출자 실수가 스포크마다 다르게 보였다 — 둘 다 「전사를 먼저 넣어라」는 404 로 맞춘다.
+    """
+    from hub.dependencies.compliance_provider import get_compliance_check_use_case
+    from hub.app.ports.output.transcript_ingest_record_port import SegmentNotFoundError
+
+    class _Missing:
+        async def check(self, command):
+            raise SegmentNotFoundError(command.call_id, command.segment_id)
+
+    app.dependency_overrides[get_compliance_check_use_case] = lambda: _Missing()
+    try:
+        with TestClient(app) as client:
+            r = client.post("/hub/compliance-checks", json=BODY)
+    finally:
+        app.dependency_overrides.clear()
+    assert r.status_code == 404
+    assert "POST /hub/transcripts" in r.json()["detail"]      # 무엇을 먼저 해야 하는지 알려 준다
+    assert "c_001#7" in r.json()["detail"]

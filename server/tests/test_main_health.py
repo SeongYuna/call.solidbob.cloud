@@ -61,3 +61,58 @@ def test_스포크_목록이_설정_값을_흘리지_않는다(monkeypatch):
     with TestClient(app) as client:
         spokes = client.get("/health").json()["spokes"]
     assert all(s.isidentifier() for s in spokes), f"스포크 이름이 식별자가 아니다: {spokes}"
+
+
+# ─────────────────────────────── /health/ready — 설정이 아니라 «붙는가» 를 잰다
+#
+# 2026-09-14 에 「설정은 있는데 실제 연결은 안 되는」 상태를 `/health` 가 「정상」으로 보고해
+# 결함이 가려졌다(`hub/adapter/outbound/postgres/connection.py` 주석). 그 구멍을 막는 주소다.
+
+def test_ready_설정이_없는_자원은_실패로_세지_않는다(monkeypatch):
+    for k in ("DATABASE_URL", "POSTGRES_HOST", "POSTGRES_DB_NAME", "POSTGRES_USER",
+              "POSTGRES_PASSWORD", "ELASTICSEARCH_URL"):
+        monkeypatch.delenv(k, raising=False)
+    with TestClient(app) as client:
+        res = client.get("/health/ready")
+    assert res.status_code == 200
+    body = res.json()
+    assert body["status"] == "ok"
+    assert body["checks"]["postgres"] == {"configured": False}
+    assert body["checks"]["elasticsearch"]["configured"] is False
+
+
+def test_ready_설정은_있는데_못_붙으면_503_이다(monkeypatch):
+    """`/health` 가 `postgres_configured: true` 로 「정상」이라 말하는 바로 그 상황."""
+    monkeypatch.setenv("DATABASE_URL", "postgresql://u:secret-pw@127.0.0.1:1/callguard")
+    monkeypatch.delenv("ELASTICSEARCH_URL", raising=False)
+    with TestClient(app) as client:
+        assert client.get("/health").json()["postgres_configured"] is True   # 얕은 쪽은 여전히 ok
+        res = client.get("/health/ready")
+    assert res.status_code == 503
+    body = res.json()
+    assert body["status"] == "degraded"
+    assert body["checks"]["postgres"]["ok"] is False
+    assert isinstance(body["checks"]["postgres"]["error"], str)
+
+
+def test_ready_가_접속_문자열을_흘리지_않는다(monkeypatch):
+    """예외 메시지에는 호스트·비밀번호가 들어 있다 — 타입 이름만 싣는다 (SEC-2)."""
+    monkeypatch.setenv("DATABASE_URL", "postgresql://u:secret-pw@db.internal:1/callguard")
+    monkeypatch.setenv("ELASTICSEARCH_URL", "http://es.internal:9200")
+    with TestClient(app) as client:
+        dumped = str(client.get("/health/ready").json())
+    for leak in ("secret-pw", "db.internal", "es.internal", "postgresql://"):
+        assert leak not in dumped, f"접속 정보가 샜다: {leak}"
+
+
+def test_ready_는_ES_가_안_꽂혔으면_그렇게_말한다(monkeypatch):
+    """`elasticsearch` 패키지 없이 URL 만 설정된 배포 — 검색은 501 인데 `/health` 로는 안 보인다."""
+    monkeypatch.setenv("ELASTICSEARCH_URL", "http://es.internal:9200")
+    monkeypatch.delenv("DATABASE_URL", raising=False)
+    with TestClient(app) as client:
+        app.state.es_client = None          # 꽂히지 않은 상태를 강제한다
+        res = client.get("/health/ready")
+    es = res.json()["checks"]["elasticsearch"]
+    assert es["configured"] is True and es["ok"] is not True
+    assert es["error"] == "client_not_wired"
+    assert res.status_code == 503

@@ -502,3 +502,36 @@ test("F-2 — 1순위 카드가 절차가 아니면(422) 다음 카드로 내려
   await tick(30);
   assert.equal(hub.docsChecked.length, 2);
 });
+
+test("추천을 방송할 때 e2e_latency_ms 를 채운다 — 발화 종료 → 방송 직전 (decisions/119)", async () => {
+  // 서버 DTO·DB 컬럼은 09-09 부터 있었는데 아무도 값을 안 넣어 늘 null 이었다. 방송 시각을 아는 곳은 여기 하나다.
+  const { registry, broadcaster, hub, stt, advance } = setup();
+  const channel = await openOk(registry, "test-1", "customer");
+  stt.last().emit("등본 발급 하려고요", true, 1200);      // 발화 종료 1,200ms
+  advance(1500);                                          // 통화 시계가 1,500ms 흘렀다
+  await channel.close();
+
+  const payload = broadcaster.ofType("recommendation")[0]!.payload;
+  assert.equal(typeof payload["e2e_latency_ms"], "string", "서버 응답처럼 문자열로 싣는다(7.3절)");
+  assert.ok(Number(payload["e2e_latency_ms"]) >= 0);
+});
+
+test("발동하지 않은 추천에는 e2e_latency_ms 를 넣지 않는다", async () => {
+  const { registry, broadcaster, hub, stt } = setup();
+  hub.fired = false;
+  const channel = await openOk(registry, "test-1", "agent");
+  stt.last().emit("네 알겠습니다", true, 800);
+  await channel.close();
+  assert.equal("e2e_latency_ms" in broadcaster.ofType("recommendation")[0]!.payload, false);
+});
+
+test("withE2eLatency — 방송 시각에서 발화 종료 시각을 뺀다. 없는 값은 지어내지 않는다", async () => {
+  const { withE2eLatency } = await import("../src/app/call_registry.ts");
+  const fired = { fired: "true", cards: [] };
+  assert.equal(withE2eLatency(fired, 1200, 2440)["e2e_latency_ms"], "1240");
+  assert.equal(withE2eLatency(fired, 3000, 2000)["e2e_latency_ms"], "0", "시계가 어긋나도 음수를 내지 않는다");
+  assert.equal("e2e_latency_ms" in withE2eLatency(fired, null, 2440), false, "발화 종료 시각이 없으면 넣지 않는다");
+  assert.equal("e2e_latency_ms" in withE2eLatency(fired, undefined, 2440), false);
+  assert.equal("e2e_latency_ms" in withE2eLatency({ fired: "false" }, 1200, 2440), false, "카드가 없으면 「표시까지」가 없다");
+  assert.equal(withE2eLatency(fired, 1200, 2440) === fired, false, "원본을 고치지 않는다");
+});

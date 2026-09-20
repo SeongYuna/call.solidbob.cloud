@@ -2,7 +2,7 @@
 title: "AWS 운영 인프라 구축 — EC2 + RDS + Elasticsearch"
 assignee: "정성윤"
 role: "infra"
-status: "in-progress"
+status: "done"
 sprint: 3
 priority: 1
 date: 2026-09-03
@@ -65,8 +65,9 @@ RRF 는 어차피 basic 라이선스에서 막혀 우리 코드가 계산한다(
       ⚠ 그래서 **`destroy` → `apply` 로 같은 상태를 다시 세울 수 없다** — 아래 완료 조건을 그만큼 고쳤다
 - [x] 클라우드플레어 `server` 레코드 — 운영 EC2 를 가리킨다(2026-09-14 확인: `server.solidbob.cloud` → `54.116.46.228`).
       탄력적 IP 는 붙이지 않기로 했고 켤 때마다 손으로 갱신한다([w3-cicd-release-pipeline](/backlog/w3-cicd-release-pipeline/))
-- [ ] **자리표시자 `ai` 레코드 삭제 — 아직 살아 있다.** 2026-09-14 확인: `ai.solidbob.cloud` → `216.198.79.1`(apex·Vercel).
-      `_project/decisions/105` 로 `ai` 도메인은 없어졌는데 **레코드만 남았다.** 문서에서 서술을 지운 것과 DNS 를 지운 것은 다르다
+- [x] ~~자리표시자 `ai` 레코드 삭제~~ — **2026-09-19 하지 않기로 했다**(`_project/decisions/116` ⑤).
+      레코드는 살아 있다(`ai.solidbob.cloud` → `216.198.79.1`, apex·Vercel). `decisions/105` 로 `ai` 도메인은
+      없어졌으므로 **가리키는 것이 없는 이름일 뿐 동작에는 영향이 없다.** 사람이 헷갈릴 수 있다는 것이 유일한 대가다
 - [x] `db/schema.sql` 을 RDS 에 적용 — `callguard-pg`(2026-09-11, `_project/decisions/108`)
 - [x] `/health` 가 `spokes` 보고 — 4종(`masking`·`closure_gate`·`retrieval`·`trigger`), 2026-09-14 재확인
 
@@ -91,7 +92,10 @@ RRF 는 어차피 basic 라이선스에서 막혀 우리 코드가 계산한다(
 > ([w3-k3s-image-and-manifests](/backlog/w3-k3s-image-and-manifests/)) 그것도 아직 안 떴다.
 > **되돌릴 수 없다는 사실을 완료 조건에서 지우지 않고 여기 남긴다**(절대 원칙 8).
 
-남은 것은 자리표시자 `ai` 레코드 삭제 하나다.
+~~남은 것은 자리표시자 `ai` 레코드 삭제 하나다.~~
+**2026-09-19 닫는다** — 마지막 한 줄이던 `ai` 레코드 삭제를 `decisions/116` 으로 **하지 않기로 했다.**
+완료 조건(운영 `/health` 가 `spokes` 보고)은 2026-09-11 에 달성했고 09-19 에도 확인했다
+(스포크 여덟: `masking`·`closure_gate`·`postcall`·`retrieval`·`trigger`·`call_guard`·`compliance`·`uploads`).
 
 ## 하지 않는 것
 

@@ -66,6 +66,14 @@ class Settings:
     upload_token: str | None        # 없으면 업로드 문이 **잠긴다**(fail-closed, `110` 4번)
     upload_max_bytes: int           # S3 정책 `content-length-range` 의 상한으로도 같이 나간다
 
+    # --- 쓰기 경로 서비스 토큰 (2026-09-20, `_project/decisions/120`) ---
+    # 콜 미디에이터 → 서버의 쓰기 6+1 경로(`POST /hub/calls`·`/transcripts`·`/recommendations`·`/call-guard-checks`·
+    # `/compliance-checks`·`/required-docs-checks`·`/closure-checks`)를 잠근다. 09-20 운영 왕복에서 **토큰 없이 200** 이었다.
+    # ⚠ **없으면 열린다**(업로드 토큰과 반대다) — 서버를 먼저 배포하는 순간 돌고 있는 미디에이터가 401 이 되지 않게
+    #    하려는 **이행기 동작**이다. 열려 있는지는 `/health` 의 `ingest_guard` 가 말한다. 미디에이터가 토큰을 보내기 시작하면
+    #    fail-closed 로 바꾼다(120 「전환 순서」 4번).
+    ingest_service_token: str | None
+
     # --- 관리자 로그인(구글, 2026-09-14) — apps/admin. 회원가입 없음, 허용 목록은 admin_account ---
     google_oauth_client_id: str | None
     admin_jwt_secret: str | None
@@ -132,6 +140,7 @@ def load_settings() -> Settings:
         s3_bucket=_env("S3_BUCKET"),
         aws_region=_env("AWS_REGION"),
         upload_token=_env("UPLOAD_TOKEN"),
+        ingest_service_token=_env("INGEST_SERVICE_TOKEN"),
         upload_max_bytes=_env_int("UPLOAD_MAX_BYTES", _DEFAULT_UPLOAD_MAX_BYTES) or _DEFAULT_UPLOAD_MAX_BYTES,
         google_oauth_client_id=_env("GOOGLE_OAUTH_CLIENT_ID"),
         admin_jwt_secret=_env("ADMIN_JWT_SECRET"),

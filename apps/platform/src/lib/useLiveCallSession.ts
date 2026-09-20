@@ -13,6 +13,7 @@
  */
 import { useCallback, useEffect, useRef, useState } from "react";
 import { readLiveCallToken } from "./liveCallToken";
+import { readSharedCallId } from "./sharedCallId";
 
 export type LiveCallStatus =
   | "idle"
@@ -115,7 +116,8 @@ export function useLiveCallSession() {
     }
 
     setStatus("connecting");
-    const callId = `test-web-platform-${Date.now()}`;
+    // `?call_id=` 로 열렸으면 그 통화에 붙는다 — 상담원 화면과 같은 값이어야 한 통화가 된다(`sharedCallId.ts`)
+    const callId = readSharedCallId() ?? `test-web-platform-${Date.now()}`;
     const query = new URLSearchParams({ call_id: callId, speaker: "customer" });
     const ws = new WebSocket(`${base}/dev/text?${query}`, ["callguard", `bearer.${token}`]);
     wsRef.current = ws;
