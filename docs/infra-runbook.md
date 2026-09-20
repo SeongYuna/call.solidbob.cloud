@@ -1562,6 +1562,13 @@ PR #94 에서 `admin`·`kxu6` 가 `Deployment rate limited — retry in 24 hours
 > 통과했는데 운영 DB 연결은 한 번도 되지 않았다. `/health` 의 `postgres_configured` 는 **설정이 있다는 뜻일 뿐**
 > 연결된다는 뜻이 아니다(`decisions/108`).
 
+✅ **2026-09-20 완주** — 1·2·4·6·7 · 9·10·12·13·14 **전부 통과**.
+**건너뛴 것**: 3·5·8(GPU·Ollama·인스턴스 스토어 — 이 인스턴스는 `t3.large` 라 해당 없음, `decisions/116`) ·
+**11(DB 쓰기)** — 운영 DB 에 행이 남아 일부러 하지 않았다 · **9-1** 은 `0.1.19` 가 배포 전이라 404(정상).
+실측: 노드 Ready(12일) · 파드 **4 Running**(ES 재시작 2회) · nori `9.5.1` · 인덱스 `callguard-kb-single` **98 docs green** ·
+RDS **29 테이블 · ssl True** · S3 `assist-apne2/uploads/` 접근 됨 · 콜 미디에이터 토큰 4종 true ·
+문 2곳(`/ws`·`/ingest`) 401 · `/dev` 200 · `/dev/text` 401 · 인스턴스 가동 **6일 9시간**(09-14 기동, 자동 중지 없음 — `116`).
+
 운영 인스턴스 SSM 세션에서:
 
 ```bash
@@ -1582,7 +1589,9 @@ $K exec elasticsearch-0 -- curl -s "localhost:9200/_cat/plugins?v"
 # 5. EXAONE 로드 — ollama 는 아직 infra/k8s/base/ 에 없다. 올린 뒤 확인한다
 $K exec deploy/ollama -- curl -s http://localhost:11434/api/tags
 
-# 6. RDS — 서버 파드가 보는 값으로. 기대: "22 테이블 · ssl True"
+# 6. RDS — 서버 파드가 보는 값으로. 기대: "29 테이블 · ssl True" (2026-09-20 실측. 22 는 09-11 값이었다)
+#    ⚠ 테이블 «수」만 세면 컬럼이 어긋난 것을 못 본다 — 컬럼 단위 대조는 scripts/compare_prod_schema.py 가 한다
+#    (아래 한 줄로 목록을 떠서 넘긴다. 09-20 실측: 29 테이블 198 컬럼, 타입·길이·NULL 까지 어긋남 0)
 $K exec deploy/callguard-server -- python -c "
 import os, psycopg
 c = psycopg.connect(os.environ['DATABASE_URL'], connect_timeout=5)
@@ -1602,6 +1611,16 @@ B=https://server.solidbob.cloud
 
 # 9. 외부 HTTPS
 curl -s $B/health
+
+#    0.1.19 부터 `"ingest_guard": "open"|"locked"` 가 함께 나온다(`decisions/120`) — "open" 이면 쓰기 일곱 경로가
+#    **토큰 없이 열려 있다**는 뜻이다. 이행기에는 "open" 이 정상이고, 전환 3번 뒤에는 "locked" 여야 한다.
+
+# 9-1. 설정이 아니라 «실제로 붙는가» (server 0.1.19+, 2026-09-19 추가)
+#      기대: 200 + {"status":"ok","checks":{"postgres":{"ok":true,...},"elasticsearch":{"ok":true,...}}}
+#      못 붙으면 503 + "degraded" 다. 9번의 *_configured 는 «설정이 있다»일 뿐이라
+#      2026-09-14 에 「설정은 있는데 안 붙는」 상태가 「정상」으로 보고된 적이 있다.
+#      ⚠ 접속 정보가 새지 않게 예외 «타입 이름만» 싣는다(SEC-2) — 원인은 파드 로그에서 본다.
+curl -s $B/health/ready
 
 # 10. DB 읽기 — 기대: 200
 curl -s -o /dev/null -w '%{http_code}\n' $B/hub/knowledge-gaps
