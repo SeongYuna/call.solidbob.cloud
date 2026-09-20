@@ -67,3 +67,42 @@ def test_빈_발화는_거부한다(utterance):
     with pytest.raises(ValueError):
         _run(guard, _Record(), utterance)
     assert guard.calls == []
+
+
+# ─────────────────────────────── 저장 실패 — 컴플라이언스와 같은 규칙 (2026-09-20)
+
+class _FailingRecord(CallGuardFlagRecordPort):
+    def __init__(self, error):
+        self._error, self.calls = error, 0
+
+    async def record(self, call_id, segment_id, flags):
+        self.calls += 1
+        raise self._error
+
+
+@pytest.mark.parametrize("failure", [RuntimeError("db down"), ConnectionError("pg unreachable")])
+def test_저장이_우리_쪽_사정으로_실패해도_탐지_결과는_돌려준다(failure):
+    """전에는 500 이었다 — DB 가 잠깐 흔들리면 **상담원을 보호하려는 경고가 화면에서도 사라졌다.**
+
+    탐지는 성공했다. 기록 실패는 로그로 남기고 응답은 그대로 내보낸다(컴플라이언스와 같은 규칙).
+    """
+    record = _FailingRecord(failure)
+    result = _run(_Guard([INSULT]), record)
+    assert result.flags == (INSULT,)   # 잡힌 신호가 그대로 나간다
+    assert record.calls == 1
+
+
+def test_없는_전사_구간을_가리키면_삼키지_않는다():
+    """호출자의 순서 실수다 — 라우터가 404 로 돌려준다. 삼키면 「저장된 줄 알았는데 0행」이 조용히 이어진다."""
+    from hub.app.ports.output.transcript_ingest_record_port import SegmentNotFoundError
+
+    with pytest.raises(SegmentNotFoundError):
+        _run(_Guard([INSULT]), _FailingRecord(SegmentNotFoundError("c_001", 7)))
+
+
+def test_스포크가_span_을_안_채운_결함은_삼키지_않는다():
+    """기다려도 낫지 않는 **우리 결함**이다 — 로그 한 줄 뒤에 숨기지 않고 500 으로 드러낸다."""
+    from hub.app.ports.output.call_guard_flag_record_port import CallGuardFlagSpanMissingError
+
+    with pytest.raises(CallGuardFlagSpanMissingError):
+        _run(_Guard([INSULT]), _FailingRecord(CallGuardFlagSpanMissingError("span 없음")))

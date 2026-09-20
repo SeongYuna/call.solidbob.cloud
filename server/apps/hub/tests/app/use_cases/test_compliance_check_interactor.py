@@ -9,7 +9,7 @@ from hub.app.dtos import ComplianceFinding, Source
 from hub.app.dtos.compliance_dto import ComplianceCheckCommand
 from hub.app.ports.output import CompliancePort
 from hub.app.ports.output.compliance_flag_record_port import ComplianceFlagRecordPort
-from hub.app.ports.output.transcript_ingest_record_port import CallNotStartedError
+from hub.app.ports.output.transcript_ingest_record_port import SegmentNotFoundError
 from hub.app.use_cases.compliance_check_interactor import ComplianceCheckInteractor
 
 FINDING = ComplianceFinding(rule_code="C-1", phrase="무조건 보장됩니다",
@@ -78,13 +78,27 @@ def test_발견이_없으면_기록하지_않고_빈_목록이다():
     assert not hasattr(result, "safe")
 
 
-@pytest.mark.parametrize("failure", [CallNotStartedError("c_001"), RuntimeError("db down")])
+@pytest.mark.parametrize("failure", [RuntimeError("db down"), ConnectionError("pg unreachable")])
 def test_저장이_실패해도_응답은_그대로_나간다(failure):
-    """전사가 아직 없거나(외래키) DB 가 죽어도 화면 경고가 먼저다 — 저장 실패는 로그로만."""
+    """**우리 쪽 사정**(DB 가 죽었다)이면 화면 경고가 먼저다 — 저장 실패는 로그로만.
+
+    2026-09-20 에 범위를 좁혔다: 전에는 「전사가 아직 없다」(호출자 실수)까지 여기서 삼켜
+    응답이 200 이었고, 운영에서 「저장된 줄 알았는데 0행」이 조용히 이어졌다. 그쪽은 아래 테스트가 본다.
+    """
     record = _Record(fail_with=failure)
     result = _run(_Spy([FINDING]), record=record)
     assert result.findings == (FINDING,)
     assert len(record.calls) == 1
+
+
+def test_없는_전사_구간을_가리키면_삼키지_않는다():
+    """호출 순서 실수는 **밖으로 드러낸다** — 라우터가 404 로 돌려준다.
+
+    콜 가드는 같은 상황에서 500 이었고 컴플라이언스는 200 이었다(2026-09-20 운영 실측). 둘을 같은 규칙으로 맞춘다.
+    """
+    record = _Record(fail_with=SegmentNotFoundError("c_001", 7))
+    with pytest.raises(SegmentNotFoundError):
+        _run(_Spy([FINDING]), record=record)
 
 
 def test_애매한_건을_허브가_걸러내지_않는다():

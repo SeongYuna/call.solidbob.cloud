@@ -19,7 +19,17 @@ from .connection import ConnectionFactory
 DRAFT_STATUS = "draft"  # `follow_up_action.status` — 모델·규칙이 만든 것. 상담원 확정 흐름이 생기면 다른 값을 쓴다
 
 _LOCK_CALL = 'SELECT "summary_confirmed_at" FROM "call" WHERE "call_id" = %s FOR UPDATE'
-_UPDATE_CALL = 'UPDATE "call" SET "summary_text" = %s, "inquiry_type" = %s WHERE "call_id" = %s'
+# 통화를 **닫는 것까지** 여기서 한다(2026-09-20). 전에는 요약 초안만 쓰고 `status`·`ended_at` 은 아무도 안 건드려
+# 끝난 통화가 영원히 `in_progress` 였다 — 09-17 로컬 E2E 와 09-20 운영 왕복에서 둘 다 재현됐다.
+# - 엔드포인트 이름이 `close` 다. 닫는 주체를 따로 두면 「요약은 있는데 진행 중」인 통화가 또 생긴다
+# - `COALESCE` — `/close` 는 초안을 다시 만들려고 **여러 번** 불린다. 끝난 시각은 **처음 닫은 때**로 남긴다
+# - 값 `closed` 는 새로 정한 것이 아니라 integration 테스트 7곳이 끝난 통화를 넣을 때 이미 쓰던 값이다.
+#   `call.status` 에는 CHECK 가 없고, 프론트 API 타입도 이 문자열에 기대지 않는다(2026-09-20 확인)
+STATUS_CLOSED = "closed"
+_UPDATE_CALL = (
+    'UPDATE "call" SET "summary_text" = %s, "inquiry_type" = %s, '
+    '"ended_at" = COALESCE("ended_at", %s), "status" = %s WHERE "call_id" = %s'
+)
 _DELETE_DRAFT_ACTIONS = 'DELETE FROM "follow_up_action" WHERE "call_id" = %s AND "status" = %s'
 _INSERT_ACTION = (
     'INSERT INTO "follow_up_action" ("call_id", "action_text", "status", "created_at") VALUES (%s, %s, %s, %s)'
@@ -41,7 +51,7 @@ class PostgresPostcallRepository(PostcallRecordPort):
                 if row[0] is not None:
                     raise SummaryAlreadyConfirmedError(draft.call_id)
 
-                await cur.execute(_UPDATE_CALL, (draft.summary_text, draft.inquiry_type, draft.call_id))
+                await cur.execute(_UPDATE_CALL, (draft.summary_text, draft.inquiry_type, now, STATUS_CLOSED, draft.call_id))
                 await cur.execute(_DELETE_DRAFT_ACTIONS, (draft.call_id, DRAFT_STATUS))
                 if draft.follow_up_actions:
                     await cur.executemany(
