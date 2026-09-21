@@ -1,0 +1,4080 @@
+{
+ "meta": {
+  "date": "2026-09-21",
+  "commit": "97f7b25-dirty",
+  "golden_set": "v1-150.json",
+  "n_have": 96,
+  "n_none": 24,
+  "device": "mps",
+  "platform": "Darwin arm64",
+  "python": "3.12.13",
+  "command": "ELASTICSEARCH_URL=http://localhost:9200 .venv/bin/python scripts/measure_no_answer_threshold.py --device mps",
+  "note": "B-6 「관련 문서 없음」 문턱 측정 원자료(w5-b6-no-answer-threshold). 문턱은 코드에 넣지 않았다 — 팀 결정 후. sweep 은 rows 에서 재계산된다"
+ },
+ "kinds": {
+  "bm25": {
+   "summary": {
+    "have_all": {
+     "n": 96,
+     "min": 3.4366636,
+     "p10": 7.4210277,
+     "p25": 9.3426,
+     "median": 14.63118,
+     "p75": 17.381706,
+     "p90": 24.3167,
+     "max": 35.915554
+    },
+    "have_hit5": {
+     "n": 80,
+     "min": 4.662961,
+     "p10": 8.32357,
+     "p25": 11.230745,
+     "median": 15.4655755,
+     "p75": 17.56727,
+     "p90": 24.3167,
+     "max": 35.915554
+    },
+    "none": {
+     "n": 24,
+     "min": 4.4119616,
+     "p10": 4.573812,
+     "p25": 5.665881,
+     "median": 7.6746615,
+     "p75": 9.50684,
+     "p90": 12.865588,
+     "max": 14.326231
+    },
+    "have_hit5_count": 80,
+    "none_abstained": 0,
+    "none_referral_in_top5": 1,
+    "none_referral_top1": 0,
+    "none_top1_ids": [
+     "DASAN-MANUAL-1.5",
+     "DASAN-MANUAL-2.1",
+     "DASAN-MANUAL-3.2",
+     "DASAN-MANUAL-3.3",
+     "DASAN-MANUAL-4.1",
+     "DASAN-MANUAL-4.3",
+     "DASAN-TERM-1.4",
+     "DASAN-TERM-2.8",
+     "DASAN-TERM-2.9",
+     "DASAN-TERM-3.10",
+     "DASAN-TERM-3.13",
+     "DASAN-TERM-3.14",
+     "DASAN-TERM-3.3",
+     "DASAN-TERM-3.4",
+     "DASAN-TERM-4.1",
+     "DASAN-TERM-4.4",
+     "DASAN-TERM-4.8",
+     "DASAN-TERM-4.9",
+     "DASAN-TERM-5.8",
+     "DASAN-TERM-6.10",
+     "DASAN-TERM-6.12",
+     "DASAN-TERM-6.7"
+    ],
+    "overlap": {
+     "have_hit5_min": 4.662961,
+     "none_max": 14.326231,
+     "separable": false
+    },
+    "picks_vs_hit5": [
+     {
+      "label": "정답 0건 잃는 최대 문턱",
+      "t": 4.662961,
+      "have_lost": 0,
+      "none_filtered": 3
+     },
+     {
+      "label": "정답 없음 전부 거르는 최소 문턱",
+      "t": 14.515859,
+      "have_lost": 33,
+      "none_filtered": 24
+     },
+     {
+      "label": "정답 ≤1건 잃을 때 최대 걸러냄",
+      "t": 5.3594227,
+      "have_lost": 1,
+      "none_filtered": 5
+     },
+     {
+      "label": "정답 ≤2건 잃을 때 최대 걸러냄",
+      "t": 6.66456,
+      "have_lost": 2,
+      "none_filtered": 10
+     },
+     {
+      "label": "정답 ≤3건 잃을 때 최대 걸러냄",
+      "t": 6.978546,
+      "have_lost": 3,
+      "none_filtered": 11
+     },
+     {
+      "label": "정답 ≤5건 잃을 때 최대 걸러냄",
+      "t": 6.978546,
+      "have_lost": 3,
+      "none_filtered": 11
+     },
+     {
+      "label": "정답 ≤10건 잃을 때 최대 걸러냄",
+      "t": 8.8265085,
+      "have_lost": 10,
+      "none_filtered": 17
+     }
+    ],
+    "picks_vs_all": [
+     {
+      "label": "정답 0건 잃는 최대 문턱",
+      "t": 3.4366636,
+      "have_lost": 0,
+      "none_filtered": 0
+     },
+     {
+      "label": "정답 없음 전부 거르는 최소 문턱",
+      "t": 14.515859,
+      "have_lost": 47,
+      "none_filtered": 24
+     },
+     {
+      "label": "정답 ≤1건 잃을 때 최대 걸러냄",
+      "t": 4.4253783,
+      "have_lost": 1,
+      "none_filtered": 1
+     },
+     {
+      "label": "정답 ≤2건 잃을 때 최대 걸러냄",
+      "t": 4.662961,
+      "have_lost": 2,
+      "none_filtered": 3
+     },
+     {
+      "label": "정답 ≤3건 잃을 때 최대 걸러냄",
+      "t": 5.1861053,
+      "have_lost": 3,
+      "none_filtered": 4
+     },
+     {
+      "label": "정답 ≤5건 잃을 때 최대 걸러냄",
+      "t": 5.8396974,
+      "have_lost": 5,
+      "none_filtered": 7
+     },
+     {
+      "label": "정답 ≤10건 잃을 때 최대 걸러냄",
+      "t": 6.978546,
+      "have_lost": 8,
+      "none_filtered": 11
+     }
+    ]
+   },
+   "rows": [
+    {
+     "id": "GS-002",
+     "module": "B",
+     "top1_id": "DASAN-MANUAL-2.1",
+     "top1_score": 21.636166,
+     "hit5": true,
+     "top1_correct": false,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-014",
+     "module": "B",
+     "top1_id": "DASAN-TERM-2.2",
+     "top1_score": 14.746501,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-015",
+     "module": "B",
+     "top1_id": "DASAN-TERM-3.1",
+     "top1_score": 14.892136,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-016",
+     "module": "B",
+     "top1_id": "DASAN-TERM-4.6",
+     "top1_score": 12.3491745,
+     "hit5": false,
+     "top1_correct": false,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-101",
+     "module": "B",
+     "top1_id": "DASAN-MANUAL-4.1",
+     "top1_score": 12.647523,
+     "hit5": false,
+     "top1_correct": false,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-102",
+     "module": "B",
+     "top1_id": "DASAN-MANUAL-3.3",
+     "top1_score": 8.969071,
+     "hit5": false,
+     "top1_correct": false,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-201",
+     "module": "B",
+     "top1_id": "DASAN-TERM-4.3",
+     "top1_score": 8.615703,
+     "hit5": false,
+     "top1_correct": false,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-202",
+     "module": "B",
+     "top1_id": "DASAN-TERM-4.18",
+     "top1_score": 27.008266,
+     "hit5": false,
+     "top1_correct": false,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-203",
+     "module": "B",
+     "top1_id": "DASAN-TERM-1.4",
+     "top1_score": 19.753443,
+     "hit5": true,
+     "top1_correct": false,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-204",
+     "module": "B",
+     "top1_id": "DASAN-TERM-1.3",
+     "top1_score": 16.175053,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-205",
+     "module": "B",
+     "top1_id": "DASAN-TERM-3.13",
+     "top1_score": 9.50684,
+     "hit5": false,
+     "top1_correct": false,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-206",
+     "module": "B",
+     "top1_id": "DASAN-TERM-2.4",
+     "top1_score": 11.979969,
+     "hit5": true,
+     "top1_correct": false,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-207",
+     "module": "B",
+     "top1_id": "DASAN-TERM-2.3",
+     "top1_score": 35.915554,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-208",
+     "module": "B",
+     "top1_id": "DASAN-TERM-2.4",
+     "top1_score": 22.199425,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-209",
+     "module": "B",
+     "top1_id": "DASAN-TERM-2.5",
+     "top1_score": 25.831032,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-210",
+     "module": "B",
+     "top1_id": "DASAN-TERM-2.5",
+     "top1_score": 30.225813,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-211",
+     "module": "B",
+     "top1_id": "DASAN-TERM-2.5",
+     "top1_score": 17.356655,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-212",
+     "module": "B",
+     "top1_id": "DASAN-TERM-2.4",
+     "top1_score": 14.808562,
+     "hit5": true,
+     "top1_correct": false,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-213",
+     "module": "B",
+     "top1_id": "DASAN-TERM-2.7",
+     "top1_score": 18.727676,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-214",
+     "module": "B",
+     "top1_id": "DASAN-TERM-2.8",
+     "top1_score": 15.284117,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-215",
+     "module": "B",
+     "top1_id": "DASAN-MANUAL-1.3",
+     "top1_score": 5.8396974,
+     "hit5": false,
+     "top1_correct": false,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-216",
+     "module": "B",
+     "top1_id": "DASAN-TERM-2.9",
+     "top1_score": 16.00691,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-217",
+     "module": "B",
+     "top1_id": "DASAN-TERM-2.10",
+     "top1_score": 12.805365,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-218",
+     "module": "B",
+     "top1_id": "DASAN-MANUAL-4.1",
+     "top1_score": 5.1861053,
+     "hit5": false,
+     "top1_correct": false,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-219",
+     "module": "B",
+     "top1_id": "DASAN-TERM-3.8",
+     "top1_score": 8.081125,
+     "hit5": false,
+     "top1_correct": false,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-220",
+     "module": "B",
+     "top1_id": "DASAN-TERM-2.12",
+     "top1_score": 11.792688,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-221",
+     "module": "B",
+     "top1_id": "DASAN-TERM-2.12",
+     "top1_score": 15.647034,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-222",
+     "module": "B",
+     "top1_id": "DASAN-TERM-3.3",
+     "top1_score": 7.4210277,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-223",
+     "module": "B",
+     "top1_id": "DASAN-TERM-3.3",
+     "top1_score": 8.370912,
+     "hit5": true,
+     "top1_correct": false,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-224",
+     "module": "B",
+     "top1_id": "DASAN-TERM-3.4",
+     "top1_score": 9.449644,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-225",
+     "module": "B",
+     "top1_id": "DASAN-TERM-3.13",
+     "top1_score": 6.7063203,
+     "hit5": false,
+     "top1_correct": false,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-226",
+     "module": "B",
+     "top1_id": "DASAN-TERM-3.5",
+     "top1_score": 10.917469,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-227",
+     "module": "B",
+     "top1_id": "DASAN-TERM-4.17",
+     "top1_score": 7.353536,
+     "hit5": false,
+     "top1_correct": false,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-228",
+     "module": "B",
+     "top1_id": "DASAN-TERM-6.8",
+     "top1_score": 15.001784,
+     "hit5": true,
+     "top1_correct": false,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-229",
+     "module": "B",
+     "top1_id": "DASAN-TERM-3.7",
+     "top1_score": 9.094877,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-230",
+     "module": "B",
+     "top1_id": "DASAN-TERM-3.7",
+     "top1_score": 13.369815,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-231",
+     "module": "B",
+     "top1_id": "DASAN-TERM-3.8",
+     "top1_score": 23.16505,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-232",
+     "module": "B",
+     "top1_id": "DASAN-TERM-3.9",
+     "top1_score": 16.565214,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-233",
+     "module": "B",
+     "top1_id": "DASAN-TERM-3.14",
+     "top1_score": 4.662961,
+     "hit5": true,
+     "top1_correct": false,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-234",
+     "module": "B",
+     "top1_id": "DASAN-TERM-3.10",
+     "top1_score": 26.324766,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-235",
+     "module": "B",
+     "top1_id": "DASAN-TERM-3.11",
+     "top1_score": 7.797751,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-236",
+     "module": "B",
+     "top1_id": "DASAN-TERM-3.11",
+     "top1_score": 15.929607,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-237",
+     "module": "B",
+     "top1_id": "DASAN-TERM-3.12",
+     "top1_score": 24.3167,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-238",
+     "module": "B",
+     "top1_id": "DASAN-TERM-3.13",
+     "top1_score": 10.2586565,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": 4,
+     "abstained": false
+    },
+    {
+     "id": "GS-239",
+     "module": "B",
+     "top1_id": "DASAN-TERM-3.14",
+     "top1_score": 11.230745,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-240",
+     "module": "B",
+     "top1_id": "DASAN-TERM-4.4",
+     "top1_score": 12.0665455,
+     "hit5": true,
+     "top1_correct": false,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-241",
+     "module": "B",
+     "top1_id": "DASAN-MANUAL-2.1",
+     "top1_score": 7.8277264,
+     "hit5": true,
+     "top1_correct": false,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-242",
+     "module": "B",
+     "top1_id": "DASAN-TERM-4.1",
+     "top1_score": 12.206354,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-243",
+     "module": "B",
+     "top1_id": "DASAN-TERM-4.3",
+     "top1_score": 9.3426,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-244",
+     "module": "B",
+     "top1_id": "DASAN-TERM-4.3",
+     "top1_score": 6.978546,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-245",
+     "module": "B",
+     "top1_id": "DASAN-TERM-4.1",
+     "top1_score": 17.56727,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-246",
+     "module": "B",
+     "top1_id": "DASAN-TERM-4.4",
+     "top1_score": 10.578312,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-247",
+     "module": "B",
+     "top1_id": "DASAN-TERM-4.4",
+     "top1_score": 24.834244,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-248",
+     "module": "B",
+     "top1_id": "DASAN-TERM-4.1",
+     "top1_score": 14.515859,
+     "hit5": true,
+     "top1_correct": false,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-249",
+     "module": "B",
+     "top1_id": "DASAN-TERM-4.6",
+     "top1_score": 17.196192,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-250",
+     "module": "B",
+     "top1_id": "DASAN-TERM-4.7",
+     "top1_score": 17.923613,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-251",
+     "module": "B",
+     "top1_id": "DASAN-TERM-4.8",
+     "top1_score": 16.050514,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-252",
+     "module": "B",
+     "top1_id": "DASAN-TERM-4.7",
+     "top1_score": 16.051605,
+     "hit5": true,
+     "top1_correct": false,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-253",
+     "module": "B",
+     "top1_id": "DASAN-TERM-4.7",
+     "top1_score": 13.028398,
+     "hit5": true,
+     "top1_correct": false,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-254",
+     "module": "B",
+     "top1_id": "DASAN-TERM-4.7",
+     "top1_score": 13.4490795,
+     "hit5": true,
+     "top1_correct": false,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-255",
+     "module": "B",
+     "top1_id": "DASAN-MANUAL-1.6",
+     "top1_score": 3.4366636,
+     "hit5": false,
+     "top1_correct": false,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-256",
+     "module": "B",
+     "top1_id": "DASAN-TERM-4.12",
+     "top1_score": 15.080621,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-257",
+     "module": "B",
+     "top1_id": "DASAN-TERM-6.7",
+     "top1_score": 11.522239,
+     "hit5": true,
+     "top1_correct": false,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-258",
+     "module": "B",
+     "top1_id": "DASAN-TERM-4.14",
+     "top1_score": 17.196192,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": 5,
+     "abstained": false
+    },
+    {
+     "id": "GS-259",
+     "module": "B",
+     "top1_id": "DASAN-TERM-4.15",
+     "top1_score": 17.196192,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-260",
+     "module": "B",
+     "top1_id": "DASAN-TERM-4.9",
+     "top1_score": 11.062087,
+     "hit5": true,
+     "top1_correct": false,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-261",
+     "module": "B",
+     "top1_id": "DASAN-TERM-4.17",
+     "top1_score": 6.66456,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-262",
+     "module": "B",
+     "top1_id": "DASAN-TERM-4.18",
+     "top1_score": 13.260131,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-263",
+     "module": "B",
+     "top1_id": "DASAN-TERM-4.19",
+     "top1_score": 17.873096,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-264",
+     "module": "B",
+     "top1_id": "DASAN-TERM-4.20",
+     "top1_score": 16.253645,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": 4,
+     "abstained": false
+    },
+    {
+     "id": "GS-265",
+     "module": "B",
+     "top1_id": "DASAN-MANUAL-5.1",
+     "top1_score": 12.2204275,
+     "hit5": true,
+     "top1_correct": false,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-266",
+     "module": "B",
+     "top1_id": "DASAN-TERM-4.20",
+     "top1_score": 5.3594227,
+     "hit5": true,
+     "top1_correct": false,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-267",
+     "module": "B",
+     "top1_id": "DASAN-TERM-6.9",
+     "top1_score": 17.041843,
+     "hit5": true,
+     "top1_correct": false,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-268",
+     "module": "B",
+     "top1_id": "DASAN-MANUAL-4.3",
+     "top1_score": 4.4253783,
+     "hit5": false,
+     "top1_correct": false,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-269",
+     "module": "B",
+     "top1_id": "DASAN-TERM-3.12",
+     "top1_score": 8.32357,
+     "hit5": true,
+     "top1_correct": false,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-270",
+     "module": "B",
+     "top1_id": "DASAN-TERM-4.9",
+     "top1_score": 7.5615726,
+     "hit5": true,
+     "top1_correct": false,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-271",
+     "module": "B",
+     "top1_id": "DASAN-MANUAL-4.3",
+     "top1_score": 8.8265085,
+     "hit5": true,
+     "top1_correct": false,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-272",
+     "module": "B",
+     "top1_id": "DASAN-TERM-5.7",
+     "top1_score": 10.087202,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-273",
+     "module": "B",
+     "top1_id": "DASAN-TERM-5.8",
+     "top1_score": 21.58035,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-274",
+     "module": "B",
+     "top1_id": "DASAN-TERM-5.8",
+     "top1_score": 25.573599,
+     "hit5": true,
+     "top1_correct": false,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-275",
+     "module": "B",
+     "top1_id": "DASAN-TERM-5.9",
+     "top1_score": 17.223877,
+     "hit5": true,
+     "top1_correct": false,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-276",
+     "module": "B",
+     "top1_id": "DASAN-TERM-5.9",
+     "top1_score": 17.418924,
+     "hit5": true,
+     "top1_correct": false,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-277",
+     "module": "B",
+     "top1_id": "DASAN-TERM-5.9",
+     "top1_score": 17.95131,
+     "hit5": true,
+     "top1_correct": false,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-278",
+     "module": "B",
+     "top1_id": "DASAN-TERM-6.3",
+     "top1_score": 17.381706,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-279",
+     "module": "B",
+     "top1_id": "DASAN-TERM-6.4",
+     "top1_score": 17.443531,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-280",
+     "module": "B",
+     "top1_id": "DASAN-TERM-5.9",
+     "top1_score": 9.122909,
+     "hit5": true,
+     "top1_correct": false,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-281",
+     "module": "B",
+     "top1_id": "DASAN-TERM-5.9",
+     "top1_score": 16.411928,
+     "hit5": true,
+     "top1_correct": false,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-282",
+     "module": "B",
+     "top1_id": "DASAN-TERM-6.6",
+     "top1_score": 25.582586,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-283",
+     "module": "B",
+     "top1_id": "DASAN-TERM-6.6",
+     "top1_score": 22.048235,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-284",
+     "module": "B",
+     "top1_id": "DASAN-TERM-6.7",
+     "top1_score": 22.935415,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-285",
+     "module": "B",
+     "top1_id": "DASAN-TERM-6.8",
+     "top1_score": 16.865807,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-286",
+     "module": "B",
+     "top1_id": "DASAN-TERM-5.9",
+     "top1_score": 12.658983,
+     "hit5": true,
+     "top1_correct": false,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-287",
+     "module": "B",
+     "top1_id": "DASAN-MANUAL-1.5",
+     "top1_score": 9.1630535,
+     "hit5": false,
+     "top1_correct": false,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-288",
+     "module": "B",
+     "top1_id": "DASAN-TERM-6.12",
+     "top1_score": 15.156954,
+     "hit5": false,
+     "top1_correct": false,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-289",
+     "module": "B",
+     "top1_id": "DASAN-TERM-6.12",
+     "top1_score": 29.506454,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-290",
+     "module": "B",
+     "top1_id": "DASAN-TERM-3.16",
+     "top1_score": 7.788241,
+     "hit5": false,
+     "top1_correct": false,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-701",
+     "module": "B-6",
+     "top1_id": "DASAN-TERM-2.8",
+     "top1_score": 9.523217,
+     "hit5": null,
+     "top1_correct": null,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-702",
+     "module": "B-6",
+     "top1_id": "DASAN-TERM-1.4",
+     "top1_score": 8.720607,
+     "hit5": null,
+     "top1_correct": null,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-703",
+     "module": "B-6",
+     "top1_id": "DASAN-TERM-5.8",
+     "top1_score": 6.926913,
+     "hit5": null,
+     "top1_correct": null,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-704",
+     "module": "B-6",
+     "top1_id": "DASAN-TERM-6.12",
+     "top1_score": 4.500726,
+     "hit5": null,
+     "top1_correct": null,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-705",
+     "module": "B-6",
+     "top1_id": "DASAN-TERM-4.9",
+     "top1_score": 12.152124,
+     "hit5": null,
+     "top1_correct": null,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-706",
+     "module": "B-6",
+     "top1_id": "DASAN-TERM-3.3",
+     "top1_score": 14.326231,
+     "hit5": null,
+     "top1_correct": null,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-707",
+     "module": "B-6",
+     "top1_id": "DASAN-MANUAL-4.3",
+     "top1_score": 8.011032,
+     "hit5": null,
+     "top1_correct": null,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-708",
+     "module": "B-6",
+     "top1_id": "DASAN-TERM-3.4",
+     "top1_score": 6.1104097,
+     "hit5": null,
+     "top1_correct": null,
+     "referral_rank": 4,
+     "abstained": false
+    },
+    {
+     "id": "GS-709",
+     "module": "B-6",
+     "top1_id": "DASAN-MANUAL-1.5",
+     "top1_score": 9.938843,
+     "hit5": null,
+     "top1_correct": null,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-710",
+     "module": "B-6",
+     "top1_id": "DASAN-TERM-6.7",
+     "top1_score": 6.00473,
+     "hit5": null,
+     "top1_correct": null,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-711",
+     "module": "B-6",
+     "top1_id": "DASAN-TERM-3.14",
+     "top1_score": 7.688055,
+     "hit5": null,
+     "top1_correct": null,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-712",
+     "module": "B-6",
+     "top1_id": "DASAN-TERM-4.8",
+     "top1_score": 8.491794,
+     "hit5": null,
+     "top1_correct": null,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-713",
+     "module": "B-6",
+     "top1_id": "DASAN-TERM-6.10",
+     "top1_score": 13.917531,
+     "hit5": null,
+     "top1_correct": null,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-714",
+     "module": "B-6",
+     "top1_id": "DASAN-MANUAL-2.1",
+     "top1_score": 7.8277264,
+     "hit5": null,
+     "top1_correct": null,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-715",
+     "module": "B-6",
+     "top1_id": "DASAN-TERM-3.14",
+     "top1_score": 6.2177753,
+     "hit5": null,
+     "top1_correct": null,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-716",
+     "module": "B-6",
+     "top1_id": "DASAN-TERM-2.9",
+     "top1_score": 5.3480883,
+     "hit5": null,
+     "top1_correct": null,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-717",
+     "module": "B-6",
+     "top1_id": "DASAN-MANUAL-3.3",
+     "top1_score": 7.661268,
+     "hit5": null,
+     "top1_correct": null,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-718",
+     "module": "B-6",
+     "top1_id": "DASAN-TERM-3.10",
+     "top1_score": 4.4119616,
+     "hit5": null,
+     "top1_correct": null,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-719",
+     "module": "B-6",
+     "top1_id": "DASAN-TERM-3.13",
+     "top1_score": 9.50684,
+     "hit5": null,
+     "top1_correct": null,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-720",
+     "module": "B-6",
+     "top1_id": "DASAN-MANUAL-4.1",
+     "top1_score": 12.865588,
+     "hit5": null,
+     "top1_correct": null,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-721",
+     "module": "B-6",
+     "top1_id": "DASAN-MANUAL-3.2",
+     "top1_score": 4.573812,
+     "hit5": null,
+     "top1_correct": null,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-722",
+     "module": "B-6",
+     "top1_id": "DASAN-TERM-4.1",
+     "top1_score": 5.043601,
+     "hit5": null,
+     "top1_correct": null,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-723",
+     "module": "B-6",
+     "top1_id": "DASAN-TERM-3.14",
+     "top1_score": 5.6562414,
+     "hit5": null,
+     "top1_correct": null,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-724",
+     "module": "B-6",
+     "top1_id": "DASAN-TERM-4.4",
+     "top1_score": 5.665881,
+     "hit5": null,
+     "top1_correct": null,
+     "referral_rank": null,
+     "abstained": false
+    }
+   ]
+  },
+  "dense": {
+   "summary": {
+    "have_all": {
+     "n": 96,
+     "min": 0.62999266,
+     "p10": 0.71409374,
+     "p25": 0.73572814,
+     "median": 0.7751207099999999,
+     "p75": 0.8178761,
+     "p90": 0.8663981,
+     "max": 0.9084836
+    },
+    "have_hit5": {
+     "n": 94,
+     "min": 0.62999266,
+     "p10": 0.71409374,
+     "p25": 0.73572814,
+     "median": 0.780140185,
+     "p75": 0.82253647,
+     "p90": 0.8663981,
+     "max": 0.9084836
+    },
+    "none": {
+     "n": 24,
+     "min": 0.5883172,
+     "p10": 0.5940489,
+     "p25": 0.6333834,
+     "median": 0.6458538,
+     "p75": 0.68047607,
+     "p90": 0.7268159,
+     "max": 0.7612231
+    },
+    "have_hit5_count": 94,
+    "none_abstained": 0,
+    "none_referral_in_top5": 0,
+    "none_referral_top1": 0,
+    "none_top1_ids": [
+     "DASAN-MANUAL-1.6",
+     "DASAN-MANUAL-5.5",
+     "DASAN-TERM-2.11",
+     "DASAN-TERM-2.12",
+     "DASAN-TERM-2.3",
+     "DASAN-TERM-2.5",
+     "DASAN-TERM-2.7",
+     "DASAN-TERM-2.8",
+     "DASAN-TERM-2.9",
+     "DASAN-TERM-3.13",
+     "DASAN-TERM-3.16",
+     "DASAN-TERM-3.3",
+     "DASAN-TERM-3.4",
+     "DASAN-TERM-3.5",
+     "DASAN-TERM-4.14",
+     "DASAN-TERM-4.15",
+     "DASAN-TERM-4.21",
+     "DASAN-TERM-4.22",
+     "DASAN-TERM-4.4",
+     "DASAN-TERM-4.9",
+     "DASAN-TERM-5.7",
+     "DASAN-TERM-6.5"
+    ],
+    "overlap": {
+     "have_hit5_min": 0.62999266,
+     "none_max": 0.7612231,
+     "separable": false
+    },
+    "picks_vs_hit5": [
+     {
+      "label": "정답 0건 잃는 최대 문턱",
+      "t": 0.62999266,
+      "have_lost": 0,
+      "none_filtered": 6
+     },
+     {
+      "label": "정답 없음 전부 거르는 최소 문턱",
+      "t": 0.7620628,
+      "have_lost": 37,
+      "none_filtered": 24
+     },
+     {
+      "label": "정답 ≤1건 잃을 때 최대 걸러냄",
+      "t": 0.67112136,
+      "have_lost": 1,
+      "none_filtered": 15
+     },
+     {
+      "label": "정답 ≤2건 잃을 때 최대 걸러냄",
+      "t": 0.67112136,
+      "have_lost": 1,
+      "none_filtered": 15
+     },
+     {
+      "label": "정답 ≤3건 잃을 때 최대 걸러냄",
+      "t": 0.6779178,
+      "have_lost": 3,
+      "none_filtered": 16
+     },
+     {
+      "label": "정답 ≤5건 잃을 때 최대 걸러냄",
+      "t": 0.6924156,
+      "have_lost": 5,
+      "none_filtered": 18
+     },
+     {
+      "label": "정답 ≤10건 잃을 때 최대 걸러냄",
+      "t": 0.7185568,
+      "have_lost": 10,
+      "none_filtered": 20
+     }
+    ],
+    "picks_vs_all": [
+     {
+      "label": "정답 0건 잃는 최대 문턱",
+      "t": 0.62999266,
+      "have_lost": 0,
+      "none_filtered": 6
+     },
+     {
+      "label": "정답 없음 전부 거르는 최소 문턱",
+      "t": 0.7620628,
+      "have_lost": 38,
+      "none_filtered": 24
+     },
+     {
+      "label": "정답 ≤1건 잃을 때 최대 걸러냄",
+      "t": 0.66269284,
+      "have_lost": 1,
+      "none_filtered": 15
+     },
+     {
+      "label": "정답 ≤2건 잃을 때 최대 걸러냄",
+      "t": 0.66269284,
+      "have_lost": 1,
+      "none_filtered": 15
+     },
+     {
+      "label": "정답 ≤3건 잃을 때 최대 걸러냄",
+      "t": 0.66269284,
+      "have_lost": 1,
+      "none_filtered": 15
+     },
+     {
+      "label": "정답 ≤5건 잃을 때 최대 걸러냄",
+      "t": 0.6779178,
+      "have_lost": 4,
+      "none_filtered": 16
+     },
+     {
+      "label": "정답 ≤10건 잃을 때 최대 걸러냄",
+      "t": 0.71409374,
+      "have_lost": 10,
+      "none_filtered": 19
+     }
+    ]
+   },
+   "rows": [
+    {
+     "id": "GS-002",
+     "module": "B",
+     "top1_id": "DASAN-TERM-2.3",
+     "top1_score": 0.72270554,
+     "hit5": true,
+     "top1_correct": false,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-014",
+     "module": "B",
+     "top1_id": "DASAN-TERM-2.2",
+     "top1_score": 0.85829234,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-015",
+     "module": "B",
+     "top1_id": "DASAN-TERM-3.3",
+     "top1_score": 0.7587958,
+     "hit5": true,
+     "top1_correct": false,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-016",
+     "module": "B",
+     "top1_id": "DASAN-TERM-4.3",
+     "top1_score": 0.75184953,
+     "hit5": true,
+     "top1_correct": false,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-101",
+     "module": "B",
+     "top1_id": "DASAN-TERM-3.15",
+     "top1_score": 0.7314557,
+     "hit5": true,
+     "top1_correct": false,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-102",
+     "module": "B",
+     "top1_id": "DASAN-TERM-2.5",
+     "top1_score": 0.8159957,
+     "hit5": true,
+     "top1_correct": false,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-201",
+     "module": "B",
+     "top1_id": "DASAN-TERM-1.4",
+     "top1_score": 0.7538851,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-202",
+     "module": "B",
+     "top1_id": "DASAN-TERM-4.18",
+     "top1_score": 0.83340234,
+     "hit5": true,
+     "top1_correct": false,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-203",
+     "module": "B",
+     "top1_id": "DASAN-TERM-1.5",
+     "top1_score": 0.8085406,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-204",
+     "module": "B",
+     "top1_id": "DASAN-TERM-4.1",
+     "top1_score": 0.7709428,
+     "hit5": false,
+     "top1_correct": false,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-205",
+     "module": "B",
+     "top1_id": "DASAN-MANUAL-1.6",
+     "top1_score": 0.66269284,
+     "hit5": false,
+     "top1_correct": false,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-206",
+     "module": "B",
+     "top1_id": "DASAN-TERM-2.3",
+     "top1_score": 0.7954326,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-207",
+     "module": "B",
+     "top1_id": "DASAN-TERM-2.3",
+     "top1_score": 0.78909963,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-208",
+     "module": "B",
+     "top1_id": "DASAN-TERM-2.4",
+     "top1_score": 0.8539617,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-209",
+     "module": "B",
+     "top1_id": "DASAN-TERM-2.5",
+     "top1_score": 0.90172035,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-210",
+     "module": "B",
+     "top1_id": "DASAN-TERM-2.5",
+     "top1_score": 0.86400217,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-211",
+     "module": "B",
+     "top1_id": "DASAN-TERM-2.5",
+     "top1_score": 0.7620628,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-212",
+     "module": "B",
+     "top1_id": "DASAN-TERM-2.6",
+     "top1_score": 0.82589334,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-213",
+     "module": "B",
+     "top1_id": "DASAN-TERM-2.7",
+     "top1_score": 0.83662313,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-214",
+     "module": "B",
+     "top1_id": "DASAN-TERM-2.8",
+     "top1_score": 0.82253647,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-215",
+     "module": "B",
+     "top1_id": "DASAN-TERM-2.9",
+     "top1_score": 0.73572814,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-216",
+     "module": "B",
+     "top1_id": "DASAN-TERM-2.9",
+     "top1_score": 0.7185568,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-217",
+     "module": "B",
+     "top1_id": "DASAN-TERM-2.10",
+     "top1_score": 0.76241195,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-218",
+     "module": "B",
+     "top1_id": "DASAN-TERM-2.12",
+     "top1_score": 0.62999266,
+     "hit5": true,
+     "top1_correct": false,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-219",
+     "module": "B",
+     "top1_id": "DASAN-TERM-2.11",
+     "top1_score": 0.71409374,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-220",
+     "module": "B",
+     "top1_id": "DASAN-TERM-2.12",
+     "top1_score": 0.72729087,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-221",
+     "module": "B",
+     "top1_id": "DASAN-TERM-2.12",
+     "top1_score": 0.7339556,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-222",
+     "module": "B",
+     "top1_id": "DASAN-TERM-3.3",
+     "top1_score": 0.79145133,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-223",
+     "module": "B",
+     "top1_id": "DASAN-TERM-3.4",
+     "top1_score": 0.77206475,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-224",
+     "module": "B",
+     "top1_id": "DASAN-TERM-3.4",
+     "top1_score": 0.7821037,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-225",
+     "module": "B",
+     "top1_id": "DASAN-TERM-3.5",
+     "top1_score": 0.79528385,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-226",
+     "module": "B",
+     "top1_id": "DASAN-TERM-3.5",
+     "top1_score": 0.9064438,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-227",
+     "module": "B",
+     "top1_id": "DASAN-TERM-3.6",
+     "top1_score": 0.80088794,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-228",
+     "module": "B",
+     "top1_id": "DASAN-TERM-3.6",
+     "top1_score": 0.77817667,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-229",
+     "module": "B",
+     "top1_id": "DASAN-TERM-3.7",
+     "top1_score": 0.8174394,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-230",
+     "module": "B",
+     "top1_id": "DASAN-TERM-3.7",
+     "top1_score": 0.73242205,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-231",
+     "module": "B",
+     "top1_id": "DASAN-TERM-3.8",
+     "top1_score": 0.7664361,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-232",
+     "module": "B",
+     "top1_id": "DASAN-TERM-3.9",
+     "top1_score": 0.72958136,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-233",
+     "module": "B",
+     "top1_id": "DASAN-TERM-3.10",
+     "top1_score": 0.7329581,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-234",
+     "module": "B",
+     "top1_id": "DASAN-TERM-3.10",
+     "top1_score": 0.85713565,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-235",
+     "module": "B",
+     "top1_id": "DASAN-TERM-3.11",
+     "top1_score": 0.7031411,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-236",
+     "module": "B",
+     "top1_id": "DASAN-TERM-3.12",
+     "top1_score": 0.7024529,
+     "hit5": true,
+     "top1_correct": false,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-237",
+     "module": "B",
+     "top1_id": "DASAN-TERM-3.12",
+     "top1_score": 0.8748507,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-238",
+     "module": "B",
+     "top1_id": "DASAN-TERM-3.13",
+     "top1_score": 0.8007713,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-239",
+     "module": "B",
+     "top1_id": "DASAN-TERM-3.14",
+     "top1_score": 0.79421526,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-240",
+     "module": "B",
+     "top1_id": "DASAN-TERM-3.15",
+     "top1_score": 0.7706817,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": 4,
+     "abstained": false
+    },
+    {
+     "id": "GS-241",
+     "module": "B",
+     "top1_id": "DASAN-TERM-3.16",
+     "top1_score": 0.72073376,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-242",
+     "module": "B",
+     "top1_id": "DASAN-TERM-4.3",
+     "top1_score": 0.8337398,
+     "hit5": true,
+     "top1_correct": false,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-243",
+     "module": "B",
+     "top1_id": "DASAN-TERM-4.3",
+     "top1_score": 0.6924156,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-244",
+     "module": "B",
+     "top1_id": "DASAN-TERM-4.3",
+     "top1_score": 0.671194,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-245",
+     "module": "B",
+     "top1_id": "DASAN-MANUAL-3.4",
+     "top1_score": 0.7527659,
+     "hit5": true,
+     "top1_correct": false,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-246",
+     "module": "B",
+     "top1_id": "DASAN-TERM-4.4",
+     "top1_score": 0.7700995,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-247",
+     "module": "B",
+     "top1_id": "DASAN-TERM-4.4",
+     "top1_score": 0.79923356,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-248",
+     "module": "B",
+     "top1_id": "DASAN-TERM-4.5",
+     "top1_score": 0.74037266,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-249",
+     "module": "B",
+     "top1_id": "DASAN-TERM-4.6",
+     "top1_score": 0.7507625,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-250",
+     "module": "B",
+     "top1_id": "DASAN-TERM-4.7",
+     "top1_score": 0.78948975,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-251",
+     "module": "B",
+     "top1_id": "DASAN-TERM-4.8",
+     "top1_score": 0.71949613,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-252",
+     "module": "B",
+     "top1_id": "DASAN-TERM-4.9",
+     "top1_score": 0.8331959,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-253",
+     "module": "B",
+     "top1_id": "DASAN-TERM-4.9",
+     "top1_score": 0.7827013,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-254",
+     "module": "B",
+     "top1_id": "DASAN-TERM-4.10",
+     "top1_score": 0.7543764,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-255",
+     "module": "B",
+     "top1_id": "DASAN-TERM-4.11",
+     "top1_score": 0.7022982,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-256",
+     "module": "B",
+     "top1_id": "DASAN-TERM-4.12",
+     "top1_score": 0.8702915,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-257",
+     "module": "B",
+     "top1_id": "DASAN-TERM-4.13",
+     "top1_score": 0.89377767,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-258",
+     "module": "B",
+     "top1_id": "DASAN-TERM-4.14",
+     "top1_score": 0.7572365,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-259",
+     "module": "B",
+     "top1_id": "DASAN-TERM-4.15",
+     "top1_score": 0.8330025,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-260",
+     "module": "B",
+     "top1_id": "DASAN-TERM-4.16",
+     "top1_score": 0.8065442,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-261",
+     "module": "B",
+     "top1_id": "DASAN-TERM-4.17",
+     "top1_score": 0.74846506,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-262",
+     "module": "B",
+     "top1_id": "DASAN-TERM-4.18",
+     "top1_score": 0.8717754,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-263",
+     "module": "B",
+     "top1_id": "DASAN-TERM-4.19",
+     "top1_score": 0.80343103,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-264",
+     "module": "B",
+     "top1_id": "DASAN-TERM-4.20",
+     "top1_score": 0.8090623,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-265",
+     "module": "B",
+     "top1_id": "DASAN-TERM-4.20",
+     "top1_score": 0.67112136,
+     "hit5": true,
+     "top1_correct": false,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-266",
+     "module": "B",
+     "top1_id": "DASAN-TERM-4.22",
+     "top1_score": 0.7244795,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-267",
+     "module": "B",
+     "top1_id": "DASAN-TERM-3.2",
+     "top1_score": 0.7608726,
+     "hit5": true,
+     "top1_correct": false,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-268",
+     "module": "B",
+     "top1_id": "DASAN-TERM-5.3",
+     "top1_score": 0.6779178,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-269",
+     "module": "B",
+     "top1_id": "DASAN-TERM-5.4",
+     "top1_score": 0.7395145,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-270",
+     "module": "B",
+     "top1_id": "DASAN-TERM-5.5",
+     "top1_score": 0.7824011,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-271",
+     "module": "B",
+     "top1_id": "DASAN-TERM-5.6",
+     "top1_score": 0.71874225,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-272",
+     "module": "B",
+     "top1_id": "DASAN-TERM-5.7",
+     "top1_score": 0.7692344,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-273",
+     "module": "B",
+     "top1_id": "DASAN-TERM-5.8",
+     "top1_score": 0.84975404,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-274",
+     "module": "B",
+     "top1_id": "DASAN-TERM-5.9",
+     "top1_score": 0.8663981,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-275",
+     "module": "B",
+     "top1_id": "DASAN-TERM-6.2",
+     "top1_score": 0.8977426,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-276",
+     "module": "B",
+     "top1_id": "DASAN-TERM-6.2",
+     "top1_score": 0.7984297,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-277",
+     "module": "B",
+     "top1_id": "DASAN-TERM-6.2",
+     "top1_score": 0.89042425,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-278",
+     "module": "B",
+     "top1_id": "DASAN-TERM-6.3",
+     "top1_score": 0.7410761,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-279",
+     "module": "B",
+     "top1_id": "DASAN-TERM-6.4",
+     "top1_score": 0.7901374,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-280",
+     "module": "B",
+     "top1_id": "DASAN-TERM-6.4",
+     "top1_score": 0.76679146,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-281",
+     "module": "B",
+     "top1_id": "DASAN-TERM-5.9",
+     "top1_score": 0.79155016,
+     "hit5": true,
+     "top1_correct": false,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-282",
+     "module": "B",
+     "top1_id": "DASAN-TERM-6.6",
+     "top1_score": 0.9084836,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-283",
+     "module": "B",
+     "top1_id": "DASAN-TERM-6.6",
+     "top1_score": 0.8178761,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-284",
+     "module": "B",
+     "top1_id": "DASAN-TERM-6.7",
+     "top1_score": 0.798426,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-285",
+     "module": "B",
+     "top1_id": "DASAN-TERM-6.8",
+     "top1_score": 0.86208636,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-286",
+     "module": "B",
+     "top1_id": "DASAN-TERM-6.10",
+     "top1_score": 0.7492504,
+     "hit5": true,
+     "top1_correct": false,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-287",
+     "module": "B",
+     "top1_id": "DASAN-TERM-6.10",
+     "top1_score": 0.7222203,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-288",
+     "module": "B",
+     "top1_id": "DASAN-TERM-6.12",
+     "top1_score": 0.7633122,
+     "hit5": true,
+     "top1_correct": false,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-289",
+     "module": "B",
+     "top1_id": "DASAN-TERM-6.12",
+     "top1_score": 0.85762966,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-290",
+     "module": "B",
+     "top1_id": "DASAN-TERM-6.10",
+     "top1_score": 0.67796797,
+     "hit5": true,
+     "top1_correct": false,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-701",
+     "module": "B-6",
+     "top1_id": "DASAN-TERM-2.8",
+     "top1_score": 0.7081896,
+     "hit5": null,
+     "top1_correct": null,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-702",
+     "module": "B-6",
+     "top1_id": "DASAN-TERM-2.7",
+     "top1_score": 0.6615302,
+     "hit5": null,
+     "top1_correct": null,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-703",
+     "module": "B-6",
+     "top1_id": "DASAN-TERM-4.14",
+     "top1_score": 0.639642,
+     "hit5": null,
+     "top1_correct": null,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-704",
+     "module": "B-6",
+     "top1_id": "DASAN-TERM-3.16",
+     "top1_score": 0.60804236,
+     "hit5": null,
+     "top1_correct": null,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-705",
+     "module": "B-6",
+     "top1_id": "DASAN-TERM-4.9",
+     "top1_score": 0.7144668,
+     "hit5": null,
+     "top1_correct": null,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-706",
+     "module": "B-6",
+     "top1_id": "DASAN-TERM-3.3",
+     "top1_score": 0.7268159,
+     "hit5": null,
+     "top1_correct": null,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-707",
+     "module": "B-6",
+     "top1_id": "DASAN-TERM-3.5",
+     "top1_score": 0.71977127,
+     "hit5": null,
+     "top1_correct": null,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-708",
+     "module": "B-6",
+     "top1_id": "DASAN-TERM-3.4",
+     "top1_score": 0.6333834,
+     "hit5": null,
+     "top1_correct": null,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-709",
+     "module": "B-6",
+     "top1_id": "DASAN-TERM-2.9",
+     "top1_score": 0.68047607,
+     "hit5": null,
+     "top1_correct": null,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-710",
+     "module": "B-6",
+     "top1_id": "DASAN-TERM-6.5",
+     "top1_score": 0.75317055,
+     "hit5": null,
+     "top1_correct": null,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-711",
+     "module": "B-6",
+     "top1_id": "DASAN-TERM-3.13",
+     "top1_score": 0.63749486,
+     "hit5": null,
+     "top1_correct": null,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-712",
+     "module": "B-6",
+     "top1_id": "DASAN-TERM-4.21",
+     "top1_score": 0.6778494,
+     "hit5": null,
+     "top1_correct": null,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-713",
+     "module": "B-6",
+     "top1_id": "DASAN-TERM-4.22",
+     "top1_score": 0.63913786,
+     "hit5": null,
+     "top1_correct": null,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-714",
+     "module": "B-6",
+     "top1_id": "DASAN-TERM-5.7",
+     "top1_score": 0.6498723,
+     "hit5": null,
+     "top1_correct": null,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-715",
+     "module": "B-6",
+     "top1_id": "DASAN-TERM-3.5",
+     "top1_score": 0.6782623,
+     "hit5": null,
+     "top1_correct": null,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-716",
+     "module": "B-6",
+     "top1_id": "DASAN-TERM-2.9",
+     "top1_score": 0.6418353,
+     "hit5": null,
+     "top1_correct": null,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-717",
+     "module": "B-6",
+     "top1_id": "DASAN-TERM-4.15",
+     "top1_score": 0.63865197,
+     "hit5": null,
+     "top1_correct": null,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-718",
+     "module": "B-6",
+     "top1_id": "DASAN-TERM-2.11",
+     "top1_score": 0.6089219,
+     "hit5": null,
+     "top1_correct": null,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-719",
+     "module": "B-6",
+     "top1_id": "DASAN-TERM-2.12",
+     "top1_score": 0.5883172,
+     "hit5": null,
+     "top1_correct": null,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-720",
+     "module": "B-6",
+     "top1_id": "DASAN-MANUAL-1.6",
+     "top1_score": 0.58889186,
+     "hit5": null,
+     "top1_correct": null,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-721",
+     "module": "B-6",
+     "top1_id": "DASAN-TERM-2.3",
+     "top1_score": 0.6099746,
+     "hit5": null,
+     "top1_correct": null,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-722",
+     "module": "B-6",
+     "top1_id": "DASAN-TERM-2.5",
+     "top1_score": 0.6598634,
+     "hit5": null,
+     "top1_correct": null,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-723",
+     "module": "B-6",
+     "top1_id": "DASAN-MANUAL-5.5",
+     "top1_score": 0.5940489,
+     "hit5": null,
+     "top1_correct": null,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-724",
+     "module": "B-6",
+     "top1_id": "DASAN-TERM-4.4",
+     "top1_score": 0.7612231,
+     "hit5": null,
+     "top1_correct": null,
+     "referral_rank": null,
+     "abstained": false
+    }
+   ]
+  },
+  "rerank-dense": {
+   "summary": {
+    "have_all": {
+     "n": 96,
+     "min": -9.527246475219727,
+     "p10": -4.994871616363525,
+     "p25": -2.965383768081665,
+     "median": 0.6555918455123901,
+     "p75": 2.4030137062072754,
+     "p90": 4.574167251586914,
+     "max": 6.6237921714782715
+    },
+    "have_hit5": {
+     "n": 94,
+     "min": -9.527246475219727,
+     "p10": -4.994871616363525,
+     "p25": -2.965383768081665,
+     "median": 0.6927657723426819,
+     "p75": 2.7351131439208984,
+     "p90": 4.574167251586914,
+     "max": 6.6237921714782715
+    },
+    "none": {
+     "n": 24,
+     "min": -10.685220718383789,
+     "p10": -10.422330856323242,
+     "p25": -9.050851821899414,
+     "median": -7.585380792617798,
+     "p75": -5.906272888183594,
+     "p90": -3.3903064727783203,
+     "max": -3.0476343631744385
+    },
+    "have_hit5_count": 94,
+    "none_abstained": 0,
+    "none_referral_in_top5": 0,
+    "none_referral_top1": 0,
+    "none_top1_ids": [
+     "DASAN-TERM-2.10",
+     "DASAN-TERM-2.6",
+     "DASAN-TERM-2.7",
+     "DASAN-TERM-2.9",
+     "DASAN-TERM-3.16",
+     "DASAN-TERM-3.3",
+     "DASAN-TERM-3.4",
+     "DASAN-TERM-4.14",
+     "DASAN-TERM-4.15",
+     "DASAN-TERM-4.19",
+     "DASAN-TERM-4.22",
+     "DASAN-TERM-4.4",
+     "DASAN-TERM-5.1",
+     "DASAN-TERM-6.10",
+     "DASAN-TERM-6.5"
+    ],
+    "overlap": {
+     "have_hit5_min": -9.527246475219727,
+     "none_max": -3.0476343631744385,
+     "separable": false
+    },
+    "picks_vs_hit5": [
+     {
+      "label": "정답 0건 잃는 최대 문턱",
+      "t": -9.527246475219727,
+      "have_lost": 0,
+      "none_filtered": 6
+     },
+     {
+      "label": "정답 없음 전부 거르는 최소 문턱",
+      "t": -2.998333692550659,
+      "have_lost": 22,
+      "none_filtered": 24
+     },
+     {
+      "label": "정답 ≤1건 잃을 때 최대 걸러냄",
+      "t": -7.149899959564209,
+      "have_lost": 1,
+      "none_filtered": 15
+     },
+     {
+      "label": "정답 ≤2건 잃을 때 최대 걸러냄",
+      "t": -6.363702297210693,
+      "have_lost": 2,
+      "none_filtered": 17
+     },
+     {
+      "label": "정답 ≤3건 잃을 때 최대 걸러냄",
+      "t": -6.363702297210693,
+      "have_lost": 2,
+      "none_filtered": 17
+     },
+     {
+      "label": "정답 ≤5건 잃을 때 최대 걸러냄",
+      "t": -5.389181137084961,
+      "have_lost": 5,
+      "none_filtered": 18
+     },
+     {
+      "label": "정답 ≤10건 잃을 때 최대 걸러냄",
+      "t": -4.705412864685059,
+      "have_lost": 10,
+      "none_filtered": 19
+     }
+    ],
+    "picks_vs_all": [
+     {
+      "label": "정답 0건 잃는 최대 문턱",
+      "t": -9.527246475219727,
+      "have_lost": 0,
+      "none_filtered": 6
+     },
+     {
+      "label": "정답 없음 전부 거르는 최소 문턱",
+      "t": -2.998333692550659,
+      "have_lost": 23,
+      "none_filtered": 24
+     },
+     {
+      "label": "정답 ≤1건 잃을 때 최대 걸러냄",
+      "t": -7.149899959564209,
+      "have_lost": 1,
+      "none_filtered": 15
+     },
+     {
+      "label": "정답 ≤2건 잃을 때 최대 걸러냄",
+      "t": -6.363702297210693,
+      "have_lost": 2,
+      "none_filtered": 17
+     },
+     {
+      "label": "정답 ≤3건 잃을 때 최대 걸러냄",
+      "t": -6.363702297210693,
+      "have_lost": 2,
+      "none_filtered": 17
+     },
+     {
+      "label": "정답 ≤5건 잃을 때 최대 걸러냄",
+      "t": -5.83906888961792,
+      "have_lost": 5,
+      "none_filtered": 18
+     },
+     {
+      "label": "정답 ≤10건 잃을 때 최대 걸러냄",
+      "t": -5.83906888961792,
+      "have_lost": 5,
+      "none_filtered": 18
+     }
+    ]
+   },
+   "rows": [
+    {
+     "id": "GS-002",
+     "module": "B",
+     "top1_id": "DASAN-TERM-2.3",
+     "top1_score": -4.705412864685059,
+     "hit5": true,
+     "top1_correct": false,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-014",
+     "module": "B",
+     "top1_id": "DASAN-TERM-2.2",
+     "top1_score": 1.3565393686294556,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-015",
+     "module": "B",
+     "top1_id": "DASAN-MANUAL-1.6",
+     "top1_score": -4.124432563781738,
+     "hit5": true,
+     "top1_correct": false,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-016",
+     "module": "B",
+     "top1_id": "DASAN-TERM-4.3",
+     "top1_score": -2.9342153072357178,
+     "hit5": true,
+     "top1_correct": false,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-101",
+     "module": "B",
+     "top1_id": "DASAN-TERM-3.15",
+     "top1_score": -2.998333692550659,
+     "hit5": true,
+     "top1_correct": false,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-102",
+     "module": "B",
+     "top1_id": "DASAN-TERM-4.1",
+     "top1_score": 4.1673126220703125,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-201",
+     "module": "B",
+     "top1_id": "DASAN-TERM-1.4",
+     "top1_score": -1.6307973861694336,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-202",
+     "module": "B",
+     "top1_id": "DASAN-TERM-4.18",
+     "top1_score": 1.1286373138427734,
+     "hit5": true,
+     "top1_correct": false,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-203",
+     "module": "B",
+     "top1_id": "DASAN-TERM-1.5",
+     "top1_score": 2.7742974758148193,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-204",
+     "module": "B",
+     "top1_id": "DASAN-TERM-4.6",
+     "top1_score": -2.558321952819824,
+     "hit5": false,
+     "top1_correct": false,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-205",
+     "module": "B",
+     "top1_id": "DASAN-TERM-3.15",
+     "top1_score": -5.83906888961792,
+     "hit5": false,
+     "top1_correct": false,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-206",
+     "module": "B",
+     "top1_id": "DASAN-TERM-2.3",
+     "top1_score": -1.5842963457107544,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-207",
+     "module": "B",
+     "top1_id": "DASAN-TERM-2.3",
+     "top1_score": 4.518555164337158,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-208",
+     "module": "B",
+     "top1_id": "DASAN-TERM-2.4",
+     "top1_score": 4.139098644256592,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-209",
+     "module": "B",
+     "top1_id": "DASAN-TERM-2.5",
+     "top1_score": 5.108366966247559,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-210",
+     "module": "B",
+     "top1_id": "DASAN-TERM-2.5",
+     "top1_score": 4.723552703857422,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-211",
+     "module": "B",
+     "top1_id": "DASAN-TERM-2.5",
+     "top1_score": -0.799972414970398,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-212",
+     "module": "B",
+     "top1_id": "DASAN-TERM-2.6",
+     "top1_score": 4.911519527435303,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-213",
+     "module": "B",
+     "top1_id": "DASAN-TERM-2.7",
+     "top1_score": 5.2330121994018555,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-214",
+     "module": "B",
+     "top1_id": "DASAN-TERM-2.8",
+     "top1_score": 1.6802279949188232,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-215",
+     "module": "B",
+     "top1_id": "DASAN-TERM-2.9",
+     "top1_score": -3.6079399585723877,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-216",
+     "module": "B",
+     "top1_id": "DASAN-TERM-2.9",
+     "top1_score": -4.1030426025390625,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-217",
+     "module": "B",
+     "top1_id": "DASAN-TERM-2.10",
+     "top1_score": -2.596207857131958,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-218",
+     "module": "B",
+     "top1_id": "DASAN-TERM-2.12",
+     "top1_score": -9.527246475219727,
+     "hit5": true,
+     "top1_correct": false,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-219",
+     "module": "B",
+     "top1_id": "DASAN-TERM-2.11",
+     "top1_score": -7.149899959564209,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-220",
+     "module": "B",
+     "top1_id": "DASAN-TERM-2.12",
+     "top1_score": -1.3380190134048462,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-221",
+     "module": "B",
+     "top1_id": "DASAN-TERM-2.12",
+     "top1_score": 3.257309913635254,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-222",
+     "module": "B",
+     "top1_id": "DASAN-TERM-3.3",
+     "top1_score": 1.303994059562683,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-223",
+     "module": "B",
+     "top1_id": "DASAN-TERM-3.4",
+     "top1_score": -0.8475970029830933,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-224",
+     "module": "B",
+     "top1_id": "DASAN-TERM-3.4",
+     "top1_score": 3.2002968788146973,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-225",
+     "module": "B",
+     "top1_id": "DASAN-TERM-3.5",
+     "top1_score": -0.011513590812683105,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-226",
+     "module": "B",
+     "top1_id": "DASAN-TERM-3.5",
+     "top1_score": 6.5525689125061035,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-227",
+     "module": "B",
+     "top1_id": "DASAN-TERM-3.6",
+     "top1_score": -1.8929108381271362,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-228",
+     "module": "B",
+     "top1_id": "DASAN-TERM-3.6",
+     "top1_score": 1.5588634014129639,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-229",
+     "module": "B",
+     "top1_id": "DASAN-TERM-3.7",
+     "top1_score": 2.4030137062072754,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-230",
+     "module": "B",
+     "top1_id": "DASAN-TERM-3.7",
+     "top1_score": -2.965383768081665,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-231",
+     "module": "B",
+     "top1_id": "DASAN-TERM-3.8",
+     "top1_score": 1.7961233854293823,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-232",
+     "module": "B",
+     "top1_id": "DASAN-TERM-3.9",
+     "top1_score": -1.9405620098114014,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-233",
+     "module": "B",
+     "top1_id": "DASAN-TERM-3.10",
+     "top1_score": -2.7127857208251953,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-234",
+     "module": "B",
+     "top1_id": "DASAN-TERM-3.10",
+     "top1_score": 1.869096040725708,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-235",
+     "module": "B",
+     "top1_id": "DASAN-TERM-3.11",
+     "top1_score": -5.389181137084961,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-236",
+     "module": "B",
+     "top1_id": "DASAN-TERM-3.11",
+     "top1_score": -4.5329389572143555,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-237",
+     "module": "B",
+     "top1_id": "DASAN-TERM-3.12",
+     "top1_score": 4.320959568023682,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-238",
+     "module": "B",
+     "top1_id": "DASAN-TERM-3.13",
+     "top1_score": 1.5615730285644531,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-239",
+     "module": "B",
+     "top1_id": "DASAN-TERM-3.14",
+     "top1_score": 2.892909049987793,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-240",
+     "module": "B",
+     "top1_id": "DASAN-TERM-3.15",
+     "top1_score": 0.7284326553344727,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": 2,
+     "abstained": false
+    },
+    {
+     "id": "GS-241",
+     "module": "B",
+     "top1_id": "DASAN-TERM-3.16",
+     "top1_score": -5.227149963378906,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-242",
+     "module": "B",
+     "top1_id": "DASAN-TERM-4.3",
+     "top1_score": -1.0331647396087646,
+     "hit5": true,
+     "top1_correct": false,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-243",
+     "module": "B",
+     "top1_id": "DASAN-TERM-4.3",
+     "top1_score": 1.9328582286834717,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-244",
+     "module": "B",
+     "top1_id": "DASAN-TERM-4.3",
+     "top1_score": -6.363702297210693,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-245",
+     "module": "B",
+     "top1_id": "DASAN-TERM-4.3",
+     "top1_score": 0.9127323627471924,
+     "hit5": true,
+     "top1_correct": false,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-246",
+     "module": "B",
+     "top1_id": "DASAN-TERM-4.4",
+     "top1_score": -1.3373732566833496,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-247",
+     "module": "B",
+     "top1_id": "DASAN-TERM-4.4",
+     "top1_score": 3.6139776706695557,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-248",
+     "module": "B",
+     "top1_id": "DASAN-TERM-4.5",
+     "top1_score": -5.141999244689941,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-249",
+     "module": "B",
+     "top1_id": "DASAN-TERM-4.6",
+     "top1_score": 0.7523479461669922,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-250",
+     "module": "B",
+     "top1_id": "DASAN-TERM-4.7",
+     "top1_score": 4.574167251586914,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-251",
+     "module": "B",
+     "top1_id": "DASAN-TERM-4.8",
+     "top1_score": -6.083386421203613,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-252",
+     "module": "B",
+     "top1_id": "DASAN-TERM-4.9",
+     "top1_score": 1.890713095664978,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-253",
+     "module": "B",
+     "top1_id": "DASAN-TERM-4.9",
+     "top1_score": 1.5341095924377441,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-254",
+     "module": "B",
+     "top1_id": "DASAN-TERM-4.10",
+     "top1_score": -1.497572422027588,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-255",
+     "module": "B",
+     "top1_id": "DASAN-TERM-4.11",
+     "top1_score": -4.994871616363525,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-256",
+     "module": "B",
+     "top1_id": "DASAN-TERM-4.12",
+     "top1_score": 2.0799145698547363,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-257",
+     "module": "B",
+     "top1_id": "DASAN-TERM-4.13",
+     "top1_score": 4.800872802734375,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-258",
+     "module": "B",
+     "top1_id": "DASAN-TERM-4.14",
+     "top1_score": 0.6540848016738892,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-259",
+     "module": "B",
+     "top1_id": "DASAN-TERM-4.15",
+     "top1_score": 3.3319520950317383,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-260",
+     "module": "B",
+     "top1_id": "DASAN-TERM-4.16",
+     "top1_score": 0.9401834011077881,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-261",
+     "module": "B",
+     "top1_id": "DASAN-TERM-4.17",
+     "top1_score": -0.9025906324386597,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-262",
+     "module": "B",
+     "top1_id": "DASAN-TERM-4.18",
+     "top1_score": 1.9112858772277832,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-263",
+     "module": "B",
+     "top1_id": "DASAN-TERM-4.19",
+     "top1_score": 1.5641552209854126,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-264",
+     "module": "B",
+     "top1_id": "DASAN-TERM-4.20",
+     "top1_score": 1.8138153553009033,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-265",
+     "module": "B",
+     "top1_id": "DASAN-TERM-4.21",
+     "top1_score": -5.087406158447266,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-266",
+     "module": "B",
+     "top1_id": "DASAN-TERM-4.22",
+     "top1_score": -3.8581790924072266,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-267",
+     "module": "B",
+     "top1_id": "DASAN-TERM-4.2",
+     "top1_score": 0.7913060188293457,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-268",
+     "module": "B",
+     "top1_id": "DASAN-TERM-5.3",
+     "top1_score": -6.211398124694824,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-269",
+     "module": "B",
+     "top1_id": "DASAN-TERM-5.4",
+     "top1_score": -3.191117763519287,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-270",
+     "module": "B",
+     "top1_id": "DASAN-TERM-5.5",
+     "top1_score": -4.04923152923584,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-271",
+     "module": "B",
+     "top1_id": "DASAN-TERM-5.6",
+     "top1_score": -3.1357967853546143,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-272",
+     "module": "B",
+     "top1_id": "DASAN-TERM-5.7",
+     "top1_score": 1.3385725021362305,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-273",
+     "module": "B",
+     "top1_id": "DASAN-TERM-5.8",
+     "top1_score": 3.291217565536499,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-274",
+     "module": "B",
+     "top1_id": "DASAN-TERM-5.9",
+     "top1_score": 2.7351131439208984,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-275",
+     "module": "B",
+     "top1_id": "DASAN-TERM-6.2",
+     "top1_score": 6.384942054748535,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-276",
+     "module": "B",
+     "top1_id": "DASAN-TERM-6.3",
+     "top1_score": -0.4366692900657654,
+     "hit5": true,
+     "top1_correct": false,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-277",
+     "module": "B",
+     "top1_id": "DASAN-TERM-6.2",
+     "top1_score": 2.954214096069336,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-278",
+     "module": "B",
+     "top1_id": "DASAN-TERM-6.3",
+     "top1_score": 0.6570988893508911,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-279",
+     "module": "B",
+     "top1_id": "DASAN-TERM-6.4",
+     "top1_score": 0.18355950713157654,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-280",
+     "module": "B",
+     "top1_id": "DASAN-TERM-6.4",
+     "top1_score": -1.5249474048614502,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-281",
+     "module": "B",
+     "top1_id": "DASAN-TERM-6.5",
+     "top1_score": 0.18633970618247986,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-282",
+     "module": "B",
+     "top1_id": "DASAN-TERM-6.6",
+     "top1_score": 6.6237921714782715,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-283",
+     "module": "B",
+     "top1_id": "DASAN-TERM-6.6",
+     "top1_score": 0.8588021993637085,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-284",
+     "module": "B",
+     "top1_id": "DASAN-TERM-6.7",
+     "top1_score": 0.5300784707069397,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-285",
+     "module": "B",
+     "top1_id": "DASAN-TERM-6.8",
+     "top1_score": 4.614841461181641,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-286",
+     "module": "B",
+     "top1_id": "DASAN-TERM-6.9",
+     "top1_score": -3.850691318511963,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-287",
+     "module": "B",
+     "top1_id": "DASAN-MANUAL-1.6",
+     "top1_score": -4.284725189208984,
+     "hit5": true,
+     "top1_correct": false,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-288",
+     "module": "B",
+     "top1_id": "DASAN-TERM-6.11",
+     "top1_score": -3.7037715911865234,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-289",
+     "module": "B",
+     "top1_id": "DASAN-TERM-6.12",
+     "top1_score": 3.6764845848083496,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-290",
+     "module": "B",
+     "top1_id": "DASAN-TERM-6.1",
+     "top1_score": -1.6597747802734375,
+     "hit5": true,
+     "top1_correct": true,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-701",
+     "module": "B-6",
+     "top1_id": "DASAN-TERM-2.6",
+     "top1_score": -7.124883651733398,
+     "hit5": null,
+     "top1_correct": null,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-702",
+     "module": "B-6",
+     "top1_id": "DASAN-TERM-2.7",
+     "top1_score": -7.481503009796143,
+     "hit5": null,
+     "top1_correct": null,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-703",
+     "module": "B-6",
+     "top1_id": "DASAN-TERM-4.14",
+     "top1_score": -6.712059020996094,
+     "hit5": null,
+     "top1_correct": null,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-704",
+     "module": "B-6",
+     "top1_id": "DASAN-TERM-3.16",
+     "top1_score": -10.422330856323242,
+     "hit5": null,
+     "top1_correct": null,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-705",
+     "module": "B-6",
+     "top1_id": "DASAN-TERM-4.4",
+     "top1_score": -3.0476343631744385,
+     "hit5": null,
+     "top1_correct": null,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-706",
+     "module": "B-6",
+     "top1_id": "DASAN-TERM-3.3",
+     "top1_score": -3.296757221221924,
+     "hit5": null,
+     "top1_correct": null,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-707",
+     "module": "B-6",
+     "top1_id": "DASAN-TERM-3.4",
+     "top1_score": -5.906272888183594,
+     "hit5": null,
+     "top1_correct": null,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-708",
+     "module": "B-6",
+     "top1_id": "DASAN-TERM-3.4",
+     "top1_score": -8.889055252075195,
+     "hit5": null,
+     "top1_correct": null,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-709",
+     "module": "B-6",
+     "top1_id": "DASAN-TERM-2.9",
+     "top1_score": -4.183887004852295,
+     "hit5": null,
+     "top1_correct": null,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-710",
+     "module": "B-6",
+     "top1_id": "DASAN-TERM-6.5",
+     "top1_score": -3.7953040599823,
+     "hit5": null,
+     "top1_correct": null,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-711",
+     "module": "B-6",
+     "top1_id": "DASAN-TERM-3.3",
+     "top1_score": -8.07238483428955,
+     "hit5": null,
+     "top1_correct": null,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-712",
+     "module": "B-6",
+     "top1_id": "DASAN-TERM-2.10",
+     "top1_score": -7.186893463134766,
+     "hit5": null,
+     "top1_correct": null,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-713",
+     "module": "B-6",
+     "top1_id": "DASAN-TERM-6.10",
+     "top1_score": -9.050851821899414,
+     "hit5": null,
+     "top1_correct": null,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-714",
+     "module": "B-6",
+     "top1_id": "DASAN-TERM-5.1",
+     "top1_score": -8.743103981018066,
+     "hit5": null,
+     "top1_correct": null,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-715",
+     "module": "B-6",
+     "top1_id": "DASAN-TERM-3.4",
+     "top1_score": -4.7747392654418945,
+     "hit5": null,
+     "top1_correct": null,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-716",
+     "module": "B-6",
+     "top1_id": "DASAN-TERM-6.10",
+     "top1_score": -7.516745567321777,
+     "hit5": null,
+     "top1_correct": null,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-717",
+     "module": "B-6",
+     "top1_id": "DASAN-TERM-4.15",
+     "top1_score": -8.05317497253418,
+     "hit5": null,
+     "top1_correct": null,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-718",
+     "module": "B-6",
+     "top1_id": "DASAN-TERM-4.22",
+     "top1_score": -9.562324523925781,
+     "hit5": null,
+     "top1_correct": null,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-719",
+     "module": "B-6",
+     "top1_id": "DASAN-TERM-4.22",
+     "top1_score": -10.685220718383789,
+     "hit5": null,
+     "top1_correct": null,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-720",
+     "module": "B-6",
+     "top1_id": "DASAN-TERM-6.10",
+     "top1_score": -9.843077659606934,
+     "hit5": null,
+     "top1_correct": null,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-721",
+     "module": "B-6",
+     "top1_id": "DASAN-TERM-4.22",
+     "top1_score": -10.604391098022461,
+     "hit5": null,
+     "top1_correct": null,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-722",
+     "module": "B-6",
+     "top1_id": "DASAN-TERM-4.4",
+     "top1_score": -7.654016017913818,
+     "hit5": null,
+     "top1_correct": null,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-723",
+     "module": "B-6",
+     "top1_id": "DASAN-TERM-4.19",
+     "top1_score": -10.312273025512695,
+     "hit5": null,
+     "top1_correct": null,
+     "referral_rank": null,
+     "abstained": false
+    },
+    {
+     "id": "GS-724",
+     "module": "B-6",
+     "top1_id": "DASAN-TERM-4.4",
+     "top1_score": -3.3903064727783203,
+     "hit5": null,
+     "top1_correct": null,
+     "referral_rank": null,
+     "abstained": false
+    }
+   ]
+  }
+ }
+}

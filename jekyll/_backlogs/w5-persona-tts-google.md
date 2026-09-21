@@ -2,7 +2,7 @@
 title: "합성 통화 음성 — Google Cloud TTS(Wavenet) 어댑터 + 무료 한도 리밋"
 assignee: "류준"
 role: "ai"
-status: "in-progress"
+status: "done"
 sprint: 5
 priority: 58
 date: 2026-09-18
@@ -37,8 +37,14 @@ depends_on:
 - [x] 캐시 우선(`data/processed/synthetic-voice/google/`) — 시연 때 API 호출 0
 - [x] `.env.example` 키 이름 · `scripts/persona_sim/TTS.md` 발급 절차(성윤님 전달용)
 - [x] 단위 테스트(SSML·배분·예산·캐시 히트 시 호출 0·키 유출 없음)
-- [ ] **실제 키로 1회 합성 확인** — 키 발급 뒤
+- [x] **실제 키로 1회 합성 확인** — 2026-09-21 키 받아 `--prefetch SYN-001`: 7턴 381자 합성, mp3 7개(2.2~9.8초, `afinfo`), 상담원 `ko-KR-Wavenet-B`/고객 `ko-KR-Wavenet-C`(pitch +2) 배분 확인, 장부 `tts-usage.json` 381/900,000. 재실행은 캐시 7·호출 0
 
 ## 한계 (절대 원칙 10)
 
 TTS 톤은 연기 지시다. D-5 통화 온도의 성능 근거가 아니다(`scripts/persona_sim/README.md` 「말할 수 없는 것」).
+
+## 2026-09-21 — 실제 키로 확인, 닫음
+
+- 명령: `cd services/call-mediator && node --env-file-if-exists=../../.env scripts/replay_persona_call.ts --prefetch SYN-001`
+- 결과: 캐시 0 → 새로 합성 7(381자) → 재실행 캐시 7·합성 0. 무료 한도 앱 가드(월 900,000자) 장부가 `2026-09: 381` 로 쌓였다. 키 값은 로그·기록 어디에도 남기지 않았다.
+- **못 확인한 것**: WaveNet 이 SSML `prosody volume` 을 얼마나 반영하는지는 **귀로 들어야** 한다 — `data/processed/synthetic-voice/google/SYN-001/` 의 mp3 를 사람이 들어 보고, 안 들리면 `google_tts.ts` `TONE_PROSODY` 값을 키운다(TTS.md 「남은 것」 그대로). 콘솔 문자 할당량을 낮출 수 있는지도 정성윤 님 콘솔에서 확인.

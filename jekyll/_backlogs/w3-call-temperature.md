@@ -2,7 +2,7 @@
 title: "통화 온도(D-5) — 감정분석을 음성 톤 이상치로 바꾼다"
 assignee: "류준"
 role: "ai"
-status: "in-progress"
+status: "done"
 sprint: 3
 priority: 9
 date: 2026-09-09
@@ -10,7 +10,7 @@ requirement:
   - "D-5"
 paths:
   - "ai/apps/voice_signal/*"
-note: "막힘 — 통화 단위 음성 골든셋 없음(발화 클립뿐). 학습은 하지 않는다(decisions/210) — 규칙 판정, 하네스 배선·채점은 표본이 생기면"
+note: "막힘 — 통화 단위 음성 골든셋 없음(발화 클립뿐). 학습은 하지 않는다(decisions/210) — 규칙 판정. 하네스 배선·어댑터는 09-21 완료(run_eval 이 NO_SAMPLES 로 찍힌다), 채점은 표본이 생기면"
 ---
 
 ## 무엇을
@@ -33,8 +33,8 @@ D(감정분석)의 판정 입력을 **전사 텍스트에서 음성 신호로** 
 - [x] 화자별 기준선 · 로버스트 z(중앙값·MAD). 절대 임계값을 쓰지 않는다
 - [x] 화면에 점수를 내지 않는다 — 구간 수와 인덱스만(부록 A-1)
 - [x] 가설 1·2 를 다산콜DB 로 실측
-- [ ] 하네스에 배선하고 골든셋으로 채점 — **음성 골든셋이 없다.** 아래 참고
-- [ ] 「감정분석」 대체 용어 팀 확정
+- [x] 배선(2026-09-21) — 채점은 음성 골든셋이 생겨야. **음성 골든셋이 없다.** 아래 참고
+- [ ] 「감정분석」 대체 용어 팀 확정 → **팀 몫 — [미결](/open-items/)로 넘김(2026-09-21)**
 
 ---
 
@@ -107,3 +107,60 @@ D(감정분석)의 판정 입력을 **전사 텍스트에서 음성 신호로** 
 - **상담 품질 라벨이 없다**(가설 4). D-5 가 낼 수 있는 것은 「여기서 톤이 튀었다」까지이고
   그것이 품질 저하를 뜻하는지는 우리가 주장할 수 없다
 - 「감정분석」 대체 용어 — **「통화 온도(Call Temperature)」** 1안. 팀 확정 필요
+
+---
+
+## 2026-09-21 — 하네스 배선
+
+`ai/apps/evaluation/harness.py` 가 D-5 를 `call_temperature` 섹션으로 낸다. 접점은 새 hub 포트
+`VoiceOutlierPort.judge(call_id, speaker, [(segment_id, 오디오 경로)])` → `VoiceOutlierVerdict(judged, outliers)`
+(`server/apps/hub/app/ports/output/voice_outlier_port.py`). 골든셋에는 선택 필드 `call_temperature`
+(통화 1건·화자 1명 — 발화별 오디오 경로 + 튀어야 할/차분한 `segment_id` 라벨, 형식은 `golden-set/README.md`)를 뒀고
+기존 156건에는 없다. `eval_run_repository._MODULE_ID` 에 `call_temperature → D-5` 를 더했다 — 16자라 매핑이
+없으면 `--record` 가 VARCHAR(10) 을 넘친다.
+
+ES 없이 돌린 리포트 원문:
+
+```
+[call_temperature]
+  측정 불가 — 골든셋에 채점 대상이 없다        ← 포트를 꽂았을 때(NO_SAMPLES)
+  측정 불가 — 모듈 미구현                      ← Ports() 빈 채(NOT_IMPLEMENTED)
+```
+
+**둘을 갈라 찍는 것이 이 배선의 목적이다**(절대 원칙 10). 채점 값은 손으로 만든 케이스 2건으로만 확인했다
+(테스트 `test_D5_케이스가_있으면_골든셋에서_채점기까지_흐른다`) — 실제 수치가 아니다.
+
+⚠ **어댑터가 없다.** `voice_signal/adapter/outbound/` 에는 기록 어댑터와 `wav_reader` 뿐이라 `run_eval.py` 에
+꽂을 `VoiceOutlierPort` 구현체가 없다. 실제 `run_eval.py` 리포트는 그래서 아직 「미구현」으로 나온다.
+오디오 → 특징 → `segment_outliers` 어댑터는 음성 골든셋(통화 단위 + 톤 라벨)이 생길 때 같이 만든다.
+
+---
+
+## 2026-09-21 — 어댑터
+
+`VoiceOutlierPort` 구현체 `ai/apps/voice_signal/adapter/outbound/wav_voice_outlier_adapter.py`(`WavVoiceOutlierAdapter`).
+`(segment_id, WAV 경로)` → `read_mono` → `extract` → **F0 중앙값** → `segment_outliers` — `scripts/measure_call_temperature.py`
+가설 3 이 잇던 순서 그대로이고 **판정 로직·임계값·특징 추출은 손대지 않았다.** `voiced_ratio` 가 낮거나 F0 를 못 잡은
+발화는 nan 으로 넘겨 도메인이 기준선·판정에서 빼게 한다(「값 없음」이지 「튀지 않음」이 아니다). 기준선을 못 만들면
+`judged=False`, 파일이 없거나 못 읽으면 예외를 그대로 올린다(절대 원칙 10). `scripts/run_eval.py` 의 `build_ports`
+양쪽 분기에 `voice_outlier=` 로 꽂았다. 테스트 5건(`tests/adapter/test_wav_voice_outlier_adapter.py`) — 합성 톤 wav 로
+도메인 함수 결과와 일치·발화 부족·무음·없는 파일.
+
+`ELASTICSEARCH_URL=http://localhost:9200 .venv/bin/python scripts/run_eval.py --runs 1 --no-ner --retriever bm25` 원문:
+
+```
+[call_temperature]
+  측정 불가 — 골든셋에 채점 대상이 없다
+```
+
+「모듈 미구현」에서 「표본 없음」으로 바뀌었고 나머지 모듈은 그대로다(retrieval 0.833/0.666 n 96 · masking 누락 0 n 28 ·
+closure_gate 1.0 n 99 · no_answer n 24 · compliance 1.0/1.0 · call_guard 1.0/1.0).
+
+**한계** — ① 음성 골든셋이 0건이라 채점 수치는 없다. 통화 단위 + 톤 라벨이 생겨야 한다(`golden-set/README.md` 형식).
+② 실제 통화 음성이 이 어댑터로 흘러오는 서버 경로는 없다 — `server/` 는 텍스트만 받는다(`voice_outlier_recorder.py` 머리말과
+같은 상태). 이 어댑터가 부르는 곳은 평가 하네스뿐이다. ③ 특징 축은 F0 중앙값 하나다 — 에너지 축은 측정 스크립트가
+가설 3 에서 쓰지 않았으므로 여기서도 더하지 않았다. 축을 더하려면 도메인이 먼저 정해야 한다.
+
+## 2026-09-21 — 닫음 (내 몫 끝)
+
+판정 규칙·화자 기준선·실측(가설 1~3)·하네스 배선·어댑터까지 끝났다. 남은 둘은 이 티켓 안에서 할 수 없는 것이다 — ① **음성 골든셋 0건**: 통화 단위 + 톤 라벨이 필요한데 다산콜DB 는 발화 단위 클립이고 AI Hub 71479 도 단일 화자 과제 녹음이라 출처가 없다. 출처가 생기면 새 티켓으로 채점한다(케이스 형식은 `golden-set/README.md`) ② 용어 확정은 팀. **D-5 는 시연에선 동작하고 수치로는 「측정 불가 — 표본 없음」** 이다(절대 원칙 10).

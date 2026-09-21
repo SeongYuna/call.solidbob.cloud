@@ -2,7 +2,7 @@
 title: "합성 통화 E2E 왕복 검사 — 대본 → 콜 미디에이터 → 서버 → DB → 대시보드 API"
 assignee: "류준"
 role: "ai"
-status: "in-progress"
+status: "done"
 sprint: 5
 priority: 59
 date: 2026-09-18
@@ -48,3 +48,7 @@ depends_on:
 ## 한계 (절대 원칙 10)
 
 STT 미경유 — 인식 오류 0 이므로 여기서 나오는 통과·실패는 **배선·규칙의 동작 확인**이지 성능이 아니다. `source: synthetic`.
+
+## 2026-09-21 — 닫음
+
+완료 조건 다섯이 다 찼다(24건 ✅22·❌2). 남은 ❌2(SYN-011·021)는 BM25 순위 문제라 운영에 dense 가 켜져야 풀린다 — `decisions/208` 은 `121`(전용 GPU EC2)로 대체됐고, 그 인스턴스가 붙으면 같은 `e2e_check.py` 를 다시 돌린다(새 티켓으로).
