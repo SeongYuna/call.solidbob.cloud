@@ -117,7 +117,7 @@ export function App(): ReactElement {
             onResetPassword={() => {
               setVoluntaryPassword(true);
             }}
-            onLogout={agentAuth.agentId !== null ? agentAuth.logout : undefined}
+            onLogout={agentAuth.logout}
           />
         ) : (
           <>

@@ -121,6 +121,24 @@ export interface DocumentSource {
   title: string;
 }
 
+/**
+ * C-1~C-4 컴플라이언스 위반 — 서버
+ * `server/apps/hub/adapter/inbound/api/schemas/compliance_schema.py`(`ComplianceFindingSchema`)를
+ * 그대로 따른다. `segment_id`는 계약 필드가 아니다(서버 응답은 payload 최상위에 한 번만
+ * 싣는다) — `CallGuardFlag`와 같은 이유로 프론트 저장소가 세그먼트별로 색인하려고
+ * 각 finding에 붙인 것이다.
+ *
+ * 서버는 `announceCompliance`가 꺼져 있는 동안 이 메시지를 보내지 않는다
+ * (`services/call-mediator/src/app/call_registry.ts`). 빈 findings는 "잡힌 것이
+ * 없음"이지 "안전함"이 아니다(부록 A-1) — 서버도 빈 배열은 아예 안 보낸다.
+ */
+export interface ComplianceFinding {
+  segment_id: number;
+  rule_code: string;
+  phrase: string;
+  alternative_source?: DocumentSource;
+}
+
 /** 자동 트리거(B-1)로 뜬 카드인지, 상담원이 직접 찾은 카드인지. */
 export type CardSourceType = "auto" | "manual";
 

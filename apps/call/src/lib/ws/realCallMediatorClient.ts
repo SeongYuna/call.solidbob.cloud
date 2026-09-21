@@ -4,6 +4,7 @@ import type {
   CallWrapUp,
   ClosureEvent,
   ClosureVerdict,
+  ComplianceFinding,
   DemoDomain,
   DocumentSource,
   ManualSearchRequest,
@@ -21,6 +22,7 @@ type ParsedMessage =
   | { kind: "recommendation"; payload: RecommendationBatch }
   | { kind: "recommendation_pending"; payload: { call_id: string } }
   | { kind: "call_guard"; payload: { segment_id: string; flags: CallGuardFlag[] } }
+  | { kind: "compliance"; payload: { segment_id: string; findings: ComplianceFinding[] } }
   | { kind: "closure"; payload: ClosureEvent };
 
 export class RealCallMediatorClient implements CallMediatorClient {
@@ -149,6 +151,12 @@ export class RealCallMediatorClient implements CallMediatorClient {
       }
       return;
     }
+    if (message.kind === "compliance") {
+      for (const finding of message.payload.findings) {
+        listeners.onCompliance?.(message.payload.segment_id, finding);
+      }
+      return;
+    }
     listeners.onClosure(message.payload);
   }
 }
@@ -165,6 +173,7 @@ export function parseCallMediatorMessage(value: unknown): ParsedMessage | null {
     tagged === "recommendation" ||
     tagged === "recommendation_pending" ||
     tagged === "call_guard" ||
+    tagged === "compliance" ||
     tagged === "closure"
   ) {
     const inner = isRecord(body.payload) ? body.payload : body;
@@ -185,7 +194,13 @@ export function parseCallMediatorMessage(value: unknown): ParsedMessage | null {
 }
 
 function parseByKind(
-  kind: "transcript" | "recommendation" | "recommendation_pending" | "call_guard" | "closure",
+  kind:
+    | "transcript"
+    | "recommendation"
+    | "recommendation_pending"
+    | "call_guard"
+    | "compliance"
+    | "closure",
   body: Record<string, unknown>,
 ): ParsedMessage | null {
   if (kind === "transcript") {
@@ -202,6 +217,10 @@ function parseByKind(
   }
   if (kind === "call_guard") {
     const payload = parseCallGuard(body);
+    return payload === null ? null : { kind, payload };
+  }
+  if (kind === "compliance") {
+    const payload = parseCompliance(body);
     return payload === null ? null : { kind, payload };
   }
   const payload = parseClosure(body);
@@ -243,6 +262,42 @@ function readCallGuardCategory(value: unknown): CallGuardFlag["category"] | null
     return str;
   }
   return null;
+}
+
+/**
+ * `ComplianceCheckResponse` 그대로(`compliance_schema.py` `ComplianceFindingSchema`) —
+ * 한 세그먼트에 잡힌 위반 여러 건. `alternative_source`는 선택 필드라 `parseClosure`의
+ * `source`와 같은 방식으로 있을 때만 검증한다.
+ */
+function parseCompliance(
+  body: Record<string, unknown>,
+): { segment_id: string; findings: ComplianceFinding[] } | null {
+  const segment_id = readString(body, "segment_id");
+  if (segment_id === null || !Array.isArray(body.findings)) {
+    return null;
+  }
+  const segmentIdNum = Number(segment_id);
+  const findings: ComplianceFinding[] = [];
+  for (const item of body.findings) {
+    if (!isRecord(item)) {
+      return null;
+    }
+    const rule_code = readString(item, "rule_code");
+    const phrase = readString(item, "phrase");
+    if (rule_code === null || phrase === null) {
+      return null;
+    }
+    const finding: ComplianceFinding = { segment_id: segmentIdNum, rule_code, phrase };
+    if (item.alternative_source !== undefined && item.alternative_source !== null) {
+      const source = parseSource(item.alternative_source);
+      if (source === null) {
+        return null;
+      }
+      finding.alternative_source = source;
+    }
+    findings.push(finding);
+  }
+  return { segment_id, findings };
 }
 
 function unwrapPayload(value: unknown): Record<string, unknown> | null {

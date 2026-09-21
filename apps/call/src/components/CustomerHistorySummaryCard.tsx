@@ -1,4 +1,5 @@
 import { useState, type ReactElement } from "react";
+import { isCoreApiConfigured } from "../lib/api/coreClient";
 import { getCustomerHistory } from "../mock/customerHistory";
 import { getSelectedMockScenarioId } from "../mock/scenarios";
 import { useCallStore } from "../store/callStore";
@@ -8,11 +9,17 @@ import { useCallStore } from "../store/callStore";
  * 다시 묻지 않게. 필요서류 카드 위, 두 탭(필요서류/팝업창) 어느 쪽에서도 보인다.
  *
  * mock 전용이다 — `mock/customerHistory.ts` 주석 참고. F-3(반복 문의 연결)이
- * 서버에 생기면 시나리오 ID 대신 실제 customer_id 조회로 바꾼다.
+ * 서버에 없어 시나리오 ID에 고정된 이력이라, 실서버 모드(`isCoreApiConfigured()`)에서는
+ * 렌더하지 않는다 — 안 그러면 실제 고객 통화에 mock 시나리오의 가짜 이력이 뜬다.
+ * F-3이 서버에 생기면 시나리오 ID 대신 실제 customer_id 조회로 바꾼다.
  */
 export function CustomerHistorySummaryCard(): ReactElement | null {
   const viewMode = useCallStore((state) => state.viewMode);
   const [expanded, setExpanded] = useState(true);
+
+  if (isCoreApiConfigured()) {
+    return null; // 실서버 모드 — mock 시나리오 고정 이력이라 실제 통화에 보여줄 수 없다
+  }
 
   if (viewMode === "history") {
     return null; // 지난 상담을 다시 보는 중이다 — "새 통화 시작" 맥락이 아니다

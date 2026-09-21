@@ -1,6 +1,7 @@
 import type {
   CallWrapUp,
   ClosureEvent,
+  ComplianceFinding,
   ManualSearchRequest,
   RecommendationBatch,
   TranscriptEvent,
@@ -30,6 +31,11 @@ export interface CallMediatorListener {
   onAgentTts?: (transcriptSegmentId: string, event: AgentTtsStatus) => void;
   /** C-6. §7.3 미정 — mock만 보낸다. 키는 자막 segment_id. */
   onCallGuard?: (transcriptSegmentId: string, event: CallGuardFlag) => void;
+  /**
+   * C-1~C-4. §7.3 미정 — 서버 `call_registry.ts`의 `announceCompliance`가 꺼져 있어
+   * 아직 안 온다(켜지면 이 콜백이 불린다). mock은 안 보낸다. 키는 자막 segment_id.
+   */
+  onCompliance?: (transcriptSegmentId: string, event: ComplianceFinding) => void;
   /** A-5 ⓑ. 번역이 아님. 키만 보낸다. 점수는 없다. */
   onAccentRecognition?: (transcriptSegmentId: string) => void;
   /** A-5. 통화 시작 시 대상 언어. 한국어 전용 mock은 null. */
