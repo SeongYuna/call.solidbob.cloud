@@ -10,6 +10,7 @@ import {
 } from "react";
 import { BrandLockup } from "./AppHeader";
 import { MaskedText, revealSpansFor, type RevealSpan } from "./MaskedText";
+import { isCoreApiConfigured } from "../lib/api/coreClient";
 import { formatOffsetMs } from "../lib/text/codepoints";
 import { formatCallStartedAt } from "../lib/formatCallTime";
 import { findMatches, type CharRange } from "../lib/text/highlight";
@@ -515,34 +516,36 @@ export function TranscriptPanel({
       <header className="panel-head transcript-head">
         <div className="transcript-head-row">
           <h2 id="transcript-heading">실시간 자막</h2>
-          <div className="mask-auth-bar">
-            <button
-              type="button"
-              className="mask-auth-btn"
-              aria-pressed={authorized}
-              onClick={() => {
-                setAuthorized(true);
-              }}
-            >
-              권한 확인 (데모)
-            </button>
-            <button
-              type="button"
-              className="mask-auth-btn"
-              disabled={!authorized}
-              aria-pressed={revealAll}
-              onClick={() => {
-                if (revealAll) {
-                  setRevealAll(false);
-                  setOpenedIds(new Set());
-                  return;
-                }
-                setRevealAll(true);
-              }}
-            >
-              원문 보기
-            </button>
-          </div>
+          {!isCoreApiConfigured() ? (
+            <div className="mask-auth-bar">
+              <button
+                type="button"
+                className="mask-auth-btn"
+                aria-pressed={authorized}
+                onClick={() => {
+                  setAuthorized(true);
+                }}
+              >
+                권한 확인 (데모)
+              </button>
+              <button
+                type="button"
+                className="mask-auth-btn"
+                disabled={!authorized}
+                aria-pressed={revealAll}
+                onClick={() => {
+                  if (revealAll) {
+                    setRevealAll(false);
+                    setOpenedIds(new Set());
+                    return;
+                  }
+                  setRevealAll(true);
+                }}
+              >
+                원문 보기
+              </button>
+            </div>
+          ) : null}
         </div>
         <div className="transcript-search">
           <svg
