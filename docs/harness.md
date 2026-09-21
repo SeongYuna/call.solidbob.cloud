@@ -88,6 +88,10 @@ lint-imports 가 "모듈 없음"으로 실패한다. 지금은 `server`: `hub`·
 | React 대시보드 타입 체크 | `cd apps/call && pnpm run typecheck` | 스캐폴딩됨 — 다만 `node_modules` 미설치라 **로컬에서 아직 안 돌려봄**. CI 에도 이 job 은 없다 |
 | 지킬 사이트 빌드 · 내부 링크 | `cd jekyll && bundle exec jekyll build` → `python3 scripts/check_site_links.py jekyll/_site` | **동작** — 56페이지, 깨진 링크 0 |
 
+> ⚠ **2026-09-21 다시 셌다** — `cd server && pytest` **1,058건**(통과 1,057 · 건너뜀 1, `integration` 제외) · server 구조 계약은 **4종**(3종 아님) 전부 KEPT ·
+> `cd ai && pytest` **421 통과 · 1 건너뜀 · 17 제외** · ai 계약 3종. 콜 미디에이터는 `test()` 약 134개(돌리지 않고 셌다). 스포크가 꽂혀
+> `/hub/transcripts` 는 501 이 아니다. **프론트 세 앱은 여전히 CI 검증이 없다**(테스트 스크립트도 없다). 표 안의 옛 숫자는 그때의 값으로 둔다.
+>
 > 위 수치는 2026-08-26 실측이다. `cd server && pytest` 가 더 이상 평가 하네스를 돌리지 않는다는
 > 점에 주의 — 분리 이후 평가 하네스는 `ai/` 에 있다. `rfp-harness.md §5` 의 모의 검수 항목도
 > 같은 이유로 `cd ai && pytest` 를 함께 봐야 한다.

@@ -1,17 +1,20 @@
 # Requirement: J-1, QUA-1
-"""GET /hub/agents/me — 로그인 화면이 토큰을 검증하는 자리. 판정은 `require_agent`가 다 하므로
-여기서는 그 결과(401·501·통과)가 그대로 나오는지만 본다."""
+"""GET /hub/agents/me — 로그인 화면이 토큰을 검증하고 이름을 받는 자리. 토큰 판정은
+`require_agent`가 다 하므로 여기서는 그 결과(401·501·통과)와 이름 조회만 본다."""
 
 from fastapi.testclient import TestClient
 
-from agent_auth.dependencies.providers import get_agent_token_port
+from agent_auth.dependencies.providers import get_agent_directory_port, get_agent_token_port
 from main import app
 
-from ._fakes import FakeAgentTokens
+from ._fakes import FakeAgentDirectory, FakeAgentTokens
 
 
-def _client(port):
+def _client(port, agents=None):
     app.dependency_overrides[get_agent_token_port] = lambda: port
+    app.dependency_overrides[get_agent_directory_port] = lambda: (
+        agents if agents is not None else FakeAgentDirectory({"agent-7": "홍길동"})
+    )
     return TestClient(app)
 
 
@@ -19,13 +22,22 @@ def teardown_function():
     app.dependency_overrides.clear()
 
 
-def test_유효한_토큰이면_agent_id를_돌려준다():
+def test_유효한_토큰이면_agent_id와_이름을_돌려준다():
     port = FakeAgentTokens()
     port.seed("agent-7", "cga_valid")
     with _client(port) as c:
         r = c.get("/hub/agents/me", headers={"Authorization": "Bearer cga_valid"})
     assert r.status_code == 200
-    assert r.json() == {"agent_id": "agent-7"}
+    assert r.json() == {"agent_id": "agent-7", "display_name": "홍길동"}
+
+
+def test_agent_행이_지워졌어도_agent_id를_이름_대신_돌려준다():
+    port = FakeAgentTokens()
+    port.seed("agent-7", "cga_valid")
+    with _client(port, agents=FakeAgentDirectory()) as c:
+        r = c.get("/hub/agents/me", headers={"Authorization": "Bearer cga_valid"})
+    assert r.status_code == 200
+    assert r.json() == {"agent_id": "agent-7", "display_name": "agent-7"}
 
 
 def test_토큰_없으면_401이다():

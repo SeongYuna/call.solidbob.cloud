@@ -11,7 +11,11 @@ from hub.adapter.inbound.api.schemas._types import StrField
 
 
 class IssueAgentTokenRequest(BaseModel):
-    agent_id: str = Field(min_length=1, max_length=20, description="agent.agent_id")
+    agent_id: str = Field(
+        min_length=1,
+        max_length=30,
+        description="agent.agent_id(≤20자) 또는 agent.display_name(≤30자) — 이름이고 아직 없으면 그 자리에서 새로 만든다(`decisions/406`)",
+    )
 
 
 class AgentTokenItemSchema(BaseModel):

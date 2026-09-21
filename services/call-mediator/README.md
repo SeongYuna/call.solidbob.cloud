@@ -69,7 +69,7 @@ node scripts/replay_persona_call.ts SYN-004 --watch --speak
 | `CALL_MEDIATOR_INGEST_TOKEN` | `/ingest`(과금) 비밀. **없으면 이 머신(루프백) 접속만 받는다** |
 | `CALL_MEDIATOR_VIEW_TOKEN` | `/ws`(자막 보기) 토큰. **없으면 이 머신(루프백) 접속만 받는다** |
 
-⚠ `CALL_MEDIATOR_PORT`·`CORE_API_URL`·`CALL_MEDIATOR_INGEST_TOKEN`·`CALL_MEDIATOR_VIEW_TOKEN` 은 아직 `.env.example` 에 없다.
+위 키는 전부 `.env.example` 에 **이름만** 올라 있다(2026-09-21 확인 — `CORE_API_TOKEN` 포함. 옛 「아직 없다」는 낡은 서술이었다).
 그 파일은 자격증명 보호 훅이 편집을 막아 사람이 채운다.
 
 ## 접속 제어 (`src/domain/access.ts`)
@@ -132,13 +132,13 @@ node scripts/replay_persona_call.ts SYN-004 --watch --speak
 - **`closure`** — F-2 필요서류 체크리스트(`decisions/305`). 추천 응답 **1순위 카드의 `source.doc_id`** 를 통화의 절차로 잡고,
   상담원 확정 발화(마스킹본)가 쌓일 때마다 `POST /hub/required-docs-checks` 로 다시 판정한다. 한 통화의 판정 요청은 줄을 세운다.
   서버가 422(규칙 없는 조항)면 그 조항은 다시 묻지 않는다
-- ⚠ **`call_guard`·`closure` 도 대시보드 전송을 꺼 두었다**(`main.ts` `announceCallGuard`·`announceClosure`) — `apps/call` 파서가 앞은 모르는
-  `type`, 뒤는 옛 형식(`closure_type`·`approved/blocked`)만 받는다
+- **`call_guard`·`closure` 의 대시보드 전송은 2026-09-15 부터 켜져 있다**(`main.ts` `announceCallGuard`·`announceClosure` 가 `true`) —
+  `apps/call` 실서버 파서가 둘을 받는다. 끄려면 `false` 로 되돌린다
 - **추천 요청에는 `received_at_ms` 를 싣는다** — STT final 을 받은 시각(통화 기준 ms). 서버 트리거가 발동 시각으로 쓴다
   (없으면 «발화 종료 + 346ms» 모형). 줄에 넣기 전에 재므로 서버 대기 시간은 섞이지 않는다
 - **「검색 중」** `{"type": "recommendation_pending", "payload": {"call_id", "segment_id"}}` 을 추천 요청 직전에 보낼 수 있다
-  (`plan.md` 7.3절). ⚠ **꺼 두었다**(`main.ts` `announcePending: false`) — `apps/call` 파서가 모르는 `type` 에 오류
-  배너를 띄운다. 수신 코드가 들어가면 켠다
+  (`plan.md` 7.3절). **2026-09-15 부터 켜져 있다**(`main.ts` `announcePending: true`) — 그 전에는 `apps/call` 파서가 모르는
+  `type` 에 오류 배너를 띄워 꺼 두었다
 
 ### `GET /dev` · `WS /dev/text?call_id=&speaker=[&producer=script]` — 개발용 테스트 통화 (`decisions/109`)
 
@@ -171,8 +171,9 @@ node scripts/replay_persona_call.ts SYN-004 --watch --speak
 
 ## 하지 않는 것
 
-- **모노 한 줄에 섞인 두 화자 분리(diarization)** — 채널 분리만 한다. 구글 화자 태그는 final 에만 붙고
-  누가 상담원인지는 알려 주지 않는다. 잘못 붙이면 C-1~C-4(상담원)·C-6(고객) 방향이 뒤집힌다
+- ~~모노 한 줄에 섞인 두 화자 분리(diarization)~~ — **이제 한다**: `speaker=auto`(위 「화자 분리」, `decisions/303`).
+  다만 **기본은 여전히 채널 분리**이고, 걱정은 그대로 남아 있다 — 구글 화자 태그는 누가 상담원인지 알려 주지 않아
+  「먼저 말한 화자 = 상담원」으로 **가정**한다. 틀리면 C-1~C-4(상담원)·C-6(고객) 방향이 뒤집힌다
 - 판정 — 트리거·마스킹·추천은 전부 server 가 한다. 콜 미디에이터는 나르기만 한다
 - 사람별 인증 — 위 토큰은 팀 공유 값이다. 상담원 로그인은 server 와 같은 미결 항목이다(「서버에 인증이 없다」)
 
