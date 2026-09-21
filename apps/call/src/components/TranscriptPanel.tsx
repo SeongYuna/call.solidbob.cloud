@@ -171,7 +171,9 @@ export function TranscriptPanel({
   }, [callId, historyCallId, viewMode]);
 
   useEffect(() => {
-    if (isHistory) {
+    // 실서버 모드에서는 detectCustomerRisk(임시 키워드 감지기)를 부르지 않는다 —
+    // 서버가 실제 call_guard로 슈퍼바이저 개입이 필요한 상황을 이미 알려준다.
+    if (isHistory || isCoreApiConfigured()) {
       return;
     }
     const fresh: SupervisorAlert[] = [];
@@ -250,8 +252,11 @@ export function TranscriptPanel({
   const allRevealIds = useMemo(() => {
     const ids: string[] = [];
     for (const item of utterances) {
+      // 실서버 모드에서는 detectCustomerRisk를 부르지 않는다 — 아래 설명 참고.
       const customerRisks =
-        item.speaker === "customer" ? detectCustomerRisk(item.text) : [];
+        item.speaker === "customer" && !isCoreApiConfigured()
+          ? detectCustomerRisk(item.text)
+          : [];
       const piiMatches = customerRisks.filter((risk) => risk.type === "pii");
       const abuseMatches = customerRisks.filter(
         (risk) => risk.type === "abuse",
@@ -661,8 +666,11 @@ export function TranscriptPanel({
               const hits = hitsBySegment.get(item.segment_id) ?? [];
               const translation = translations[item.segment_id];
               const tts = agentTts[item.segment_id];
+              // 실서버 모드에서는 detectCustomerRisk(임시 키워드·정규식 감지기)를 부르지
+              // 않는다 — 운영 call-mediator가 실제 call_guard를 보내고, 화면 텍스트는
+              // 이미 서버가 마스킹해 온 것이라 이 자리표시자가 더 할 일이 없다.
               const customerRisks =
-                item.speaker === "customer"
+                item.speaker === "customer" && !isCoreApiConfigured()
                   ? detectCustomerRisk(item.text)
                   : [];
               const piiMatches = customerRisks.filter(
