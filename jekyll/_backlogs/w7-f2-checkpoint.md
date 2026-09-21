@@ -64,3 +64,7 @@ F-2 는 **조건부인데도 코드가 꽤 나가 있다.** 2026-08-27 에 `serv
 > `server/apps/closure_gate/domain/services/gate.py` 가 이미
 > `verdict="incomplete" if missing else "complete"` 다. 남은 것은 **골든셋 케이스**와
 > **`DASAN-POLICY-1` 어긋남** 둘뿐이다.
+
+## 되돌림 — 2026-09-22 (`_project/decisions/125`)
+
+09-19 판정의 전제(「잴 수 없다」)가 09-21 에 사라졌다 — 골든셋 F-2 케이스 99건(`GS-601~699`), 하네스 `closure_gate` accuracy 1.0 · n 99, `DASAN-POLICY-1` 정정. `118` 이 열어 둔 문 그대로 **「구현 완결」로 되돌린다.** 위 09-19 판정 문장은 지우지 않는다. 이어받는 티켓 [w8-f2-wrapup](/backlog/w8-f2-wrapup/) 의 갈래를 같이 바꿨다.

@@ -2,7 +2,7 @@
 title: "서버 원격 모델 어댑터 — 안 붙으면 규칙·BM25 로 조용히 내려간다"
 assignee: "장민석"
 role: "ai"
-status: "todo"
+status: "cancelled"
 sprint: 6
 priority: 69
 date: 2026-09-21
@@ -35,3 +35,7 @@ GPU 가 꺼졌다고 자막·마스킹이 멈추면 안 된다.
 - [ ] 테스트 — 원격 정상 / 타임아웃 / 연결 거부 / 5xx 각각에서 자막·마스킹이 나온다
 - [ ] `server/.importlinter` 계약 2(torch·transformers import 금지) 그대로 KEPT
 - [ ] `/health/ready` 가 원격 모델 연결 여부를 말한다
+
+---
+
+> **취소 (2026-09-22, 정성윤).** `_project/decisions/124` 로 모델을 전용 GPU EC2 가 아니라 운영 노드에 CPU 로 싣기로 했다. 전용 인스턴스·HTTP 표면·원격 어댑터가 필요 없어졌다. 이어받는 티켓: [w5-models-on-node](/backlog/w5-models-on-node/).
