@@ -18,7 +18,7 @@ paths:
 1. **`GET /health/ready` 를 k8s 프로브에 붙일지** — 붙이면 ES·DB 가 잠깐 끊길 때 파드가 재시작된다. 그게 나은지가 판단 대상이다
 2. **ES StatefulSet 이 릴리스마다 `configured` 로 찍힌다** — 실제로 바뀌는 것이 없는데 diff 가 난다
 3. **`uploads/` 수명 주기 규칙** — `datasets/` 에만 걸려 있다(런북 5-4). 테스트 음성이 쌓이기만 한다
-4. **Vercel Ignored Build Step 을 `vercel.json` 으로 옮길지 · Root Directory 눈 확인** — 조서희 님과
+4. **Vercel Ignored Build Step 을 `vercel.json` 으로 옮길지 · Root Directory 눈 확인** — 조서희 님과 → **09-22 진행**: Root Directory 셋은 대조표와 일치했고, 랜딩의 Ignored Build Step 이 `apps/admin` 으로 틀려 있어 고쳤다(09-15 이후 랜딩 미배포 — 로그 `2026-09-22-01`, 런북 18-4 추가). `vercel.json` 이관 여부만 남았다
 
 ## 같이 — 오래 열린 내 티켓 둘
 
