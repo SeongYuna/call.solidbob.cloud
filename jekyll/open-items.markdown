@@ -870,3 +870,22 @@ Environment Variables → **Production 만** → Deployments → Redeploy(`VITE_
 - [ ] **⚠ C-5 「누락 0」은 오류 없는 전사에서만 성립한다** — 운영 구성(규칙만)의 오류 내성 곡선: **0% 0건 → 5% 2건 → 10% 3건 → 15·20% 4건**(판정 24, 시드 3개 중 최대). 5% 에서 새는 것은 `GS-033`·`GS-415`(둘 다 P7 주소), 10% 부터 `GS-056`(P6 이름)이 더해진다. **실제 통화는 STT 를 거치므로 오류 0% 가 아니다** — 절대 규칙(누락 0건)을 「통과」로 인용할 때 **반드시 「오류 없는 전사 한정」을 붙인다.** 09-15 로컬 측정의 규칙+NER 은 0/0/1/1/1 이었다 — NER 이 필요한 근거가 이것이고, 모델을 올릴 자리는 `decisions/121`(전용 GPU EC2)이다. ⚠ 주입기가 실측 오류의 46.9% 를 흉내 내지 못해 **실제는 이보다 나쁠 수 있다**
 - [ ] **모델 계열 곡선이 그림에 없다** — `jekyll/assets/error-tolerance-2026-09-21.png` 는 운영 구성(bm25 · rule) 두 선뿐이다. 모델 파일이 있는 머신에서 `scripts/measure_error_tolerance.py` → `scripts/plot_error_curve.py` 를 돌리면 dense·리랭커·규칙+NER 이 같은 그림에 얹힌다(측정 스크립트가 있는 계열만 재고 빠진 계열을 그림 아래에 적도록 고쳤다)
 - [ ] **기록 DB 없이 잰 값이다** — `eval_run`/`eval_result` 에 남지 않았다(§5 의 네 조건은 `STATE.md` 에 글로 남겼다). DB 가 있는 환경에서 같은 명령에 `--record` 를 붙여 한 번 더 돌리면 run_id 가 생긴다
+
+### 전수 조사에서 나온 것 — 고치지 않고 올린다 (신규, 2026-09-21, 정성윤)
+
+낡은 **서술**은 고쳤다([w5-stale-docs-sweep](/backlog/w5-stale-docs-sweep/)). 아래는 서술이 아니라 **결정이나 코드 작업**이 필요해 남긴 것이다.
+
+- [ ] **팀 — 개발기간과 스프린트 수가 안 맞는다** — 개발기간은 **10-27** 까지인데 1주 1스프린트 × 8 은 **10-14** 에 끝난다(`STATE.md` 가 8주차를 10-08~10-14 로 적는다).
+  남는 약 2주가 무엇인지(발표 준비·버퍼·마감 정리) 어디에도 적혀 있지 않다. `w8-*` 티켓의 마감일이 여기에 걸린다
+- [ ] **장민석 님 — `POST /hub/calls/{id}/close` 와 카드 피드백에 상담원 토큰 가드가 없다** — `server/main.py` 주석은 「대시보드가 직접 부르는 쓰기(`/close`·요약 확정·카드 피드백)는
+  사람 토큰(`require_agent`) 몫」이라고 적는데, **실제로 걸린 것은 요약 확정·재수정뿐**이다(`postcall_router.py`·`card_feedback_router.py` 에 `require_agent` 0회, 2026-09-21 grep).
+  서비스 토큰 문(`decisions/120`)도 이 둘은 비껴간다 → **두 경로는 어느 토큰도 요구하지 않는다.** 읽기 경로(통화 목록·전사·기록)가 무인증인 것은 기존 미결과 같은 건이다
+- [ ] **정성윤 — 새 클러스터에서 `CORE_API_TOKEN` 이 조용히 비는가(추정 — 확인 필요)** — `infra/k8s/base/call-mediator.yaml` 은 `call-mediator-tokens` 에서 그 키를 **optional** 로 읽는데,
+  `release.yml` 의 시크릿 생성은 INGEST·VIEW 두 키만 만든다. 사람이 손으로 넣는 전제라면 런북 12장에 그 단계를 적고, 아니면 워크플로에 넣는다. 비면 쓰기 문이 `open` 으로 남는다
+- [ ] **류준 님 — 하네스가 부르지 않는 지표가 셋 있다** — `ai/apps/evaluation/metrics/` 의 `generation`(B-4·B-5)·`asr`(A-5)·`call_temperature`(D-5)는 `harness.py`·`run_eval.py` 어디서도 import 하지 않는다.
+  별도 스크립트로만 돌아서 **`run_eval` 리포트에 「측정 불가」로도 나타나지 않는다**(침묵 누락). 절대 원칙 10 의 취지로는 「측정 불가」 줄이라도 찍는 쪽이 맞다
+- [ ] **류준·장민석 님 — D-5 음성 이상치 저장이 서버에서 배선되지 않는다** — 포트·DTO·`voice_outlier_repository.py` 까지 있는데 `server/` 프로덕션 코드에서 한 번도 참조되지 않는다.
+  그래서 `blacklist_evidence_repository.py` 의 `voice_outlier` 집계는 서버 요청 경로에서 **늘 0 일 것으로 보인다(추정)** — J-4 근거의 한 축이 비어 있는 셈이다
+- [ ] **팀 — 「허브는 스포크를 import 하지 않는다」를 계약으로 걸지** — 서버 주석 세 곳이 인용하던 「계약 5」는 **`.importlinter` 에 없었다**(주석은 사실대로 고쳤다).
+  지금은 `hub/dependencies/` 가 `masking`·`closure_gate`·`postcall`·`blacklist` 의 기본 구현을 직접 import 하고 허브 라우터 12개가 `admin_auth`·`agent_auth` 가드를 import 한다.
+  `docs/architecture.md` §1 은 여전히 「계약 위반」이라고 적는다 — **문서를 코드에 맞출지, 계약을 새로 걸고 코드를 옮길지** 정한다

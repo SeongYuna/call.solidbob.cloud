@@ -6,7 +6,8 @@
 
 이 파일은 앱을 조립만 한다. 라우터는 각 앱의 adapter/inbound/api/v1/ 에, 파이프라인 배선은 hub 에 둔다
 (docs/architecture.md). 스포크 구현체는 여기서 `app.dependency_overrides[<hub 프로바이더>] = <스포크 프로바이더>`
-로 꽂는다 — 허브는 스포크를 import 하지 않고(계약 5), 이 파일만 양쪽을 안다.
+로 꽂는다 — 허브의 `app`·`adapter` 는 `ai/` 스포크를 모르고(`.importlinter` 계약 2), 이 파일만 양쪽을 안다.
+(⚠ 옛 주석의 「계약 5」는 `.importlinter` 에 없다 — 계약은 넷이다. `server/` 안 스포크의 기본 구현은 `hub/dependencies/` 가 직접 import 한다.)
 """
 
 from __future__ import annotations

@@ -63,6 +63,13 @@
                        hub ──▶ 콜 미디에이터 ──▶ 대시보드(React)
 ```
 
+> ⚠ **2026-09-21 — 아래 「현재 상태」는 08-26 의 값이다.** 지금은 `server/` 에 앱 일곱(`hub`·`masking`·`closure_gate`·`postcall`·
+> `blacklist`·`admin_auth`·`agent_auth`)이 있고 허브 라우터는 36개다. `masking`·`closure_gate`·`postcall` 은 **조건 없이** 꽂히고,
+> `ai/` 스포크(`retrieval`·`trigger`·`call_guard`·`compliance`·`pii_ner`·`generation`·`postcall_summary`)는 `server/main.py` 가
+> **설정이 있을 때만** 꽂는다 — `POST /hub/transcripts` 는 더 이상 501 이 아니다. 지금 꽂힌 목록은 `GET /health` 의 `spokes` 가 말한다.
+> ⚠ 바로 아래 「허브 코드에 `import masking` 이 나오면 계약 위반」도 **강제 장치가 없다** — `hub/dependencies/` 가 `server/` 안 스포크의
+> 기본 구현을 직접 import 하고, `.importlinter` 계약 넷 중 그것을 막는 것은 없다(미결 항목에 올렸다).
+
 **현재 상태(2026-08-26)**: `hub`는 슬라이스 2개(`transcript_ingest` — `POST /hub/transcripts`, `myself` — `GET /hub/myself`)가 §3 단면대로 존재하고, 계약 DTO 3종 + 스포크 포트 6개(마스킹·트리거·검색·생성·컴플라이언스·게이트)를 소유. `core/config.py`·`main.py`(합성 루트, `/health`)·`evaluation/`. **스포크 0개** — `POST /hub/transcripts`는 masking 스포크가 꽂히기 전까지 501을 돌려준다(마스킹 없이 원문을 흘리는 임시 통과는 만들지 않는다, SEC-1).
 
 허브가 각 스포크를 호출하는 방식은 **허브가 정의한 아웃바운드 포트**를 스포크가 구현하는 것이다.
