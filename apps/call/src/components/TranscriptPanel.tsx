@@ -10,6 +10,7 @@ import {
 } from "react";
 import { BrandLockup } from "./AppHeader";
 import { MaskedText, revealSpansFor, type RevealSpan } from "./MaskedText";
+import { isCoreApiConfigured } from "../lib/api/coreClient";
 import { formatOffsetMs } from "../lib/text/codepoints";
 import { formatCallStartedAt } from "../lib/formatCallTime";
 import { findMatches, type CharRange } from "../lib/text/highlight";
@@ -170,7 +171,9 @@ export function TranscriptPanel({
   }, [callId, historyCallId, viewMode]);
 
   useEffect(() => {
-    if (isHistory) {
+    // 실서버 모드에서는 detectCustomerRisk(임시 키워드 감지기)를 부르지 않는다 —
+    // 서버가 실제 call_guard로 슈퍼바이저 개입이 필요한 상황을 이미 알려준다.
+    if (isHistory || isCoreApiConfigured()) {
       return;
     }
     const fresh: SupervisorAlert[] = [];
@@ -249,8 +252,11 @@ export function TranscriptPanel({
   const allRevealIds = useMemo(() => {
     const ids: string[] = [];
     for (const item of utterances) {
+      // 실서버 모드에서는 detectCustomerRisk를 부르지 않는다 — 아래 설명 참고.
       const customerRisks =
-        item.speaker === "customer" ? detectCustomerRisk(item.text) : [];
+        item.speaker === "customer" && !isCoreApiConfigured()
+          ? detectCustomerRisk(item.text)
+          : [];
       const piiMatches = customerRisks.filter((risk) => risk.type === "pii");
       const abuseMatches = customerRisks.filter(
         (risk) => risk.type === "abuse",
@@ -515,34 +521,36 @@ export function TranscriptPanel({
       <header className="panel-head transcript-head">
         <div className="transcript-head-row">
           <h2 id="transcript-heading">실시간 자막</h2>
-          <div className="mask-auth-bar">
-            <button
-              type="button"
-              className="mask-auth-btn"
-              aria-pressed={authorized}
-              onClick={() => {
-                setAuthorized(true);
-              }}
-            >
-              권한 확인 (데모)
-            </button>
-            <button
-              type="button"
-              className="mask-auth-btn"
-              disabled={!authorized}
-              aria-pressed={revealAll}
-              onClick={() => {
-                if (revealAll) {
-                  setRevealAll(false);
-                  setOpenedIds(new Set());
-                  return;
-                }
-                setRevealAll(true);
-              }}
-            >
-              원문 보기
-            </button>
-          </div>
+          {!isCoreApiConfigured() ? (
+            <div className="mask-auth-bar">
+              <button
+                type="button"
+                className="mask-auth-btn"
+                aria-pressed={authorized}
+                onClick={() => {
+                  setAuthorized(true);
+                }}
+              >
+                권한 확인 (데모)
+              </button>
+              <button
+                type="button"
+                className="mask-auth-btn"
+                disabled={!authorized}
+                aria-pressed={revealAll}
+                onClick={() => {
+                  if (revealAll) {
+                    setRevealAll(false);
+                    setOpenedIds(new Set());
+                    return;
+                  }
+                  setRevealAll(true);
+                }}
+              >
+                원문 보기
+              </button>
+            </div>
+          ) : null}
         </div>
         <div className="transcript-search">
           <svg
@@ -658,8 +666,11 @@ export function TranscriptPanel({
               const hits = hitsBySegment.get(item.segment_id) ?? [];
               const translation = translations[item.segment_id];
               const tts = agentTts[item.segment_id];
+              // 실서버 모드에서는 detectCustomerRisk(임시 키워드·정규식 감지기)를 부르지
+              // 않는다 — 운영 call-mediator가 실제 call_guard를 보내고, 화면 텍스트는
+              // 이미 서버가 마스킹해 온 것이라 이 자리표시자가 더 할 일이 없다.
               const customerRisks =
-                item.speaker === "customer"
+                item.speaker === "customer" && !isCoreApiConfigured()
                   ? detectCustomerRisk(item.text)
                   : [];
               const piiMatches = customerRisks.filter(
