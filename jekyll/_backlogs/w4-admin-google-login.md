@@ -2,7 +2,7 @@
 title: "관리자 로그인 — 구글 OAuth, JWT(Redis)+refresh(RDS)"
 assignee: "조서희"
 role: "app"
-status: "in-progress"
+status: "done"
 sprint: 4
 priority: 3
 date: 2026-09-14
@@ -32,3 +32,11 @@ paths:
       필요하다(이 세션 환경엔 셋 다 없었다)
 
 근거: `_project/decisions/403`.
+
+---
+
+> **보드 최신화 (2026-09-21, 정성윤 — 사용자 지시로 전체 보드를 한 번에 맞췄다).** `in-progress` → `done`. 마지막 완료 조건(실제 브라우저에서 구글 로그인 끝까지)은 **운영에서 충족됐다** —
+2026-09-15 `admin.solidbob.cloud` 에서 구글 로그인 → 관리자 화면 진입까지 완주(`_logs/2026-09-15-05-seongyun`,
+[w4-admin-auth-runtime](/backlog/w4-admin-auth-runtime/)). 조서희 님 로컬 Redis 가 없어 **로컬에서는** 여전히 미확인이다.
+> 남은 것은 다른 티켓으로 갔다 — 토큰 수명(5분·10분은 테스트 값) → [w7-demo-infra-readiness](/backlog/w7-demo-infra-readiness/) ·
+> `admin_account.agent_id` NULL(승인·해제 409) → [w6-admin-agent-mapping](/backlog/w6-admin-agent-mapping/).

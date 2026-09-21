@@ -2,7 +2,7 @@
 title: "코어 기준선 통과 확인 — F·G·H·I 동결 판정"
 assignee: "정성윤"
 role: "infra"
-status: "todo"
+status: "in-progress"
 sprint: 6
 priority: 66
 date: 2026-09-15
@@ -99,3 +99,8 @@ python scripts/run_eval.py --runs 3 --no-ner --retriever bm25        # 3회 중 
 - [ ] 미달이면 **F·G·H·I 를 착수하지 않는다** — 대신 [8주차 확장 택1](/backlog/w8-extension-pick/)을 닫는다
 - [ ] 통과면 무엇이 통과했고 **무엇이 「측정 불가」인지**를 갈라 적는다
 - [ ] 성공 조건은 F-2 가 아니라 **STT 오류 내성 실험 + 검색 품질 개선 수치**임을 판정문에 다시 적는다
+
+---
+
+> **보드 최신화 (2026-09-21, 정성윤 — 사용자 지시로 전체 보드를 한 번에 맞췄다).** `todo` → `in-progress`. 09-21 에 운영 구성 재측정과 기준선 구성 결정(`121`)이 끝났으니 착수한 것이 맞다.
+> 남은 것 — **판정문(09-30)** · 모델 구성 값([w6-model-config-remeasure](/backlog/w6-model-config-remeasure/)) · `--record`(기록 DB 가 없어 `run_id` 를 못 남겼다).
