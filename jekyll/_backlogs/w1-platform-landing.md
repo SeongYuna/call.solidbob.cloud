@@ -2,7 +2,7 @@
 title: "플랫폼 홍보 랜딩 페이지"
 assignee: "조서희"
 role: "app"
-status: "in-progress"
+status: "done"
 sprint: 1
 priority: 15
 date: 2026-08-27
@@ -31,3 +31,10 @@ paths:
 
 - 아키텍처·역할 문서에 `apps/platform`을 올릴지는 미결
 - 공개 URL: [https://www.solidbob.cloud/](https://www.solidbob.cloud/) (2026-08-28 Vercel)
+
+---
+
+> **보드 최신화 (2026-09-21, 정성윤 — 사용자 지시로 전체 보드를 한 번에 맞췄다).** `in-progress` → `done`. 2026-08-27 부터 열려 있었다. 랜딩은 08-28 에 `www.solidbob.cloud` 로 나갔고, 그 뒤 작업은
+[w2-platform-features-four](/backlog/w2-platform-features-four/)·[w3-platform-landing-refresh](/backlog/w3-platform-landing-refresh/)(둘 다 done)가 이어받았다.
+> 「아키텍처·역할 문서에 `apps/platform` 을 올릴지」는 **그 뒤에 풀렸다** — `CLAUDE.md` §3 이 `apps/platform` 을 프론트 셋 중 하나로 적고 있다.
+> 판정이 틀렸으면 조서희 님이 되돌린다.

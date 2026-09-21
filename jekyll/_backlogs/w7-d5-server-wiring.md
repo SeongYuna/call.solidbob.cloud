@@ -1,0 +1,39 @@
+---
+title: "D-5 음성 이상치 저장 — 서버 요청 경로에 배선한다"
+assignee: "장민석"
+role: "ai"
+status: "todo"
+sprint: 7
+priority: 77
+date: 2026-09-21
+requirement:
+  - "D-5"
+  - "J-4"
+depends_on:
+  - "w3-call-temperature"
+paths:
+  - "server/apps/hub/*"
+---
+
+## 무엇을
+
+`voice_outlier` 를 **서버 요청 경로에서 실제로 저장**한다. 포트 · DTO · `voice_outlier_repository.py` 까지 있는데
+`server/` 프로덕션 코드에서 **한 번도 참조되지 않는다**([미결 항목](/open-items/) 09-21).
+
+## 왜
+
+`blacklist_evidence_repository.py` 의 `voice_outlier` 집계가 서버 요청 경로에서 **늘 0 일 것으로 보인다(추정)** —
+J-4(블랙리스트 전환 근거)의 한 축이 비어 있는 셈이다. 관리자는 근거 화면에서 0 을 「이상 없음」으로 읽는다.
+
+⚠ [w4-c6-d5-persistence](/backlog/w4-c6-d5-persistence/)가 done 인 것과 어긋나 보인다 — 그 티켓은 `ai/` 쪽 저장 어댑터까지였고
+**누가 언제 부르는가**가 빠져 있었다. 먼저 그 추정이 맞는지 확인한다.
+
+## 정할 것
+
+- **호출 주체** — 오디오를 가진 것은 콜 미디에이터다. 서버는 전사만 받는다. D-5 는 음성 톤이라 **전사로는 못 만든다**
+- 류준 님의 [통화 온도](/backlog/w3-call-temperature/)가 음성 골든셋 부재로 막혀 있다 — 모듈이 값을 못 내면 배선해도 빈 값이다. **그 경우 0 이 아니라 「미측정」으로 보이게 한다**
+
+## 완료 조건
+
+- [ ] 추정(늘 0) 확인 결과를 적는다
+- [ ] 배선하거나, 못 하면 근거 화면이 **「미측정」**을 말하게 한다 — 0 으로 두지 않는다(절대 원칙 10)

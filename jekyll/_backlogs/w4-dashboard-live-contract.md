@@ -2,7 +2,7 @@
 title: "대시보드를 실서버에 붙인다 — mock 위에서만 도는 화면들"
 assignee: "조서희"
 role: "app"
-status: "in-progress"
+status: "done"
 sprint: 4
 priority: 45
 date: 2026-09-15
@@ -52,3 +52,12 @@ paths:
 카드 응답에 `card_id`가 없어 호출할 수 없고, **관리자 지식베이스 갭 화면**은 mock
 집계(`{query, found}`)와 실제 계약(`{module, description, status}`)의 모양이 달라 다시
 설계해야 한다. 둘 다 이 티켓 범위 밖이라 새로 등록이 필요하다.
+
+---
+
+> **보드 최신화 (2026-09-21, 정성윤 — 사용자 지시로 전체 보드를 한 번에 맞췄다).** `in-progress` → `done`. 하나 남아 있던 「통화 목록(`GET /hub/calls`)」은 **09-15 에 연결됐다** — `CallHistoryPanel.tsx` 가 실 API 로
+목록을 받고 `/record`·전사 조회로 재생한다(`_logs/2026-09-15-08-seohee`). 카드 피드백·지식베이스 갭 탭은 09-16 에 붙었고,
+09-17 에 운영 `/ws` 가 `mode=live connected=true` 로 열린 것까지 확인됐다.
+> 남은 것은 다른 티켓으로 갔다 — 컴플라이언스 경고 → [w6-compliance-alert-ui](/backlog/w6-compliance-alert-ui/) ·
+> 같은 `call_id` 진입 → [w6-shared-call-entry](/backlog/w6-shared-call-entry/) · 실제 통화로 끝까지 → [w8-demo-rehearsal](/backlog/w8-demo-rehearsal/).
+> 판정이 틀렸으면 조서희 님이 되돌린다.
