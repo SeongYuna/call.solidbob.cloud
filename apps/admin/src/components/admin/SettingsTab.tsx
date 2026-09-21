@@ -304,12 +304,16 @@ function AgentTokenIssuer(): ReactElement {
 
       {tokens.length > 0 ? (
         <ul className="admin-list" style={{ marginTop: 12 }}>
-          {tokens.map((t) => (
+          {tokens.map((t) => {
+            const displayName = agentNameById.get(t.agent_id) ?? t.agent_id;
+            // agent_id 는 이름을 그대로 쓰므로(`decisions/406`) 대개 같다 — 다르면(20자 초과 등
+            // 무작위로 대신한 경우) 괄호로 실제 agent_id 를 덧붙인다.
+            return (
             <li key={t.id} className="admin-entry-row">
               <div className="admin-entry-row-main">
                 <span className="admin-ref">
-                  {agentNameById.get(t.agent_id) ?? t.agent_id}
-                  {agentNameById.has(t.agent_id) ? ` (${t.agent_id})` : ""}
+                  {displayName}
+                  {displayName !== t.agent_id ? ` (${t.agent_id})` : ""}
                 </span>
                 <span className="admin-meta">
                   {new Date(t.issued_at).toLocaleDateString("ko-KR")} 발급
@@ -330,7 +334,8 @@ function AgentTokenIssuer(): ReactElement {
                 </button>
               ) : null}
             </li>
-          ))}
+            );
+          })}
         </ul>
       ) : null}
     </div>

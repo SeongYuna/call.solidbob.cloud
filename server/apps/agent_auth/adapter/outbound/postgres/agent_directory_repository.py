@@ -35,7 +35,10 @@ class PostgresAgentDirectoryRepository(AgentDirectoryPort):
                 await cur.execute(_FIND, (identifier, identifier))
                 row = await cur.fetchone()
                 if row is None:
-                    new_agent_id = f"agent-{secrets.token_hex(6)}"
+                    # agent_id 는 이름 그대로 쓴다 — 관리자 화면에 "agent-3f9a…" 같은 임의값이
+                    # 아니라 사람이 알아볼 수 있는 값이 남아야 한다. `agent.agent_id`가
+                    # VARCHAR(20)이라 이름이 그보다 길 때만(드묾) 무작위값으로 대신한다.
+                    new_agent_id = identifier if len(identifier) <= 20 else f"agent-{secrets.token_hex(6)}"
                     await cur.execute(_INSERT, (new_agent_id, identifier))
                     row = await cur.fetchone()
                     await conn.commit()

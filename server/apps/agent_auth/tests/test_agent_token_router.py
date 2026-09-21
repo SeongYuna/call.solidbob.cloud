@@ -65,7 +65,7 @@ def test_모르는_이름은_새로_만들어_발급한다():
     with _client(FakeAgentTokens(agents=None), agents=directory) as c:
         r = c.post("/admin/agent-tokens", json={"agent_id": "nobody"})
     assert r.status_code == 201
-    assert r.json()["item"]["agent_id"] != "nobody"
+    assert r.json()["item"]["agent_id"] == "nobody"  # agent_id 는 이름 그대로 쓴다
 
 
 def test_없는_토큰_폐기는_404다():

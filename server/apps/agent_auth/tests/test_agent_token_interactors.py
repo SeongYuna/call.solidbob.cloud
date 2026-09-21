@@ -40,9 +40,8 @@ def test_발급은_해시만_저장하고_원문을_한_번_돌려준다():
 def test_모르는_이름으로_발급하면_그_자리에서_상담원을_만든다():
     directory = FakeAgentDirectory()
     issued = _issue(FakeAgentTokens(agents=None), agent_id="처음보는이름", agents=directory)
-    created_id = issued.item.agent_id
-    assert created_id != "처음보는이름"  # 새로 만든 agent_id, 이름을 그대로 쓰지 않는다
-    assert directory.agents[created_id] == "처음보는이름"
+    assert issued.item.agent_id == "처음보는이름"  # agent_id 는 이름 그대로 쓴다
+    assert directory.agents["처음보는이름"] == "처음보는이름"
 
 
 def test_이미_있는_이름으로_발급하면_같은_상담원의_토큰이_된다():
