@@ -46,7 +46,7 @@
 **파이프라인은 허브가 배선한다.** 전사 이벤트 하나가 흐르는 순서는 기획서 §3 다이어그램 그대로다:
 
 ```
-게이트웨이(Node) ──WebSocket──▶ hub
+콜 미디에이터(Node) ──WebSocket──▶ hub
                                  │ TranscriptEvent (원문)
                                  ▼
                           masking  ──▶ TranscriptEvent (마스킹됨)   ← 이 지점 뒤로만 저장·표시 허용
@@ -60,8 +60,15 @@
                  │ RecommendationCard             │ ClosureVerdict
                  └───────────────┴───────────────┘
                                  ▼
-                       hub ──▶ 게이트웨이 ──▶ 대시보드(React)
+                       hub ──▶ 콜 미디에이터 ──▶ 대시보드(React)
 ```
+
+> ⚠ **2026-09-21 — 아래 「현재 상태」는 08-26 의 값이다.** 지금은 `server/` 에 앱 일곱(`hub`·`masking`·`closure_gate`·`postcall`·
+> `blacklist`·`admin_auth`·`agent_auth`)이 있고 허브 라우터는 36개다. `masking`·`closure_gate`·`postcall` 은 **조건 없이** 꽂히고,
+> `ai/` 스포크(`retrieval`·`trigger`·`call_guard`·`compliance`·`pii_ner`·`generation`·`postcall_summary`)는 `server/main.py` 가
+> **설정이 있을 때만** 꽂는다 — `POST /hub/transcripts` 는 더 이상 501 이 아니다. 지금 꽂힌 목록은 `GET /health` 의 `spokes` 가 말한다.
+> ⚠ 바로 아래 「허브 코드에 `import masking` 이 나오면 계약 위반」도 **강제 장치가 없다** — `hub/dependencies/` 가 `server/` 안 스포크의
+> 기본 구현을 직접 import 하고, `.importlinter` 계약 넷 중 그것을 막는 것은 없다(미결 항목에 올렸다).
 
 **현재 상태(2026-08-26)**: `hub`는 슬라이스 2개(`transcript_ingest` — `POST /hub/transcripts`, `myself` — `GET /hub/myself`)가 §3 단면대로 존재하고, 계약 DTO 3종 + 스포크 포트 6개(마스킹·트리거·검색·생성·컴플라이언스·게이트)를 소유. `core/config.py`·`main.py`(합성 루트, `/health`)·`evaluation/`. **스포크 0개** — `POST /hub/transcripts`는 masking 스포크가 꽂히기 전까지 501을 돌려준다(마스킹 없이 원문을 흘리는 임시 통과는 만들지 않는다, SEC-1).
 
@@ -84,7 +91,7 @@ apps/<spoke>/
 │   └── services/            # 순수 규칙 계산 (마스킹 규칙, F-2 판정, RRF 병합 …)
 ├── app/
 │   ├── ports/input/         # UseCase ABC — 밖에서 이 스포크를 부르는 계약
-│   ├── ports/output/        # Repository/Gateway ABC — 이 스포크가 밖에 요구하는 계약
+│   ├── ports/output/        # Repository/CallMediator ABC — 이 스포크가 밖에 요구하는 계약
 │   ├── use_cases/           # Interactor — 포트를 엮는 대장
 │   └── dtos/                # 계층 간 전달 객체 (frozen dataclass; pydantic 허용)
 ├── adapter/
@@ -180,8 +187,8 @@ DDD 쪽 대응: 바운디드 컨텍스트 = 스포크, 유비쿼터스 언어 = 
 
 ## 6. 아직 정하지 않은 것
 
-- **도메인 라우팅** — 통화가 4개 도메인 중 어디인지 누가·언제 판정하는가(게이트웨이 메타데이터? `retrieval` 첫 발화 분류?). 7.3절 계약에 `domain` 필드가 없다 → v3 필요. 라우팅 정확도는 지표로 편입해야 한다.
+- **도메인 라우팅** — 통화가 4개 도메인 중 어디인지 누가·언제 판정하는가(콜 미디에이터 메타데이터? `retrieval` 첫 발화 분류?). 7.3절 계약에 `domain` 필드가 없다 → v3 필요. 라우팅 정확도는 지표로 편입해야 한다.
 
 - 각 스포크 `adapter/outbound/` 하위 이름(`es`/`postgres`/`hf`/`stt`)은 제안이다. [Task 1] 때 확정하고 이 문서를 고친다.
-- Node 게이트웨이(`services/gateway`)·React 대시보드(`apps/call`)의 계층 규칙은 이 문서 범위 밖이다. TypeScript라 import-linter를 못 쓰므로 스캐폴딩 시 `dependency-cruiser` 또는 `eslint-plugin-boundaries` 중 하나를 고른다 — 미결.
-- 허브가 F-2 게이트를 "요청 시"에만 부르는지, 종결 시도 이벤트를 게이트웨이가 별도 메시지로 보내는지는 7.3절 계약 v2에 없다. 7주차 체크포인트 전에 정한다.
+- Node 콜 미디에이터(`services/call-mediator`)·React 대시보드(`apps/call`)의 계층 규칙은 이 문서 범위 밖이다. TypeScript라 import-linter를 못 쓰므로 스캐폴딩 시 `dependency-cruiser` 또는 `eslint-plugin-boundaries` 중 하나를 고른다 — 미결.
+- 허브가 F-2 게이트를 "요청 시"에만 부르는지, 종결 시도 이벤트를 콜 미디에이터가 별도 메시지로 보내는지는 7.3절 계약 v2에 없다. 7주차 체크포인트 전에 정한다.

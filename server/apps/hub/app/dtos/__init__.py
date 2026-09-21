@@ -1,6 +1,6 @@
 # Requirement: 7.3절 인터페이스 계약 v2
 """허브 DTO — 7.3절 계약 3종 + 포트가 나르는 값 객체. 필드명은 계약 JSON 과 글자 단위로 같다
-(게이트웨이·대시보드가 같은 이름을 본다).
+(콜 미디에이터·대시보드가 같은 이름을 본다).
 
 frozen dataclass 를 쓴다: 값 객체이고, pydantic 스키마는 HTTP 표면(adapter) 몫이다 (docs/architecture.md §3 규칙 3).
 판정·규칙은 여기 두지 않는다 — DTO 는 나르기만 한다. F-2 판정은 closure_gate 스포크의 domain 이 한다.

@@ -2930,8 +2930,8 @@ button {
   resize: vertical;
 }
 
-/* --- ?gateway= 런타임 오버라이드 배너 (2026-09-14) — 눈에 띄게, 해제 가능하게 --- */
-.gateway-override-banner {
+/* --- ?call_mediator= 런타임 오버라이드 배너 (2026-09-14) — 눈에 띄게, 해제 가능하게 --- */
+.call-mediator-override-banner {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -2946,13 +2946,13 @@ button {
   font-weight: 600;
 }
 
-.gateway-override-text code {
+.call-mediator-override-text code {
   font-family: var(--mono);
   font-weight: 500;
   word-break: break-all;
 }
 
-.gateway-override-clear {
+.call-mediator-override-clear {
   flex-shrink: 0;
   padding: 6px 14px;
   border: 0;
@@ -2965,8 +2965,8 @@ button {
   cursor: pointer;
 }
 
-.gateway-override-clear:hover,
-.gateway-override-clear:focus-visible {
+.call-mediator-override-clear:hover,
+.call-mediator-override-clear:focus-visible {
   opacity: 0.85;
   outline: none;
 }

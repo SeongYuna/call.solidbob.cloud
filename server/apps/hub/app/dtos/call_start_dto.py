@@ -3,7 +3,7 @@
 
 `transcript_segment.call_id` 가 `call` 을 외래키로 참조하므로, 전사가 오기 전에 통화가 먼저
 있어야 한다. 그 행을 만드는 경로가 없어서 첫 전사부터 저장이 실패했다(2026-09-10,
-`_project/decisions/301`). 통화 시작은 게이트웨이가 알린다 — 전사 첫 건에서 `domain`·
+`_project/decisions/301`). 통화 시작은 콜 미디에이터가 알린다 — 전사 첫 건에서 `domain`·
 `stt_engine` 을 지어내지 않는다.
 """
 

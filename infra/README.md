@@ -7,7 +7,7 @@
 infra/
 ├── docker/
 │   ├── server.Dockerfile   server(FastAPI) + ai/apps 를 한 이미지로
-│   └── gateway.Dockerfile  services/gateway(Node.js) — 따로 굽고 따로 뜬다 (2026-09-11)
+│   └── call-mediator.Dockerfile  services/call-mediator(Node.js) — 따로 굽고 따로 뜬다 (2026-09-11)
 ├── elasticsearch/
 │   └── Dockerfile          공식 ES 이미지 + nori 형태소 분석기
 └── k8s/

@@ -26,13 +26,13 @@ paths:
 ## 완료 조건
 
 - [x] Root Directory `apps/dashboard` 로 프로젝트 생성 (Vite · `dist` · Production `main`)
-- [x] **환경변수를 비워 둔다** — `VITE_GATEWAY_WS_URL` 이 비어야 `MockGatewayClient` 로 돈다
+- [x] **환경변수를 비워 둔다** — `VITE_CALL_MEDIATOR_WS_URL` 이 비어야 `MockCallMediatorClient` 로 돈다
 - [x] `call.solidbob.cloud` 부착 + 클라우드플레어 `call` CNAME 신설 (DNS only)
 - [x] 라이브 번들이 로컬 프로덕션 빌드와 일치하는지 대조 — 243,906 bytes **완전 일치**
 - [x] 임시로 썼던 `dashboard.solidbob.cloud` 제거 (Vercel · 클라우드플레어 양쪽)
 
 ## 남은 것
 
-**게이트웨이·코어가 생기면 mock 을 끊는다.** `VITE_GATEWAY_WS_URL`·`VITE_CORE_API_URL` 을
-Vercel 환경변수에 넣으면 `RealGatewayClient` 로 바뀐다 — `services/gateway`(코드 0줄)와
+**콜 미디에이터·코어가 생기면 mock 을 끊는다.** `VITE_CALL_MEDIATOR_WS_URL`·`VITE_CORE_API_URL` 을
+Vercel 환경변수에 넣으면 `RealCallMediatorClient` 로 바뀐다 — `services/call-mediator`(코드 0줄)와
 `server` AWS 배포([w3-aws-deploy](/backlog/w3-aws-deploy/))가 선행이다.

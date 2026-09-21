@@ -355,12 +355,12 @@ DDL을 직접 고치지 않는다 — 고칠 곳은 `db/generate_schema_docs.py`
 
 ## 11. 아직 정하지 못한 것 (`jekyll/open-items.markdown`에서 발췌, 최신 것 위주)
 
-- 통화 시작(`POST /hub/calls`)이 §7.3 계약에 아직 안 올라가 있다 — 게이트웨이가 이걸 부르는 흐름으로
+- 통화 시작(`POST /hub/calls`)이 §7.3 계약에 아직 안 올라가 있다 — 콜 미디에이터가 이걸 부르는 흐름으로
   정식화할지 미정
 - 운영 DB 커넥션이 실제로 붙은 적이 있는지 확인 안 됨(재배포 후 검증 필요)
 - ngrok 터널에 인증 없음 — 의도적 감수(basic auth가 CORS preflight를 깨서)
 - "감정분석" 이라는 명칭이 적절한지 재검토 중(D 기능, 후보 4개, 팀 미확정)
-- AWS 인스턴스 등급에 게이트웨이를 동거시킬지, Terraform state 원격화 여부, `api.solidbob.cloud`
+- AWS 인스턴스 등급에 콜 미디에이터를 동거시킬지, Terraform state 원격화 여부, `api.solidbob.cloud`
   TLS 미발급, GPU/EXAONE을 이번 배포에 포함할지(`decisions/107` 후속)
 
 ---

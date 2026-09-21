@@ -227,6 +227,12 @@ C-5만 예외로 코어에 포함되므로 3주차에 반드시 들어간다.
    (다산 전환으로 그 패턴을 담던 항목이 빠졌다 — 도메인 축소의 필연이 아니라 **다산 맥락으로 다시 안 쓴 것**이다).
    F-2 는 **채점 케이스 0건**이라 전면 측정 불가다. 둘 다 3주차 골든셋 재확장에서 복구한다
    (`w3-golden-set-dasan`). **그때까지 「누락 0건 통과」를 P1~P7 전체에 대한 것으로 인용하지 않는다.**
+   > **2026-09-19 갱신 — 둘의 처지가 갈렸다**(`golden-set/v1-150.json` 156건 실측).
+   > **C-5 는 복구됐다**: `pii_patterns` 표본이 **P1 4 · P2 2 · P3 3 · P4 5 · P5 4 · P6 7 · P7 3** 으로 **일곱 패턴 다 있다.**
+   > **F-2 는 그대로다**: `f2_case` 가 채워진 항목이 **여전히 0건**이라 측정 불가이고,
+   > 7주차 체크포인트(`w7-f2-checkpoint`)는 **잴 수 없는 것을 판정해야 하는 상태**다.
+   > ⚠ **표본이 있다는 것과 채점됐다는 것은 다르다** — 하네스를 다시 돌려 `NO_SAMPLES` 가 사라진 것을
+   > 확인하기 전까지는 「P1~P7 전체 통과」로 인용하지 않는다. 위 문단의 금지는 그대로 살아 있다.
 6. **약관 원문을 사이트에 전재하지 않는다.** 요약·해석 + 출처(문서명·조항)만 싣는다.
 7. **자체 통화 녹음은 하지 않는다.** AI Hub 등 저작권·개인정보가 해결된 출처만 사용한다.
 8. **실패를 지운 기록은 기록이 아니다.** 안 된 실험, 미달한 지표, 틀린 가설은 그대로 남긴다.
@@ -276,8 +282,8 @@ infra/                   로컬 개발 인프라(compose · ES nori 이미지) +
                          CLAUDE.md(AWS 전제 · 만들지 말 것) · README.md(로컬 사용법). 주 담당: 정성윤
                          (잠금 아님 — 세 사람 누구나 고친다. 단 런북 선행 읽기는 그대로, `decisions/302`)
 scripts/ data/           유틸리티 / 데이터 (원본은 .gitignore)
-.github/workflows/       Pages 배포(pages.yml) · CI(test.yml — server · ai · jekyll · gateway job)
-                         · 릴리스(release.yml — plan · image · gateway-image · k3s-deploy)
+.github/workflows/       Pages 배포(pages.yml) · CI(test.yml — server · ai · jekyll · call-mediator job)
+                         · 릴리스(release.yml — plan · image · call-mediator-image · k3s-deploy)
                          · 배포 태그 검사(tag-check.yml — tag-check job, PR 전용. 이미지를 굽지 않는다)
                          · ruleset-main.json(라이브 룰셋 `21538648` 의 복원본 — PUT 으로 그대로 되살린다)
                          · branch-protection.json — 클래식 보호로 되돌릴 때의 대비본(`decisions/011`).
@@ -362,7 +368,7 @@ sprint: 1
 priority: 5               # 같은 칸 안의 정렬 순서
 date: 2026-08-25
 paths:                    # (선택) 이 티켓 소관 파일. 세션 종료 검사가 status 정합성을 본다
-  - "services/gateway/stt/*"
+  - "services/call-mediator/stt/*"
 ---
 ```
 
@@ -494,7 +500,7 @@ code(eval): 마스킹 재현율 계산 추가
 | | 설정 |
 |---|---|
 | PR 필수 | 승인 0건 (혼자 관리 — 리뷰어를 두지 않는다) |
-| 필수 통과 검사 | `server`(파이프라인·계약) · `ai`(검색·평가) · `jekyll`(사이트 빌드 + 링크 검사) · **`gateway`**(게이트웨이 타입·테스트) · **`tag-check`**(배포 태그 — `tag-check.yml`). 2026-09-15 에 뒤의 둘을 더했다(`decisions/114`) |
+| 필수 통과 검사 | `server`(파이프라인·계약) · `ai`(검색·평가) · `jekyll`(사이트 빌드 + 링크 검사) · **`call-mediator`**(콜 미디에이터 타입·테스트) · **`tag-check`**(배포 태그 — `tag-check.yml`). 2026-09-15 에 뒤의 둘을 더했다(`decisions/114`) |
 | force push · 브랜치 삭제 | 금지 |
 
 CI(`test.yml`)는 **main push 와 main 대상 PR** 에서 돈다 — 2026-09-15 에 네 브랜치 push 트리거를 걷어냈다(`decisions/114`). 브랜치 push 런과 PR 런이 **같은 커밋에 같은 이름으로** 검사를 두 벌 달았기 때문이다. PR 이 열려 있으면 push 마다 `pull_request` 가 도니 실질 손실은 「PR 없이 브랜치에만 push 했을 때」 하나뿐이다 — 일찍 보고 싶으면 초안 PR 을 연다. 배포(`pages.yml`)는

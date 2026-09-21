@@ -1,8 +1,8 @@
 /**
  * 상담원 대시보드의 "고객과 전화하기" 마이크 데모(AgentCallBox)용 토큰 처리.
  *
- * apps/platform 의 `liveCallToken.ts`와 같은 패턴이다 — `GATEWAY_INGEST_TOKEN`은
- * services/gateway README가 "진짜 비밀"이라고 못박은 값이라 화면에 입력창을 두지
+ * apps/platform 의 `liveCallToken.ts`와 같은 패턴이다 — `CALL_MEDIATOR_INGEST_TOKEN`은
+ * services/call-mediator README가 "진짜 비밀"이라고 못박은 값이라 화면에 입력창을 두지
  * 않는다. URL 쿼리(`?call_token=`)로 한 번 방문하면 이 탭의 sessionStorage 에만
  * 저장하고 쿼리는 그 자리에서 지운다. 팀원에게는 이 쿼리가 붙은 링크를 따로
  * 전달한다 — 값이 없으면 "통화 시작"을 눌러도 실제로 연결되지 않는다

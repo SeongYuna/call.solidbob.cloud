@@ -1,0 +1,131 @@
+{
+  "id": "SYN-015",
+  "version": "dasan-v0",
+  "source": "synthetic",
+  "generated_by": "Claude Code (claude-fable-5-1) · 2026-09-18 · 사람 검토 전",
+  "title": "주민등록초본 대리 발급 — 급한 직장인, 무뚝뚝한 상담원",
+  "length_class": "short",
+  "turn_count": 9,
+  "caller_number": "01000000115",
+  "agent_persona": "A04",
+  "customer_persona": "C14",
+  "procedure": {
+    "doc_ids": [
+      "DASAN-TERM-4.3",
+      "DASAN-MANUAL-3.3",
+      "DASAN-MANUAL-3.4"
+    ],
+    "required_documents": [
+      "신분증"
+    ],
+    "conditional_documents": [
+      "위임장",
+      "위임인 신분증 사본",
+      "대리인 신분증"
+    ]
+  },
+  "turns": [
+    {
+      "seq": 1,
+      "speaker": "agent",
+      "text": "한별시 통합민원콜센터입니다.",
+      "tone": "calm"
+    },
+    {
+      "seq": 2,
+      "speaker": "customer",
+      "text": "초본이요, 초본. 제가 지금 회사라 못 가는데 와이프가 대신 떼도 되죠? 빨리요.",
+      "tone": "tense"
+    },
+    {
+      "seq": 3,
+      "speaker": "agent",
+      "text": "본인 발급이 아니라 대리 발급이시군요. 초본은 세대원이라도 위임 없이는 발급이 안 됩니다.",
+      "tone": "calm"
+    },
+    {
+      "seq": 4,
+      "speaker": "customer",
+      "text": "아 그냥 되냐 안 되냐만요. 뭐 가져가면 되는데요?",
+      "tone": "tense"
+    },
+    {
+      "seq": 5,
+      "speaker": "agent",
+      "text": "위임장, 위임인이신 고객님 신분증 사본, 대리인이신 배우자분 신분증. 셋입니다.",
+      "tone": "calm"
+    },
+    {
+      "seq": 6,
+      "speaker": "customer",
+      "text": "사본이요? 원본 아니고요? 점심시간 안에 끝내야 되는데.",
+      "tone": "tense"
+    },
+    {
+      "seq": 7,
+      "speaker": "agent",
+      "text": "위임인 것은 사본, 대리인 것은 원본입니다. 연락처 남기시면 접수 창구는 소관 부서 확인 후 안내드립니다.",
+      "tone": "calm"
+    },
+    {
+      "seq": 8,
+      "speaker": "customer",
+      "text": "010-0000-0115요. 빨리 좀 부탁드립니다.",
+      "tone": "tense",
+      "labels": {
+        "pii": [
+          {
+            "pattern": "P4",
+            "span": "010-0000-0115"
+          }
+        ]
+      }
+    },
+    {
+      "seq": 9,
+      "speaker": "agent",
+      "text": "확인했습니다. 이용해 주셔서 감사합니다.",
+      "tone": "calm"
+    }
+  ],
+  "expected": {
+    "pii_by_pattern": {
+      "P4": 1
+    },
+    "compliance": [],
+    "call_guard_by_type": {},
+    "customer_non_calm_turns": [
+      {
+        "seq": 2,
+        "tone": "tense"
+      },
+      {
+        "seq": 4,
+        "tone": "tense"
+      },
+      {
+        "seq": 6,
+        "tone": "tense"
+      },
+      {
+        "seq": 8,
+        "tone": "tense"
+      }
+    ],
+    "call_temperature": {
+      "customer_expected_outlier_turns": [],
+      "customer_calm_turns": [],
+      "customer_turns": 4,
+      "note": "의도한 연기(tts 운율 지시)에서 나온 기대값이다 — 측정값이 아니다. raised·tense 는 채점에서 뺀다"
+    },
+    "j": {
+      "blacklist_request": false,
+      "routing": "normal"
+    }
+  },
+  "notes": [
+    "A04 는 공감 표현이 없다 — 매뉴얼에 태도 조항이 없어 **위반 라벨을 붙이지 않았다**(있지도 않은 조항을 만들지 않는다)",
+    "고객이 말을 끊어도 상담원은 본인/대리 조건을 먼저 확인한다(3.3) — 초본은 세대원도 위임 없이 못 뗀다(4.3)",
+    "C14 는 재촉만 한다 — 욕설 없음, 콜 가드 0건이 정상"
+  ]
+}

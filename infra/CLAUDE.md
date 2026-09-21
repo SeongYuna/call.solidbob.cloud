@@ -64,6 +64,11 @@
 
 ## 3. 아직 없는 것 (2026-09-04 확인)
 
+> ⚠ **2026-09-21 — 이 목록은 거의 다 풀렸다.** `infra/docker/server.Dockerfile`·`call-mediator.Dockerfile` 이 있고, 결정 기록 `1xx` 는
+> 23건이다(`103` 포함). **Caddy 와 compose 후퇴 경로는 만들지 않았다** — 실물이 Traefik + cert-manager · k3s 다(`decisions/107`).
+> 클론 주소는 **`SeongYuna` 가 맞다** — 원격과 `infra/systemd/converge.sh` 가 그 주소이고, 09-03 소유권 이전(`decisions/106`)으로
+> `solidbob02` 쪽이 낡은 것이었다. 아래 원문은 그때의 기록으로 둔다.
+
 런북이 참조하지만 저장소에 없다. 만들 때 **런북이 적은 경로 그대로** 만든다.
 
 - `infra/docker/server.Dockerfile` · `infra/docker/Caddyfile` (13-1 · 16-2)

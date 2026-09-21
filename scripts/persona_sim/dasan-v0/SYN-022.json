@@ -1,0 +1,180 @@
+{
+  "id": "SYN-022",
+  "version": "dasan-v0",
+  "source": "synthetic",
+  "generated_by": "Claude Code (claude-fable-5-1) · 2026-09-18 · 사람 검토 전",
+  "title": "필리핀 출신 부모의 아동돌봄 지원 신청 — 통역 안내와 쉬운 말",
+  "length_class": "medium",
+  "turn_count": 15,
+  "caller_number": "01000000122",
+  "agent_persona": "A06",
+  "customer_persona": "C04",
+  "procedure": {
+    "doc_ids": [
+      "DASAN-TERM-6.7",
+      "DASAN-TERM-6.1",
+      "DASAN-TERM-1.5",
+      "DASAN-TERM-6.12"
+    ],
+    "required_documents": [
+      "신청서",
+      "신청인 신분증",
+      "아동과의 관계를 확인할 수 있는 서류",
+      "입금 계좌 정보"
+    ]
+  },
+  "turns": [
+    {
+      "seq": 1,
+      "speaker": "agent",
+      "text": "네, 한별시 통합민원콜센터입니다. 무엇을 도와드릴까요?",
+      "tone": "calm"
+    },
+    {
+      "seq": 2,
+      "speaker": "customer",
+      "text": "Hello, 안녕하세요. 저번에 아동수당 전화했어요. 이번에는 다른 거. 돌봄? child care... 돈 준다고 들었어요.",
+      "tone": "calm"
+    },
+    {
+      "seq": 3,
+      "speaker": "agent",
+      "text": "네, 아동돌봄 지원 말씀이시죠. 한국어 어려우시면 통역 도와드릴 수 있어요. 통역 필요하세요?",
+      "tone": "calm"
+    },
+    {
+      "seq": 4,
+      "speaker": "customer",
+      "text": "음... 지금은 괜찮아요. 천천히 해 주세요.",
+      "tone": "calm"
+    },
+    {
+      "seq": 5,
+      "speaker": "agent",
+      "text": "네, 천천히 할게요. 서류는 네 개예요. 하나, 신청서. 둘, 고객님 신분증. 셋, 아기와 가족 관계 보여 주는 서류. 넷, 돈 받을 계좌 정보.",
+      "tone": "calm"
+    },
+    {
+      "seq": 6,
+      "speaker": "customer",
+      "text": "아동수당 때랑 같아요? 그때도 네 개였어요.",
+      "tone": "calm"
+    },
+    {
+      "seq": 7,
+      "speaker": "agent",
+      "text": "네, 서류는 비슷해요. 그런데 아동수당 받고 있으면 이것도 같이 받을 수 있는지는 공고를 봐야 해요. 제가 지금 된다, 안 된다 말할 수 없어요.",
+      "tone": "calm"
+    },
+    {
+      "seq": 8,
+      "speaker": "customer",
+      "text": "Oh... okay. 그럼 신청은 해도 돼요?",
+      "tone": "calm"
+    },
+    {
+      "seq": 9,
+      "speaker": "agent",
+      "text": "네, 신청은 할 수 있어요. 받을 수 있는지는 심사에서 정해요.",
+      "tone": "calm"
+    },
+    {
+      "seq": 10,
+      "speaker": "customer",
+      "text": "네. 아 그리고 어제 문자 왔어요. 돌봄 돈 준다고, 링크 누르고 인증번호 122122 넣으래요. 넣었어요. 괜찮아요?",
+      "tone": "calm",
+      "labels": {
+        "pii": [
+          {
+            "pattern": "P5",
+            "span": "122122"
+          }
+        ]
+      }
+    },
+    {
+      "seq": 11,
+      "speaker": "agent",
+      "text": "고객님, 그 문자는 사기일 수 있어요. 센터는 문자로 인증번호 안 물어봐요. 경찰이나 은행에 바로 신고하세요. 인증번호는 다른 사람한테 말하지 마세요.",
+      "tone": "calm"
+    },
+    {
+      "seq": 12,
+      "speaker": "customer",
+      "text": "Oh no... 알겠어요. 신고할게요. 연락처는 010 0000 0122, 이름 마리아 산토스예요.",
+      "tone": "calm",
+      "labels": {
+        "pii": [
+          {
+            "pattern": "P4",
+            "span": "010 0000 0122"
+          },
+          {
+            "pattern": "P6",
+            "span": "마리아 산토스"
+          }
+        ]
+      }
+    },
+    {
+      "seq": 13,
+      "speaker": "agent",
+      "text": "네, 마리아 산토스 고객님. 다시 정리해요. 신청서, 신분증, 가족 관계 확인 서류, 계좌 정보. 네 개예요. 접수 방법은 확인 후 연락드릴게요.",
+      "tone": "calm",
+      "labels": {
+        "pii": [
+          {
+            "pattern": "P6",
+            "span": "마리아 산토스"
+          }
+        ]
+      }
+    },
+    {
+      "seq": 14,
+      "speaker": "customer",
+      "text": "네 개. Thank you, 감사합니다.",
+      "tone": "calm"
+    },
+    {
+      "seq": 15,
+      "speaker": "agent",
+      "text": "네, 이용해 주셔서 감사합니다.",
+      "tone": "calm"
+    }
+  ],
+  "expected": {
+    "pii_by_pattern": {
+      "P4": 1,
+      "P5": 1,
+      "P6": 2
+    },
+    "compliance": [],
+    "call_guard_by_type": {},
+    "customer_non_calm_turns": [],
+    "call_temperature": {
+      "customer_expected_outlier_turns": [],
+      "customer_calm_turns": [
+        2,
+        4,
+        6,
+        8,
+        10,
+        12,
+        14
+      ],
+      "customer_turns": 7,
+      "note": "의도한 연기(tts 운율 지시)에서 나온 기대값이다 — 측정값이 아니다. raised·tense 는 채점에서 뺀다"
+    },
+    "j": {
+      "blacklist_request": false,
+      "routing": "normal"
+    }
+  },
+  "notes": [
+    "TERM-6.7: 아동수당과의 중복 지급 여부는 공고에 따른다 — 상담원이 단정하지 않는다(위반 없음)",
+    "TERM-6.1: 수급 가능 여부를 확정해 말하지 않는다",
+    "A06 이 통역을 먼저 권하고, 고객이 거절해도 짧은 문장으로 간다",
+    "사칭 문자 주의(6.12)를 상담원이 먼저 짚는다 — 인증번호 P5 는 「인증번호」 문맥어"
+  ]
+}

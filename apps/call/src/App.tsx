@@ -5,18 +5,18 @@ import { AgentStandbyScreen } from "./components/AgentStandbyScreen";
 import { AppHeader } from "./components/AppHeader";
 import { CallSummaryHost } from "./components/CallSummaryPanel";
 import { ForcePasswordSetup } from "./components/ForcePasswordSetup";
-import { GatewayOverrideBanner } from "./components/GatewayOverrideBanner";
+import { CallMediatorOverrideBanner } from "./components/CallMediatorOverrideBanner";
 import { TermsPanel } from "./components/TermsPanel";
 import { TranscriptPanel } from "./components/TranscriptPanel";
 import { useAgentAuth } from "./hooks/useAgentAuth";
-import { useGatewaySession } from "./hooks/useGatewaySession";
+import { useCallMediatorSession } from "./hooks/useCallMediatorSession";
 import { useAgentCallSession } from "./lib/useAgentCallSession";
 import { getMockAgentAccount } from "./mock/agentAuth";
 import { useCallStore } from "./store/callStore";
 
 export function App(): ReactElement {
   const { startCall, replay, leaveToStandby, manualSearch, endCall, wrapUp } =
-    useGatewaySession();
+    useCallMediatorSession();
   const agentCall = useAgentCallSession();
   const agentAuth = useAgentAuth();
   const [voluntaryPassword, setVoluntaryPassword] = useState(false);
@@ -76,7 +76,7 @@ export function App(): ReactElement {
   if (voluntaryPassword) {
     return (
       <div className="app-viewport">
-        <GatewayOverrideBanner />
+        <CallMediatorOverrideBanner />
         <div className="app-shell">
           <ForcePasswordSetup
             mode="voluntary"
@@ -94,7 +94,7 @@ export function App(): ReactElement {
 
   return (
     <div className="app-viewport">
-      <GatewayOverrideBanner />
+      <CallMediatorOverrideBanner />
       <div className="app-shell">
         {showSummary ? (
           <>

@@ -8,7 +8,7 @@ priority: 4
 date: 2026-08-27
 paths:
   - "apps/dashboard/src/components/TermsPanel.tsx"
-  - "apps/dashboard/src/mock/mockGateway.ts"
+  - "apps/dashboard/src/mock/mockCallMediator.ts"
   - "apps/dashboard/src/types/contract.ts"
 ---
 

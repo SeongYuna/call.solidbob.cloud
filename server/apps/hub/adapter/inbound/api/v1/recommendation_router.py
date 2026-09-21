@@ -68,4 +68,6 @@ async def recommend(
             for c in cards.cards
         ],
         internal_latency_ms=cards.internal_latency_ms,
+        retrieval_ms=cards.retrieval_ms,
+        generation_ms=cards.generation_ms,
     )

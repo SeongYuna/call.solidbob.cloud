@@ -86,7 +86,7 @@ server/
 
 ```bash
 cd server && pytest                            # 단위 테스트
-cd server && PYTHONPATH=apps lint-imports --config .importlinter   # 구조 계약 3종
+cd server && PYTHONPATH=apps lint-imports --config .importlinter   # 구조 계약 4종
 ```
 
 CI(`.github/workflows/test.yml`)의 `server` job 이 이 둘을 돌린다.
@@ -123,7 +123,7 @@ PK·FK·`ON CONFLICT` 를 건드리면 integration 을 같이 돌린다.
 > 경계 판단 기준은 «누가 고치는가» 가 아니라 «무엇이 어디에 들어가는가» 이므로 유효하다.
 
 **`apps/masking/`(C-5)도 장민석이다** — 원래 정성윤 담당이었으나 티켓·코드가 없는 착수 전
-상태였고 부재가 겹쳐 2026-08-27 이관했다(`_project/decisions/019`). 게이트웨이·인프라·CI
+상태였고 부재가 겹쳐 2026-08-27 이관했다(`_project/decisions/019`). 콜 미디에이터·인프라·CI
 운영은 정성윤 몫으로 그대로다. ⚠ 정성윤 복귀 시 이 항목을 먼저 공유한다.
 
 `server/` 를 고치면 `ai/` 의 계약 소비 지점이 함께 깨질 수 있다.
@@ -146,7 +146,7 @@ Deployment `callguard-server` · 시크릿 `server-env` (런북 머리말, 2026-
 | 12-2 | 설정은 k8s 시크릿 **`server-env`** 로 `.env` 키 전체가 들어온다(`server.yaml` `envFrom`). DB 는 **`DATABASE_URL` 과 `POSTGRES_*` 둘 다 같은 RDS 값**이다 — 이미지 `0.1.1` 은 `POSTGRES_*` 만, `0.1.2` 부터는 `DATABASE_URL` 을 먼저 읽는다. 둘이 다른 값을 가리켜 운영 DB 가 09-08~09-11 한 번도 안 붙었다(`decisions/108`). **커넥션 코드와 `/health` 가 같은 규칙으로 키를 읽게 유지한다.** RDS 는 SSL 강제라 URL 에 `?sslmode=require` 가 붙는다 |
 | 16-1 | `core/config.py` 가 읽는 키는 `server-env` 에 있어야 한다(`../infra/k8s/base/secret.example.yaml` 이 키 목록). ES 는 같은 네임스페이스의 `http://elasticsearch:9200`. **읽는 키를 새로 만들면 `secret.example.yaml` 과 운영 시크릿에 같이 넣지 않는 한 배포가 조용히 기본값으로 뜬다** |
 | 16-1 | 의존 서비스 주소는 호스트가 아니라 **같은 네임스페이스의 서비스 이름**이다. `localhost:9200` 을 기본값으로 굳히지 않는다 |
-| 19 | `GET /health` 의 **`spokes` 배열이 배포 검증 항목**이다(9번). 필드 이름·형태를 바꾸면 런북 19장이 깨진다. 스포크가 안 꽂히면 조용히 501 로 남는 것이 설계된 동작이다(`decisions/024`). ⚠ `postgres_configured` 는 설정 **여부**일 뿐이다 — DB 가 붙었는지는 10번(`GET /hub/knowledge-gaps`)·11번(통화 → 전사 → 조회)이 본다. **이 두 엔드포인트의 경로·순서를 바꾸면 19장을 같이 고친다** |
+| 19 | `GET /health` 의 **`spokes` 배열이 배포 검증 항목**이다(9번). 필드 이름·형태를 바꾸면 런북 19장이 깨진다. 스포크가 안 꽂히면 조용히 501 로 남는 것이 설계된 동작이다(`decisions/024`). ⚠ `postgres_configured` 는 설정 **여부**일 뿐이다 — DB 가 붙었는지는 10번(`GET /hub/knowledge-gaps`)·11번(통화 → 전사 → 조회)이 본다. **이 두 엔드포인트의 경로·순서를 바꾸면 19장을 같이 고친다**. **2026-09-19 부터 `GET /health/ready` 가 그것을 직접 잰다**(`select 1` · ES ping, 3초 타임아웃 · 못 붙으면 **503**). `/health` 는 **싼 기동 확인 그대로 둔다** — 배포 스모크가 매번 치므로 거기서 DB·ES 를 찌르면 안 된다. ⚠ 예외 메시지에는 접속 문자열이 들어 있어 **타입 이름만** 싣는다(SEC-2) |
 | 16-2 | 외부에 열리는 것은 Caddy 를 지나는 `server.solidbob.cloud` **443 하나**다. 새 포트가 필요한 설계는 인프라 변경이므로 정성윤과 함께 정한다 |
 | 만들지 말 것 | Kinesis·ElastiCache·ALB 를 전제한 코드를 쓰지 않는다. 캐시는 3.1절대로 **인메모리 LRU** 다 |
 

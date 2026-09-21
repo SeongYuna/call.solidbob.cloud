@@ -18,7 +18,9 @@
     ],
     "required_documents": [
       "신고서",
-      "신고인 신분증(외국인등록증 원본)",
+      "신고인 신분증(외국인등록증 원본)"
+    ],
+    "conditional_documents": [
       "세대주 확인(세대주 신분증 또는 세대주 확인서)"
     ]
   },
@@ -167,6 +169,22 @@
     "compliance": [],
     "call_guard_by_type": {},
     "customer_non_calm_turns": [],
+    "call_temperature": {
+      "customer_expected_outlier_turns": [],
+      "customer_calm_turns": [
+        2,
+        4,
+        6,
+        8,
+        10,
+        12,
+        14,
+        16,
+        18
+      ],
+      "customer_turns": 9,
+      "note": "의도한 연기(tts 운율 지시)에서 나온 기대값이다 — 측정값이 아니다. raised·tense 는 채점에서 뺀다"
+    },
     "j": {
       "blacklist_request": false,
       "routing": "normal"

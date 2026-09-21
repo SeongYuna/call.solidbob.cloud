@@ -47,7 +47,7 @@ ERROR 1064 (42000) at line 21: ... near 'call ('
 
 숫자 PK 11개 **전부** 없어서 INSERT 마다 ID 를 직접 넣어야 했는데, 애플리케이션에 ID 를 만드는
 코드가 어디에도 없다. `Column` 에 `auto_increment` 를 추가하고 서로게이트 PK **10개**에 켰다.
-**`transcript_segment.segment_id` 만 예외** — [7.3절](/docs/07/) 계약상 게이트웨이가 정해서 보내는 값이다.
+**`transcript_segment.segment_id` 만 예외** — [7.3절](/docs/07/) 계약상 콜 미디에이터가 정해서 보내는 값이다.
 
 **고친 방식**: `db/generate_schema_docs.py` 의 `to_sql()` 이 테이블·컬럼·FK 식별자를 전부
 백틱으로 감싸게 했다. 예약어 목록은 MySQL 버전마다 늘어나므로 **개별 예외를 두지 않았다.**

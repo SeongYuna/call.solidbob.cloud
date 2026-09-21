@@ -1,0 +1,182 @@
+{
+  "id": "SYN-019",
+  "version": "dasan-v0",
+  "source": "synthetic",
+  "generated_by": "Claude Code (claude-fable-5-1) · 2026-09-18 · 사람 검토 전",
+  "title": "지방세 과오납 환급 — 비꼬는 민원인과 무뚝뚝한 상담원",
+  "length_class": "medium",
+  "turn_count": 16,
+  "caller_number": "01000000119",
+  "agent_persona": "A04",
+  "customer_persona": "C18",
+  "procedure": {
+    "doc_ids": [
+      "DASAN-TERM-4.11",
+      "DASAN-MANUAL-3.3",
+      "DASAN-MANUAL-1.6"
+    ],
+    "required_documents": [
+      "환급 신청서",
+      "신분증",
+      "환급 계좌 정보"
+    ],
+    "conditional_documents": [
+      "위임장",
+      "계좌 명의자 신분증"
+    ]
+  },
+  "turns": [
+    {
+      "seq": 1,
+      "speaker": "agent",
+      "text": "한별시 통합민원콜센터입니다.",
+      "tone": "calm"
+    },
+    {
+      "seq": 2,
+      "speaker": "customer",
+      "text": "지방세를 두 번 냈다는데요. 돌려받으려면 뭘 해야 하나요. 역시 시청답네요, 받을 땐 빠르고 돌려줄 땐 전화를 하게 만드시고.",
+      "tone": "calm"
+    },
+    {
+      "seq": 3,
+      "speaker": "agent",
+      "text": "과오납 환급 신청 건입니다. 환급받으실 계좌가 납세자 본인 명의입니까?",
+      "tone": "calm"
+    },
+    {
+      "seq": 4,
+      "speaker": "customer",
+      "text": "아니요, 남편 계좌로 받으려고요. 그것도 안 된다고 하시려나.",
+      "tone": "calm"
+    },
+    {
+      "seq": 5,
+      "speaker": "agent",
+      "text": "됩니다. 다만 납세자와 계좌 명의자가 다르면 위임장과 계좌 명의자 신분증이 추가로 필요합니다.",
+      "tone": "calm"
+    },
+    {
+      "seq": 6,
+      "speaker": "customer",
+      "text": "서류가 하나 늘었네요. 예상은 했어요.",
+      "tone": "calm"
+    },
+    {
+      "seq": 7,
+      "speaker": "agent",
+      "text": "환급 신청서, 고객님 신분증, 환급 계좌 정보, 그리고 위임장과 남편분 신분증. 다섯 가지입니다.",
+      "tone": "calm"
+    },
+    {
+      "seq": 8,
+      "speaker": "customer",
+      "text": "돈 돌려받는 데 다섯 가지. 대단하네요. 그래서 언제 들어오나요?",
+      "tone": "calm"
+    },
+    {
+      "seq": 9,
+      "speaker": "agent",
+      "text": "환급까지 걸리는 기간은 심사 결과에 따라 달라서 미리 말씀드릴 수 없습니다.",
+      "tone": "calm"
+    },
+    {
+      "seq": 10,
+      "speaker": "customer",
+      "text": "그것도 모르시는군요. 뭐, 그럴 줄 알았어요. 계좌는 남편 거 000000119119이에요. 적어 두세요.",
+      "tone": "calm",
+      "labels": {
+        "pii": [
+          {
+            "pattern": "P3",
+            "span": "000000119119"
+          }
+        ]
+      }
+    },
+    {
+      "seq": 11,
+      "speaker": "agent",
+      "text": "계좌번호는 신청서에 적으시면 됩니다. 전화로 받지 않습니다.",
+      "tone": "calm"
+    },
+    {
+      "seq": 12,
+      "speaker": "customer",
+      "text": "전화로 받지도 않으면서 전화는 왜 받으시는지. 알겠어요. 접수는 어디서 하죠?",
+      "tone": "calm"
+    },
+    {
+      "seq": 13,
+      "speaker": "agent",
+      "text": "접수처는 소관 부서 확인 후 안내드립니다. 연락처 남겨 주십시오.",
+      "tone": "calm"
+    },
+    {
+      "seq": 14,
+      "speaker": "customer",
+      "text": "010-0000-0119요. 이름은 윤소희고요. 꼭 연락 주세요, 안 오실 것 같지만.",
+      "tone": "calm",
+      "labels": {
+        "pii": [
+          {
+            "pattern": "P4",
+            "span": "010-0000-0119"
+          },
+          {
+            "pattern": "P6",
+            "span": "윤소희"
+          }
+        ]
+      }
+    },
+    {
+      "seq": 15,
+      "speaker": "agent",
+      "text": "확인했습니다. 환급 신청서, 신분증, 계좌 정보, 위임장, 계좌 명의자 신분증입니다.",
+      "tone": "calm"
+    },
+    {
+      "seq": 16,
+      "speaker": "customer",
+      "text": "네, 수고하세요.",
+      "tone": "calm"
+    }
+  ],
+  "expected": {
+    "pii_by_pattern": {
+      "P3": 1,
+      "P4": 1,
+      "P6": 1
+    },
+    "compliance": [],
+    "call_guard_by_type": {},
+    "customer_non_calm_turns": [],
+    "call_temperature": {
+      "customer_expected_outlier_turns": [],
+      "customer_calm_turns": [
+        2,
+        4,
+        6,
+        8,
+        10,
+        12,
+        14,
+        16
+      ],
+      "customer_turns": 8,
+      "note": "의도한 연기(tts 운율 지시)에서 나온 기대값이다 — 측정값이 아니다. raised·tense 는 채점에서 뺀다"
+    },
+    "j": {
+      "blacklist_request": false,
+      "routing": "normal",
+      "why": "비꼼은 욕설·모욕·협박이 아니다 — 콜 가드 0건·블랙리스트 대상 아님. C-6 이 «불쾌한 말투»까지 잡으면 과탐지다"
+    }
+  },
+  "notes": [
+    "**콜 가드 0건이 정상** — 「역시 시청답네요」 같은 비꼼은 C-6 갈래(insult·threat·sexual·distress) 어디에도 안 든다",
+    "TERM-4.11: 납세자와 계좌 명의자가 다르면 위임장·계좌 명의자 신분증 — 조건을 먼저 묻는다(3.3)",
+    "환급까지 걸리는 기간을 상담원이 단정하지 않는다(1.6) — A04 는 짧게 끊지만 내용은 맞다",
+    "계좌번호 P3 는 「계좌」 문맥어가 같은 발화에 있다"
+  ]
+}

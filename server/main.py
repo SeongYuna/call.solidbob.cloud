@@ -6,7 +6,8 @@
 
 이 파일은 앱을 조립만 한다. 라우터는 각 앱의 adapter/inbound/api/v1/ 에, 파이프라인 배선은 hub 에 둔다
 (docs/architecture.md). 스포크 구현체는 여기서 `app.dependency_overrides[<hub 프로바이더>] = <스포크 프로바이더>`
-로 꽂는다 — 허브는 스포크를 import 하지 않고(계약 5), 이 파일만 양쪽을 안다.
+로 꽂는다 — 허브의 `app`·`adapter` 는 `ai/` 스포크를 모르고(`.importlinter` 계약 2), 이 파일만 양쪽을 안다.
+(⚠ 옛 주석의 「계약 5」는 `.importlinter` 에 없다 — 계약은 넷이다. `server/` 안 스포크의 기본 구현은 `hub/dependencies/` 가 직접 import 한다.)
 """
 
 from __future__ import annotations
@@ -19,8 +20,9 @@ from pathlib import Path
 # pytest.ini(pythonpath)·.importlinter(PYTHONPATH=apps) 와 같은 맥락 — 세 곳이 항상 같아야 한다.
 sys.path.insert(0, str(Path(__file__).resolve().parent / "apps"))
 
-from fastapi import FastAPI, Request  # noqa: E402
+from fastapi import Depends, FastAPI, Request  # noqa: E402
 from fastapi.middleware.cors import CORSMiddleware  # noqa: E402
+from fastapi.responses import JSONResponse  # noqa: E402
 
 from admin_auth.adapter.inbound.api.v1.auth_router import auth_router  # noqa: E402
 from agent_auth.adapter.inbound.api.v1.agent_directory_router import agent_directory_router  # noqa: E402
@@ -61,6 +63,7 @@ from hub.adapter.inbound.api.v1.summary_revision_router import summary_revision_
 from hub.adapter.inbound.api.v1.transcript_ingest_router import transcript_ingest_router  # noqa: E402
 from hub.adapter.inbound.api.v1.transcript_query_router import transcript_query_router  # noqa: E402
 from hub.adapter.inbound.api.v1.upload_router import upload_router  # noqa: E402
+from hub.dependencies.ingest_guard import ingest_guard_state, require_ingest_service  # noqa: E402
 
 SPOKES: list[str] = []  # 스포크를 꽂을 때 이름을 추가한다 — /health 가 그대로 보고한다
 
@@ -106,6 +109,7 @@ def _wire_retrieval(app: FastAPI, settings: Settings) -> str | None:
         if settings.elasticsearch_api_key
         else Elasticsearch(settings.elasticsearch_url)
     )
+    app.state.es_client = client   # `/health/ready` 가 같은 클라이언트로 찔러 본다
     port = EsBm25Retriever(client, index=SINGLE_INDEX)
     # 임베딩·리랭킹(decisions/206)은 모델 디렉터리가 설정됐을 때만. 못 뜨면 BM25 그대로다.
     # 켜진 층은 `/health` 에 따로 싣는다 — 같은 "retrieval" 이라도 BM25 인지 dense+rerank 인지 밖에서 보여야 한다.
@@ -389,6 +393,12 @@ app.add_middleware(
 )
 _install_missing_index_handler(app)
 
+# **콜 미디에이터만 부르는 쓰기 경로**에 서비스 토큰 문을 단다(`_project/decisions/120`).
+# 2026-09-20 운영 왕복에서 이 일곱이 토큰 없이 200 이었다. 프론트 세 앱은 이 경로를 한 곳도 부르지 않는다(전수 grep) —
+# 대시보드가 직접 부르는 쓰기(`/close`·요약 확정·카드 피드백)는 **사람 토큰(`require_agent`) 몫**이라 여기 넣지 않는다.
+# 일곱 라우터 모두 라우트가 하나뿐이라 합성 루트에서 한 번에 건다 — GET `/hub/calls`(목록)는 다른 라우터라 영향이 없다.
+_INGEST_ONLY = [Depends(require_ingest_service)]
+
 app.include_router(auth_router)
 app.include_router(agent_directory_router)
 app.include_router(agent_me_router)
@@ -401,14 +411,14 @@ app.include_router(blacklist_release_router)
 app.include_router(blacklist_retention_purge_router)
 app.include_router(blacklist_request_create_router)
 app.include_router(blacklist_request_list_router)
-app.include_router(call_guard_check_router)
+app.include_router(call_guard_check_router, dependencies=_INGEST_ONLY)
 app.include_router(call_guard_flag_list_router)
 app.include_router(call_list_router)
 app.include_router(call_record_router)
-app.include_router(call_start_router)
+app.include_router(call_start_router, dependencies=_INGEST_ONLY)
 app.include_router(card_feedback_router)
-app.include_router(closure_router)
-app.include_router(compliance_router)
+app.include_router(closure_router, dependencies=_INGEST_ONLY)
+app.include_router(compliance_router, dependencies=_INGEST_ONLY)
 app.include_router(knowledge_gap_query_router)
 app.include_router(knowledge_gap_router)
 app.include_router(myself_router)
@@ -416,24 +426,96 @@ app.include_router(postcall_router)
 app.include_router(summary_confirmation_router)
 app.include_router(summary_revision_router)
 app.include_router(summary_revision_list_router)
-app.include_router(recommendation_router)
-app.include_router(required_docs_detection_router)
+app.include_router(recommendation_router, dependencies=_INGEST_ONLY)
+app.include_router(required_docs_detection_router, dependencies=_INGEST_ONLY)
 app.include_router(routing_decision_router)
 app.include_router(routing_setting_router)
 app.include_router(routing_setting_query_router)
 app.include_router(search_router)
-app.include_router(transcript_ingest_router)
+app.include_router(transcript_ingest_router, dependencies=_INGEST_ONLY)
 app.include_router(transcript_query_router)
 app.include_router(upload_router)
 
 
 @app.get("/health")
 def health(request: Request) -> dict:
-    """기동 여부 + 외부 자원 설정 여부 + 등록된 스포크. 설정 '값'은 절대 싣지 않는다 (SEC-2)."""
+    """기동 여부 + 외부 자원 설정 여부 + 등록된 스포크. 설정 '값'은 절대 싣지 않는다 (SEC-2).
+
+    ⚠ **여기서 `true` 는 「설정이 있다」이지 「붙는다」가 아니다.** 실제 연결은 `/health/ready` 가 본다.
+    """
     settings: Settings = request.app.state.settings
     return {
         "status": "ok",
         "postgres_configured": settings.postgres_configured,
         "elasticsearch_configured": settings.elasticsearch_configured,
         "spokes": list(SPOKES),
+        # "open" = 쓰기 경로가 토큰 없이 열려 있다(이행기). 값이 아니라 **상태**만 싣는다(SEC-2)
+        "ingest_guard": ingest_guard_state(settings),
     }
+
+
+READY_TIMEOUT_SECONDS = 3.0
+
+
+async def _probe(fn) -> dict:
+    """한 자원을 찔러 보고 결과만 돌려준다. **예외 메시지는 싣지 않는다 (SEC-2)** —
+    접속 문자열·호스트·비밀번호가 그 안에 들어 있다. 타입 이름만 남긴다."""
+    import asyncio  # noqa: PLC0415
+    import time  # noqa: PLC0415
+
+    started = time.perf_counter()
+    try:
+        await asyncio.wait_for(fn(), timeout=READY_TIMEOUT_SECONDS)
+    except Exception as exc:  # noqa: BLE001 — 어떤 실패든 「못 붙었다」로 같게 다룬다
+        return {"configured": True, "ok": False, "error": type(exc).__name__,
+                "elapsed_ms": round((time.perf_counter() - started) * 1000)}
+    return {"configured": True, "ok": True, "elapsed_ms": round((time.perf_counter() - started) * 1000)}
+
+
+@app.get("/health/ready")
+async def health_ready(request: Request) -> JSONResponse:
+    """**설정이 아니라 연결을 잰다.** PostgreSQL 은 `select 1`, ES 는 ping.
+
+    **왜 `/health` 를 고치지 않고 주소를 나눴나.** `/health` 는 기동 확인(liveness)이고 배포
+    스모크 테스트가 매번 친다 — 여기서 DB·ES 를 찌르면 검사가 느려지고, 자원이 잠깐 흔들릴 때
+    「서버가 죽었다」로 읽힌다. 반대로 `/health` 만 있으면 **「설정은 있는데 실제로는 안 붙는」
+    상태가 「정상」으로 보고된다** — 2026-09-14 에 그래서 결함이 가려졌다(`connection.py` 주석).
+    그래서 **싼 것과 진짜인 것을 다른 주소로 가른다.**
+
+    - 설정이 없는 자원은 **실패로 세지 않는다**(`configured: false`) — 그건 `/health` 가 이미 말한다.
+    - 설정된 자원 중 하나라도 못 붙으면 **503** 과 `status: "degraded"`.
+    - ⚠ **지금 어떤 k8s 프로브도 이 주소를 쓰지 않는다.** 붙이려면 파드가 ES 흔들림에
+      휩쓸려 서비스에서 빠지는 것을 먼저 받아들여야 한다(런북 19장).
+    """
+    settings: Settings = request.app.state.settings
+    checks: dict[str, dict] = {}
+
+    if not settings.postgres_configured:
+        checks["postgres"] = {"configured": False}
+    else:
+        async def _pg() -> None:
+            from hub.adapter.outbound.postgres.connection import build_connection_factory  # noqa: PLC0415
+
+            connect = build_connection_factory(settings)
+            async with connect() as conn:
+                async with conn.cursor() as cur:
+                    await cur.execute("select 1")
+        checks["postgres"] = await _probe(_pg)
+
+    client = getattr(request.app.state, "es_client", None)
+    if not settings.elasticsearch_configured or client is None:
+        checks["elasticsearch"] = {"configured": settings.elasticsearch_configured, "ok": None,
+                                   "error": None if not settings.elasticsearch_configured else "client_not_wired"}
+    else:
+        async def _es() -> None:
+            import asyncio  # noqa: PLC0415
+
+            if not await asyncio.to_thread(client.ping):
+                raise ConnectionError("ping false")
+        checks["elasticsearch"] = await _probe(_es)
+
+    degraded = [n for n, c in checks.items() if c.get("configured") and c.get("ok") is not True]
+    return JSONResponse(
+        status_code=200 if not degraded else 503,
+        content={"status": "ok" if not degraded else "degraded", "checks": checks},
+    )

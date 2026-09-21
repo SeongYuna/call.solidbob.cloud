@@ -1,0 +1,230 @@
+{
+  "id": "SYN-018",
+  "version": "dasan-v0",
+  "source": "synthetic",
+  "generated_by": "Claude Code (claude-fable-5-1) · 2026-09-18 · 사람 검토 전",
+  "title": "수도 사용자 명의변경 — 이야기가 자꾸 옆길로 새는 고령 민원인",
+  "length_class": "long",
+  "turn_count": 24,
+  "caller_number": "01000000118",
+  "agent_persona": "A02",
+  "customer_persona": "C17",
+  "procedure": {
+    "doc_ids": [
+      "DASAN-TERM-3.5",
+      "DASAN-TERM-3.3",
+      "DASAN-MANUAL-3.2",
+      "DASAN-MANUAL-3.3"
+    ],
+    "required_documents": [
+      "신청서",
+      "신규 사용자 신분증",
+      "소유 또는 점유 관계를 확인할 수 있는 서류(등기사항증명서 또는 임대차계약서)"
+    ]
+  },
+  "turns": [
+    {
+      "seq": 1,
+      "speaker": "agent",
+      "text": "네, 한별시 통합민원콜센터입니다. 무엇을 도와드릴까요?",
+      "tone": "calm"
+    },
+    {
+      "seq": 2,
+      "speaker": "customer",
+      "text": "여보세요? 아이고 들리네. 저기, 수도 고지서가 아직도 우리 영감 이름으로 나오는데, 이걸 내 이름으로 바꾸려면 어떻게 하나 해서요.",
+      "tone": "calm"
+    },
+    {
+      "seq": 3,
+      "speaker": "agent",
+      "text": "네, 수도 사용자 명의변경 문의시군요. 먼저 여쭤볼게요. 지금 밀린 수도요금은 없으신가요?",
+      "tone": "calm"
+    },
+    {
+      "seq": 4,
+      "speaker": "customer",
+      "text": "밀린 거는 없어요. 우리 손주가 꼬박꼬박 내 줘요. 그 녀석이 이번에 취직을 했는데 회사가 저 멀리 있어서 주말에만 와요.",
+      "tone": "calm"
+    },
+    {
+      "seq": 5,
+      "speaker": "agent",
+      "text": "손주분이 든든하시겠어요. 체납이 없으시면 바로 명의변경 절차를 안내드릴 수 있어요.",
+      "tone": "calm"
+    },
+    {
+      "seq": 6,
+      "speaker": "customer",
+      "text": "그렇지요. 근데 이 집이 오래됐어요. 영감이랑 결혼하고 들어왔으니까 한 사십 년은 됐지. 그때는 여기가 다 논이었어요.",
+      "tone": "calm"
+    },
+    {
+      "seq": 7,
+      "speaker": "agent",
+      "text": "네, 오래 사셨네요. 명의변경에 필요한 서류를 말씀드릴게요. 신청서, 새로 사용자가 되실 고객님 신분증, 그리고 집이 고객님 소유인지 확인할 수 있는 등기사항증명서가 필요해요.",
+      "tone": "calm"
+    },
+    {
+      "seq": 8,
+      "speaker": "customer",
+      "text": "등기... 그건 영감 이름으로 돼 있을 텐데. 아직 상속을 안 했어요. 애들이 바쁘다고 해서.",
+      "tone": "calm"
+    },
+    {
+      "seq": 9,
+      "speaker": "agent",
+      "text": "그러시면 소유 관계 서류를 어떤 것으로 내실 수 있는지는 소관 부서 확인 후 안내드리겠습니다. 임대차계약서처럼 점유 관계를 보여 주는 서류도 인정될 수 있어요.",
+      "tone": "calm"
+    },
+    {
+      "seq": 10,
+      "speaker": "customer",
+      "text": "아이고, 복잡하네. 요즘 날씨가 추워서 나가기도 싫은데. 우리 때는 동사무소 가면 다 해 줬어요.",
+      "tone": "calm"
+    },
+    {
+      "seq": 11,
+      "speaker": "agent",
+      "text": "날이 많이 춥죠. 방문이 어려우시면 대리 신청도 가능한데, 그때는 위임장과 대리인 신분증이 추가로 필요해요.",
+      "tone": "calm"
+    },
+    {
+      "seq": 12,
+      "speaker": "customer",
+      "text": "손주한테 시키면 되겠네. 그 녀석 이름이 최준서예요. 착해요.",
+      "tone": "calm",
+      "labels": {
+        "pii": [
+          {
+            "pattern": "P6",
+            "span": "최준서"
+          }
+        ]
+      }
+    },
+    {
+      "seq": 13,
+      "speaker": "agent",
+      "text": "네, 손주분이 대신 오시면 위임장과 손주분 신분증을 같이 챙기시면 돼요.",
+      "tone": "calm"
+    },
+    {
+      "seq": 14,
+      "speaker": "customer",
+      "text": "근데 요금이 요새 많이 올랐어요. 옛날에는 몇 천 원이었는데 지금은 만 원이 넘어요.",
+      "tone": "calm"
+    },
+    {
+      "seq": 15,
+      "speaker": "agent",
+      "text": "요금은 사용량이랑 검침 주기에 따라 달라져서 제가 일반화해서 말씀드리기는 어려워요. 고지서에 있는 수용가 번호로 조회하시면 내역을 보실 수 있어요.",
+      "tone": "calm"
+    },
+    {
+      "seq": 16,
+      "speaker": "customer",
+      "text": "수용가 번호... 고지서에 있어요? 돋보기 껴야 보이는데.",
+      "tone": "calm"
+    },
+    {
+      "seq": 17,
+      "speaker": "agent",
+      "text": "네, 고지서에 있어요. 조회 방법은 확인 후 다시 안내드릴게요. 연락드릴 번호랑 수도 쓰시는 주소를 말씀해 주시겠어요?",
+      "tone": "calm"
+    },
+    {
+      "seq": 18,
+      "speaker": "customer",
+      "text": "전화는 공일공 공공공공 공일일팔이고, 집은 한별시 누리구 옛터길 23이에요.",
+      "tone": "calm",
+      "labels": {
+        "pii": [
+          {
+            "pattern": "P4",
+            "span": "공일공 공공공공 공일일팔"
+          },
+          {
+            "pattern": "P7",
+            "span": "한별시 누리구 옛터길 23"
+          }
+        ]
+      }
+    },
+    {
+      "seq": 19,
+      "speaker": "agent",
+      "text": "네, 확인했습니다. 다시 정리해 드릴게요. 명의변경은 신청서, 고객님 신분증, 소유나 점유 관계를 확인하는 서류 세 가지고, 손주분이 대신 오시면 위임장과 손주분 신분증이 더 필요해요.",
+      "tone": "calm"
+    },
+    {
+      "seq": 20,
+      "speaker": "customer",
+      "text": "신청서, 내 신분증, 집 서류. 손주가 가면 위임장. 알았어요. 우리 영감이 살아 있었으면 이런 거 다 했을 텐데.",
+      "tone": "calm"
+    },
+    {
+      "seq": 21,
+      "speaker": "agent",
+      "text": "네, 궁금하신 게 생기면 언제든 다시 전화 주세요. 소유 서류 건은 확인 후 연락드리겠습니다.",
+      "tone": "calm"
+    },
+    {
+      "seq": 22,
+      "speaker": "customer",
+      "text": "고마워요. 젊은 사람이 친절하네.",
+      "tone": "calm"
+    },
+    {
+      "seq": 23,
+      "speaker": "agent",
+      "text": "네, 이용해 주셔서 감사합니다.",
+      "tone": "calm"
+    },
+    {
+      "seq": 24,
+      "speaker": "customer",
+      "text": "네, 수고해요.",
+      "tone": "calm"
+    }
+  ],
+  "expected": {
+    "pii_by_pattern": {
+      "P4": 1,
+      "P6": 1,
+      "P7": 1
+    },
+    "compliance": [],
+    "call_guard_by_type": {},
+    "customer_non_calm_turns": [],
+    "call_temperature": {
+      "customer_expected_outlier_turns": [],
+      "customer_calm_turns": [
+        2,
+        4,
+        6,
+        8,
+        10,
+        12,
+        14,
+        16,
+        18,
+        20,
+        22,
+        24
+      ],
+      "customer_turns": 12,
+      "note": "의도한 연기(tts 운율 지시)에서 나온 기대값이다 — 측정값이 아니다. raised·tense 는 채점에서 뺀다"
+    },
+    "j": {
+      "blacklist_request": false,
+      "routing": "normal"
+    }
+  },
+  "notes": [
+    "TERM-3.5: 체납액이 있으면 정산 여부를 먼저 확인한 뒤 절차를 안내한다 — 상담원이 그 순서를 지키는지",
+    "C17 은 손주·날씨·옛날 이야기로 빠진다 — 상담원이 끊지 않고 본론으로 되돌린다. 톤은 내내 calm(D-5 이상치 0 대조군)",
+    "상담원이 마지막에 서류 목록을 다시 짚는다(3.2)",
+    "P6·P7·P4(한글 수사)"
+  ]
+}

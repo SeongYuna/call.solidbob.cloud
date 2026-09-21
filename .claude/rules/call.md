@@ -64,8 +64,8 @@ interface RecommendationCard {
 
 ## 3. API·WebSocket 통신
 
-- `services/gateway`(WebSocket)와 `fastapi`(REST) 호출은 각각 단일 클라이언트
-  모듈(`lib/ws/gatewayClient.ts`, `lib/api/coreClient.ts`)로 모으고, 컴포넌트에서 직접
+- `services/call-mediator`(WebSocket)와 `fastapi`(REST) 호출은 각각 단일 클라이언트
+  모듈(`lib/ws/callMediatorClient.ts`, `lib/api/coreClient.ts`)로 모으고, 컴포넌트에서 직접
   소켓/HTTP 호출을 흩뿌리지 않는다.
 - 에러 메시지는 한국어로, 사용자에게 서버 내부 정보(스택트레이스 등)를 노출하지 않는다.
 
@@ -83,5 +83,5 @@ interface RecommendationCard {
   DNS·인증서에 걸리는 문제는 정성윤에게 넘긴다.
 - 개발은 로컬 `infra/docker-compose.yml`(PostgreSQL·ES) + `server/` 로 띄운다. **운영 주소를 개발 기본값으로 굳히지 않는다** —
   주소는 환경변수로 빼고, 로컬 기본값은 로컬 것으로 둔다.
-- ⚠ `services/gateway`(WebSocket)는 **아직 코드가 0줄**이다(`_project/STATE.md`). 게이트웨이 주소는 확정되지 않았으므로
-  `lib/ws/gatewayClient.ts` 에 엔드포인트를 상수로 박기 전에 확인한다.
+- ⚠ `services/call-mediator`(WebSocket)는 **아직 코드가 0줄**이다(`_project/STATE.md`). 콜 미디에이터 주소는 확정되지 않았으므로
+  `lib/ws/callMediatorClient.ts` 에 엔드포인트를 상수로 박기 전에 확인한다.

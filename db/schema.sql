@@ -43,13 +43,13 @@ CREATE TABLE "call" (
     FOREIGN KEY ("agent_id") REFERENCES "agent"("agent_id")
 );
 COMMENT ON COLUMN "call"."domain" IS '4개 데모 도메인 — 검색·F-2 라우팅 기준([1.4절](/docs/01/))';
-COMMENT ON COLUMN "call"."customer_id" IS '게이트웨이가 발신 번호를 넘긴 통화만 채워진다(`decisions/304`). 재상담 이력·블랙리스트 요청의 연결 고리';
+COMMENT ON COLUMN "call"."customer_id" IS '콜 미디에이터가 발신 번호를 넘긴 통화만 채워진다(`decisions/304`). 재상담 이력·블랙리스트 요청의 연결 고리';
 COMMENT ON COLUMN "call"."channel_count" IS 'V1 확인: 전부 1(모노)';
 COMMENT ON COLUMN "call"."summary_confirmed_at" IS 'D-1~D-3 — **NULL 이면 초안이다**(`decisions/205` ⑧). `CallSummaryDraft.confirmed` 를 담을 자리가 없어서, 모델이 만든 초안과 상담원이 확정한 것을 DB 가 구분하지 못했다 — 부록 A-1 이 금지한 「모델이 정한 것을 확정한 것처럼」이 저장 계층에서 일어난다';
 COMMENT ON COLUMN "call"."summary_text" IS 'D-1, 통화 후 생성';
 COMMENT ON COLUMN "call"."inquiry_type" IS 'D-2, 통화 후 생성';
 
--- 전사 세그먼트 — 발화 1건 = 1행 (1NF: 통화 전체를 한 칸에 몰아넣지 않음). ⚠ **PK 는 `(call_id, segment_id)` 복합키다**(2026-09-09, `_project/decisions/205`) — `segment_id` 는 게이트웨이가 **통화 안에서** 매기는 순번이라(§7.3) 전역 유일하지 않다. 단독 PK 로 두었을 때 두 번째 통화의 1번 발화가 첫 통화의 1번 행을 덮어쓰는 것을 실제로 재현했다
+-- 전사 세그먼트 — 발화 1건 = 1행 (1NF: 통화 전체를 한 칸에 몰아넣지 않음). ⚠ **PK 는 `(call_id, segment_id)` 복합키다**(2026-09-09, `_project/decisions/205`) — `segment_id` 는 콜 미디에이터가 **통화 안에서** 매기는 순번이라(§7.3) 전역 유일하지 않다. 단독 PK 로 두었을 때 두 번째 통화의 1번 발화가 첫 통화의 1번 행을 덮어쓰는 것을 실제로 재현했다
 CREATE TABLE "transcript_segment" (
     "segment_id" BIGINT NOT NULL,
     "call_id" VARCHAR(40) NOT NULL,

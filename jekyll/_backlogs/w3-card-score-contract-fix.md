@@ -37,7 +37,7 @@ HTTP 표면(`CardSchema`)과 내부 DTO(`Card`) 양쪽을 함께 맞춘다.
 `doc_id`·`summary`·`internal_latency_ms` 만 보고 **점수 필드명을 단언하지 않았다.**
 ② 배포된 대시보드가 mock 모드라 실서버 응답을 파싱한 적이 없다.
 
-**⚠ 프론트는 이 필드가 없으면 카드를 통째로 버린다.** `realGatewayClient.ts:238`
+**⚠ 프론트는 이 필드가 없으면 카드를 통째로 버린다.** `realCallMediatorClient.ts:238`
 `parseCard` 는 `similarity_score` 하나만 읽고 없으면 `null` 을 반환한다 —
 에러 없이 사라진다. 실서버를 붙이는 순간 추천 카드가 화면에서 전부 없어졌을 것이다.
 

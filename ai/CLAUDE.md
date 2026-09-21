@@ -79,6 +79,13 @@ ai/
 | `pii_ner` | 규칙 마스킹 위에 얹는 NER 겹 | C-5 P6·P7 | `server/apps/masking` 과 경로가 겹쳐 `masking` 이 아니다 |
 | `postcall_summary` | 규칙 발췌 초안 위에 모델 요약·유형 제안 | D-1·D-2 | `server/apps/postcall` 과 같은 이유 |
 
+**이 표에 빠져 있던 둘 (2026-09-21 보탬)** — 2026-09-09 스키마 QA 때 생겼고 `.importlinter` 에는 처음부터 등록돼 있었다. 이 파일에만 없었다.
+
+| 모듈 | 내용 | 요구 ID | 주의 |
+|---|---|---|---|
+| `call_guard` | 고객 욕설·폭언·위기 신호 — 어휘 사전 + 규칙(`insult`·`threat`·`sexual`·`distress`) | C-6 | 골든셋을 보고 쓴 규칙이라 하네스 1.0 은 **상한이지 성능이 아니다** |
+| `voice_signal` | 음성 특징 + 중앙값·MAD 이상치(numpy 만) | D-5 | ⚠ **`server/main.py` 가 배선하지 않는다** — 서버 요청 경로에서는 돌지 않는다(2026-09-21 전수 조사) |
+
 `retrieval` 에는 임베딩(KoE5)·리랭커·하이브리드(비채택)·폴백·결과 캐시가 붙었다(`decisions/206`).
 
 **예정 모듈** — 실제로 만들 때 `.importlinter` 의 `root_packages` 와 계약 1·2 목록에 추가한다.
@@ -92,7 +99,7 @@ ai/
 학습 코드·KcELECTRA 파인튜닝 어댑터·`scripts/train_domain_classifier.py` 가 함께 지워졌고
 `.importlinter` 의 `root_packages` 에서도 빠졌다. 되돌리려면 git 이력에서 꺼낸다.
 
-⚠ **모델 학습이 `ai/` 에서 완전히 사라진 것은 아니다.** A-3(동시 통번역)·C-6(콜 가드)·
+⚠ **모델 학습이 `ai/` 에서 완전히 사라진 것은 아니다.** A-5(동시 통번역 — 옛 표기 `A-3` 은 오기, `plan.md` rev.5)·C-6(콜 가드)·
 D(감정분석)가 모델을 쓰므로, 새 학습 모듈이 필요해지면 그때 `root_packages` 에 다시 넣는다.
 
 ---
@@ -132,8 +139,9 @@ CI(`.github/workflows/test.yml`)의 `ai` job 이 이 둘을 돌린다.
 ## 5. 데이터
 
 ```
-../knowledge-base/   dasan/ 하나 × terms/manual/policy (조항 20개 — 2026-08-28 `decisions/201`)
-../golden-set/       골든셋 (v1-10 · v1-50 …). 도메인·발화 종료 시각·정답 문서 ID·P1~P7 패턴
+../knowledge-base/   dasan/ 하나 × TERM/MANUAL/POLICY (**조항 98개** = 76·20·2, 2026-09-21 `<!-- id:` 실측.
+                     2026-08-28 다산 전환 직후에는 20개였다 — `decisions/201`)
+../golden-set/       골든셋 — 공식은 `v1-150.json`(156건). 도메인·발화 종료 시각·정답 문서 ID·P1~P7 패턴
 ../data/raw/         AI Hub 원본 (gitignore — 커밋하지 않는다)
 ../data/processed/   전사 결과 등 파생물 (gitignore)
 ```
@@ -170,7 +178,13 @@ CI(`.github/workflows/test.yml`)의 `ai` job 이 이 둘을 돌린다.
 
 ## 7. 배포 전제 — `../docs/infra-runbook.md`
 
-운영은 **T4 GPU 한 장(g4dn.xlarge) + k3s** 다. GPU 가 한 장이라는 사실이 `ai/` 코드에 그대로 걸린다.
+> ⚠ **2026-09-21 정정 — 아래 표는 런북 원안(g4dn.xlarge) 기준이고 실물과 다르다.**
+> 운영 노드는 **CPU `t3.large` 한 대**다(`_project/decisions/116`). GPU 도 `ollama` 파드도 없고, 서버 이미지에 torch 가 없어
+> **운영은 규칙 마스킹 + BM25 + 스니펫 카드**로 돈다. 모델(NER·임베딩·리랭커·생성)은 **전용 GPU EC2 를 따로 세워** 올리기로 했다
+> (`decisions/121` — 인스턴스는 아직 없다. `ai/` 가 라이브러리에서 원격 서비스가 되는 문제를 그 결정이 미결로 적어 두었다).
+> 아래 표의 11·14장은 **그 인스턴스를 만들 때의 전제**로 읽는다. 15장의 ES 힙은 실물이 1GiB 다(`infra/k8s/base/`).
+
+운영은 **T4 GPU 한 장(g4dn.xlarge) + k3s** 다(원안). GPU 가 한 장이라는 사실이 `ai/` 코드에 그대로 걸린다.
 **모델을 올리거나 ES 매핑을 바꾸거나 측정을 돌리기 전에 런북 11·14·15·22장을 읽는다.**
 
 | 런북 | `ai/` 가 지켜야 하는 것 |
@@ -182,7 +196,9 @@ CI(`.github/workflows/test.yml`)의 `ai` job 이 이 둘을 돌린다.
 | 22 | **평가 하네스를 g4dn 위에서 돌리면 측정 도구가 대상과 CPU 를 다툰다.** 5주차 측정은 별도 t3.micro 에서 돌린다 — 수치를 기록할 때 **어디서 쟀는지** 함께 남긴다(§5 규칙) |
 | 9-2 | `/mnt/scratch`(인스턴스 스토어)는 **인스턴스를 중지하면 비어 있다.** 모델 가중치·ES 인덱스를 여기 두지 않는다. 재생성 가능한 중간 산출물만 |
 
-> ⚠ **확인 필요 — 배포가 두 도메인인지 한 파드인지.** 이 파일 머리말은 `ai.solidbob.cloud` 를 적고 있으나,
+> ✅ **2026-09-03 에 답이 나왔다 — 한 컨테이너·한 도메인**(`decisions/105`). 머리말도 그날 고쳤다. 아래는 그 전의 질문을 그대로 둔 것이다.
+>
+> ⚠ ~~**확인 필요 — 배포가 두 도메인인지 한 파드인지.**~~ 이 파일 머리말은 `ai.solidbob.cloud` 를 적고 있으나,
 > 런북은 `server` 파드 **하나**에 임베딩·분류기까지 올리고 `server.solidbob.cloud` 만 연다(13-1·16-1·19장).
 > `decisions/024`(검색 스포크를 같은 프로세스에서 꽂는다)와 같은 사안이다 — 정성윤 회신 대기,
 > [미결 항목](/open-items/) 참고.

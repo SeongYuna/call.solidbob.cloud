@@ -9,7 +9,7 @@ date: 2026-08-28
 paths:
   - "apps/dashboard/src/mock/scenarios/"
   - "apps/dashboard/src/components/TermsPanel.tsx"
-  - "apps/dashboard/src/mock/mockGateway.ts"
+  - "apps/dashboard/src/mock/mockCallMediator.ts"
 requirement:
   - "A-5"
 ---

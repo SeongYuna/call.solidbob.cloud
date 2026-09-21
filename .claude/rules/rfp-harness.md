@@ -36,8 +36,8 @@
 ## 2. 시스템 아키텍처 및 4인 R&R
 
 ```
-[상담원 브라우저]                          [Node.js 게이트웨이]        [FastAPI 코어]
-apps/call (React)      --WebSocket-->  services/gateway            fastapi
+[상담원 브라우저]                          [Node.js 콜 미디에이터]        [FastAPI 코어]
+apps/call (React)      --WebSocket-->  services/call-mediator            fastapi
 ├── 실시간 자막 · 경고 · 하단 책갈피 카드    ├── 오디오 청크 중계        ├── C-5 마스킹
 └── F-2 종결 모달                           ├── Google STT 연동         ├── 트리거 판정
                                             └── 화자 분리                ├── 검색(ES 하이브리드)
@@ -52,14 +52,14 @@ infra/ (Docker, AWS, PostgreSQL, Elasticsearch)
 
 | 담당자 | 역할 | 주 담당 디렉터리 | 근거 |
 |---|---|---|---|
-| **정성윤** | AWS·인프라 | `services/gateway/`, `infra/`, CI 운영 | [팀 분업](/docs/07/) |
+| **정성윤** | AWS·인프라 | `services/call-mediator/`, `infra/`, CI 운영 | [팀 분업](/docs/07/) |
 | **류준** | 백엔드·AI 중 **AI** | `ai/` — 데이터셋 모델 학습·청킹·BM25·리랭크·임베딩·LangChain/LangGraph·평가 하네스 | `_project/decisions/012` |
 | **장민석** | 백엔드·AI 중 **서버** | `server/` — 파이프라인 구축·클린 아키텍처·계약(포트·DTO)·요청 경로 배선 | `_project/decisions/012` |
 | **조서희** | 프론트엔드 | `apps/call/`(상담원: 자막 · 이용약관·충족요건), 결과 시각화(matplotlib) | [팀 분업](/docs/07/), `_project/decisions/014` |
 
 > ⚠ **«주 담당» 은 잠금이 아니다 (2026-09-10, `_project/decisions/302`).** 위 표의 세 번째 열은
 > **주로 누가 보는가**를 가리키는 표기이지 편집 권한이 아니다 —
-> **`ai/`·`server/`·`infra/`(+ `services/gateway/`·`db/`·`golden-set/`) 는 정성윤·류준·장민석
+> **`ai/`·`server/`·`infra/`(+ `services/call-mediator/`·`db/`·`golden-set/`) 는 정성윤·류준·장민석
 > 누구나 고친다.** 기능 하나가 세 디렉터리에 걸치는데 담당이 갈려 **호출부만 있고 구현체가 없는
 > 구멍**이 계속 남았기 때문이다. **전담이 남는 곳은 조서희의 프론트엔드(`apps/`) 하나뿐이다.**
 >
@@ -72,7 +72,7 @@ infra/ (Docker, AWS, PostgreSQL, Elasticsearch)
 > 한 브랜치에서 위 셋을 전부 고치고 한 PR 로 넣는다(`decisions/302`).
 > 브랜치는 넷을 유지한다(`_project/decisions/011`). 개명해도 main 룰셋은 그대로다 —
 > 필수 통과 검사 이름은 **job 이름**이지 브랜치 이름이 아니다 — 2026-09-15 현재 다섯이고,
-> 넷(`server`·`ai`·`jekyll`·`gateway`)은 `test.yml`, `tag-check` 는 **`tag-check.yml`** 에 있다
+> 넷(`server`·`ai`·`jekyll`·`call-mediator`)은 `test.yml`, `tag-check` 는 **`tag-check.yml`** 에 있다
 > (`decisions/111`·`114`). ⚠ **`test.yml` 만 보면 안 된다.**
 > 브랜치 이름이 걸린 곳은 이제 없다 — `test.yml` 의 push 트리거가 `[main]` 하나로 좁혀졌다
 > (2026-09-15, `decisions/114`). PR 이 열려 있으면 `pull_request` 가 push 마다 돈다.
@@ -95,7 +95,7 @@ infra/ (Docker, AWS, PostgreSQL, Elasticsearch)
 
 | 요구 ID | 정의 | 코드 위치 | 검수 기준 | 근거 문서 |
 |---|---|---|---|---|
-| **A-1·A-2** | 스트리밍 STT + 화자 분리 | `services/gateway/stt/`, `services/gateway/diarization/` | 부분 전사 결과 스트리밍, [V1](/docs/05/) 결과에 따라 채널분리/diarization 분기 | [기능 명세](/docs/02/), [데이터 확보 계획](/docs/05/) |
+| **A-1·A-2** | 스트리밍 STT + 화자 분리 | `services/call-mediator/stt/`, `services/call-mediator/diarization/` | 부분 전사 결과 스트리밍, [V1](/docs/05/) 결과에 따라 채널분리/diarization 분기 | [기능 명세](/docs/02/), [데이터 확보 계획](/docs/05/) |
 | ~~**B-0**~~ | ~~도메인 라우팅~~ — **2026-08-28 폐기.** 다산 단일 도메인이 되어 라우팅할 대상이 없다. 허브 포트는 계약으로 남아 있으나 구현체가 없다 | — | — | `_project/decisions/201`(`007` 철회) |
 | **A-5** | **동시 통번역** — 1차 범위 ⓑ(서툰 한국어를 정확히 전사) · 확장 ⓐ(외국어 → 한글, 상담원 → 고객 TTS) | (미구현) | **숙련도 등급별 WER/CER — 측정·기록.** 목표치를 지어내지 않고, 평균 하나로 뭉개지 않는다 | `_project/plan.md` rev.5 · `_project/decisions/201` |
 
@@ -106,7 +106,7 @@ infra/ (Docker, AWS, PostgreSQL, Elasticsearch)
 | **B-1~B-3** | 트리거 판정 + 하이브리드 검색(nori+dense_vector+RRF) + 리랭킹 → **필요서류 제시**(`decisions/201`) | `ai/apps/retrieval/` | Recall@5 ≥0.70(오류 없음)/≥0.60(오류 10%), 트리거 적절 발동률(0~1,500ms) ≥0.85, 내부 처리 p95 ≤1,000ms | [핵심 기술 난제](/docs/04/), [평가 설계](/docs/06/) |
 | **B-4~B-6** | 근거 기반 요약 카드 생성 + 출처 표시 | `ai/apps/generation/` | 출처 표시율 100%, 환각 150문항 중 5건 이하, 근거 부족 시 "관련 문서 없음" 반환 | [기능 명세 2.3](/docs/02/) |
 | **C-1~C-4** | 컴플라이언스 탐지 + 대체 표현 제시 | `ai/apps/compliance/` | 재현율 ≥0.90, 정밀도 ≥0.60 (재현율 우선) | [평가 설계](/docs/06/) |
-| **C-5** | 개인정보 실시간 마스킹 | `server/apps/masking/` (담당: **장민석** — 2026-08-27 이관, `_project/decisions/019`) | **P1~P7 패턴 마스킹 누락 0건 — 절대 규칙.** 화면·DB 저장 양쪽 앞단 적용, 원본 미보관. ⚠ **2026-08-28 현재 실제 채점 범위는 P4·P6·P7 뿐** — P1·P2·P3·P5 는 골든셋 표본이 0건이라 **판정된 적이 없다.** 하네스 리포트가 「표본 없는 패턴」으로 함께 찍는다. 3주차 재확장에서 복구 | [기능 명세 2.4](/docs/02/), [평가 설계](/docs/06/) |
+| **C-5** | 개인정보 실시간 마스킹 | `server/apps/masking/` (담당: **장민석** — 2026-08-27 이관, `_project/decisions/019`) | **P1~P7 패턴 마스킹 누락 0건 — 절대 규칙.** 화면·DB 저장 양쪽 앞단 적용, 원본 미보관. ~~⚠ **2026-08-28 현재 실제 채점 범위는 P4·P6·P7 뿐** — P1·P2·P3·P5 는 골든셋 표본이 0건이라 **판정된 적이 없다.**~~ → **2026-09-19: 골든셋 `v1-150`(156건)에 일곱 패턴 표본이 다 있다**(P1 4·P2 2·P3 3·P4 5·P5 4·P6 7·P7 3). 다만 **표본이 있다는 것과 채점됐다는 것은 다르다** — 하네스 재측정에서 `NO_SAMPLES` 가 사라진 것을 보기 전까지 「P1~P7 전체 통과」로 인용하지 않는다 | [기능 명세 2.4](/docs/02/), [평가 설계](/docs/06/) |
 | **D-4** | 지식베이스 공백 리포트 | `server/apps/postcall/` | B(검색 실패)/C(놓친 위반)/F(사후 문제) 케이스를 같은 루프로 누적 | [기능 명세 2.5](/docs/02/) |
 | **E-1~E-4** | 평가 하네스 | `ai/apps/evaluation/` | 규칙 기반 채점(LLM 채점 배제), 여러 회 실행 최저치 고정, 기준선 미달 시 CI 실패 | [평가 설계](/docs/06/) |
 | **F-2** | 종결 요건 게이트 → **필요서류 체크리스트로 전용**(`_project/decisions/201`) *(조건부, 7주차 체크포인트)* | `server/apps/closure_gate/` | 필수 항목 누락 **0건 탐지 — 절대 규칙**. ⚠ **rev.5 에서 「차단」이 「경고」로 바뀌었다**(`verdict` `blocked`→`incomplete`, `plan.md` 7.3절 — 코드 미반영, 장민석 소관). ⚠ **2026-08-28 현재 골든셋 채점 케이스 0건 — 측정 불가.** 판정은 규칙, 설명만 LLM | [기능 명세 2.7](/docs/02/), [부록 A-2](/docs/12/) |
@@ -125,7 +125,7 @@ infra/ (Docker, AWS, PostgreSQL, Elasticsearch)
 | **SEC-2** | 자격증명 분리 | `.env.example`, `infra/secrets/` | Google STT 키·PostgreSQL 비밀번호가 코드/레포에 커밋되지 않음. `.env.example`엔 키 이름만 | `.env.example` |
 | **QUA-1** | 요구 ID별 PyTest/Jest 자동화 테스트 | `server/apps/*/tests/`, `apps/call/test/` | 핵심 모듈(트리거·검색·마스킹·F-2 게이트) 단위 테스트 존재, CI에서 실행 | [평가 설계 6.2](/docs/06/) |
 | **QUA-2** | 골든셋 회귀 평가 자동화 | `ai/apps/evaluation/harness.py` | 골든셋(1주차 10개→2주차 50개→3주차 150개) 기준 eval 하네스가 스프린트마다 실행되고 [진행상황](/progress/)에 기록됨 | [데이터 확보 계획 5.3](/docs/05/) |
-| **COST-1** | Google STT 사용량을 무료 크레딧/무료 한도 내로 이중 캡 | `services/gateway/stt/budget_guard.js`, GCP 콘솔 쿼터 | ① GCP 쿼터로 하드 리밋(1차) ② `STT_MAX_SECONDS_PER_DAY`/`_MONTH`(`.env.example`) 초과 시 새 스트림 오픈 거부(2차, 애플리케이션 가드) | [리스크 및 대응](/docs/11/) |
+| **COST-1** | Google STT 사용량을 무료 크레딧/무료 한도 내로 이중 캡 | `services/call-mediator/stt/budget_guard.js`, GCP 콘솔 쿼터 | ① GCP 쿼터로 하드 리밋(1차) ② `STT_MAX_SECONDS_PER_DAY`/`_MONTH`(`.env.example`) 초과 시 새 스트림 오픈 거부(2차, 애플리케이션 가드) | [리스크 및 대응](/docs/11/) |
 
 ---
 
@@ -137,8 +137,8 @@ infra/ (Docker, AWS, PostgreSQL, Elasticsearch)
 
 ```
 claude "rfp-harness.md의 요구사항을 반영해 CallGuard 모노레포 뼈대를 구축해줘.
-1. Root에 services/gateway, fastapi, apps/call, infra/ 디렉토리 생성
-2. services/gateway: Node.js WebSocket 게이트웨이 골격 + Google STT 스트리밍 연동 지점 +
+1. Root에 services/call-mediator, fastapi, apps/call, infra/ 디렉토리 생성
+2. services/call-mediator: Node.js WebSocket 콜 미디에이터 골격 + Google STT 스트리밍 연동 지점 +
    COST-1 사용량 가드(STT_MAX_SECONDS_PER_DAY/_MONTH 초과 시 스트림 오픈 거부)
 3. fastapi: FastAPI 앱 골격 + PostgreSQL 연결 설정 (SEC-2 반영, .env.example의 키 이름만 사용)
 4. apps/call: React 프로젝트 초기화 (2.1절 — 자막/경고 + 하단 책갈피 카드)

@@ -8,6 +8,7 @@ import pytest
 
 from hub.adapter.outbound.postgres.call_guard_flag_repository import PostgresCallGuardFlagRepository
 from hub.app.dtos.call_guard_dto import CallGuardFlag
+from hub.app.ports.output.transcript_ingest_record_port import SegmentNotFoundError
 
 FLAG = CallGuardFlag(category="threat", phrase="가만 안 둬", source_doc_id="DASAN-MANUAL-5.2", span=(5, 11))
 
@@ -38,6 +39,52 @@ def _repo(log):
         yield _FakeConnection(log)
 
     return PostgresCallGuardFlagRepository(connect)
+
+
+class _FkViolation(Exception):
+    sqlstate = "23503"
+
+
+def test_전사가_없으면_SegmentNotFoundError_다():
+    """2026-09-20 운영에서 이 외래키 위반이 그대로 터져 **500** 이었다 — 호출 순서 문제는 4xx 로 드러낸다."""
+    log = []
+
+    class _Failing(_FakeCursor):
+        async def executemany(self, sql, rows):
+            raise _FkViolation()
+
+    class _Conn(_FakeConnection):
+        @asynccontextmanager
+        async def cursor(self):
+            yield _Failing(self._log)
+
+    @asynccontextmanager
+    async def connect():
+        yield _Conn(log)
+
+    with pytest.raises(SegmentNotFoundError) as caught:
+        asyncio.run(PostgresCallGuardFlagRepository(connect).record("c_001", 99, (FLAG,)))
+    assert (caught.value.call_id, caught.value.segment_id) == ("c_001", 99)
+    assert ("commit", "", None) not in log            # 커밋하지 않는다
+
+
+def test_외래키가_아닌_실패는_그대로_올린다():
+    """아무 예외나 「구간 없음」으로 접으면 진짜 결함이 404 뒤에 숨는다."""
+    class _Boom(_FakeCursor):
+        async def executemany(self, sql, rows):
+            raise RuntimeError("disk full")
+
+    class _Conn(_FakeConnection):
+        @asynccontextmanager
+        async def cursor(self):
+            yield _Boom(self._log)
+
+    @asynccontextmanager
+    async def connect():
+        yield _Conn([])
+
+    with pytest.raises(RuntimeError):
+        asyncio.run(PostgresCallGuardFlagRepository(connect).record("c_001", 7, (FLAG,)))
 
 
 def test_신호마다_한_행을_넣고_커밋한다():

@@ -10,9 +10,9 @@ from hub.app.ports.output.myself_record_port import MyselfRecordPort
 
 _ENDPOINTS = (
     "GET /hub/myself — 이 자기소개",
-    "POST /hub/calls — 게이트웨이가 통화 시작을 알린다. 전사보다 먼저 와야 한다(transcript_segment → call 외래키)",
+    "POST /hub/calls — 콜 미디에이터가 통화 시작을 알린다. 전사보다 먼저 와야 한다(transcript_segment → call 외래키)",
     "GET /hub/calls — 지난 통화 목록(최근 시작순, customer_id 필터). 자막은 GET /hub/calls/{call_id}/transcript",
-    "POST /hub/transcripts — 게이트웨이가 보낸 전사 1건을 받아 C-5 마스킹을 거친 전사 이벤트(7.3절 계약)로 돌려준다",
+    "POST /hub/transcripts — 콜 미디에이터가 보낸 전사 1건을 받아 C-5 마스킹을 거친 전사 이벤트(7.3절 계약)로 돌려준다",
     "POST /hub/call-guard-checks — 마스킹된 고객 발화 1건에서 C-6 폭언·위기 신호를 찾아 기록한다(규칙 사전 기준)",
 )
 _DOES_NOT = (

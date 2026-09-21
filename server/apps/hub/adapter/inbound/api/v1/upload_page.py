@@ -4,7 +4,7 @@
 **여기에 비밀이 없다.** 토큰은 사람이 붙여 넣고 `sessionStorage` 에만 남는다(탭을 닫으면 사라진다).
 AWS 자격증명은 어떤 형태로도 이 문자열에 들어가지 않는다 — 그게 `decisions/110` 의 전부다.
 
-게이트웨이의 `services/gateway/src/adapters/dev_page.ts` 와 같은 모양으로 둔다. 별도 프런트 빌드를
+콜 미디에이터의 `services/call-mediator/src/adapters/dev_page.ts` 와 같은 모양으로 둔다. 별도 프런트 빌드를
 만들지 않는 이유: `apps/` 는 조서희 전담이고(`decisions/302`), 이건 팀 내부 도구라 화면을 늘릴 일이 아니다.
 """
 

@@ -81,8 +81,8 @@ def test_판정에_부수효과가_없다():
     assert t.decide(e) == t.decide(e) == t.decide(e)
 
 
-def test_게이트웨이_도착_시각이_있으면_모형값_대신_그_값을_쓴다():
-    """실시간 경로(`services/gateway`)는 STT final 을 받은 시각을 싣는다 — 그게 측정값이다."""
+def test_콜_미디에이터_도착_시각이_있으면_모형값_대신_그_값을_쓴다():
+    """실시간 경로(`services/call-mediator`)는 STT final 을 받은 시각을 싣는다 — 그게 측정값이다."""
     d = IsFinalTrigger().decide(event(received_at_ms=3620))
     assert d.at_ms == 3620
 

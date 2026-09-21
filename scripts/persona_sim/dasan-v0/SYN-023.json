@@ -1,0 +1,102 @@
+{
+  "id": "SYN-023",
+  "version": "dasan-v0",
+  "source": "synthetic",
+  "generated_by": "Claude Code (claude-fable-5-1) · 2026-09-18 · 사람 검토 전",
+  "title": "집 안 수도관 누수 수리 요청 — 시 소관 아님",
+  "length_class": "short",
+  "turn_count": 9,
+  "caller_number": "01000000123",
+  "agent_persona": "A03",
+  "customer_persona": "C18",
+  "procedure": {
+    "doc_ids": [
+      "DASAN-TERM-3.15",
+      "DASAN-MANUAL-2.2",
+      "DASAN-TERM-3.7"
+    ],
+    "required_documents": []
+  },
+  "turns": [
+    {
+      "seq": 1,
+      "speaker": "agent",
+      "text": "네, 한별시 통합민원콜센터입니다. 무엇을 도와드릴까요?",
+      "tone": "calm"
+    },
+    {
+      "seq": 2,
+      "speaker": "customer",
+      "text": "싱크대 밑 수도관에서 물이 새요. 시에서 고쳐 주는 거죠? 세금은 꼬박꼬박 냈는데.",
+      "tone": "calm"
+    },
+    {
+      "seq": 3,
+      "speaker": "agent",
+      "text": "불편하시겠어요. 다만 계량기 안쪽 옥내 배관은 사용자 관리 구역이라 시가 직접 수리하지는 않습니다. 전문 업체를 통해 수리하셔야 해요.",
+      "tone": "calm"
+    },
+    {
+      "seq": 4,
+      "speaker": "customer",
+      "text": "역시 그렇겠죠. 그럼 어느 업체가 괜찮은지라도 알려 주시죠. 그건 되죠?",
+      "tone": "calm"
+    },
+    {
+      "seq": 5,
+      "speaker": "agent",
+      "text": "죄송하지만 센터가 특정 업체를 지정해 알선하지는 않습니다. 누수가 의심될 때 직접 해 보실 수 있는 점검 방법은 소관 부서 확인 후 안내드릴 수 있어요.",
+      "tone": "calm"
+    },
+    {
+      "seq": 6,
+      "speaker": "customer",
+      "text": "그것도 확인이군요. 네, 그럼 그거라도 부탁드리죠.",
+      "tone": "calm"
+    },
+    {
+      "seq": 7,
+      "speaker": "agent",
+      "text": "네. 그리고 누수로 요금이 크게 늘었다면 누수 감면 신청은 따로 문의하실 수 있습니다. 수리는 업체에 맡기셔야 해요.",
+      "tone": "calm"
+    },
+    {
+      "seq": 8,
+      "speaker": "customer",
+      "text": "네, 알겠습니다. 감면 쪽은 나중에 또 전화하죠. 수고하세요.",
+      "tone": "calm"
+    },
+    {
+      "seq": 9,
+      "speaker": "agent",
+      "text": "네, 이용해 주셔서 감사합니다.",
+      "tone": "calm"
+    }
+  ],
+  "expected": {
+    "pii_by_pattern": {},
+    "compliance": [],
+    "call_guard_by_type": {},
+    "customer_non_calm_turns": [],
+    "call_temperature": {
+      "customer_expected_outlier_turns": [],
+      "customer_calm_turns": [
+        2,
+        4,
+        6,
+        8
+      ],
+      "customer_turns": 4,
+      "note": "의도한 연기(tts 운율 지시)에서 나온 기대값이다 — 측정값이 아니다. raised·tense 는 채점에서 뺀다"
+    },
+    "j": {
+      "blacklist_request": false,
+      "routing": "normal"
+    }
+  },
+  "notes": [
+    "필요서류가 없는 통화 — 서류 카드가 뜨지 않거나 「해당 없음」이어야 한다",
+    "TERM-3.15·MANUAL-2.2: 계량기 이후는 사용자 관리 구역, 특정 업체를 지정해 알선하지 않는다 — 고객이 업체를 물어도 답하지 않는다",
+    "C18 비꼼 — 콜 가드 0건이 정상"
+  ]
+}

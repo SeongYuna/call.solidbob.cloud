@@ -219,7 +219,7 @@ ERROR 1064 (42000) at line 21: ... near 'call ('
 그런데 애플리케이션에 ID 를 만드는 코드가 어디에도 없다 — 설계 누락이다.
 
 → `Column` 에 `auto_increment` 를 추가하고 서로게이트 PK **10개**에 켰다.
-**`transcript_segment.segment_id` 만 예외**다 — [7.3절](/docs/07/) 계약상 게이트웨이가 정해서
+**`transcript_segment.segment_id` 만 예외**다 — [7.3절](/docs/07/) 계약상 콜 미디에이터가 정해서
 보내는 값이라(`transcript_segment.segment_id` 와 1:1) DB 가 채우면 안 된다.
 
 > 두 결함 다 **ERD·정규화 검토로는 드러날 수 없었다.** 테이블 구성·관계·정규형은 전부 맞았고,

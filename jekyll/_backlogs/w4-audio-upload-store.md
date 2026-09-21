@@ -23,7 +23,7 @@ paths:
 
 ## 왜
 
-기존 세 경로(`scripts/stream_wav.ts` · `GET /gateway/dev` · `WS /gateway/ingest`)는 **흘려보내고 끝난다.**
+기존 세 경로(`scripts/stream_wav.ts` · `GET /call-mediator/dev` · `WS /call-mediator/ingest`)는 **흘려보내고 끝난다.**
 같은 음성으로 다시 돌려 비교하려면 보관이 필요하고, 정성윤 노트북에서만 되는 절차는 팀 도구가 아니다.
 
 ## 완료 조건
@@ -41,7 +41,7 @@ paths:
       presigned **POST**(`content-length-range` 상한) · 키는 서버 생성 · 만료 5분
 - [x] `UPLOAD_TOKEN` fail-closed — 미설정이면 전부 거절. `Authorization: Bearer` 로만 받고 URL 에 싣지 않는다
 - [x] 목록 · 다시 듣기(GET presign) — 객체를 공개로 만들지 않는다
-- [x] 브라우저 페이지 — 팀원이 토큰 붙여넣고 파일 고르면 끝. `services/gateway/src/adapters/dev_page.ts` 와 같은 모양
+- [x] 브라우저 페이지 — 팀원이 토큰 붙여넣고 파일 고르면 끝. `services/call-mediator/src/adapters/dev_page.ts` 와 같은 모양
 - [x] 테스트 — 토큰 없음/틀림 거절 · 크기 초과 거절 · 클라이언트가 준 키 경로가 무시되는지(`../`·`datasets/`)
 - [x] `boto3==1.35.76` 을 `server/requirements.txt` 에. `root_packages` 추가는 **불필요**(hub 안이다).
       대신 **계약 3 에 `boto3` 를 금지 목록으로 추가** — `hub.app` 은 S3 를 모른다. 계약 4종 KEPT

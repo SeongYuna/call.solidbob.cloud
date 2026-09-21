@@ -26,7 +26,7 @@ import {
   type CallRecord,
 } from "../lib/api/coreClient";
 import { getScenarioById } from "../mock/scenarios";
-import type { GatewayMode } from "../lib/ws";
+import type { CallMediatorMode } from "../lib/ws";
 import { sliceByCodepoints } from "../lib/text/codepoints";
 import type { TargetLanguage } from "../lib/language/languageMeta";
 import {
@@ -96,7 +96,7 @@ export interface CardAdoption {
 }
 
 export interface CallState {
-  mode: GatewayMode;
+  mode: CallMediatorMode;
   connected: boolean;
   error: string | null;
   phase: CallPhase;
@@ -162,7 +162,7 @@ export interface CallState {
   resumeCall: () => void;
   applyClosure: (event: ClosureEvent) => void;
   settleClosure: (procedure: ClosureEvent["procedure"]) => void;
-  setStatus: (mode: GatewayMode, connected: boolean) => void;
+  setStatus: (mode: CallMediatorMode, connected: boolean) => void;
   setError: (message: string) => void;
   applyTranslation: (
     transcriptSegmentId: string,
@@ -560,7 +560,10 @@ export const useCallStore = create<CallState>((set) => ({
   },
 
   setError: (message) => {
-    set({ error: message, connected: false });
+    // 연결 상태는 `setStatus` 만 바꾼다(2026-09-20). 전에는 여기서 `connected: false` 를 같이 세워,
+    // **읽지 못한 메시지 하나**에도 화면이 「연결 끊김」으로 바뀌었다 — 소켓은 열려 있고 이후 자막도 계속 들어오는데.
+    // 진짜 연결 실패는 소켓의 close 가 `setStatus(…, false)` 로 알린다(`realCallMediatorClient.ts`).
+    set({ error: message });
   },
 
   applyTranslation: (transcriptSegmentId, event) => {

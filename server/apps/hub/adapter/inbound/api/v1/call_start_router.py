@@ -1,5 +1,5 @@
 # Requirement: 7.3절 전사 이벤트
-"""POST /hub/calls — 게이트웨이가 통화 시작을 알린다. 전사(`POST /hub/transcripts`)보다 먼저 와야 한다.
+"""POST /hub/calls — 콜 미디에이터가 통화 시작을 알린다. 전사(`POST /hub/transcripts`)보다 먼저 와야 한다.
 
 `transcript_segment.call_id → call` 외래키 때문이다. 이 경로가 없어서 전사 저장이 첫 건부터
 실패했다(2026-09-10, `_project/decisions/301`). 스키마 ↔ DTO 변환은 여기서만 한다.

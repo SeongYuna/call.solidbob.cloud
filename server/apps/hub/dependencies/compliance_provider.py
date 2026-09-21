@@ -10,8 +10,10 @@ from __future__ import annotations
 from fastapi import Depends, HTTPException, status
 
 from hub.app.ports.input.compliance_check_use_case import ComplianceCheckUseCase
+from hub.app.ports.output.compliance_flag_record_port import ComplianceFlagRecordPort
 from hub.app.ports.output.compliance_port import CompliancePort
 from hub.app.use_cases.compliance_check_interactor import ComplianceCheckInteractor
+from hub.dependencies.compliance_flag_record_provider import get_compliance_flag_record_port
 
 
 def get_compliance_port() -> CompliancePort:
@@ -23,5 +25,6 @@ def get_compliance_port() -> CompliancePort:
 
 def get_compliance_check_use_case(
     compliance: CompliancePort = Depends(get_compliance_port),
+    record: ComplianceFlagRecordPort = Depends(get_compliance_flag_record_port),
 ) -> ComplianceCheckUseCase:
-    return ComplianceCheckInteractor(compliance=compliance)
+    return ComplianceCheckInteractor(compliance=compliance, record=record)

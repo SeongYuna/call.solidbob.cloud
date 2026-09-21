@@ -1,10 +1,10 @@
 /**
- * 홍보 페이지 "통화 받기" 데모 — 브라우저 마이크 → 게이트웨이(`/dev/text`)로
- * 이어지는 실제 배선이다. services/gateway의 `dev_page.ts`와 같은 계약을 쓴다.
+ * 홍보 페이지 "통화 받기" 데모 — 브라우저 마이크 → 콜 미디에이터(`/dev/text`)로
+ * 이어지는 실제 배선이다. services/call-mediator의 `dev_page.ts`와 같은 계약을 쓴다.
  *
  * ⚠ 절대 원칙: 오디오 자체를 녹음하거나 어디로도 전송하지 않는다. 브라우저
  * 내장 음성 인식(Web Speech API)이 그 자리에서 글자로 바꾼 **텍스트만**
- * WebSocket으로 보낸다 — 우리 서버·게이트웨이 어디에도 원본 음성이 닿지
+ * WebSocket으로 보낸다 — 우리 서버·콜 미디에이터 어디에도 원본 음성이 닿지
  * 않는다(개인정보보호법 대응, 2026-09-14 사용자 지시). 통화 기록 엔진은
  * `web-speech`로 남아 구글 STT(COST-1 캡)와 무관하다.
  *
@@ -13,6 +13,7 @@
  */
 import { useCallback, useEffect, useRef, useState } from "react";
 import { readLiveCallToken } from "./liveCallToken";
+import { readSharedCallId } from "./sharedCallId";
 
 export type LiveCallStatus =
   | "idle"
@@ -29,8 +30,8 @@ export interface LiveCallTurn {
   interim: boolean;
 }
 
-function gatewayWsBase(): string {
-  return (import.meta.env.VITE_GATEWAY_WS_URL ?? "").trim();
+function callMediatorWsBase(): string {
+  return (import.meta.env.VITE_CALL_MEDIATOR_WS_URL ?? "").trim();
 }
 
 export function useLiveCallSession() {
@@ -107,15 +108,16 @@ export function useLiveCallSession() {
       return;
     }
 
-    const base = gatewayWsBase();
+    const base = callMediatorWsBase();
     if (base.length === 0) {
       setStatus("error");
-      setErrorMessage("게이트웨이 주소가 설정되지 않았다(VITE_GATEWAY_WS_URL).");
+      setErrorMessage("콜 미디에이터 주소가 설정되지 않았다(VITE_CALL_MEDIATOR_WS_URL).");
       return;
     }
 
     setStatus("connecting");
-    const callId = `test-web-platform-${Date.now()}`;
+    // `?call_id=` 로 열렸으면 그 통화에 붙는다 — 상담원 화면과 같은 값이어야 한 통화가 된다(`sharedCallId.ts`)
+    const callId = readSharedCallId() ?? `test-web-platform-${Date.now()}`;
     const query = new URLSearchParams({ call_id: callId, speaker: "customer" });
     const ws = new WebSocket(`${base}/dev/text?${query}`, ["callguard", `bearer.${token}`]);
     wsRef.current = ws;
@@ -172,7 +174,7 @@ export function useLiveCallSession() {
 
     ws.onclose = (event) => {
       if (runningRef.current) {
-        setErrorMessage(`게이트웨이 연결이 끊겼다 (${event.code}).`);
+        setErrorMessage(`콜 미디에이터 연결이 끊겼다 (${event.code}).`);
         end("error");
       }
     };

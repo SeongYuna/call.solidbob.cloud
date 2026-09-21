@@ -20,7 +20,7 @@ class RecommendRequest(BaseModel):
     is_final: bool
     utterance_end_ms: int | None = None
     received_at_ms: int | None = Field(
-        default=None, description="게이트웨이가 STT final 을 받은 시각(통화 기준 ms). 있으면 트리거 발동 시각이 된다"
+        default=None, description="콜 미디에이터가 STT final 을 받은 시각(통화 기준 ms). 있으면 트리거 발동 시각이 된다"
     )
     top_k: int = Field(default=5, ge=1, le=20)
 
@@ -49,3 +49,7 @@ class RecommendResponse(BaseModel):
         default=None, description="fired=false 면 null. 빈 배열은 '관련 문서 없음'(B-6)"
     )
     internal_latency_ms: StrField | None = Field(default=None, description="트리거 → 카드 완성 (4.1절 p95 대상)")
+    # 4.3절 예산은 구간별이다 — 합만 주면 「어디가 느린지」를 못 짚는다(`_project/decisions/119`).
+    # DB 컬럼은 아직 없다. 응답·방송으로만 흐른다.
+    retrieval_ms: StrField | None = Field(default=None, description="검색 구간 (4.3절 예산 150ms + 리랭킹 200ms)")
+    generation_ms: StrField | None = Field(default=None, description="생성 구간 (4.3절 예산 첫 토큰 500ms)")

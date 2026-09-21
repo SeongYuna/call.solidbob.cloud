@@ -9,7 +9,7 @@
 - 카드를 지어내지 않는다. 생성이 빈 목록을 주면 "관련 문서 없음"(B-6)으로 그대로 나간다.
 
 `internal_latency_ms` 는 **트리거 발동 시점부터 카드 완성까지**다([4.1절](/docs/04/) p95 ≤1,000ms 채점 재료).
-발화 종료 → 화면 표시(e2e)는 게이트웨이·대시보드가 채운다. **저장은 잰 뒤에 한다** — DB 왕복을 내부 지연에 섞지 않는다.
+발화 종료 → 화면 표시(e2e)는 콜 미디에이터·대시보드가 채운다. **저장은 잰 뒤에 한다** — DB 왕복을 내부 지연에 섞지 않는다.
 
 발동한 추천은 기록 포트로 남기고 돌아온 `card_id` 를 카드에 붙인다(카드 피드백 E-1 이 그 값으로 카드를 가리킨다).
 기록 포트가 없으면(스텁 조립) 저장하지 않고 `card_id` 는 None 이다.
@@ -63,15 +63,22 @@ class RecommendationInteractor(RecommendationUseCase):
         if self._domain_routing is not None:
             domain = (await self._domain_routing.classify(event.text)).domain
 
+        # 구간을 따로 잰다 — 4.3절 예산이 검색·리랭킹·생성으로 쪼개져 있는데 합만 남기면
+        # 「느리다」는 알아도 **「어디가 느리다」를 못 짚는다**(`_project/decisions/119` ②).
+        before_retrieval = self._clock()   # B-0 라우팅(폐기됨)이 켜져 있으면 그 시간이 검색에 섞이지 않게
         docs = await self._retrieval.retrieve(event.text, top_k=command.top_k)
+        after_retrieval = self._clock()
         cards = await self._generation.to_cards(event.text, docs)
+        after_generation = self._clock()
 
-        elapsed_ms = int((self._clock() - started) * 1000)
+        elapsed_ms = int((after_generation - started) * 1000)
         batch = RecommendationCards(
             call_id=event.call_id,
             trigger_at_ms=decision.at_ms or 0,
             cards=tuple(cards),
             internal_latency_ms=elapsed_ms,
+            retrieval_ms=int((after_retrieval - before_retrieval) * 1000),
+            generation_ms=int((after_generation - after_retrieval) * 1000),
         )
         if self._record is not None:
             card_ids = await self._record.record(batch)

@@ -12,8 +12,8 @@
 우선순위는 셋이다.
 
 1. `now_ms` 시계를 주입했으면 그 값
-2. **`TranscriptEvent.received_at_ms`** — 게이트웨이가 STT final 을 받은 시각(통화 기준 ms).
-   실시간 경로(`services/gateway`)가 채운다(2026-09-14, `w4-trigger-arrival-time`). 이게 **측정값**이다
+2. **`TranscriptEvent.received_at_ms`** — 콜 미디에이터가 STT final 을 받은 시각(통화 기준 ms).
+   실시간 경로(`services/call-mediator`)가 채운다(2026-09-14, `w4-trigger-arrival-time`). 이게 **측정값**이다
 3. 둘 다 없으면 "발화 종료 + STT 최종 결과 지연(V4 실측 346ms)"으로 **모형화**한다
 
 골든셋·배치에는 도착 시각이 없어 3번으로 떨어지고, 그 지연 분포는 **상수 하나로 수렴한다**

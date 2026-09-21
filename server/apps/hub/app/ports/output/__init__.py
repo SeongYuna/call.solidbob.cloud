@@ -13,6 +13,7 @@ dependencies/ 에서 결합한다. **이 포트들이 유일한 계약이다** �
 from .call_start_record_port import CallStartRecordPort
 from .card_feedback_port import CardFeedbackPort
 from .closure_gate_port import ClosureGatePort
+from .compliance_flag_record_port import ComplianceFlagRecordPort
 from .compliance_port import CompliancePort
 from .domain_routing_port import DomainRoutingPort
 from .generation_port import GenerationPort
@@ -23,16 +24,18 @@ from .postcall_port import PostcallPort
 from .postcall_record_port import PostcallRecordPort, SummaryAlreadyConfirmedError
 from .recommendation_record_port import RecommendationRecordPort
 from .retrieval_port import RetrievalPort
-from .transcript_ingest_record_port import CallNotStartedError, TranscriptIngestRecordPort
+from .transcript_ingest_record_port import CallNotStartedError, SegmentNotFoundError, TranscriptIngestRecordPort
 from .transcript_query_port import TranscriptQueryPort
 from .trigger_port import TriggerPort
 from .voice_outlier_record_port import VoiceOutlierRecordPort
 
 __all__ = [
     "CallNotStartedError",
+    "SegmentNotFoundError",
     "CallStartRecordPort",
     "CardFeedbackPort",
     "ClosureGatePort",
+    "ComplianceFlagRecordPort",
     "CompliancePort",
     "DomainRoutingPort",
     "GenerationPort",

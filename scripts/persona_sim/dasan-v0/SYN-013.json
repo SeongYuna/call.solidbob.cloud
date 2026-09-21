@@ -1,0 +1,240 @@
+{
+  "id": "SYN-013",
+  "version": "dasan-v0",
+  "source": "synthetic",
+  "generated_by": "Claude Code (claude-opus-5) · 2026-09-16 · 사람 검토 전",
+  "title": "장애인콜택시 대리 신청 — 지친 보호자가 두 번 가라앉음",
+  "length_class": "long",
+  "turn_count": 26,
+  "caller_number": "01000000113",
+  "agent_persona": "A03",
+  "customer_persona": "C12",
+  "procedure": {
+    "doc_ids": [
+      "DASAN-TERM-2.5",
+      "DASAN-MANUAL-3.4"
+    ],
+    "required_documents": [
+      "신청서",
+      "신분증",
+      "장애인등록증 또는 복지카드",
+      "보행상 장애 판정을 확인할 수 있는 서류"
+    ],
+    "conditional_documents": [
+      "위임장",
+      "대리인 신분증"
+    ]
+  },
+  "turns": [
+    {
+      "seq": 1,
+      "speaker": "agent",
+      "text": "네, 한별시 통합민원콜센터입니다. 무엇을 도와드릴까요?",
+      "tone": "calm"
+    },
+    {
+      "seq": 2,
+      "speaker": "customer",
+      "text": "남편이 거동이 불편해서 장애인콜택시를 신청하려고 하는데요.",
+      "tone": "calm"
+    },
+    {
+      "seq": 3,
+      "speaker": "agent",
+      "text": "네, 장애인콜택시 이용 등록 문의시군요. 신청하시는 분이 본인이신가요, 보호자분이신가요?",
+      "tone": "calm"
+    },
+    {
+      "seq": 4,
+      "speaker": "customer",
+      "text": "제가 대신 신청하려고요. 남편은 집 밖에 나가기가 어려워서요.",
+      "tone": "calm"
+    },
+    {
+      "seq": 5,
+      "speaker": "agent",
+      "text": "대리 신청이시군요. 신청서, 신분증, 장애인등록증이나 복지카드, 보행상 장애 판정을 확인할 수 있는 서류가 필요하고, 대리 신청은 위임장과 대리인 신분증을 함께 내셔야 합니다.",
+      "tone": "calm"
+    },
+    {
+      "seq": 6,
+      "speaker": "customer",
+      "text": "서류가 많네요. 하나씩 적을게요.",
+      "tone": "calm"
+    },
+    {
+      "seq": 7,
+      "speaker": "agent",
+      "text": "네, 천천히 적으셔도 됩니다.",
+      "tone": "calm"
+    },
+    {
+      "seq": 8,
+      "speaker": "customer",
+      "text": "판정 서류는 어디서 받는 거예요?",
+      "tone": "calm"
+    },
+    {
+      "seq": 9,
+      "speaker": "agent",
+      "text": "발급처는 소관 부서 확인 후 안내드리겠습니다.",
+      "tone": "calm"
+    },
+    {
+      "seq": 10,
+      "speaker": "customer",
+      "text": "요즘 병원 다니고 수발드느라 서류 떼러 다닐 힘도 없어요.",
+      "tone": "weary"
+    },
+    {
+      "seq": 11,
+      "speaker": "agent",
+      "text": "많이 힘드시겠습니다. 한 번에 준비하실 수 있게 필요한 것을 정리해서 다시 안내드릴게요.",
+      "tone": "calm"
+    },
+    {
+      "seq": 12,
+      "speaker": "customer",
+      "text": "네, 그래 주시면 좋겠어요.",
+      "tone": "calm"
+    },
+    {
+      "seq": 13,
+      "speaker": "agent",
+      "text": "위임장은 남편분이 작성하시는 서류라서, 가능하실 때 미리 받아 두시면 됩니다.",
+      "tone": "calm"
+    },
+    {
+      "seq": 14,
+      "speaker": "customer",
+      "text": "남편 도장은 제가 가지고 있어요.",
+      "tone": "calm"
+    },
+    {
+      "seq": 15,
+      "speaker": "agent",
+      "text": "위임장 작성 방법과 양식도 확인해서 함께 안내드리겠습니다.",
+      "tone": "calm"
+    },
+    {
+      "seq": 16,
+      "speaker": "customer",
+      "text": "네. 신청하면 바로 탈 수 있는 건가요?",
+      "tone": "calm"
+    },
+    {
+      "seq": 17,
+      "speaker": "agent",
+      "text": "등록 심사를 거쳐야 해서 바로 이용하시기는 어렵고, 처리 시기는 소관 부서 확인 후 안내드리겠습니다.",
+      "tone": "calm"
+    },
+    {
+      "seq": 18,
+      "speaker": "customer",
+      "text": "또 기다려야 하는군요... 병원 예약이 다음 주인데.",
+      "tone": "weary"
+    },
+    {
+      "seq": 19,
+      "speaker": "agent",
+      "text": "일정이 급하신 사정도 함께 전달해 드리겠습니다.",
+      "tone": "calm"
+    },
+    {
+      "seq": 20,
+      "speaker": "customer",
+      "text": "네, 감사합니다.",
+      "tone": "calm"
+    },
+    {
+      "seq": 21,
+      "speaker": "agent",
+      "text": "연락드릴 번호를 말씀해 주시겠어요?",
+      "tone": "calm"
+    },
+    {
+      "seq": 22,
+      "speaker": "customer",
+      "text": "공일공 공공공공 공일일삼이에요.",
+      "tone": "calm",
+      "labels": {
+        "pii": [
+          {
+            "pattern": "P4",
+            "span": "공일공 공공공공 공일일삼"
+          }
+        ]
+      }
+    },
+    {
+      "seq": 23,
+      "speaker": "agent",
+      "text": "네, 확인했습니다. 준비하실 서류를 정리해서 연락드리겠습니다.",
+      "tone": "calm"
+    },
+    {
+      "seq": 24,
+      "speaker": "customer",
+      "text": "네, 부탁드려요.",
+      "tone": "calm"
+    },
+    {
+      "seq": 25,
+      "speaker": "agent",
+      "text": "네, 이용해 주셔서 감사합니다.",
+      "tone": "calm"
+    },
+    {
+      "seq": 26,
+      "speaker": "customer",
+      "text": "수고하세요.",
+      "tone": "calm"
+    }
+  ],
+  "expected": {
+    "pii_by_pattern": {
+      "P4": 1
+    },
+    "compliance": [],
+    "call_guard_by_type": {},
+    "customer_non_calm_turns": [
+      {
+        "seq": 10,
+        "tone": "weary"
+      },
+      {
+        "seq": 18,
+        "tone": "weary"
+      }
+    ],
+    "call_temperature": {
+      "customer_expected_outlier_turns": [
+        10,
+        18
+      ],
+      "customer_calm_turns": [
+        2,
+        4,
+        6,
+        8,
+        12,
+        14,
+        16,
+        20,
+        22,
+        24,
+        26
+      ],
+      "customer_turns": 13,
+      "note": "의도한 연기(tts 운율 지시)에서 나온 기대값이다 — 측정값이 아니다. raised·tense 는 채점에서 뺀다"
+    },
+    "j": {
+      "blacklist_request": false,
+      "routing": "normal"
+    }
+  },
+  "notes": [
+    "D-5 기대: 고객 weary 두 턴만 이상치 — 톤이 **아래로** 튀는 경우",
+    "위기 신호(자해 암시)는 넣지 않았다 — 지침·무기력만"
+  ]
+}

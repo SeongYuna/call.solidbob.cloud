@@ -5,7 +5,7 @@ import {
   type FormEvent,
   type ReactElement,
 } from "react";
-import type { ManualSearchOutcome } from "../hooks/useGatewaySession";
+import type { ManualSearchOutcome } from "../hooks/useCallMediatorSession";
 
 function noticeFor(outcome: ManualSearchOutcome, query: string): string {
   switch (outcome.kind) {
