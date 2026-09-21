@@ -25,6 +25,12 @@
 > 이 런북의 4장 · 5장 · 7-5 · 22장을 실물 이름으로 고쳤다. 나머지 이름(`assist-web` · `assist-db` ·
 > `callguard-pg`)은 위 정정대로 맞다. 배포용 역할 **`callguard-deploy-role`**(GitHub OIDC)도 별도로 있다.
 >
+> **인스턴스 정정 (2026-09-21, 네 번째).** 머리말의 「단일 g4dn.xlarge」는 **원안**이다. 실물은 **CPU `t3.large` 한 대**이고
+> GPU·`ollama` 파드·인스턴스 스토어가 없다(`_project/decisions/116` — 자동 중지·AMI 등 위생 작업 여섯도 그 결정으로 하지 않는다).
+> 그래서 **9-2 · 11 · 14 · 20 · 21장은 지금 실물에 적용되지 않는다.** 모델은 전용 GPU EC2 를 따로 세워 올리기로 했고(`decisions/121`,
+> 인스턴스는 아직 없다) 그때 11·14·21장과 0장의 비용 경고가 **그 인스턴스에** 다시 살아난다. ES 힙도 실물은 1GiB 다.
+> 원안 장의 명령에 남은 `-n assist` · `deploy/caddy` 는 실물에서 `-n callguard` · Traefik + cert-manager 다.
+>
 > 나머지 장 — 특히 13(클론) · 16-2(Caddy) — 은 원안 그대로다. 클러스터 구성의 정본은
 > `infra/k8s/base/` 다(라이브 클러스터와 `kubectl diff` 차이 0, 2026-09-08).
 
@@ -1436,7 +1442,9 @@ Cloudflare → `solidbob.cloud` 존 → **DNS** → **레코드 추가**
 DNS 가 퍼지면(보통 1분 안) Caddy 가 알아서 인증서를 받습니다.
 
 ```bash
-kubectl logs -n assist deploy/caddy | tail -20   # certificate obtained
+kubectl logs -n assist deploy/caddy | tail -20   # certificate obtained  ← 원안. 실물에는 Caddy 가 없다
+# 실물(Traefik + cert-manager):
+sudo k3s kubectl -n callguard get certificate        # READY True
 ```
 
 ---
@@ -1564,7 +1572,7 @@ PR #94 에서 `admin`·`kxu6` 가 `Deployment rate limited — retry in 24 hours
 
 ✅ **2026-09-20 완주** — 1·2·4·6·7 · 9·10·12·13·14 **전부 통과**.
 **건너뛴 것**: 3·5·8(GPU·Ollama·인스턴스 스토어 — 이 인스턴스는 `t3.large` 라 해당 없음, `decisions/116`) ·
-**11(DB 쓰기)** — 운영 DB 에 행이 남아 일부러 하지 않았다 · **9-1** 은 `0.1.19` 가 배포 전이라 404(정상).
+**11(DB 쓰기)** — 운영 DB 에 행이 남아 일부러 하지 않았다(→ **같은 날 뒤 세션에서 했다**: 테스트 통화 1건으로 전 구간을 태우고 행을 전부 지웠다, `jekyll/_logs/2026-09-20-03-seongyun.md`) · **9-1** 은 `0.1.19` 가 배포 전이라 404(정상).
 실측: 노드 Ready(12일) · 파드 **4 Running**(ES 재시작 2회) · nori `9.5.1` · 인덱스 `callguard-kb-single` **98 docs green** ·
 RDS **29 테이블 · ssl True** · S3 `assist-apne2/uploads/` 접근 됨 · 콜 미디에이터 토큰 4종 true ·
 문 2곳(`/ws`·`/ingest`) 401 · `/dev` 200 · `/dev/text` 401 · 인스턴스 가동 **6일 9시간**(09-14 기동, 자동 중지 없음 — `116`).

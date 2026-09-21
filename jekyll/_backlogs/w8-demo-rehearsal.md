@@ -41,3 +41,10 @@ paths:
 - [ ] 리허설을 **운영 주소로** 한 번 돌린다(로컬 mock 이 아니라)
 - [ ] 안 되는 기능은 **끄거나 「미구현」이라고 화면에 적는다.** 되는 척하지 않는다
 - [ ] 시연 중 실패했을 때의 대체 경로(녹화 영상 등)를 준비한다
+
+---
+
+> **보드 최신화 (2026-09-21, 정성윤 — 사용자 지시로 전체 보드를 한 번에 맞췄다).** 상태는 그대로 `todo`. 「시연 전에 사람이 해야 하는 것」 셋 중 둘이 움직였다 —
+> ① **운영 `document` 테이블은 차 있다**(09-19 SSM 실측 98행) — 이 걱정은 닫혔다 ② `admin_account` 는 **행은 있고 `agent_id` 가 NULL** 이라
+> 승인·해제가 409 다 → [w6-admin-agent-mapping](/backlog/w6-admin-agent-mapping/) ③ 화자 분리 실검증 · **STT 캡(일 600초 ≈ 4통화)** →
+> [w7-demo-infra-readiness](/backlog/w7-demo-infra-readiness/). 합성 통화로 시연하면 모달이 자막을 가린다 → [w7-call-ui-loose-ends](/backlog/w7-call-ui-loose-ends/).

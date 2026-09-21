@@ -49,3 +49,12 @@ depends_on:
 ## 2026-09-21 — 닫음
 
 남은 셋이 전부 `decisions/121`(GPU EC2)·`210`(합성 대본은 하네스 밖) 으로 정리돼 이 티켓에서 할 일이 없다. 운영에 임베딩이 켜진 뒤의 확인은 `w5-persona-e2e` 가 맡는다.
+
+---
+
+> **머지 주석 (2026-09-21, 정성윤)** — 아래 「보드 최신화」는 위 닫음 기록(`ai` 11:06)과 거의 같은 시각(main `976f42e`, 11:14)에 서로 못 본 채 따로 쓴 것이다. 상태는 front matter(`done`)가 맞고, 아래 메모의 「상태는 그대로」·「류준 님이 정한다」는 위 닫음으로 이미 답이 났다. 지우지 않고 남긴다(절대 원칙 8).
+
+> **보드 최신화 (2026-09-21, 정성윤 — 사용자 지시로 전체 보드를 한 번에 맞췄다).** 상태는 그대로다. 완료 조건 1·2번의 전제가 바뀌었다 — **`208`(지금 노드에 NER·임베딩 먼저)은 채택되지 않았고 `decisions/121`(전용 GPU EC2)로 갔다.**
+「t3.large 에서 재측정」은 의미가 없어졌다. 이어받는 티켓: [w6-gpu-model-instance](/backlog/w6-gpu-model-instance/) ·
+[w6-ai-model-http-surface](/backlog/w6-ai-model-http-surface/) · [w6-model-config-remeasure](/backlog/w6-model-config-remeasure/).
+> 3번(합성 대본을 하네스에 올릴지)은 09-18 에 **「올리지 않는다」**로 정해졌다(`decisions/210`). 류준 님이 보고 닫을지 정한다.

@@ -86,7 +86,7 @@ server/
 
 ```bash
 cd server && pytest                            # 단위 테스트
-cd server && PYTHONPATH=apps lint-imports --config .importlinter   # 구조 계약 3종
+cd server && PYTHONPATH=apps lint-imports --config .importlinter   # 구조 계약 4종
 ```
 
 CI(`.github/workflows/test.yml`)의 `server` job 이 이 둘을 돌린다.

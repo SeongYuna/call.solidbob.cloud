@@ -48,3 +48,11 @@ TTS 톤은 연기 지시다. D-5 통화 온도의 성능 근거가 아니다(`sc
 - 명령: `cd services/call-mediator && node --env-file-if-exists=../../.env scripts/replay_persona_call.ts --prefetch SYN-001`
 - 결과: 캐시 0 → 새로 합성 7(381자) → 재실행 캐시 7·합성 0. 무료 한도 앱 가드(월 900,000자) 장부가 `2026-09: 381` 로 쌓였다. 키 값은 로그·기록 어디에도 남기지 않았다.
 - **못 확인한 것**: WaveNet 이 SSML `prosody volume` 을 얼마나 반영하는지는 **귀로 들어야** 한다 — `data/processed/synthetic-voice/google/SYN-001/` 의 mp3 를 사람이 들어 보고, 안 들리면 `google_tts.ts` `TONE_PROSODY` 값을 키운다(TTS.md 「남은 것」 그대로). 콘솔 문자 할당량을 낮출 수 있는지도 정성윤 님 콘솔에서 확인.
+
+---
+
+> **머지 주석 (2026-09-21, 정성윤)** — 아래 「보드 최신화」는 위 닫음 기록(`ai` 11:06)과 거의 같은 시각(main `976f42e`, 11:14)에 서로 못 본 채 따로 쓴 것이다. 상태는 front matter(`done`)가 맞고, 아래 메모의 「상태는 그대로」·「류준 님이 정한다」는 위 닫음으로 이미 답이 났다. 지우지 않고 남긴다(절대 원칙 8).
+
+> **보드 최신화 (2026-09-21, 정성윤 — 사용자 지시로 전체 보드를 한 번에 맞췄다).** 상태는 그대로다. **키 발급에 착수했다**(09-21) — GCP 프로젝트 `callguard` 에 Cloud Text-to-Speech API 가 **사용 설정됨**인 것을 콘솔에서 확인했다.
+> API 키는 그 API 의 「사용자 인증 정보」 탭이 아니라 **왼쪽 메뉴의 「사용자 인증 정보」**에서 만든다(탭에는 OAuth·서비스 계정만 나온다).
+> 발급 뒤 `.env` 의 `GOOGLE_TTS_API_KEY` 로 전달 → 류준 님이 `--prefetch SYN-001` 1회 합성. 키는 **TTS API 하나로 제한**한다.
