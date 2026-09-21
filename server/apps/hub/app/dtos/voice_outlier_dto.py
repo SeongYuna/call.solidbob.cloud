@@ -26,3 +26,25 @@ class VoiceOutlier:
             raise ValueError(f"'{self.speaker}' 는 화자가 아닙니다 (customer | agent)")
         if self.baseline_n < 1:
             raise ValueError("baseline_n 은 1 이상이어야 합니다 — 기준선 없이 판정한 이상 구간은 없다")
+
+
+@dataclass(frozen=True)
+class VoiceOutlierVerdict:
+    """`VoiceOutlierPort.judge` 의 결과 — 한 통화·한 화자의 판정.
+
+    `judged` 가 False 면 기준선을 못 만든 것이다(발화 8건 미만 등). 그때 `outliers` 는 비어 있지만
+    **「튄 구간 없음」이 아니라 「판정하지 않았다」다**(절대 원칙 10) — 두 상태를 하나로 뭉치지 않으려고
+    불리언을 따로 둔다. 판정하지 않았는데 이상 구간이 있으면 모순이라 거부한다.
+    """
+
+    call_id: str
+    speaker: Speaker
+    judged: bool
+    outliers: tuple[VoiceOutlier, ...] = ()
+
+    def __post_init__(self) -> None:
+        if self.speaker not in ("customer", "agent"):
+            raise ValueError(f"'{self.speaker}' 는 화자가 아닙니다 (customer | agent)")
+        if not self.judged and self.outliers:
+            raise ValueError("판정하지 않았는데 이상 구간이 있다 — judged=False 면 outliers 는 비어 있어야 한다")
+

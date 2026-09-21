@@ -5,7 +5,7 @@ dependencies/ 에서 결합한다. **이 포트들이 유일한 계약이다** �
 
 호출자:
 - MaskingPort ← hub.app.use_cases.transcript_ingest_interactor, evaluation.harness
-- TriggerPort · RetrievalPort · DomainRoutingPort · GenerationPort · CompliancePort · ClosureGatePort ← evaluation.harness
+- TriggerPort · RetrievalPort · DomainRoutingPort · GenerationPort · CompliancePort · ClosureGatePort · VoiceOutlierPort ← evaluation.harness
   (파이프라인 슬라이스가 생기면 그 인터랙터도 호출자가 된다)
 - *RecordPort ← 각 슬라이스 인터랙터
 """
@@ -27,6 +27,7 @@ from .retrieval_port import RetrievalPort
 from .transcript_ingest_record_port import CallNotStartedError, SegmentNotFoundError, TranscriptIngestRecordPort
 from .transcript_query_port import TranscriptQueryPort
 from .trigger_port import TriggerPort
+from .voice_outlier_port import VoiceOutlierPort
 from .voice_outlier_record_port import VoiceOutlierRecordPort
 
 __all__ = [
@@ -50,5 +51,6 @@ __all__ = [
     "TranscriptIngestRecordPort",
     "TranscriptQueryPort",
     "TriggerPort",
+    "VoiceOutlierPort",
     "VoiceOutlierRecordPort",
 ]

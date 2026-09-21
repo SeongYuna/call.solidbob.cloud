@@ -36,6 +36,11 @@ _MODULE_ID = {
     # 섹션명이었다(`_project/decisions/205`).
     "call_guard": "C-6",
     "voice_signal": "D-5",
+    # 2026-09-21 하네스가 D-5 를 `call_temperature` 섹션으로 낸다(`w3-call-temperature`). 16자라 매핑이
+    # 없으면 VARCHAR(10) 을 넘쳐 `--record` 가 죽는다 — `call_guard` 와 반대로 우연히 맞지 않는 경우다.
+    "call_temperature": "D-5",
+    # 2026-09-21 B-6 「관련 문서 없음」 — 하네스 `no_answer` 섹션(`w5-b6-no-answer-threshold`). 9자라 넘치진 않지만 기능 ID 로 맞춘다.
+    "no_answer": "B-6",
     "asr": "A-5",
 }
 
