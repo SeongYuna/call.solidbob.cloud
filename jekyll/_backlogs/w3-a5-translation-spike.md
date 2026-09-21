@@ -253,3 +253,14 @@ jekyll/assets/a5-wer-2026-09-21.json          공개 요약 — 등급별 n·WER
 ## 2026-09-21 — 닫음 (내 몫 끝)
 
 스파이크의 목적(「잴 수 있는가」)에 답이 나왔다 — **잴 수 있고, 쟀다**(위 실측 절). 남은 둘은 이 티켓 안에서 할 수 없다: ① 왕복 지연(STT→번역→화면)은 번역 단계가 아직 없어 잴 파이프라인이 없다 ② A-5 를 코어에 둘지는 팀 판단(재료: Beginner WER 0.41 — 상한). Chirp 3(v2) 재측정은 8 kHz 사본·표본이 그대로 있어 다음 날 캡으로 ~390초면 된다(`--min-sec/--max-sec` 그대로, 스크립트에 모델 인자만). 셋 다 [미결](/open-items/).
+
+## 2026-09-21 — Chirp 3 재측정 시도: 권한에 막혔다 (STT 0초 사용)
+
+`measure_a5_proficiency.py` 에 `--stt-model {v1,chirp_3,chirp_2}` · `--region` · `--probe`(1건만) 를 붙이고 v2 호출(`transcribe_batch.transcribe_v2`)을 넣었다. 같은 표본·같은 8 kHz 사본을 모델만 바꿔 재도록 했고, 캐시 키·결과 파일에 모델 이름이 붙어 v1 결과와 섞이지 않는다(테스트 3건 추가, 11 통과). 일 캡은 사용자 지시로 **이 실행에만** 프로세스 환경변수 `STT_MAX_SECONDS_PER_DAY=900` 으로 올리고 `.env` 는 그대로 뒀다(리포트 `cap_override` 에 남는다).
+
+**`--probe` 1건이 `403 PERMISSION_DENIED speech.recognizers.recognize` 로 실패했다** — `us`(chirp_3) · `us-central1` · `asia-southeast1`(chirp_2) 모두 같다. v2 API 는 v1 과 달리 서비스 계정에 **「Cloud Speech 클라이언트」(`roles/speech.client`) 역할**이 있어야 한다. 프로젝트 IAM 변경은 GCP 관리자(정성윤 님) 몫이라 하지 않았다. 역할이 붙으면 아래 한 줄이다(약 390초 — 그날 캡 안이면 캡 상향 불필요):
+
+```bash
+PYTHONPATH= .venv/bin/python scripts/measure_a5_proficiency.py --stt-model chirp_3 --region us --original-subset 0 --probe   # 1건 확인
+PYTHONPATH= .venv/bin/python scripts/measure_a5_proficiency.py --stt-model chirp_3 --region us --original-subset 0
+```

@@ -48,3 +48,7 @@ TTS 톤은 연기 지시다. D-5 통화 온도의 성능 근거가 아니다(`sc
 - 명령: `cd services/call-mediator && node --env-file-if-exists=../../.env scripts/replay_persona_call.ts --prefetch SYN-001`
 - 결과: 캐시 0 → 새로 합성 7(381자) → 재실행 캐시 7·합성 0. 무료 한도 앱 가드(월 900,000자) 장부가 `2026-09: 381` 로 쌓였다. 키 값은 로그·기록 어디에도 남기지 않았다.
 - **못 확인한 것**: WaveNet 이 SSML `prosody volume` 을 얼마나 반영하는지는 **귀로 들어야** 한다 — `data/processed/synthetic-voice/google/SYN-001/` 의 mp3 를 사람이 들어 보고, 안 들리면 `google_tts.ts` `TONE_PROSODY` 값을 키운다(TTS.md 「남은 것」 그대로). 콘솔 문자 할당량을 낮출 수 있는지도 정성윤 님 콘솔에서 확인.
+
+## 2026-09-21 — 톤 음량이 안 들리던 것을 고쳤다
+
+`--prefetch` 한 mp3 를 재 보니 **고함 톤이 평온과 음량이 같았다.** 같은 문장으로 변형을 합성해 확인한 결과 WaveNet ko-KR 은 SSML `volume` 의 «올리기»(+dB)를 무시한다(내리기·속도·높이는 반영). 기준(평온)을 -8 dB 로 낮추는 배치로 `TONE_PROSODY` 를 바꿔 **평온 대비 격앙 +3.8 · 고함 +7.1 · 지침 -5.0 dB** 를 확인했다(측정표는 `scripts/persona_sim/TTS.md` §6). 테스트 3건 추가(「+dB 를 어떤 톤에도 쓰지 않는다」·「톤 사이 상대 음량」 포함) — 콜 미디에이터 134 통과 · `tsc` 통과. `scripts/` 는 이미지에 안 들어가 태그 불변. 시연 대본 캐시를 새 음량으로 다시 채웠다(이달 11,256/900,000자).

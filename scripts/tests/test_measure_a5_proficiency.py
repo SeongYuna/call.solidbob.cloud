@@ -12,6 +12,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from measure_a5_proficiency import (  # noqa: E402
     LEVELS,
     Sample,
+    cache_key,
+    output_paths,
+    project_from_credentials,
     normalize_71479,
     original_subset,
     parse_label,
@@ -103,3 +106,29 @@ def test_정규화_전_점수는_문장부호를_오류로_센다():
     raw = raw_score_pairs([("안녕하세요, 반갑습니다.", "안녕하세요 반갑습니다")])
     assert raw["wer"] == 1.0  # 두 토큰 다 문장부호 때문에 불일치
     assert word_error_rate("안녕하세요, 반갑습니다.", "안녕하세요 반갑습니다") == 0.0
+
+
+def test_v1_캐시_키는_그대로이고_다른_모델은_접미가_붙어_섞이지_않는다():
+    # v1 캐시 100건이 해시 이름 그대로 있다 — 바꾸면 같은 오디오를 다시 사서 예산을 두 번 쓴다
+    assert cache_key("abc", "v1") == "abc"
+    assert cache_key("abc", "chirp_3") == "abc-chirp_3"
+    assert cache_key("abc", "chirp_3") != cache_key("abc", "chirp_2")
+
+
+def test_결과_파일은_모델마다_달라_v1_결과를_덮어쓰지_않는다(tmp_path):
+    work, public = tmp_path / "w", tmp_path / "p"
+    v1 = output_paths("v1", "2026-09-21", work, public)
+    c3 = output_paths("chirp_3", "2026-09-21", work, public)
+    assert v1 == (work / "2026-09-21-proficiency.json", public / "a5-wer-2026-09-21.json")
+    assert c3 == (work / "2026-09-21-proficiency-chirp3.json", public / "a5-wer-2026-09-21-chirp3.json")
+
+
+def test_프로젝트_ID_는_서비스_계정_JSON_에서_읽고_없으면_빈_문자열(tmp_path):
+    good = tmp_path / "sa.json"
+    good.write_text('{"project_id": "p-123", "client_email": "x"}', encoding="utf-8")
+    broken = tmp_path / "broken.json"
+    broken.write_text("{", encoding="utf-8")
+    assert project_from_credentials(str(good)) == "p-123"
+    assert project_from_credentials(str(broken)) == ""
+    assert project_from_credentials(str(tmp_path / "none.json")) == ""
+    assert project_from_credentials(None) == ""

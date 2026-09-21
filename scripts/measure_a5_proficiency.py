@@ -31,7 +31,17 @@ Validation 에서 등급별로 표본을 층화 추출해 **8 kHz 로 낮춘 뒤
 (기본 550) 을 넘으면 실측 전에 멈추고 건수를 줄이라고 말한다.
 
     .venv/bin/python scripts/measure_a5_proficiency.py --dry-run   # 표본·총 초만. STT 안 부른다
-    .venv/bin/python scripts/measure_a5_proficiency.py
+    .venv/bin/python scripts/measure_a5_proficiency.py             # v1 기본 모델(09-21 첫 실측)
+    .venv/bin/python scripts/measure_a5_proficiency.py --stt-model chirp_3 --region us-central1 \
+        --original-subset 0 --probe                                 # v2 Chirp 3 — 1건만 불러 응답 확인
+    .venv/bin/python scripts/measure_a5_proficiency.py --stt-model chirp_3 --region us-central1 --original-subset 0
+
+## 모델 (2026-09-21 추가)
+
+`--stt-model` 은 `v1`(기본 — 첫 실측이 그대로 재현된다) · `chirp_3` · `chirp_2`(v2 지역 엔드포인트,
+`transcribe_batch.transcribe_v2`). **표본은 시드로 고정돼 모델만 바뀐다** — 같은 80건을 다른 모델로
+재는 것이라 직접 비교가 된다. 전사 캐시 키에 모델 이름이 붙어(`cache_key`) v1 캐시와 섞이지 않고,
+결과 파일도 `-chirp3` 접미가 붙는다(`output_paths`).
 
 ## 데이터 (gitignore)
 
@@ -65,12 +75,18 @@ from evaluation.metrics.asr import (  # noqa: E402
     aggregate_by_group,
 )
 from transcribe_batch import (  # noqa: E402
+    V2_DEFAULT_REGION,
+    V2_MODELS,
     Budget,
     audio_meta,
     file_key,
     load_env,
+    speech_v2_client,
     transcribe,
+    transcribe_v2,
 )
+
+STT_MODELS = ("v1",) + V2_MODELS   # v1 = Cloud Speech v1 recognize 기본 모델. 나머지는 v2 지역 엔드포인트
 
 DATASET = "aihub-foreign-proficiency-71479/validation"
 SOURCE_ROOT = REPO_ROOT / "data" / "raw" / "aihub-foreign-proficiency-71479" / "validation"
@@ -238,21 +254,51 @@ def downsample(src: Path, dst: Path) -> Path:
     return dst
 
 
-def cached_transcribe(client, speech, path: Path, budget: Budget, cache_dir: Path) -> tuple[str, bool]:
-    """전사 결과를 내용 해시로 캐시한다 — 재실행이 예산을 두 번 쓰지 않는다. (가설, 캐시 적중) 을 돌려준다."""
+def cache_key(content_key: str, model: str) -> str:
+    """전사 캐시 키 = 오디오 내용 해시 + 모델. v1 은 접미 없이 둔다 — 09-21 첫 실측의 캐시 100건이
+    그 이름으로 있어서, 바꾸면 같은 오디오를 v1 로 다시 사서 예산을 두 번 쓴다. 다른 모델은
+    `<해시>-<모델>` 이라 v1 캐시와 절대 섞이지 않는다."""
+    return content_key if model == "v1" else f"{content_key}-{model}"
+
+
+def project_from_credentials(path: str | None) -> str:
+    """서비스 계정 JSON 의 `project_id`. 파일이 없거나 읽을 수 없으면 빈 문자열 — 호출부가 멈춘다."""
+    if not path:
+        return ""
+    try:
+        return json.loads(Path(path).read_text(encoding="utf-8")).get("project_id") or ""
+    except (OSError, json.JSONDecodeError):
+        return ""
+
+
+def model_slug(model: str) -> str:
+    """파일명 접미 — `chirp_3` → `chirp3`. v1 은 접미 없음(첫 실측 파일명 그대로)."""
+    return "" if model == "v1" else model.replace("_", "")
+
+
+def output_paths(model: str, day: str, work_dir: Path = WORK_DIR, public_dir: Path = PUBLIC_DIR) -> tuple[Path, Path]:
+    """(건별 결과 JSON, 공개 요약 JSON). 모델이 다르면 파일도 다르다 — v1 결과를 덮어쓰지 않는다."""
+    suffix = f"-{model_slug(model)}" if model_slug(model) else ""
+    return (work_dir / f"{day}-proficiency{suffix}.json",
+            public_dir / f"a5-wer-{day}{suffix}.json")
+
+
+def cached_transcribe(recognize, path: Path, budget: Budget, cache_dir: Path, model: str) -> tuple[str, bool]:
+    """전사 결과를 내용 해시(+모델)로 캐시한다 — 재실행이 예산을 두 번 쓰지 않는다. (가설, 캐시 적중) 을 돌려준다.
+    `recognize(path, meta) -> dict` 는 v1/v2 어느 쪽이든 같은 모양(`transcript`·`segments`)을 돌려준다."""
     meta = audio_meta(path)
-    cache = cache_dir / f"{file_key(path)}.json"
+    cache = cache_dir / f"{cache_key(file_key(path), model)}.json"
     if cache.exists():
         return json.loads(cache.read_text(encoding="utf-8"))["transcript"], True
     ok, why = budget.allows(meta.seconds)
     if not ok:
         raise SystemExit(f"COST-1 가드에 걸렸다(건별 확인): {why}")
-    result = transcribe(client, speech, path, meta)
+    result = recognize(path, meta)
     budget.charge(meta.seconds)
     cache_dir.mkdir(parents=True, exist_ok=True)
     cache.write_text(json.dumps({
         "source": str(path.relative_to(REPO_ROOT)), "seconds": round(meta.seconds, 2),
-        "sample_rate": meta.rate, "channels": meta.channels,
+        "sample_rate": meta.rate, "channels": meta.channels, "stt_model": model,
         "transcribed_at": dt.datetime.now().isoformat(timespec="seconds"), **result,
     }, ensure_ascii=False, indent=2), encoding="utf-8")
     return result["transcript"], False
@@ -302,11 +348,19 @@ def main() -> int:
     ap.add_argument("--original-subset", type=int, default=5, help="원본(48 kHz)으로도 잴 등급당 건수")
     ap.add_argument("--max-total-sec", type=float, default=550.0,
                     help="이 실행이 쓸 STT 초의 자체 상한. 넘으면 실측 전에 멈춘다(건수를 줄인다)")
+    ap.add_argument("--stt-model", choices=STT_MODELS, default="v1",
+                    help="v1 = Cloud Speech v1 기본 모델(09-21 첫 실측). chirp_3/chirp_2 = Speech-to-Text v2 지역 엔드포인트")
+    ap.add_argument("--region", default=V2_DEFAULT_REGION,
+                    help="v2 리전(chirp 모델에만 쓴다). Chirp 는 지역 엔드포인트에서만 된다")
+    ap.add_argument("--probe", action="store_true",
+                    help="첫 1건만 STT 로 보내 응답(모델·리전)을 확인하고 멈춘다. 예산은 그 1건만 쓴다")
     ap.add_argument("--dry-run", action="store_true", help="표본·총 길이만 출력하고 STT 를 부르지 않는다")
-    ap.add_argument("--out", type=Path, default=WORK_DIR / f"{dt.date.today().isoformat()}-proficiency.json")
-    ap.add_argument("--public-out", type=Path,
-                    default=PUBLIC_DIR / f"a5-wer-{dt.date.today().isoformat()}.json")
+    ap.add_argument("--out", type=Path, default=None, help="건별 결과 JSON (기본: 날짜·모델로 정한다)")
+    ap.add_argument("--public-out", type=Path, default=None, help="공개 요약 JSON (기본: 날짜·모델로 정한다)")
     args = ap.parse_args()
+    default_out, default_public = output_paths(args.stt_model, dt.date.today().isoformat())
+    args.out = args.out or default_out
+    args.public_out = args.public_out or default_public
 
     if not shutil.which("ffmpeg"):
         raise SystemExit("ffmpeg 이 없다 —  brew install ffmpeg")
@@ -330,9 +384,16 @@ def main() -> int:
     if short:
         print(f"⚠ 등급당 {args.per_level}건을 못 채운 등급: {', '.join(short)} — 리포트에 n 이 그대로 나간다")
 
-    budget = Budget(int(env.get("STT_MAX_SECONDS_PER_DAY") or 0),
-                    int(env.get("STT_MAX_SECONDS_PER_MONTH") or 0))
+    # 캡은 **프로세스 환경변수가 .env 를 이긴다** — 하루만 캡을 올릴 때 .env 를 고치지 않고
+    # `STT_MAX_SECONDS_PER_DAY=900 ...` 로 준다. 그 사실은 리포트(`cap_override`)에 남긴다.
+    budget = Budget(int(os.environ.get("STT_MAX_SECONDS_PER_DAY") or 0),
+                    int(os.environ.get("STT_MAX_SECONDS_PER_MONTH") or 0))
+    cap_override = {k: {"env_file": int(env.get(k) or 0), "process": int(os.environ.get(k) or 0)}
+                    for k in ("STT_MAX_SECONDS_PER_DAY", "STT_MAX_SECONDS_PER_MONTH")
+                    if (env.get(k) or "0") != (os.environ.get(k) or "0")}
     print(f"장부 — 오늘 {budget.used_today:.0f}/{budget.per_day}초 · 이번 달 {budget.used_month:.0f}/{budget.per_month}초")
+    if cap_override:
+        print(f"⚠ 캡을 프로세스 환경변수로 덮어썼다(.env 는 그대로): {cap_override}")
     allowed, why = budget.allows(plan["total"])
     if not allowed:
         raise SystemExit(f"COST-1 가드에 걸렸다: {why}")
@@ -342,8 +403,27 @@ def main() -> int:
         print("--dry-run — STT 를 부르지 않았다")
         return 0
 
-    from google.cloud import speech  # noqa: PLC0415
-    client = speech.SpeechClient()
+    if args.stt_model == "v1":
+        from google.cloud import speech  # noqa: PLC0415
+        client = speech.SpeechClient()
+
+        def recognize(path: Path, meta):
+            return transcribe(client, speech, path, meta)
+        stt_desc = {"api": "google-cloud-speech v1 recognize", "language": "ko-KR", "model": "default",
+                    "automatic_punctuation": True}
+    else:
+        from google.cloud import speech_v2  # noqa: PLC0415
+        project = os.environ.get("GOOGLE_CLOUD_PROJECT") or project_from_credentials(
+            os.environ.get("GOOGLE_APPLICATION_CREDENTIALS"))
+        if not project:
+            raise SystemExit("프로젝트 ID 가 없다 — GOOGLE_CLOUD_PROJECT 를 주거나 서비스 계정 JSON 에 project_id 가 있어야 한다")
+        client = speech_v2_client(speech_v2, args.region)
+
+        def recognize(path: Path, meta):
+            return transcribe_v2(client, speech_v2, path, project=project, region=args.region, model=args.stt_model)
+        stt_desc = {"api": "google-cloud-speech v2 recognize (recognizers/_)", "language": "ko-KR",
+                    "model": args.stt_model, "region": args.region, "decoding": "auto_decoding_config",
+                    "automatic_punctuation": True}
     cache_dir = WORK_DIR / "stt"
     used_before = budget.used_today
 
@@ -364,8 +444,15 @@ def main() -> int:
             if s.name in subset:
                 conds.append(("original", src))
             for cond, path in conds:
-                hyp, hit = cached_transcribe(client, speech, path, budget, cache_dir)
+                hyp, hit = cached_transcribe(recognize, path, budget, cache_dir, args.stt_model)
                 cache_hits += hit
+                if args.probe:
+                    print(f"--probe — {args.stt_model}@{args.region if args.stt_model != 'v1' else 'v1'} "
+                          f"응답 받음: {s.name} ({cond}, 캐시 {'적중' if hit else '없음'})")
+                    print(f"  정답: {ref}")
+                    print(f"  가설: {hyp!r}")
+                    print(f"  STT 사용 — 오늘 {budget.used_today:.1f}/{budget.per_day}초")
+                    return 0
                 meta = audio_meta(path)
                 item["conditions"][cond] = {"rate": meta.rate, "transcript": hyp}
                 rows_norm.append((f"{cond}|{level}", ref, hyp))
@@ -388,7 +475,8 @@ def main() -> int:
 
     used_after = budget.used_today
     print("\n" + "=" * 72)
-    print("A-5 — 숙련도 등급별 WER/CER (Google STT v1 · ko-KR · 8 kHz 주 측정)")
+    model_label = "Google STT v1 기본 모델" if args.stt_model == "v1" else f"Google STT v2 {args.stt_model} @ {args.region}"
+    print(f"A-5 — 숙련도 등급별 WER/CER ({model_label} · ko-KR · 8 kHz 주 측정)")
     print("=" * 72)
     for cond in conditions:
         print(f"\n[{cond}]  정규화 후  /  정규화 전")
@@ -421,15 +509,21 @@ def main() -> int:
         "모어 분포가 인도네시아·베트남에 편중돼 있다(데이터셋 자체의 분포)",
         f"등급당 n={args.per_level} — 등급 간 차이가 표본 잡음보다 작을 수 있다. 원본 재측정은 등급당 {args.original_subset}건뿐",
         "숫자 표기(라벨 `십오년` vs STT `15년`)와 `%` 는 정규화하지 않았다 — 그만큼 오류로 잡힌다",
-        "STT 모델은 Google Cloud Speech v1 `recognize` 기본 모델(ko-KR)이다 — 09-09 8 kHz 실험과 같은 호출. 티켓의 「Chirp 3」 표기와 다르다",
+        ("STT 모델은 Google Cloud Speech v1 `recognize` 기본 모델(ko-KR)이다 — 09-09 8 kHz 실험과 같은 호출. 티켓의 「Chirp 3」 표기와 다르다"
+         if args.stt_model == "v1" else
+         f"STT 모델은 Speech-to-Text v2 `{args.stt_model}`(리전 {args.region}, 암묵 인식기, auto decoding)이다 — 표본·8 kHz 사본은 v1 실측과 같다"),
     ]
+    if args.original_subset == 0:
+        limits.append("원본(48 kHz) 재측정은 하지 않았다(--original-subset 0, 예산) — `original` 조건은 표본 0건")
+    if cap_override:
+        limits.append(f"STT 캡을 이 실행에서만 프로세스 환경변수로 덮어썼다(.env 는 그대로): {cap_override}")
     meta = {
         "measured_at": dt.date.today().isoformat(),
         "commit": _git_commit(),
         "command": "PYTHONPATH= .venv/bin/python scripts/measure_a5_proficiency.py " + " ".join(sys.argv[1:]),
         "dataset": DATASET,
-        "stt": {"api": "google-cloud-speech v1 recognize", "language": "ko-KR", "model": "default",
-                "automatic_punctuation": True},
+        "stt": stt_desc,
+        "stt_model": args.stt_model,
         "seed": args.seed,
         "design": {"per_level": args.per_level, "min_sec": args.min_sec, "max_sec": args.max_sec,
                    "max_per_speaker": args.max_per_speaker, "original_subset_per_level": args.original_subset,
@@ -440,7 +534,8 @@ def main() -> int:
                    for lv, c in picked.items()},
         "stt_seconds": {"this_run": round(used_after - used_before, 1), "today_after": round(used_after, 1),
                         "month_after": round(budget.used_month, 1), "cache_hits": cache_hits,
-                        "cap_per_day": budget.per_day, "cap_per_month": budget.per_month},
+                        "cap_per_day": budget.per_day, "cap_per_month": budget.per_month,
+                        "cap_override": cap_override},
         "empty_hypotheses": empty,
         "normalization": {"base": list(NORMALIZATION_RULES), "extra_71479": list(EXTRA_NORMALIZATION_RULES)},
         "limits": limits,
