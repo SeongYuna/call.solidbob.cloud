@@ -12,6 +12,7 @@ import type {
   TranslatedUtterance,
   AgentTtsStatus,
   CallGuardFlag,
+  ComplianceFinding,
   BlacklistEntryItem,
   BlacklistEvidence,
   BlacklistRequestItem,
@@ -137,6 +138,13 @@ export interface CallState {
   agentTts: Record<string, AgentTtsStatus>;
   /** C-6 mock. 키는 TranscriptEvent.segment_id. */
   callGuard: Record<string, CallGuardFlag>;
+  /**
+   * C-1~C-4. 키는 TranscriptEvent.segment_id, 값은 그 세그먼트에 쌓인 위반 목록 —
+   * 한 세그먼트에 여러 건이 잡힐 수 있어(call_guard와 달리 override하지 않는다).
+   * 서버 `announceCompliance`가 켜지기 전까지는 채워지지 않는다 — 어떤 컴포넌트도
+   * 아직 이 값을 읽지 않는다(파서만 먼저 들어간 상태).
+   */
+  compliance: Record<string, ComplianceFinding[]>;
   /** A-5 ⓑ. 키만. 점수는 없다. */
   accentHints: Record<string, true>;
   /** C-6 확장. 상담원이 통화 종료 시 수동으로 분류한 결과 — 자동 탐지가 아니다. */
@@ -170,6 +178,7 @@ export interface CallState {
   ) => void;
   applyAgentTts: (transcriptSegmentId: string, event: AgentTtsStatus) => void;
   applyCallGuard: (transcriptSegmentId: string, event: CallGuardFlag) => void;
+  applyCompliance: (transcriptSegmentId: string, event: ComplianceFinding) => void;
   applyAccentHint: (transcriptSegmentId: string) => void;
   flagBlackConsumer: (callId: string) => void;
   setTargetLanguage: (lang: TargetLanguage | null) => void;
@@ -234,6 +243,7 @@ const emptyCall = {
   translations: {} as Record<string, TranslatedUtterance>,
   agentTts: {} as Record<string, AgentTtsStatus>,
   callGuard: {} as Record<string, CallGuardFlag>,
+  compliance: {} as Record<string, ComplianceFinding[]>,
   accentHints: {} as Record<string, true>,
   blackConsumerFlag: null as BlackConsumerFlag | null,
 };
@@ -591,6 +601,22 @@ export const useCallStore = create<CallState>((set) => ({
         [transcriptSegmentId]: event,
       },
     }));
+  },
+
+  applyCompliance: (transcriptSegmentId, event) => {
+    set((state) => {
+      const existing = state.compliance[transcriptSegmentId] ?? [];
+      const isDuplicate = existing.some(
+        (finding) =>
+          finding.rule_code === event.rule_code && finding.phrase === event.phrase,
+      );
+      return {
+        compliance: {
+          ...state.compliance,
+          [transcriptSegmentId]: isDuplicate ? existing : [...existing, event],
+        },
+      };
+    });
   },
 
   applyAccentHint: (transcriptSegmentId) => {
