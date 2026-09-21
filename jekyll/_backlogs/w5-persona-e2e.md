@@ -2,7 +2,7 @@
 title: "합성 통화 E2E 왕복 검사 — 대본 → 콜 미디에이터 → 서버 → DB → 대시보드 API"
 assignee: "류준"
 role: "ai"
-status: "in-progress"
+status: "done"
 sprint: 5
 priority: 59
 date: 2026-09-18
@@ -48,3 +48,9 @@ depends_on:
 ## 한계 (절대 원칙 10)
 
 STT 미경유 — 인식 오류 0 이므로 여기서 나오는 통과·실패는 **배선·규칙의 동작 확인**이지 성능이 아니다. `source: synthetic`.
+
+---
+
+> **보드 최신화 (2026-09-21, 정성윤 — 사용자 지시로 전체 보드를 한 번에 맞췄다).** `in-progress` → `done`. 완료 조건 다섯이 전부 체크돼 있다(09-18 2차 실행 ✅22 · ❌2).
+> 남은 ❌ 둘(SYN-011·021)은 검색 순위 문제라 **모델이 운영 경로에 붙어야 풀린다** — `208` 이 아니라 `decisions/121` 의 몫이 됐다 →
+> [w6-gpu-model-instance](/backlog/w6-gpu-model-instance/). 판정이 틀렸으면 류준 님이 되돌린다.

@@ -45,3 +45,10 @@ depends_on:
 ## 주의
 
 이번 수치는 전부 **로컬** 값이다. 골든셋 값은 규칙을 본 뒤라 상한이고, 모델 지연은 이 맥(Apple M5, torch 2스레드) 값이라 운영(t3.large)이 아니다.
+
+---
+
+> **보드 최신화 (2026-09-21, 정성윤 — 사용자 지시로 전체 보드를 한 번에 맞췄다).** 상태는 그대로다. 완료 조건 1·2번의 전제가 바뀌었다 — **`208`(지금 노드에 NER·임베딩 먼저)은 채택되지 않았고 `decisions/121`(전용 GPU EC2)로 갔다.**
+「t3.large 에서 재측정」은 의미가 없어졌다. 이어받는 티켓: [w6-gpu-model-instance](/backlog/w6-gpu-model-instance/) ·
+[w6-ai-model-http-surface](/backlog/w6-ai-model-http-surface/) · [w6-model-config-remeasure](/backlog/w6-model-config-remeasure/).
+> 3번(합성 대본을 하네스에 올릴지)은 09-18 에 **「올리지 않는다」**로 정해졌다(`decisions/210`). 류준 님이 보고 닫을지 정한다.
