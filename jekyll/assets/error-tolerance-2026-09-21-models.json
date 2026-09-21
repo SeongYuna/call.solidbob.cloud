@@ -1,0 +1,1956 @@
+{
+  "meta": {
+    "date": "2026-09-21",
+    "commit": "97f7b25",
+    "golden_set": "v1-150-snapshot.json",
+    "seeds": [
+      20260914,
+      20260915,
+      20260916
+    ],
+    "levels": [
+      0.0,
+      0.05,
+      0.1,
+      0.15,
+      0.2
+    ],
+    "unmodeled_share": 0.4691358024691358,
+    "command": "scripts/measure_error_tolerance.py --device mps --golden-set /private/tmp/claude-501/-Users-ryujun-Documents-com-ryujun-demo/944e6e6e-a241-46c2-8c5d-6e5f54c2d421/scratchpad/v1-150-snapshot.json",
+    "device": "mps"
+  },
+  "retrieval": {
+    "bm25": [
+      {
+        "target": 0.0,
+        "per_seed": [
+          {
+            "seed": 20260914,
+            "actual_wer": 0.0,
+            "reached": true,
+            "recall_at_5": 0.8333333333333334,
+            "mrr": 0.6661458333333333,
+            "hits": 80,
+            "n": 96
+          }
+        ],
+        "min_recall_at_5": 0.8333333333333334,
+        "min_hits": 80,
+        "min_mrr": 0.6661458333333333,
+        "wer_range": [
+          0.0,
+          0.0
+        ]
+      },
+      {
+        "target": 0.05,
+        "per_seed": [
+          {
+            "seed": 20260914,
+            "actual_wer": 0.05081967213114754,
+            "reached": true,
+            "recall_at_5": 0.8333333333333334,
+            "mrr": 0.6586805555555556,
+            "hits": 80,
+            "n": 96
+          },
+          {
+            "seed": 20260915,
+            "actual_wer": 0.05245901639344262,
+            "reached": true,
+            "recall_at_5": 0.8229166666666666,
+            "mrr": 0.6678819444444444,
+            "hits": 79,
+            "n": 96
+          },
+          {
+            "seed": 20260916,
+            "actual_wer": 0.05081967213114754,
+            "reached": true,
+            "recall_at_5": 0.8333333333333334,
+            "mrr": 0.6578125,
+            "hits": 80,
+            "n": 96
+          }
+        ],
+        "min_recall_at_5": 0.8229166666666666,
+        "min_hits": 79,
+        "min_mrr": 0.6578125,
+        "wer_range": [
+          0.05081967213114754,
+          0.05245901639344262
+        ]
+      },
+      {
+        "target": 0.1,
+        "per_seed": [
+          {
+            "seed": 20260914,
+            "actual_wer": 0.1,
+            "reached": true,
+            "recall_at_5": 0.8333333333333334,
+            "mrr": 0.6543402777777778,
+            "hits": 80,
+            "n": 96
+          },
+          {
+            "seed": 20260915,
+            "actual_wer": 0.10163934426229508,
+            "reached": true,
+            "recall_at_5": 0.8125,
+            "mrr": 0.6534722222222222,
+            "hits": 78,
+            "n": 96
+          },
+          {
+            "seed": 20260916,
+            "actual_wer": 0.1,
+            "reached": true,
+            "recall_at_5": 0.8333333333333334,
+            "mrr": 0.6664930555555556,
+            "hits": 80,
+            "n": 96
+          }
+        ],
+        "min_recall_at_5": 0.8125,
+        "min_hits": 78,
+        "min_mrr": 0.6534722222222222,
+        "wer_range": [
+          0.1,
+          0.10163934426229508
+        ]
+      },
+      {
+        "target": 0.15,
+        "per_seed": [
+          {
+            "seed": 20260914,
+            "actual_wer": 0.15081967213114755,
+            "reached": true,
+            "recall_at_5": 0.8229166666666666,
+            "mrr": 0.6439236111111112,
+            "hits": 79,
+            "n": 96
+          },
+          {
+            "seed": 20260915,
+            "actual_wer": 0.15081967213114755,
+            "reached": true,
+            "recall_at_5": 0.8125,
+            "mrr": 0.6534722222222222,
+            "hits": 78,
+            "n": 96
+          },
+          {
+            "seed": 20260916,
+            "actual_wer": 0.15081967213114755,
+            "reached": true,
+            "recall_at_5": 0.8333333333333334,
+            "mrr": 0.6529513888888888,
+            "hits": 80,
+            "n": 96
+          }
+        ],
+        "min_recall_at_5": 0.8125,
+        "min_hits": 78,
+        "min_mrr": 0.6439236111111112,
+        "wer_range": [
+          0.15081967213114755,
+          0.15081967213114755
+        ]
+      },
+      {
+        "target": 0.2,
+        "per_seed": [
+          {
+            "seed": 20260914,
+            "actual_wer": 0.2,
+            "reached": true,
+            "recall_at_5": 0.8229166666666666,
+            "mrr": 0.6439236111111112,
+            "hits": 79,
+            "n": 96
+          },
+          {
+            "seed": 20260915,
+            "actual_wer": 0.2,
+            "reached": true,
+            "recall_at_5": 0.7916666666666666,
+            "mrr": 0.6326388888888889,
+            "hits": 76,
+            "n": 96
+          },
+          {
+            "seed": 20260916,
+            "actual_wer": 0.2,
+            "reached": true,
+            "recall_at_5": 0.7916666666666666,
+            "mrr": 0.6213541666666667,
+            "hits": 76,
+            "n": 96
+          }
+        ],
+        "min_recall_at_5": 0.7916666666666666,
+        "min_hits": 76,
+        "min_mrr": 0.6213541666666667,
+        "wer_range": [
+          0.2,
+          0.2
+        ]
+      }
+    ],
+    "dense": [
+      {
+        "target": 0.0,
+        "per_seed": [
+          {
+            "seed": 20260914,
+            "actual_wer": 0.0,
+            "reached": true,
+            "recall_at_5": 0.9791666666666666,
+            "mrr": 0.8848958333333333,
+            "hits": 94,
+            "n": 96
+          }
+        ],
+        "min_recall_at_5": 0.9791666666666666,
+        "min_hits": 94,
+        "min_mrr": 0.8848958333333333,
+        "wer_range": [
+          0.0,
+          0.0
+        ]
+      },
+      {
+        "target": 0.05,
+        "per_seed": [
+          {
+            "seed": 20260914,
+            "actual_wer": 0.05081967213114754,
+            "reached": true,
+            "recall_at_5": 0.9791666666666666,
+            "mrr": 0.8857638888888889,
+            "hits": 94,
+            "n": 96
+          },
+          {
+            "seed": 20260915,
+            "actual_wer": 0.05245901639344262,
+            "reached": true,
+            "recall_at_5": 0.9895833333333334,
+            "mrr": 0.8977430555555556,
+            "hits": 95,
+            "n": 96
+          },
+          {
+            "seed": 20260916,
+            "actual_wer": 0.05081967213114754,
+            "reached": true,
+            "recall_at_5": 0.9791666666666666,
+            "mrr": 0.8779513888888889,
+            "hits": 94,
+            "n": 96
+          }
+        ],
+        "min_recall_at_5": 0.9791666666666666,
+        "min_hits": 94,
+        "min_mrr": 0.8779513888888889,
+        "wer_range": [
+          0.05081967213114754,
+          0.05245901639344262
+        ]
+      },
+      {
+        "target": 0.1,
+        "per_seed": [
+          {
+            "seed": 20260914,
+            "actual_wer": 0.1,
+            "reached": true,
+            "recall_at_5": 0.9895833333333334,
+            "mrr": 0.8789930555555556,
+            "hits": 95,
+            "n": 96
+          },
+          {
+            "seed": 20260915,
+            "actual_wer": 0.10163934426229508,
+            "reached": true,
+            "recall_at_5": 0.9791666666666666,
+            "mrr": 0.9008680555555556,
+            "hits": 94,
+            "n": 96
+          },
+          {
+            "seed": 20260916,
+            "actual_wer": 0.1,
+            "reached": true,
+            "recall_at_5": 0.9791666666666666,
+            "mrr": 0.8779513888888889,
+            "hits": 94,
+            "n": 96
+          }
+        ],
+        "min_recall_at_5": 0.9791666666666666,
+        "min_hits": 94,
+        "min_mrr": 0.8779513888888889,
+        "wer_range": [
+          0.1,
+          0.10163934426229508
+        ]
+      },
+      {
+        "target": 0.15,
+        "per_seed": [
+          {
+            "seed": 20260914,
+            "actual_wer": 0.15081967213114755,
+            "reached": true,
+            "recall_at_5": 0.9791666666666666,
+            "mrr": 0.868576388888889,
+            "hits": 94,
+            "n": 96
+          },
+          {
+            "seed": 20260915,
+            "actual_wer": 0.15081967213114755,
+            "reached": true,
+            "recall_at_5": 0.9791666666666666,
+            "mrr": 0.9060763888888889,
+            "hits": 94,
+            "n": 96
+          },
+          {
+            "seed": 20260916,
+            "actual_wer": 0.15081967213114755,
+            "reached": true,
+            "recall_at_5": 0.9791666666666666,
+            "mrr": 0.8710069444444444,
+            "hits": 94,
+            "n": 96
+          }
+        ],
+        "min_recall_at_5": 0.9791666666666666,
+        "min_hits": 94,
+        "min_mrr": 0.868576388888889,
+        "wer_range": [
+          0.15081967213114755,
+          0.15081967213114755
+        ]
+      },
+      {
+        "target": 0.2,
+        "per_seed": [
+          {
+            "seed": 20260914,
+            "actual_wer": 0.2,
+            "reached": true,
+            "recall_at_5": 0.9791666666666666,
+            "mrr": 0.8755208333333333,
+            "hits": 94,
+            "n": 96
+          },
+          {
+            "seed": 20260915,
+            "actual_wer": 0.2,
+            "reached": true,
+            "recall_at_5": 0.96875,
+            "mrr": 0.8987847222222222,
+            "hits": 93,
+            "n": 96
+          },
+          {
+            "seed": 20260916,
+            "actual_wer": 0.2,
+            "reached": true,
+            "recall_at_5": 0.9791666666666666,
+            "mrr": 0.8727430555555555,
+            "hits": 94,
+            "n": 96
+          }
+        ],
+        "min_recall_at_5": 0.96875,
+        "min_hits": 93,
+        "min_mrr": 0.8727430555555555,
+        "wer_range": [
+          0.2,
+          0.2
+        ]
+      }
+    ],
+    "rerank-dense": [
+      {
+        "target": 0.0,
+        "per_seed": [
+          {
+            "seed": 20260914,
+            "actual_wer": 0.0,
+            "reached": true,
+            "recall_at_5": 0.9791666666666666,
+            "mrr": 0.9187500000000001,
+            "hits": 94,
+            "n": 96
+          }
+        ],
+        "min_recall_at_5": 0.9791666666666666,
+        "min_hits": 94,
+        "min_mrr": 0.9187500000000001,
+        "wer_range": [
+          0.0,
+          0.0
+        ]
+      },
+      {
+        "target": 0.05,
+        "per_seed": [
+          {
+            "seed": 20260914,
+            "actual_wer": 0.05081967213114754,
+            "reached": true,
+            "recall_at_5": 0.9791666666666666,
+            "mrr": 0.9187500000000001,
+            "hits": 94,
+            "n": 96
+          },
+          {
+            "seed": 20260915,
+            "actual_wer": 0.05245901639344262,
+            "reached": true,
+            "recall_at_5": 0.9895833333333334,
+            "mrr": 0.9309027777777777,
+            "hits": 95,
+            "n": 96
+          },
+          {
+            "seed": 20260916,
+            "actual_wer": 0.05081967213114754,
+            "reached": true,
+            "recall_at_5": 0.9791666666666666,
+            "mrr": 0.9135416666666667,
+            "hits": 94,
+            "n": 96
+          }
+        ],
+        "min_recall_at_5": 0.9791666666666666,
+        "min_hits": 94,
+        "min_mrr": 0.9135416666666667,
+        "wer_range": [
+          0.05081967213114754,
+          0.05245901639344262
+        ]
+      },
+      {
+        "target": 0.1,
+        "per_seed": [
+          {
+            "seed": 20260914,
+            "actual_wer": 0.1,
+            "reached": true,
+            "recall_at_5": 0.9895833333333334,
+            "mrr": 0.9239583333333333,
+            "hits": 95,
+            "n": 96
+          },
+          {
+            "seed": 20260915,
+            "actual_wer": 0.10163934426229508,
+            "reached": true,
+            "recall_at_5": 0.9791666666666666,
+            "mrr": 0.9083333333333333,
+            "hits": 94,
+            "n": 96
+          },
+          {
+            "seed": 20260916,
+            "actual_wer": 0.1,
+            "reached": true,
+            "recall_at_5": 0.9791666666666666,
+            "mrr": 0.920486111111111,
+            "hits": 94,
+            "n": 96
+          }
+        ],
+        "min_recall_at_5": 0.9791666666666666,
+        "min_hits": 94,
+        "min_mrr": 0.9083333333333333,
+        "wer_range": [
+          0.1,
+          0.10163934426229508
+        ]
+      },
+      {
+        "target": 0.15,
+        "per_seed": [
+          {
+            "seed": 20260914,
+            "actual_wer": 0.15081967213114755,
+            "reached": true,
+            "recall_at_5": 0.9791666666666666,
+            "mrr": 0.9187500000000001,
+            "hits": 94,
+            "n": 96
+          },
+          {
+            "seed": 20260915,
+            "actual_wer": 0.15081967213114755,
+            "reached": true,
+            "recall_at_5": 0.9791666666666666,
+            "mrr": 0.9100694444444444,
+            "hits": 94,
+            "n": 96
+          },
+          {
+            "seed": 20260916,
+            "actual_wer": 0.15081967213114755,
+            "reached": true,
+            "recall_at_5": 0.9791666666666666,
+            "mrr": 0.9144097222222222,
+            "hits": 94,
+            "n": 96
+          }
+        ],
+        "min_recall_at_5": 0.9791666666666666,
+        "min_hits": 94,
+        "min_mrr": 0.9100694444444444,
+        "wer_range": [
+          0.15081967213114755,
+          0.15081967213114755
+        ]
+      },
+      {
+        "target": 0.2,
+        "per_seed": [
+          {
+            "seed": 20260914,
+            "actual_wer": 0.2,
+            "reached": true,
+            "recall_at_5": 0.9791666666666666,
+            "mrr": 0.920486111111111,
+            "hits": 94,
+            "n": 96
+          },
+          {
+            "seed": 20260915,
+            "actual_wer": 0.2,
+            "reached": true,
+            "recall_at_5": 0.96875,
+            "mrr": 0.8979166666666667,
+            "hits": 93,
+            "n": 96
+          },
+          {
+            "seed": 20260916,
+            "actual_wer": 0.2,
+            "reached": true,
+            "recall_at_5": 0.9791666666666666,
+            "mrr": 0.9100694444444444,
+            "hits": 94,
+            "n": 96
+          }
+        ],
+        "min_recall_at_5": 0.96875,
+        "min_hits": 93,
+        "min_mrr": 0.8979166666666667,
+        "wer_range": [
+          0.2,
+          0.2
+        ]
+      }
+    ]
+  },
+  "masking": {
+    "rule": [
+      {
+        "target": 0.0,
+        "per_seed": [
+          {
+            "seed": 20260914,
+            "actual_wer": 0.0,
+            "miss_count": 0,
+            "missed_items": [],
+            "erased_count": 0,
+            "judged": 24,
+            "n": 24,
+            "by_pattern": {
+              "P1": {
+                "masked": 4,
+                "missed": 0,
+                "erased": 0
+              },
+              "P2": {
+                "masked": 2,
+                "missed": 0,
+                "erased": 0
+              },
+              "P3": {
+                "masked": 3,
+                "missed": 0,
+                "erased": 0
+              },
+              "P4": {
+                "masked": 5,
+                "missed": 0,
+                "erased": 0
+              },
+              "P5": {
+                "masked": 2,
+                "missed": 0,
+                "erased": 0
+              },
+              "P6": {
+                "masked": 5,
+                "missed": 0,
+                "erased": 0
+              },
+              "P7": {
+                "masked": 3,
+                "missed": 0,
+                "erased": 0
+              }
+            },
+            "over_masked_negatives": 0,
+            "negatives": 4
+          }
+        ],
+        "max_miss_count": 0,
+        "wer_range": [
+          0.0,
+          0.0
+        ]
+      },
+      {
+        "target": 0.05,
+        "per_seed": [
+          {
+            "seed": 20260914,
+            "actual_wer": 0.05030674846625767,
+            "miss_count": 0,
+            "missed_items": [],
+            "erased_count": 0,
+            "judged": 24,
+            "n": 24,
+            "by_pattern": {
+              "P1": {
+                "masked": 4,
+                "missed": 0,
+                "erased": 0
+              },
+              "P2": {
+                "masked": 2,
+                "missed": 0,
+                "erased": 0
+              },
+              "P3": {
+                "masked": 3,
+                "missed": 0,
+                "erased": 0
+              },
+              "P4": {
+                "masked": 5,
+                "missed": 0,
+                "erased": 0
+              },
+              "P5": {
+                "masked": 2,
+                "missed": 0,
+                "erased": 0
+              },
+              "P6": {
+                "masked": 5,
+                "missed": 0,
+                "erased": 0
+              },
+              "P7": {
+                "masked": 3,
+                "missed": 0,
+                "erased": 0
+              }
+            },
+            "over_masked_negatives": 0,
+            "negatives": 4
+          },
+          {
+            "seed": 20260915,
+            "actual_wer": 0.05030674846625767,
+            "miss_count": 2,
+            "missed_items": [
+              "GS-033(P7)",
+              "GS-415(P7)"
+            ],
+            "erased_count": 0,
+            "judged": 24,
+            "n": 24,
+            "by_pattern": {
+              "P1": {
+                "masked": 4,
+                "missed": 0,
+                "erased": 0
+              },
+              "P2": {
+                "masked": 2,
+                "missed": 0,
+                "erased": 0
+              },
+              "P3": {
+                "masked": 3,
+                "missed": 0,
+                "erased": 0
+              },
+              "P4": {
+                "masked": 5,
+                "missed": 0,
+                "erased": 0
+              },
+              "P5": {
+                "masked": 2,
+                "missed": 0,
+                "erased": 0
+              },
+              "P6": {
+                "masked": 5,
+                "missed": 0,
+                "erased": 0
+              },
+              "P7": {
+                "masked": 1,
+                "missed": 2,
+                "erased": 0
+              }
+            },
+            "over_masked_negatives": 0,
+            "negatives": 4
+          },
+          {
+            "seed": 20260916,
+            "actual_wer": 0.05030674846625767,
+            "miss_count": 0,
+            "missed_items": [],
+            "erased_count": 0,
+            "judged": 24,
+            "n": 24,
+            "by_pattern": {
+              "P1": {
+                "masked": 4,
+                "missed": 0,
+                "erased": 0
+              },
+              "P2": {
+                "masked": 2,
+                "missed": 0,
+                "erased": 0
+              },
+              "P3": {
+                "masked": 3,
+                "missed": 0,
+                "erased": 0
+              },
+              "P4": {
+                "masked": 5,
+                "missed": 0,
+                "erased": 0
+              },
+              "P5": {
+                "masked": 2,
+                "missed": 0,
+                "erased": 0
+              },
+              "P6": {
+                "masked": 5,
+                "missed": 0,
+                "erased": 0
+              },
+              "P7": {
+                "masked": 3,
+                "missed": 0,
+                "erased": 0
+              }
+            },
+            "over_masked_negatives": 0,
+            "negatives": 4
+          }
+        ],
+        "max_miss_count": 2,
+        "wer_range": [
+          0.05030674846625767,
+          0.05030674846625767
+        ]
+      },
+      {
+        "target": 0.1,
+        "per_seed": [
+          {
+            "seed": 20260914,
+            "actual_wer": 0.10184049079754601,
+            "miss_count": 1,
+            "missed_items": [
+              "GS-033(P7)"
+            ],
+            "erased_count": 0,
+            "judged": 24,
+            "n": 24,
+            "by_pattern": {
+              "P1": {
+                "masked": 4,
+                "missed": 0,
+                "erased": 0
+              },
+              "P2": {
+                "masked": 2,
+                "missed": 0,
+                "erased": 0
+              },
+              "P3": {
+                "masked": 3,
+                "missed": 0,
+                "erased": 0
+              },
+              "P4": {
+                "masked": 5,
+                "missed": 0,
+                "erased": 0
+              },
+              "P5": {
+                "masked": 2,
+                "missed": 0,
+                "erased": 0
+              },
+              "P6": {
+                "masked": 5,
+                "missed": 0,
+                "erased": 0
+              },
+              "P7": {
+                "masked": 2,
+                "missed": 1,
+                "erased": 0
+              }
+            },
+            "over_masked_negatives": 0,
+            "negatives": 4
+          },
+          {
+            "seed": 20260915,
+            "actual_wer": 0.10061349693251534,
+            "miss_count": 3,
+            "missed_items": [
+              "GS-033(P7)",
+              "GS-056(P6)",
+              "GS-415(P7)"
+            ],
+            "erased_count": 0,
+            "judged": 24,
+            "n": 24,
+            "by_pattern": {
+              "P1": {
+                "masked": 4,
+                "missed": 0,
+                "erased": 0
+              },
+              "P2": {
+                "masked": 2,
+                "missed": 0,
+                "erased": 0
+              },
+              "P3": {
+                "masked": 3,
+                "missed": 0,
+                "erased": 0
+              },
+              "P4": {
+                "masked": 5,
+                "missed": 0,
+                "erased": 0
+              },
+              "P5": {
+                "masked": 2,
+                "missed": 0,
+                "erased": 0
+              },
+              "P6": {
+                "masked": 4,
+                "missed": 1,
+                "erased": 0
+              },
+              "P7": {
+                "masked": 1,
+                "missed": 2,
+                "erased": 0
+              }
+            },
+            "over_masked_negatives": 0,
+            "negatives": 4
+          },
+          {
+            "seed": 20260916,
+            "actual_wer": 0.10061349693251534,
+            "miss_count": 1,
+            "missed_items": [
+              "GS-414(P7)"
+            ],
+            "erased_count": 0,
+            "judged": 24,
+            "n": 24,
+            "by_pattern": {
+              "P1": {
+                "masked": 4,
+                "missed": 0,
+                "erased": 0
+              },
+              "P2": {
+                "masked": 2,
+                "missed": 0,
+                "erased": 0
+              },
+              "P3": {
+                "masked": 3,
+                "missed": 0,
+                "erased": 0
+              },
+              "P4": {
+                "masked": 5,
+                "missed": 0,
+                "erased": 0
+              },
+              "P5": {
+                "masked": 2,
+                "missed": 0,
+                "erased": 0
+              },
+              "P6": {
+                "masked": 5,
+                "missed": 0,
+                "erased": 0
+              },
+              "P7": {
+                "masked": 2,
+                "missed": 1,
+                "erased": 0
+              }
+            },
+            "over_masked_negatives": 0,
+            "negatives": 4
+          }
+        ],
+        "max_miss_count": 3,
+        "wer_range": [
+          0.10061349693251534,
+          0.10184049079754601
+        ]
+      },
+      {
+        "target": 0.15,
+        "per_seed": [
+          {
+            "seed": 20260914,
+            "actual_wer": 0.150920245398773,
+            "miss_count": 4,
+            "missed_items": [
+              "GS-033(P7)",
+              "GS-037(P6)",
+              "GS-412(P6)",
+              "GS-413(P6)"
+            ],
+            "erased_count": 0,
+            "judged": 24,
+            "n": 24,
+            "by_pattern": {
+              "P1": {
+                "masked": 4,
+                "missed": 0,
+                "erased": 0
+              },
+              "P2": {
+                "masked": 2,
+                "missed": 0,
+                "erased": 0
+              },
+              "P3": {
+                "masked": 3,
+                "missed": 0,
+                "erased": 0
+              },
+              "P4": {
+                "masked": 5,
+                "missed": 0,
+                "erased": 0
+              },
+              "P5": {
+                "masked": 2,
+                "missed": 0,
+                "erased": 0
+              },
+              "P6": {
+                "masked": 2,
+                "missed": 3,
+                "erased": 0
+              },
+              "P7": {
+                "masked": 2,
+                "missed": 1,
+                "erased": 0
+              }
+            },
+            "over_masked_negatives": 0,
+            "negatives": 4
+          },
+          {
+            "seed": 20260915,
+            "actual_wer": 0.150920245398773,
+            "miss_count": 3,
+            "missed_items": [
+              "GS-033(P7)",
+              "GS-056(P6)",
+              "GS-415(P7)"
+            ],
+            "erased_count": 0,
+            "judged": 24,
+            "n": 24,
+            "by_pattern": {
+              "P1": {
+                "masked": 4,
+                "missed": 0,
+                "erased": 0
+              },
+              "P2": {
+                "masked": 2,
+                "missed": 0,
+                "erased": 0
+              },
+              "P3": {
+                "masked": 3,
+                "missed": 0,
+                "erased": 0
+              },
+              "P4": {
+                "masked": 5,
+                "missed": 0,
+                "erased": 0
+              },
+              "P5": {
+                "masked": 2,
+                "missed": 0,
+                "erased": 0
+              },
+              "P6": {
+                "masked": 4,
+                "missed": 1,
+                "erased": 0
+              },
+              "P7": {
+                "masked": 1,
+                "missed": 2,
+                "erased": 0
+              }
+            },
+            "over_masked_negatives": 0,
+            "negatives": 4
+          },
+          {
+            "seed": 20260916,
+            "actual_wer": 0.150920245398773,
+            "miss_count": 1,
+            "missed_items": [
+              "GS-414(P7)"
+            ],
+            "erased_count": 0,
+            "judged": 24,
+            "n": 24,
+            "by_pattern": {
+              "P1": {
+                "masked": 4,
+                "missed": 0,
+                "erased": 0
+              },
+              "P2": {
+                "masked": 2,
+                "missed": 0,
+                "erased": 0
+              },
+              "P3": {
+                "masked": 3,
+                "missed": 0,
+                "erased": 0
+              },
+              "P4": {
+                "masked": 5,
+                "missed": 0,
+                "erased": 0
+              },
+              "P5": {
+                "masked": 2,
+                "missed": 0,
+                "erased": 0
+              },
+              "P6": {
+                "masked": 5,
+                "missed": 0,
+                "erased": 0
+              },
+              "P7": {
+                "masked": 2,
+                "missed": 1,
+                "erased": 0
+              }
+            },
+            "over_masked_negatives": 0,
+            "negatives": 4
+          }
+        ],
+        "max_miss_count": 4,
+        "wer_range": [
+          0.150920245398773,
+          0.150920245398773
+        ]
+      },
+      {
+        "target": 0.2,
+        "per_seed": [
+          {
+            "seed": 20260914,
+            "actual_wer": 0.2,
+            "miss_count": 4,
+            "missed_items": [
+              "GS-033(P7)",
+              "GS-037(P6)",
+              "GS-412(P6)",
+              "GS-413(P6)"
+            ],
+            "erased_count": 0,
+            "judged": 24,
+            "n": 24,
+            "by_pattern": {
+              "P1": {
+                "masked": 4,
+                "missed": 0,
+                "erased": 0
+              },
+              "P2": {
+                "masked": 2,
+                "missed": 0,
+                "erased": 0
+              },
+              "P3": {
+                "masked": 3,
+                "missed": 0,
+                "erased": 0
+              },
+              "P4": {
+                "masked": 5,
+                "missed": 0,
+                "erased": 0
+              },
+              "P5": {
+                "masked": 2,
+                "missed": 0,
+                "erased": 0
+              },
+              "P6": {
+                "masked": 2,
+                "missed": 3,
+                "erased": 0
+              },
+              "P7": {
+                "masked": 2,
+                "missed": 1,
+                "erased": 0
+              }
+            },
+            "over_masked_negatives": 0,
+            "negatives": 4
+          },
+          {
+            "seed": 20260915,
+            "actual_wer": 0.2,
+            "miss_count": 3,
+            "missed_items": [
+              "GS-033(P7)",
+              "GS-056(P6)",
+              "GS-415(P7)"
+            ],
+            "erased_count": 0,
+            "judged": 24,
+            "n": 24,
+            "by_pattern": {
+              "P1": {
+                "masked": 4,
+                "missed": 0,
+                "erased": 0
+              },
+              "P2": {
+                "masked": 2,
+                "missed": 0,
+                "erased": 0
+              },
+              "P3": {
+                "masked": 3,
+                "missed": 0,
+                "erased": 0
+              },
+              "P4": {
+                "masked": 5,
+                "missed": 0,
+                "erased": 0
+              },
+              "P5": {
+                "masked": 2,
+                "missed": 0,
+                "erased": 0
+              },
+              "P6": {
+                "masked": 4,
+                "missed": 1,
+                "erased": 0
+              },
+              "P7": {
+                "masked": 1,
+                "missed": 2,
+                "erased": 0
+              }
+            },
+            "over_masked_negatives": 0,
+            "negatives": 4
+          },
+          {
+            "seed": 20260916,
+            "actual_wer": 0.2,
+            "miss_count": 1,
+            "missed_items": [
+              "GS-414(P7)"
+            ],
+            "erased_count": 0,
+            "judged": 24,
+            "n": 24,
+            "by_pattern": {
+              "P1": {
+                "masked": 4,
+                "missed": 0,
+                "erased": 0
+              },
+              "P2": {
+                "masked": 2,
+                "missed": 0,
+                "erased": 0
+              },
+              "P3": {
+                "masked": 3,
+                "missed": 0,
+                "erased": 0
+              },
+              "P4": {
+                "masked": 5,
+                "missed": 0,
+                "erased": 0
+              },
+              "P5": {
+                "masked": 2,
+                "missed": 0,
+                "erased": 0
+              },
+              "P6": {
+                "masked": 5,
+                "missed": 0,
+                "erased": 0
+              },
+              "P7": {
+                "masked": 2,
+                "missed": 1,
+                "erased": 0
+              }
+            },
+            "over_masked_negatives": 0,
+            "negatives": 4
+          }
+        ],
+        "max_miss_count": 4,
+        "wer_range": [
+          0.2,
+          0.2
+        ]
+      }
+    ],
+    "rule+ner": [
+      {
+        "target": 0.0,
+        "per_seed": [
+          {
+            "seed": 20260914,
+            "actual_wer": 0.0,
+            "miss_count": 0,
+            "missed_items": [],
+            "erased_count": 0,
+            "judged": 24,
+            "n": 24,
+            "by_pattern": {
+              "P1": {
+                "masked": 4,
+                "missed": 0,
+                "erased": 0
+              },
+              "P2": {
+                "masked": 2,
+                "missed": 0,
+                "erased": 0
+              },
+              "P3": {
+                "masked": 3,
+                "missed": 0,
+                "erased": 0
+              },
+              "P4": {
+                "masked": 5,
+                "missed": 0,
+                "erased": 0
+              },
+              "P5": {
+                "masked": 2,
+                "missed": 0,
+                "erased": 0
+              },
+              "P6": {
+                "masked": 5,
+                "missed": 0,
+                "erased": 0
+              },
+              "P7": {
+                "masked": 3,
+                "missed": 0,
+                "erased": 0
+              }
+            },
+            "over_masked_negatives": 0,
+            "negatives": 4
+          }
+        ],
+        "max_miss_count": 0,
+        "wer_range": [
+          0.0,
+          0.0
+        ]
+      },
+      {
+        "target": 0.05,
+        "per_seed": [
+          {
+            "seed": 20260914,
+            "actual_wer": 0.05030674846625767,
+            "miss_count": 0,
+            "missed_items": [],
+            "erased_count": 0,
+            "judged": 24,
+            "n": 24,
+            "by_pattern": {
+              "P1": {
+                "masked": 4,
+                "missed": 0,
+                "erased": 0
+              },
+              "P2": {
+                "masked": 2,
+                "missed": 0,
+                "erased": 0
+              },
+              "P3": {
+                "masked": 3,
+                "missed": 0,
+                "erased": 0
+              },
+              "P4": {
+                "masked": 5,
+                "missed": 0,
+                "erased": 0
+              },
+              "P5": {
+                "masked": 2,
+                "missed": 0,
+                "erased": 0
+              },
+              "P6": {
+                "masked": 5,
+                "missed": 0,
+                "erased": 0
+              },
+              "P7": {
+                "masked": 3,
+                "missed": 0,
+                "erased": 0
+              }
+            },
+            "over_masked_negatives": 0,
+            "negatives": 4
+          },
+          {
+            "seed": 20260915,
+            "actual_wer": 0.05030674846625767,
+            "miss_count": 0,
+            "missed_items": [],
+            "erased_count": 0,
+            "judged": 24,
+            "n": 24,
+            "by_pattern": {
+              "P1": {
+                "masked": 4,
+                "missed": 0,
+                "erased": 0
+              },
+              "P2": {
+                "masked": 2,
+                "missed": 0,
+                "erased": 0
+              },
+              "P3": {
+                "masked": 3,
+                "missed": 0,
+                "erased": 0
+              },
+              "P4": {
+                "masked": 5,
+                "missed": 0,
+                "erased": 0
+              },
+              "P5": {
+                "masked": 2,
+                "missed": 0,
+                "erased": 0
+              },
+              "P6": {
+                "masked": 5,
+                "missed": 0,
+                "erased": 0
+              },
+              "P7": {
+                "masked": 3,
+                "missed": 0,
+                "erased": 0
+              }
+            },
+            "over_masked_negatives": 0,
+            "negatives": 4
+          },
+          {
+            "seed": 20260916,
+            "actual_wer": 0.05030674846625767,
+            "miss_count": 0,
+            "missed_items": [],
+            "erased_count": 0,
+            "judged": 24,
+            "n": 24,
+            "by_pattern": {
+              "P1": {
+                "masked": 4,
+                "missed": 0,
+                "erased": 0
+              },
+              "P2": {
+                "masked": 2,
+                "missed": 0,
+                "erased": 0
+              },
+              "P3": {
+                "masked": 3,
+                "missed": 0,
+                "erased": 0
+              },
+              "P4": {
+                "masked": 5,
+                "missed": 0,
+                "erased": 0
+              },
+              "P5": {
+                "masked": 2,
+                "missed": 0,
+                "erased": 0
+              },
+              "P6": {
+                "masked": 5,
+                "missed": 0,
+                "erased": 0
+              },
+              "P7": {
+                "masked": 3,
+                "missed": 0,
+                "erased": 0
+              }
+            },
+            "over_masked_negatives": 0,
+            "negatives": 4
+          }
+        ],
+        "max_miss_count": 0,
+        "wer_range": [
+          0.05030674846625767,
+          0.05030674846625767
+        ]
+      },
+      {
+        "target": 0.1,
+        "per_seed": [
+          {
+            "seed": 20260914,
+            "actual_wer": 0.10184049079754601,
+            "miss_count": 0,
+            "missed_items": [],
+            "erased_count": 0,
+            "judged": 24,
+            "n": 24,
+            "by_pattern": {
+              "P1": {
+                "masked": 4,
+                "missed": 0,
+                "erased": 0
+              },
+              "P2": {
+                "masked": 2,
+                "missed": 0,
+                "erased": 0
+              },
+              "P3": {
+                "masked": 3,
+                "missed": 0,
+                "erased": 0
+              },
+              "P4": {
+                "masked": 5,
+                "missed": 0,
+                "erased": 0
+              },
+              "P5": {
+                "masked": 2,
+                "missed": 0,
+                "erased": 0
+              },
+              "P6": {
+                "masked": 5,
+                "missed": 0,
+                "erased": 0
+              },
+              "P7": {
+                "masked": 3,
+                "missed": 0,
+                "erased": 0
+              }
+            },
+            "over_masked_negatives": 0,
+            "negatives": 4
+          },
+          {
+            "seed": 20260915,
+            "actual_wer": 0.10061349693251534,
+            "miss_count": 0,
+            "missed_items": [],
+            "erased_count": 0,
+            "judged": 24,
+            "n": 24,
+            "by_pattern": {
+              "P1": {
+                "masked": 4,
+                "missed": 0,
+                "erased": 0
+              },
+              "P2": {
+                "masked": 2,
+                "missed": 0,
+                "erased": 0
+              },
+              "P3": {
+                "masked": 3,
+                "missed": 0,
+                "erased": 0
+              },
+              "P4": {
+                "masked": 5,
+                "missed": 0,
+                "erased": 0
+              },
+              "P5": {
+                "masked": 2,
+                "missed": 0,
+                "erased": 0
+              },
+              "P6": {
+                "masked": 5,
+                "missed": 0,
+                "erased": 0
+              },
+              "P7": {
+                "masked": 3,
+                "missed": 0,
+                "erased": 0
+              }
+            },
+            "over_masked_negatives": 0,
+            "negatives": 4
+          },
+          {
+            "seed": 20260916,
+            "actual_wer": 0.10061349693251534,
+            "miss_count": 0,
+            "missed_items": [],
+            "erased_count": 0,
+            "judged": 24,
+            "n": 24,
+            "by_pattern": {
+              "P1": {
+                "masked": 4,
+                "missed": 0,
+                "erased": 0
+              },
+              "P2": {
+                "masked": 2,
+                "missed": 0,
+                "erased": 0
+              },
+              "P3": {
+                "masked": 3,
+                "missed": 0,
+                "erased": 0
+              },
+              "P4": {
+                "masked": 5,
+                "missed": 0,
+                "erased": 0
+              },
+              "P5": {
+                "masked": 2,
+                "missed": 0,
+                "erased": 0
+              },
+              "P6": {
+                "masked": 5,
+                "missed": 0,
+                "erased": 0
+              },
+              "P7": {
+                "masked": 3,
+                "missed": 0,
+                "erased": 0
+              }
+            },
+            "over_masked_negatives": 0,
+            "negatives": 4
+          }
+        ],
+        "max_miss_count": 0,
+        "wer_range": [
+          0.10061349693251534,
+          0.10184049079754601
+        ]
+      },
+      {
+        "target": 0.15,
+        "per_seed": [
+          {
+            "seed": 20260914,
+            "actual_wer": 0.150920245398773,
+            "miss_count": 1,
+            "missed_items": [
+              "GS-037(P6)"
+            ],
+            "erased_count": 0,
+            "judged": 24,
+            "n": 24,
+            "by_pattern": {
+              "P1": {
+                "masked": 4,
+                "missed": 0,
+                "erased": 0
+              },
+              "P2": {
+                "masked": 2,
+                "missed": 0,
+                "erased": 0
+              },
+              "P3": {
+                "masked": 3,
+                "missed": 0,
+                "erased": 0
+              },
+              "P4": {
+                "masked": 5,
+                "missed": 0,
+                "erased": 0
+              },
+              "P5": {
+                "masked": 2,
+                "missed": 0,
+                "erased": 0
+              },
+              "P6": {
+                "masked": 4,
+                "missed": 1,
+                "erased": 0
+              },
+              "P7": {
+                "masked": 3,
+                "missed": 0,
+                "erased": 0
+              }
+            },
+            "over_masked_negatives": 0,
+            "negatives": 4
+          },
+          {
+            "seed": 20260915,
+            "actual_wer": 0.150920245398773,
+            "miss_count": 1,
+            "missed_items": [
+              "GS-415(P7)"
+            ],
+            "erased_count": 0,
+            "judged": 24,
+            "n": 24,
+            "by_pattern": {
+              "P1": {
+                "masked": 4,
+                "missed": 0,
+                "erased": 0
+              },
+              "P2": {
+                "masked": 2,
+                "missed": 0,
+                "erased": 0
+              },
+              "P3": {
+                "masked": 3,
+                "missed": 0,
+                "erased": 0
+              },
+              "P4": {
+                "masked": 5,
+                "missed": 0,
+                "erased": 0
+              },
+              "P5": {
+                "masked": 2,
+                "missed": 0,
+                "erased": 0
+              },
+              "P6": {
+                "masked": 5,
+                "missed": 0,
+                "erased": 0
+              },
+              "P7": {
+                "masked": 2,
+                "missed": 1,
+                "erased": 0
+              }
+            },
+            "over_masked_negatives": 0,
+            "negatives": 4
+          },
+          {
+            "seed": 20260916,
+            "actual_wer": 0.150920245398773,
+            "miss_count": 0,
+            "missed_items": [],
+            "erased_count": 0,
+            "judged": 24,
+            "n": 24,
+            "by_pattern": {
+              "P1": {
+                "masked": 4,
+                "missed": 0,
+                "erased": 0
+              },
+              "P2": {
+                "masked": 2,
+                "missed": 0,
+                "erased": 0
+              },
+              "P3": {
+                "masked": 3,
+                "missed": 0,
+                "erased": 0
+              },
+              "P4": {
+                "masked": 5,
+                "missed": 0,
+                "erased": 0
+              },
+              "P5": {
+                "masked": 2,
+                "missed": 0,
+                "erased": 0
+              },
+              "P6": {
+                "masked": 5,
+                "missed": 0,
+                "erased": 0
+              },
+              "P7": {
+                "masked": 3,
+                "missed": 0,
+                "erased": 0
+              }
+            },
+            "over_masked_negatives": 0,
+            "negatives": 4
+          }
+        ],
+        "max_miss_count": 1,
+        "wer_range": [
+          0.150920245398773,
+          0.150920245398773
+        ]
+      },
+      {
+        "target": 0.2,
+        "per_seed": [
+          {
+            "seed": 20260914,
+            "actual_wer": 0.2,
+            "miss_count": 1,
+            "missed_items": [
+              "GS-037(P6)"
+            ],
+            "erased_count": 0,
+            "judged": 24,
+            "n": 24,
+            "by_pattern": {
+              "P1": {
+                "masked": 4,
+                "missed": 0,
+                "erased": 0
+              },
+              "P2": {
+                "masked": 2,
+                "missed": 0,
+                "erased": 0
+              },
+              "P3": {
+                "masked": 3,
+                "missed": 0,
+                "erased": 0
+              },
+              "P4": {
+                "masked": 5,
+                "missed": 0,
+                "erased": 0
+              },
+              "P5": {
+                "masked": 2,
+                "missed": 0,
+                "erased": 0
+              },
+              "P6": {
+                "masked": 4,
+                "missed": 1,
+                "erased": 0
+              },
+              "P7": {
+                "masked": 3,
+                "missed": 0,
+                "erased": 0
+              }
+            },
+            "over_masked_negatives": 0,
+            "negatives": 4
+          },
+          {
+            "seed": 20260915,
+            "actual_wer": 0.2,
+            "miss_count": 1,
+            "missed_items": [
+              "GS-415(P7)"
+            ],
+            "erased_count": 0,
+            "judged": 24,
+            "n": 24,
+            "by_pattern": {
+              "P1": {
+                "masked": 4,
+                "missed": 0,
+                "erased": 0
+              },
+              "P2": {
+                "masked": 2,
+                "missed": 0,
+                "erased": 0
+              },
+              "P3": {
+                "masked": 3,
+                "missed": 0,
+                "erased": 0
+              },
+              "P4": {
+                "masked": 5,
+                "missed": 0,
+                "erased": 0
+              },
+              "P5": {
+                "masked": 2,
+                "missed": 0,
+                "erased": 0
+              },
+              "P6": {
+                "masked": 5,
+                "missed": 0,
+                "erased": 0
+              },
+              "P7": {
+                "masked": 2,
+                "missed": 1,
+                "erased": 0
+              }
+            },
+            "over_masked_negatives": 0,
+            "negatives": 4
+          },
+          {
+            "seed": 20260916,
+            "actual_wer": 0.2,
+            "miss_count": 0,
+            "missed_items": [],
+            "erased_count": 0,
+            "judged": 24,
+            "n": 24,
+            "by_pattern": {
+              "P1": {
+                "masked": 4,
+                "missed": 0,
+                "erased": 0
+              },
+              "P2": {
+                "masked": 2,
+                "missed": 0,
+                "erased": 0
+              },
+              "P3": {
+                "masked": 3,
+                "missed": 0,
+                "erased": 0
+              },
+              "P4": {
+                "masked": 5,
+                "missed": 0,
+                "erased": 0
+              },
+              "P5": {
+                "masked": 2,
+                "missed": 0,
+                "erased": 0
+              },
+              "P6": {
+                "masked": 5,
+                "missed": 0,
+                "erased": 0
+              },
+              "P7": {
+                "masked": 3,
+                "missed": 0,
+                "erased": 0
+              }
+            },
+            "over_masked_negatives": 0,
+            "negatives": 4
+          }
+        ],
+        "max_miss_count": 1,
+        "wer_range": [
+          0.2,
+          0.2
+        ]
+      }
+    ]
+  }
+}

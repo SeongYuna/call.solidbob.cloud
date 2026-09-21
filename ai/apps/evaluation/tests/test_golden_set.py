@@ -11,6 +11,10 @@
 느슨해진다. 대신 **최소 규모와 구성**을 본다.
 """
 
+import json
+
+import pytest
+
 from evaluation.golden_set import load_golden_set
 
 
@@ -65,13 +69,29 @@ def test_도메인이_다산_하나뿐이다():
     assert {it.domain for it in load_golden_set()} == {"dasan"}
 
 
-def test_F2_케이스가_없다():
-    """다산은 종결 처리 유형이 없어 F-2 를 적용하지 않는다(POLICY-1).
+def test_F2_케이스가_실려_있고_모양이_맞다():
+    """2026-09-21 까지는 `test_F2_케이스가_없다` 였다 — 다산 전환으로 0건이 정상이었고, 그래서
+    하네스가 `NO_SAMPLES` 를 내고 `decisions/118` 이 F-2 를 설계 문서로 전환했다.
+    `w5-f2-golden-cases` 로 필요서류 체크리스트 케이스(GS-6xx, module `F-2`)가 생겼다(`decisions/201`·`305`).
 
-    ⚠ 필요서류 체크리스트로 F-2 게이트를 전용하기로 했으므로(`decisions/201`),
-    그 케이스가 만들어지면 이 테스트를 바꿔야 한다 — 지금은 없는 것이 정상이다.
+    여기서는 **모양**만 본다 — 판정이 맞는지는 하네스(`closure_gate`)와
+    `server/apps/closure_gate/tests/domain/test_golden_set_closure.py` 가 규칙 코드로 채점한다.
+    `evaluation` 은 `closure_gate` 를 import 할 수 없다(`.importlinter` — 접점은 hub 포트뿐).
     """
-    assert all(it.f2_case is None for it in load_golden_set())
+    f2 = [it for it in load_golden_set() if it.f2_case is not None]
+    assert f2, "F-2 채점 표본이 없다 — 하네스가 NO_SAMPLES 로 돌아간다"
+    for it in f2:
+        case = it.f2_case
+        assert it.module == "F-2", it.id  # B·C·C-5 채점에 섞이지 않게 module 로 가른다
+        assert case.procedure.startswith("DASAN-TERM-"), it.id
+        assert case.source == case.procedure, it.id  # 판정 근거 조항 = 절차 조항
+        assert case.expected_verdict in ("complete", "incomplete"), it.id
+        assert all(isinstance(v, bool) for v in case.evidence.values()), it.id
+        # incomplete 면 빠진 서류가 있어야 하고, complete 면 없어야 한다 — 뒤집히면 라벨이 틀린 것
+        assert bool(case.expected_missing) == (case.expected_verdict == "incomplete"), it.id
+    # ① 전부 안내 → complete 와 ③ 전혀 안내 안 됨 둘 다 있어야 「전부 incomplete」라 답하는 구현이 만점을 못 받는다
+    assert any(c.f2_case.expected_verdict == "complete" for c in f2)
+    assert any(not c.f2_case.evidence for c in f2), "증거가 비어 있는 케이스(키 없음 = false)가 없다"
 
 
 def test_PII_패턴이_마스킹_케이스에_붙는다():
@@ -94,3 +114,59 @@ def test_검색_케이스는_다산_조항을_가리킨다():
     expected = {d for it in load_golden_set() for d in it.expected_doc_ids}
     assert expected, "검색 채점 표본이 없다"
     assert all(d.startswith("DASAN-") for d in expected), sorted(expected)
+
+
+def test_D5_통화_온도_케이스는_아직_0건이다():
+    """다산콜DB 는 발화 클립이라 통화 단위 기준선을 못 만든다(`w3-call-temperature`, 2026-09-21).
+    기존 항목에 `call_temperature` 가 없는 것이 정상이다 — 음성 골든셋이 생기면 이 테스트를 바꾼다."""
+    assert all(it.call_temperature is None for it in load_golden_set())
+
+
+def _d5_json(tmp_path, case: dict) -> "Path":
+    path = tmp_path / "v-test.json"
+    path.write_text(json.dumps({"items": [{"id": "GS-D5-X", "module": "D-5", "domain": "dasan",
+                                            "call_temperature": case}]}), encoding="utf-8")
+    return path
+
+
+def test_D5_케이스를_읽으면_오디오_경로를_JSON_위치_기준으로_푼다(tmp_path):
+    path = _d5_json(tmp_path, {
+        "speaker": "customer",
+        "utterances": [{"segment_id": 0, "audio": "../data/call-001/c-00.wav"},
+                       {"segment_id": 1, "audio": "../data/call-001/c-01.wav"}],
+        "expected_outliers": [1], "calm": [0], "source": "test",
+    })
+    (item,) = load_golden_set(path)
+    case = item.call_temperature
+    assert case is not None and case.speaker == "customer"
+    assert case.expected_outliers == [1] and case.calm == [0]
+    assert case.utterances[0] == (0, str((tmp_path / "../data/call-001/c-00.wav").resolve()))
+
+
+def test_D5_케이스의_라벨이_서로_겹치거나_없는_발화를_가리키면_거부한다(tmp_path):
+    """한 발화가 「튀어야 함」이자 「차분함」이면 정답이 아니다 — 조용히 읽어 들이면 채점이 흔들린다."""
+    with pytest.raises(ValueError):
+        load_golden_set(_d5_json(tmp_path, {
+            "speaker": "customer",
+            "utterances": [{"segment_id": 0, "audio": "a.wav"}],
+            "expected_outliers": [0], "calm": [0],
+        }))
+    with pytest.raises(ValueError):
+        load_golden_set(_d5_json(tmp_path, {
+            "speaker": "agent",
+            "utterances": [{"segment_id": 0, "audio": "a.wav"}],
+            "expected_outliers": [7], "calm": [],
+        }))
+
+
+
+def test_B6_정답_없음_케이스가_실려_있고_정답이_비어_있다():
+    """B-6 「관련 문서 없음」 케이스(2026-09-21, `w5-b6-no-answer-threshold`). **`module: "B"` 가 아니어야 한다** —
+    `hit_at_k` 는 정답이 빈 항목을 True 로 치므로 B 로 새면 Recall@5 가 부풀려진다. 문턱은 아직 없다(팀 결정)."""
+    items = load_golden_set()
+    b6 = [it for it in items if it.module == "B-6"]
+    assert len(b6) >= 20, len(b6)
+    assert all(it.expected_doc_ids == [] and it.customer_utterance for it in b6)
+    assert all(it.domain == "dasan" for it in b6)
+    # B(정답 있음) 항목에는 정답이 빈 것이 없어야 한다 — 비면 채점 없이 통과로 새는 항목이다
+    assert all(it.expected_doc_ids for it in items if it.module == "B")

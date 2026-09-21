@@ -1,13 +1,15 @@
 {
   "version": "v1-150",
   "created": "2026-09-09",
-  "size": 156,
+  "size": 279,
   "domain": "dasan",
   "note": "3주차 공식 골든셋. `w3-golden-set-dasan` — 다산 단일 도메인 기준 150건. 기존 13건(GS-002~GS-102)은 v1-50.json 에서 **한 글자도 고치지 않고** 이어받았고 137건을 더했다(절대 원칙 8). 지식베이스도 함께 98조항으로 늘렸다 (`w3-kb-dasan-expand`) — 20조항으로는 상위 5건이 코퍼스의 25%라 Recall@5 가 성립하지 않았고, 필요서류를 다루는 조항이 둘뿐이라 서류 케이스의 정답이 몰렸다.",
   "fields": {
     "source": "authored = 팀이 관찰된 문체로 쓴 발화 · aihub = AI Hub 다산 전사 원문 그대로",
     "context_utterances": "이 발화 앞에 오간 말. 검색 질의를 만들 때 함께 넣는다",
-    "call_guard": "C-6 고객 폭언·위기 신호. type: insult|threat|sexual|distress"
+    "call_guard": "C-6 고객 폭언·위기 신호. type: insult|threat|sexual|distress",
+    "f2_case": "F-2 필요서류 체크리스트. procedure: 규칙표 조항 ID · evidence: {규칙표 서류 이름(글자 그대로): bool} · expected_verdict: complete|incomplete · expected_missing: 규칙표 선언 순서 · source: 판정 근거 조항(= procedure)",
+    "no_answer_category": "B-6 정답 없음 케이스의 유형. other_agency = 타 기관 소관 · outside_dasan = 다산 범위 밖 시 업무 · chit_chat = 무관한 잡담 · kb_gap = 실제 120 업무이나 지식베이스에 조항이 없음"
   },
   "items": [
     {
@@ -3188,6 +3190,2731 @@
       "customer_utterance": "됐고 그냥 시장 나오라 그래 이 인간들아",
       "source": "authored",
       "notes": "경계 사례 — 욕설 강도는 낮지만 인격 모독이다."
+    },
+    {
+      "id": "GS-601",
+      "module": "F-2",
+      "domain": "dasan",
+      "expected_doc_ids": [],
+      "distractor_doc_ids": [],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": {
+        "procedure": "DASAN-TERM-2.5",
+        "evidence": {
+          "신청서": true,
+          "신분증": true,
+          "장애인등록증 또는 복지카드": true,
+          "보행상 장애 판정을 확인할 수 있는 서류": true
+        },
+        "expected_verdict": "complete",
+        "expected_missing": [],
+        "source": "DASAN-TERM-2.5"
+      },
+      "source": "authored",
+      "notes": "장애인콜택시 등록 문의 — 상담원이 필수 서류 4종을 전부 안내했다 → complete."
+    },
+    {
+      "id": "GS-602",
+      "module": "F-2",
+      "domain": "dasan",
+      "expected_doc_ids": [],
+      "distractor_doc_ids": [],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": {
+        "procedure": "DASAN-TERM-2.5",
+        "evidence": {
+          "신청서": true,
+          "신분증": true,
+          "장애인등록증 또는 복지카드": true,
+          "보행상 장애 판정을 확인할 수 있는 서류": false
+        },
+        "expected_verdict": "incomplete",
+        "expected_missing": [
+          "보행상 장애 판정을 확인할 수 있는 서류"
+        ],
+        "source": "DASAN-TERM-2.5"
+      },
+      "source": "authored",
+      "notes": "장애인콜택시 등록 문의 — 「보행상 장애 판정을 확인할 수 있는 서류」만 안내하지 않았다 → incomplete, missing 1건."
+    },
+    {
+      "id": "GS-603",
+      "module": "F-2",
+      "domain": "dasan",
+      "expected_doc_ids": [],
+      "distractor_doc_ids": [],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": {
+        "procedure": "DASAN-TERM-2.5",
+        "evidence": {},
+        "expected_verdict": "incomplete",
+        "expected_missing": [
+          "신청서",
+          "신분증",
+          "장애인등록증 또는 복지카드",
+          "보행상 장애 판정을 확인할 수 있는 서류"
+        ],
+        "source": "DASAN-TERM-2.5"
+      },
+      "source": "authored",
+      "notes": "장애인콜택시 등록 문의 — 서류 안내가 전혀 없었다(증거 비어 있음) → 필수 4종 전부 missing, 선언 순서대로."
+    },
+    {
+      "id": "GS-604",
+      "module": "F-2",
+      "domain": "dasan",
+      "expected_doc_ids": [],
+      "distractor_doc_ids": [],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": {
+        "procedure": "DASAN-TERM-2.6",
+        "evidence": {
+          "신분증": true
+        },
+        "expected_verdict": "complete",
+        "expected_missing": [],
+        "source": "DASAN-TERM-2.6"
+      },
+      "source": "authored",
+      "notes": "경로 우대용 교통카드 발급 문의 — 상담원이 필수 서류 1종을 전부 안내했다 → complete."
+    },
+    {
+      "id": "GS-605",
+      "module": "F-2",
+      "domain": "dasan",
+      "expected_doc_ids": [],
+      "distractor_doc_ids": [],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": {
+        "procedure": "DASAN-TERM-2.6",
+        "evidence": {
+          "신분증": false
+        },
+        "expected_verdict": "incomplete",
+        "expected_missing": [
+          "신분증"
+        ],
+        "source": "DASAN-TERM-2.6"
+      },
+      "source": "authored",
+      "notes": "경로 우대용 교통카드 발급 문의 — 「신분증」만 안내하지 않았다 → incomplete, missing 1건. 서류가 하나뿐이라 명시적 false 로 둔다."
+    },
+    {
+      "id": "GS-606",
+      "module": "F-2",
+      "domain": "dasan",
+      "expected_doc_ids": [],
+      "distractor_doc_ids": [],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": {
+        "procedure": "DASAN-TERM-2.6",
+        "evidence": {},
+        "expected_verdict": "incomplete",
+        "expected_missing": [
+          "신분증"
+        ],
+        "source": "DASAN-TERM-2.6"
+      },
+      "source": "authored",
+      "notes": "경로 우대용 교통카드 발급 문의 — 서류 안내가 전혀 없었다(증거 비어 있음) → 필수 1종 전부 missing, 선언 순서대로."
+    },
+    {
+      "id": "GS-607",
+      "module": "F-2",
+      "domain": "dasan",
+      "expected_doc_ids": [],
+      "distractor_doc_ids": [],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": {
+        "procedure": "DASAN-TERM-2.7",
+        "evidence": {
+          "신청서": true,
+          "신분증": true,
+          "주소지를 확인할 수 있는 서류": true
+        },
+        "expected_verdict": "complete",
+        "expected_missing": [],
+        "source": "DASAN-TERM-2.7"
+      },
+      "source": "authored",
+      "notes": "알뜰교통카드 마일리지 신청 문의 — 상담원이 필수 서류 3종을 전부 안내했다 → complete."
+    },
+    {
+      "id": "GS-608",
+      "module": "F-2",
+      "domain": "dasan",
+      "expected_doc_ids": [],
+      "distractor_doc_ids": [],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": {
+        "procedure": "DASAN-TERM-2.7",
+        "evidence": {
+          "신청서": true,
+          "신분증": true,
+          "주소지를 확인할 수 있는 서류": false
+        },
+        "expected_verdict": "incomplete",
+        "expected_missing": [
+          "주소지를 확인할 수 있는 서류"
+        ],
+        "source": "DASAN-TERM-2.7"
+      },
+      "source": "authored",
+      "notes": "알뜰교통카드 마일리지 신청 문의 — 「주소지를 확인할 수 있는 서류」만 안내하지 않았다 → incomplete, missing 1건."
+    },
+    {
+      "id": "GS-609",
+      "module": "F-2",
+      "domain": "dasan",
+      "expected_doc_ids": [],
+      "distractor_doc_ids": [],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": {
+        "procedure": "DASAN-TERM-2.7",
+        "evidence": {
+          "신청서": false,
+          "신분증": false,
+          "주소지를 확인할 수 있는 서류": false
+        },
+        "expected_verdict": "incomplete",
+        "expected_missing": [
+          "신청서",
+          "신분증",
+          "주소지를 확인할 수 있는 서류"
+        ],
+        "source": "DASAN-TERM-2.7"
+      },
+      "source": "authored",
+      "notes": "알뜰교통카드 마일리지 신청 문의 — 서류 안내가 전혀 없었다(전부 false) → 필수 3종 전부 missing, 선언 순서대로."
+    },
+    {
+      "id": "GS-610",
+      "module": "F-2",
+      "domain": "dasan",
+      "expected_doc_ids": [],
+      "distractor_doc_ids": [],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": {
+        "procedure": "DASAN-TERM-2.9",
+        "evidence": {
+          "신분증": true
+        },
+        "expected_verdict": "complete",
+        "expected_missing": [],
+        "source": "DASAN-TERM-2.9"
+      },
+      "source": "authored",
+      "notes": "버스에 두고 내린 가방 찾으러 가는 문의 — 상담원이 필수 서류 1종을 전부 안내했다 → complete."
+    },
+    {
+      "id": "GS-611",
+      "module": "F-2",
+      "domain": "dasan",
+      "expected_doc_ids": [],
+      "distractor_doc_ids": [],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": {
+        "procedure": "DASAN-TERM-2.9",
+        "evidence": {
+          "신분증": false
+        },
+        "expected_verdict": "incomplete",
+        "expected_missing": [
+          "신분증"
+        ],
+        "source": "DASAN-TERM-2.9"
+      },
+      "source": "authored",
+      "notes": "버스에 두고 내린 가방 찾으러 가는 문의 — 「신분증」만 안내하지 않았다 → incomplete, missing 1건. 서류가 하나뿐이라 명시적 false 로 둔다."
+    },
+    {
+      "id": "GS-612",
+      "module": "F-2",
+      "domain": "dasan",
+      "expected_doc_ids": [],
+      "distractor_doc_ids": [],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": {
+        "procedure": "DASAN-TERM-2.9",
+        "evidence": {},
+        "expected_verdict": "incomplete",
+        "expected_missing": [
+          "신분증"
+        ],
+        "source": "DASAN-TERM-2.9"
+      },
+      "source": "authored",
+      "notes": "버스에 두고 내린 가방 찾으러 가는 문의 — 서류 안내가 전혀 없었다(증거 비어 있음) → 필수 1종 전부 missing, 선언 순서대로."
+    },
+    {
+      "id": "GS-613",
+      "module": "F-2",
+      "domain": "dasan",
+      "expected_doc_ids": [],
+      "distractor_doc_ids": [],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": {
+        "procedure": "DASAN-TERM-3.5",
+        "evidence": {
+          "신청서": true,
+          "신규 사용자 신분증": true,
+          "소유 또는 점유 관계를 확인할 수 있는 서류": true
+        },
+        "expected_verdict": "complete",
+        "expected_missing": [],
+        "source": "DASAN-TERM-3.5"
+      },
+      "source": "authored",
+      "notes": "이사 후 수도 명의변경 문의 — 상담원이 필수 서류 3종을 전부 안내했다 → complete."
+    },
+    {
+      "id": "GS-614",
+      "module": "F-2",
+      "domain": "dasan",
+      "expected_doc_ids": [],
+      "distractor_doc_ids": [],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": {
+        "procedure": "DASAN-TERM-3.5",
+        "evidence": {
+          "신청서": true,
+          "신규 사용자 신분증": true,
+          "소유 또는 점유 관계를 확인할 수 있는 서류": false
+        },
+        "expected_verdict": "incomplete",
+        "expected_missing": [
+          "소유 또는 점유 관계를 확인할 수 있는 서류"
+        ],
+        "source": "DASAN-TERM-3.5"
+      },
+      "source": "authored",
+      "notes": "이사 후 수도 명의변경 문의 — 「소유 또는 점유 관계를 확인할 수 있는 서류」만 안내하지 않았다 → incomplete, missing 1건."
+    },
+    {
+      "id": "GS-615",
+      "module": "F-2",
+      "domain": "dasan",
+      "expected_doc_ids": [],
+      "distractor_doc_ids": [],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": {
+        "procedure": "DASAN-TERM-3.5",
+        "evidence": {},
+        "expected_verdict": "incomplete",
+        "expected_missing": [
+          "신청서",
+          "신규 사용자 신분증",
+          "소유 또는 점유 관계를 확인할 수 있는 서류"
+        ],
+        "source": "DASAN-TERM-3.5"
+      },
+      "source": "authored",
+      "notes": "이사 후 수도 명의변경 문의 — 서류 안내가 전혀 없었다(증거 비어 있음) → 필수 3종 전부 missing, 선언 순서대로."
+    },
+    {
+      "id": "GS-616",
+      "module": "F-2",
+      "domain": "dasan",
+      "expected_doc_ids": [],
+      "distractor_doc_ids": [],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": {
+        "procedure": "DASAN-TERM-3.7",
+        "evidence": {
+          "감면 신청서": true,
+          "누수 수리 사실을 확인할 수 있는 서류": true,
+          "신분증": true
+        },
+        "expected_verdict": "complete",
+        "expected_missing": [],
+        "source": "DASAN-TERM-3.7"
+      },
+      "source": "authored",
+      "notes": "누수로 요금이 갑자기 오른 가구의 감면 문의 — 상담원이 필수 서류 3종을 전부 안내했다 → complete."
+    },
+    {
+      "id": "GS-617",
+      "module": "F-2",
+      "domain": "dasan",
+      "expected_doc_ids": [],
+      "distractor_doc_ids": [],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": {
+        "procedure": "DASAN-TERM-3.7",
+        "evidence": {
+          "감면 신청서": true,
+          "누수 수리 사실을 확인할 수 있는 서류": false,
+          "신분증": true
+        },
+        "expected_verdict": "incomplete",
+        "expected_missing": [
+          "누수 수리 사실을 확인할 수 있는 서류"
+        ],
+        "source": "DASAN-TERM-3.7"
+      },
+      "source": "authored",
+      "notes": "누수로 요금이 갑자기 오른 가구의 감면 문의 — 「누수 수리 사실을 확인할 수 있는 서류」만 안내하지 않았다 → incomplete, missing 1건."
+    },
+    {
+      "id": "GS-618",
+      "module": "F-2",
+      "domain": "dasan",
+      "expected_doc_ids": [],
+      "distractor_doc_ids": [],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": {
+        "procedure": "DASAN-TERM-3.7",
+        "evidence": {
+          "감면 신청서": false,
+          "누수 수리 사실을 확인할 수 있는 서류": false,
+          "신분증": false
+        },
+        "expected_verdict": "incomplete",
+        "expected_missing": [
+          "감면 신청서",
+          "누수 수리 사실을 확인할 수 있는 서류",
+          "신분증"
+        ],
+        "source": "DASAN-TERM-3.7"
+      },
+      "source": "authored",
+      "notes": "누수로 요금이 갑자기 오른 가구의 감면 문의 — 서류 안내가 전혀 없었다(전부 false) → 필수 3종 전부 missing, 선언 순서대로."
+    },
+    {
+      "id": "GS-619",
+      "module": "F-2",
+      "domain": "dasan",
+      "expected_doc_ids": [],
+      "distractor_doc_ids": [],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": {
+        "procedure": "DASAN-TERM-3.8",
+        "evidence": {
+          "신청서": true,
+          "신분증": true,
+          "세대 구성을 확인할 수 있는 서류": true,
+          "건축물 현황을 확인할 수 있는 서류": true
+        },
+        "expected_verdict": "complete",
+        "expected_missing": [],
+        "source": "DASAN-TERM-3.8"
+      },
+      "source": "authored",
+      "notes": "다가구 주택 세대분할 문의 — 상담원이 필수 서류 4종을 전부 안내했다 → complete."
+    },
+    {
+      "id": "GS-620",
+      "module": "F-2",
+      "domain": "dasan",
+      "expected_doc_ids": [],
+      "distractor_doc_ids": [],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": {
+        "procedure": "DASAN-TERM-3.8",
+        "evidence": {
+          "신청서": true,
+          "신분증": true,
+          "세대 구성을 확인할 수 있는 서류": true,
+          "건축물 현황을 확인할 수 있는 서류": false
+        },
+        "expected_verdict": "incomplete",
+        "expected_missing": [
+          "건축물 현황을 확인할 수 있는 서류"
+        ],
+        "source": "DASAN-TERM-3.8"
+      },
+      "source": "authored",
+      "notes": "다가구 주택 세대분할 문의 — 「건축물 현황을 확인할 수 있는 서류」만 안내하지 않았다 → incomplete, missing 1건."
+    },
+    {
+      "id": "GS-621",
+      "module": "F-2",
+      "domain": "dasan",
+      "expected_doc_ids": [],
+      "distractor_doc_ids": [],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": {
+        "procedure": "DASAN-TERM-3.8",
+        "evidence": {},
+        "expected_verdict": "incomplete",
+        "expected_missing": [
+          "신청서",
+          "신분증",
+          "세대 구성을 확인할 수 있는 서류",
+          "건축물 현황을 확인할 수 있는 서류"
+        ],
+        "source": "DASAN-TERM-3.8"
+      },
+      "source": "authored",
+      "notes": "다가구 주택 세대분할 문의 — 서류 안내가 전혀 없었다(증거 비어 있음) → 필수 4종 전부 missing, 선언 순서대로."
+    },
+    {
+      "id": "GS-622",
+      "module": "F-2",
+      "domain": "dasan",
+      "expected_doc_ids": [],
+      "distractor_doc_ids": [],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": {
+        "procedure": "DASAN-TERM-3.10",
+        "evidence": {
+          "신청서": true,
+          "신분증": true,
+          "토지·건물 소유 관계를 확인할 수 있는 서류": true,
+          "건축 관련 인허가 서류": true
+        },
+        "expected_verdict": "complete",
+        "expected_missing": [],
+        "source": "DASAN-TERM-3.10"
+      },
+      "source": "authored",
+      "notes": "신축 건물 급수공사 문의 — 상담원이 필수 서류 4종을 전부 안내했다 → complete."
+    },
+    {
+      "id": "GS-623",
+      "module": "F-2",
+      "domain": "dasan",
+      "expected_doc_ids": [],
+      "distractor_doc_ids": [],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": {
+        "procedure": "DASAN-TERM-3.10",
+        "evidence": {
+          "신청서": true,
+          "신분증": true,
+          "토지·건물 소유 관계를 확인할 수 있는 서류": false,
+          "건축 관련 인허가 서류": true
+        },
+        "expected_verdict": "incomplete",
+        "expected_missing": [
+          "토지·건물 소유 관계를 확인할 수 있는 서류"
+        ],
+        "source": "DASAN-TERM-3.10"
+      },
+      "source": "authored",
+      "notes": "신축 건물 급수공사 문의 — 「토지·건물 소유 관계를 확인할 수 있는 서류」만 안내하지 않았다 → incomplete, missing 1건."
+    },
+    {
+      "id": "GS-624",
+      "module": "F-2",
+      "domain": "dasan",
+      "expected_doc_ids": [],
+      "distractor_doc_ids": [],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": {
+        "procedure": "DASAN-TERM-3.10",
+        "evidence": {
+          "신청서": false,
+          "신분증": false,
+          "토지·건물 소유 관계를 확인할 수 있는 서류": false,
+          "건축 관련 인허가 서류": false
+        },
+        "expected_verdict": "incomplete",
+        "expected_missing": [
+          "신청서",
+          "신분증",
+          "토지·건물 소유 관계를 확인할 수 있는 서류",
+          "건축 관련 인허가 서류"
+        ],
+        "source": "DASAN-TERM-3.10"
+      },
+      "source": "authored",
+      "notes": "신축 건물 급수공사 문의 — 서류 안내가 전혀 없었다(전부 false) → 필수 4종 전부 missing, 선언 순서대로."
+    },
+    {
+      "id": "GS-625",
+      "module": "F-2",
+      "domain": "dasan",
+      "expected_doc_ids": [],
+      "distractor_doc_ids": [],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": {
+        "procedure": "DASAN-TERM-3.14",
+        "evidence": {
+          "신청서": true,
+          "신분증": true,
+          "소유 또는 점유 관계를 확인할 수 있는 서류": true
+        },
+        "expected_verdict": "complete",
+        "expected_missing": [],
+        "source": "DASAN-TERM-3.14"
+      },
+      "source": "authored",
+      "notes": "건물 철거 전 수도 폐전 문의 — 상담원이 필수 서류 3종을 전부 안내했다 → complete."
+    },
+    {
+      "id": "GS-626",
+      "module": "F-2",
+      "domain": "dasan",
+      "expected_doc_ids": [],
+      "distractor_doc_ids": [],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": {
+        "procedure": "DASAN-TERM-3.14",
+        "evidence": {
+          "신청서": true,
+          "신분증": true,
+          "소유 또는 점유 관계를 확인할 수 있는 서류": false
+        },
+        "expected_verdict": "incomplete",
+        "expected_missing": [
+          "소유 또는 점유 관계를 확인할 수 있는 서류"
+        ],
+        "source": "DASAN-TERM-3.14"
+      },
+      "source": "authored",
+      "notes": "건물 철거 전 수도 폐전 문의 — 「소유 또는 점유 관계를 확인할 수 있는 서류」만 안내하지 않았다 → incomplete, missing 1건."
+    },
+    {
+      "id": "GS-627",
+      "module": "F-2",
+      "domain": "dasan",
+      "expected_doc_ids": [],
+      "distractor_doc_ids": [],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": {
+        "procedure": "DASAN-TERM-3.14",
+        "evidence": {},
+        "expected_verdict": "incomplete",
+        "expected_missing": [
+          "신청서",
+          "신분증",
+          "소유 또는 점유 관계를 확인할 수 있는 서류"
+        ],
+        "source": "DASAN-TERM-3.14"
+      },
+      "source": "authored",
+      "notes": "건물 철거 전 수도 폐전 문의 — 서류 안내가 전혀 없었다(증거 비어 있음) → 필수 3종 전부 missing, 선언 순서대로."
+    },
+    {
+      "id": "GS-628",
+      "module": "F-2",
+      "domain": "dasan",
+      "expected_doc_ids": [],
+      "distractor_doc_ids": [],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": {
+        "procedure": "DASAN-TERM-4.3",
+        "evidence": {
+          "신분증": true
+        },
+        "expected_verdict": "complete",
+        "expected_missing": [],
+        "source": "DASAN-TERM-4.3"
+      },
+      "source": "authored",
+      "notes": "초본 발급 문의 — 상담원이 필수 서류 1종을 전부 안내했다 → complete."
+    },
+    {
+      "id": "GS-629",
+      "module": "F-2",
+      "domain": "dasan",
+      "expected_doc_ids": [],
+      "distractor_doc_ids": [],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": {
+        "procedure": "DASAN-TERM-4.3",
+        "evidence": {
+          "신분증": false
+        },
+        "expected_verdict": "incomplete",
+        "expected_missing": [
+          "신분증"
+        ],
+        "source": "DASAN-TERM-4.3"
+      },
+      "source": "authored",
+      "notes": "초본 발급 문의 — 「신분증」만 안내하지 않았다 → incomplete, missing 1건. 서류가 하나뿐이라 명시적 false 로 둔다."
+    },
+    {
+      "id": "GS-630",
+      "module": "F-2",
+      "domain": "dasan",
+      "expected_doc_ids": [],
+      "distractor_doc_ids": [],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": {
+        "procedure": "DASAN-TERM-4.3",
+        "evidence": {},
+        "expected_verdict": "incomplete",
+        "expected_missing": [
+          "신분증"
+        ],
+        "source": "DASAN-TERM-4.3"
+      },
+      "source": "authored",
+      "notes": "초본 발급 문의 — 서류 안내가 전혀 없었다(증거 비어 있음) → 필수 1종 전부 missing, 선언 순서대로."
+    },
+    {
+      "id": "GS-631",
+      "module": "F-2",
+      "domain": "dasan",
+      "expected_doc_ids": [],
+      "distractor_doc_ids": [],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": {
+        "procedure": "DASAN-TERM-4.4",
+        "evidence": {
+          "신고서": true,
+          "신고인 신분증": true
+        },
+        "expected_verdict": "complete",
+        "expected_missing": [],
+        "source": "DASAN-TERM-4.4"
+      },
+      "source": "authored",
+      "notes": "전입신고 문의 — 상담원이 필수 서류 2종을 전부 안내했다 → complete."
+    },
+    {
+      "id": "GS-632",
+      "module": "F-2",
+      "domain": "dasan",
+      "expected_doc_ids": [],
+      "distractor_doc_ids": [],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": {
+        "procedure": "DASAN-TERM-4.4",
+        "evidence": {
+          "신고서": true,
+          "신고인 신분증": false
+        },
+        "expected_verdict": "incomplete",
+        "expected_missing": [
+          "신고인 신분증"
+        ],
+        "source": "DASAN-TERM-4.4"
+      },
+      "source": "authored",
+      "notes": "전입신고 문의 — 「신고인 신분증」만 안내하지 않았다 → incomplete, missing 1건."
+    },
+    {
+      "id": "GS-633",
+      "module": "F-2",
+      "domain": "dasan",
+      "expected_doc_ids": [],
+      "distractor_doc_ids": [],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": {
+        "procedure": "DASAN-TERM-4.4",
+        "evidence": {
+          "신고서": false,
+          "신고인 신분증": false
+        },
+        "expected_verdict": "incomplete",
+        "expected_missing": [
+          "신고서",
+          "신고인 신분증"
+        ],
+        "source": "DASAN-TERM-4.4"
+      },
+      "source": "authored",
+      "notes": "전입신고 문의 — 서류 안내가 전혀 없었다(전부 false) → 필수 2종 전부 missing, 선언 순서대로."
+    },
+    {
+      "id": "GS-634",
+      "module": "F-2",
+      "domain": "dasan",
+      "expected_doc_ids": [],
+      "distractor_doc_ids": [],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": {
+        "procedure": "DASAN-TERM-4.5",
+        "evidence": {
+          "신분증": true
+        },
+        "expected_verdict": "complete",
+        "expected_missing": [],
+        "source": "DASAN-TERM-4.5"
+      },
+      "source": "authored",
+      "notes": "인감증명서 발급 문의 — 상담원이 필수 서류 1종을 전부 안내했다 → complete."
+    },
+    {
+      "id": "GS-635",
+      "module": "F-2",
+      "domain": "dasan",
+      "expected_doc_ids": [],
+      "distractor_doc_ids": [],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": {
+        "procedure": "DASAN-TERM-4.5",
+        "evidence": {
+          "신분증": false
+        },
+        "expected_verdict": "incomplete",
+        "expected_missing": [
+          "신분증"
+        ],
+        "source": "DASAN-TERM-4.5"
+      },
+      "source": "authored",
+      "notes": "인감증명서 발급 문의 — 「신분증」만 안내하지 않았다 → incomplete, missing 1건. 서류가 하나뿐이라 명시적 false 로 둔다."
+    },
+    {
+      "id": "GS-636",
+      "module": "F-2",
+      "domain": "dasan",
+      "expected_doc_ids": [],
+      "distractor_doc_ids": [],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": {
+        "procedure": "DASAN-TERM-4.5",
+        "evidence": {},
+        "expected_verdict": "incomplete",
+        "expected_missing": [
+          "신분증"
+        ],
+        "source": "DASAN-TERM-4.5"
+      },
+      "source": "authored",
+      "notes": "인감증명서 발급 문의 — 서류 안내가 전혀 없었다(증거 비어 있음) → 필수 1종 전부 missing, 선언 순서대로."
+    },
+    {
+      "id": "GS-637",
+      "module": "F-2",
+      "domain": "dasan",
+      "expected_doc_ids": [],
+      "distractor_doc_ids": [],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": {
+        "procedure": "DASAN-TERM-4.6",
+        "evidence": {
+          "발급 신청서": true,
+          "사진": true,
+          "본인 확인 서류": true
+        },
+        "expected_verdict": "complete",
+        "expected_missing": [],
+        "source": "DASAN-TERM-4.6"
+      },
+      "source": "authored",
+      "notes": "청소년증 발급 문의 — 상담원이 필수 서류 3종을 전부 안내했다 → complete."
+    },
+    {
+      "id": "GS-638",
+      "module": "F-2",
+      "domain": "dasan",
+      "expected_doc_ids": [],
+      "distractor_doc_ids": [],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": {
+        "procedure": "DASAN-TERM-4.6",
+        "evidence": {
+          "발급 신청서": true,
+          "사진": false,
+          "본인 확인 서류": true
+        },
+        "expected_verdict": "incomplete",
+        "expected_missing": [
+          "사진"
+        ],
+        "source": "DASAN-TERM-4.6"
+      },
+      "source": "authored",
+      "notes": "청소년증 발급 문의 — 「사진」만 안내하지 않았다 → incomplete, missing 1건."
+    },
+    {
+      "id": "GS-639",
+      "module": "F-2",
+      "domain": "dasan",
+      "expected_doc_ids": [],
+      "distractor_doc_ids": [],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": {
+        "procedure": "DASAN-TERM-4.6",
+        "evidence": {
+          "발급 신청서": false,
+          "사진": false,
+          "본인 확인 서류": false
+        },
+        "expected_verdict": "incomplete",
+        "expected_missing": [
+          "발급 신청서",
+          "사진",
+          "본인 확인 서류"
+        ],
+        "source": "DASAN-TERM-4.6"
+      },
+      "source": "authored",
+      "notes": "청소년증 발급 문의 — 서류 안내가 전혀 없었다(전부 false) → 필수 3종 전부 missing, 선언 순서대로."
+    },
+    {
+      "id": "GS-640",
+      "module": "F-2",
+      "domain": "dasan",
+      "expected_doc_ids": [],
+      "distractor_doc_ids": [],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": {
+        "procedure": "DASAN-TERM-4.9",
+        "evidence": {
+          "신고서": true,
+          "신분증": true
+        },
+        "expected_verdict": "complete",
+        "expected_missing": [],
+        "source": "DASAN-TERM-4.9"
+      },
+      "source": "authored",
+      "notes": "아파트 취득세 신고 문의 — 상담원이 필수 서류 2종을 전부 안내했다 → complete."
+    },
+    {
+      "id": "GS-641",
+      "module": "F-2",
+      "domain": "dasan",
+      "expected_doc_ids": [],
+      "distractor_doc_ids": [],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": {
+        "procedure": "DASAN-TERM-4.9",
+        "evidence": {
+          "신고서": false,
+          "신분증": true
+        },
+        "expected_verdict": "incomplete",
+        "expected_missing": [
+          "신고서"
+        ],
+        "source": "DASAN-TERM-4.9"
+      },
+      "source": "authored",
+      "notes": "아파트 취득세 신고 문의 — 「신고서」만 안내하지 않았다 → incomplete, missing 1건."
+    },
+    {
+      "id": "GS-642",
+      "module": "F-2",
+      "domain": "dasan",
+      "expected_doc_ids": [],
+      "distractor_doc_ids": [],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": {
+        "procedure": "DASAN-TERM-4.9",
+        "evidence": {},
+        "expected_verdict": "incomplete",
+        "expected_missing": [
+          "신고서",
+          "신분증"
+        ],
+        "source": "DASAN-TERM-4.9"
+      },
+      "source": "authored",
+      "notes": "아파트 취득세 신고 문의 — 서류 안내가 전혀 없었다(증거 비어 있음) → 필수 2종 전부 missing, 선언 순서대로."
+    },
+    {
+      "id": "GS-643",
+      "module": "F-2",
+      "domain": "dasan",
+      "expected_doc_ids": [],
+      "distractor_doc_ids": [],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": {
+        "procedure": "DASAN-TERM-4.11",
+        "evidence": {
+          "환급 신청서": true,
+          "신분증": true,
+          "환급 계좌 정보": true
+        },
+        "expected_verdict": "complete",
+        "expected_missing": [],
+        "source": "DASAN-TERM-4.11"
+      },
+      "source": "authored",
+      "notes": "지방세 과오납 환급 문의 — 상담원이 필수 서류 3종을 전부 안내했다 → complete."
+    },
+    {
+      "id": "GS-644",
+      "module": "F-2",
+      "domain": "dasan",
+      "expected_doc_ids": [],
+      "distractor_doc_ids": [],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": {
+        "procedure": "DASAN-TERM-4.11",
+        "evidence": {
+          "환급 신청서": true,
+          "신분증": true,
+          "환급 계좌 정보": false
+        },
+        "expected_verdict": "incomplete",
+        "expected_missing": [
+          "환급 계좌 정보"
+        ],
+        "source": "DASAN-TERM-4.11"
+      },
+      "source": "authored",
+      "notes": "지방세 과오납 환급 문의 — 「환급 계좌 정보」만 안내하지 않았다 → incomplete, missing 1건."
+    },
+    {
+      "id": "GS-645",
+      "module": "F-2",
+      "domain": "dasan",
+      "expected_doc_ids": [],
+      "distractor_doc_ids": [],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": {
+        "procedure": "DASAN-TERM-4.11",
+        "evidence": {
+          "환급 신청서": false,
+          "신분증": false,
+          "환급 계좌 정보": false
+        },
+        "expected_verdict": "incomplete",
+        "expected_missing": [
+          "환급 신청서",
+          "신분증",
+          "환급 계좌 정보"
+        ],
+        "source": "DASAN-TERM-4.11"
+      },
+      "source": "authored",
+      "notes": "지방세 과오납 환급 문의 — 서류 안내가 전혀 없었다(전부 false) → 필수 3종 전부 missing, 선언 순서대로."
+    },
+    {
+      "id": "GS-646",
+      "module": "F-2",
+      "domain": "dasan",
+      "expected_doc_ids": [],
+      "distractor_doc_ids": [],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": {
+        "procedure": "DASAN-TERM-4.12",
+        "evidence": {
+          "신청서": true,
+          "감면 사유를 확인할 수 있는 증명서": true
+        },
+        "expected_verdict": "complete",
+        "expected_missing": [],
+        "source": "DASAN-TERM-4.12"
+      },
+      "source": "authored",
+      "notes": "지방세 감면 문의 — 상담원이 필수 서류 2종을 전부 안내했다 → complete."
+    },
+    {
+      "id": "GS-647",
+      "module": "F-2",
+      "domain": "dasan",
+      "expected_doc_ids": [],
+      "distractor_doc_ids": [],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": {
+        "procedure": "DASAN-TERM-4.12",
+        "evidence": {
+          "신청서": true,
+          "감면 사유를 확인할 수 있는 증명서": false
+        },
+        "expected_verdict": "incomplete",
+        "expected_missing": [
+          "감면 사유를 확인할 수 있는 증명서"
+        ],
+        "source": "DASAN-TERM-4.12"
+      },
+      "source": "authored",
+      "notes": "지방세 감면 문의 — 「감면 사유를 확인할 수 있는 증명서」만 안내하지 않았다 → incomplete, missing 1건."
+    },
+    {
+      "id": "GS-648",
+      "module": "F-2",
+      "domain": "dasan",
+      "expected_doc_ids": [],
+      "distractor_doc_ids": [],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": {
+        "procedure": "DASAN-TERM-4.12",
+        "evidence": {},
+        "expected_verdict": "incomplete",
+        "expected_missing": [
+          "신청서",
+          "감면 사유를 확인할 수 있는 증명서"
+        ],
+        "source": "DASAN-TERM-4.12"
+      },
+      "source": "authored",
+      "notes": "지방세 감면 문의 — 서류 안내가 전혀 없었다(증거 비어 있음) → 필수 2종 전부 missing, 선언 순서대로."
+    },
+    {
+      "id": "GS-649",
+      "module": "F-2",
+      "domain": "dasan",
+      "expected_doc_ids": [],
+      "distractor_doc_ids": [],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": {
+        "procedure": "DASAN-TERM-4.13",
+        "evidence": {
+          "신청서": true,
+          "신청인 신분증": true,
+          "아동과의 관계를 확인할 수 있는 서류": true,
+          "입금 계좌 정보": true
+        },
+        "expected_verdict": "complete",
+        "expected_missing": [],
+        "source": "DASAN-TERM-4.13"
+      },
+      "source": "authored",
+      "notes": "아동수당 신청 문의 — 상담원이 필수 서류 4종을 전부 안내했다 → complete."
+    },
+    {
+      "id": "GS-650",
+      "module": "F-2",
+      "domain": "dasan",
+      "expected_doc_ids": [],
+      "distractor_doc_ids": [],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": {
+        "procedure": "DASAN-TERM-4.13",
+        "evidence": {
+          "신청서": true,
+          "신청인 신분증": true,
+          "아동과의 관계를 확인할 수 있는 서류": false,
+          "입금 계좌 정보": true
+        },
+        "expected_verdict": "incomplete",
+        "expected_missing": [
+          "아동과의 관계를 확인할 수 있는 서류"
+        ],
+        "source": "DASAN-TERM-4.13"
+      },
+      "source": "authored",
+      "notes": "아동수당 신청 문의 — 「아동과의 관계를 확인할 수 있는 서류」만 안내하지 않았다 → incomplete, missing 1건."
+    },
+    {
+      "id": "GS-651",
+      "module": "F-2",
+      "domain": "dasan",
+      "expected_doc_ids": [],
+      "distractor_doc_ids": [],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": {
+        "procedure": "DASAN-TERM-4.13",
+        "evidence": {
+          "신청서": false,
+          "신청인 신분증": false,
+          "아동과의 관계를 확인할 수 있는 서류": false,
+          "입금 계좌 정보": false
+        },
+        "expected_verdict": "incomplete",
+        "expected_missing": [
+          "신청서",
+          "신청인 신분증",
+          "아동과의 관계를 확인할 수 있는 서류",
+          "입금 계좌 정보"
+        ],
+        "source": "DASAN-TERM-4.13"
+      },
+      "source": "authored",
+      "notes": "아동수당 신청 문의 — 서류 안내가 전혀 없었다(전부 false) → 필수 4종 전부 missing, 선언 순서대로."
+    },
+    {
+      "id": "GS-652",
+      "module": "F-2",
+      "domain": "dasan",
+      "expected_doc_ids": [],
+      "distractor_doc_ids": [],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": {
+        "procedure": "DASAN-TERM-4.14",
+        "evidence": {
+          "신청서": true,
+          "신분증": true,
+          "자녀 수를 확인할 수 있는 서류": true
+        },
+        "expected_verdict": "complete",
+        "expected_missing": [],
+        "source": "DASAN-TERM-4.14"
+      },
+      "source": "authored",
+      "notes": "다자녀 요금 감면 문의 — 상담원이 필수 서류 3종을 전부 안내했다 → complete."
+    },
+    {
+      "id": "GS-653",
+      "module": "F-2",
+      "domain": "dasan",
+      "expected_doc_ids": [],
+      "distractor_doc_ids": [],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": {
+        "procedure": "DASAN-TERM-4.14",
+        "evidence": {
+          "신청서": true,
+          "신분증": true,
+          "자녀 수를 확인할 수 있는 서류": false
+        },
+        "expected_verdict": "incomplete",
+        "expected_missing": [
+          "자녀 수를 확인할 수 있는 서류"
+        ],
+        "source": "DASAN-TERM-4.14"
+      },
+      "source": "authored",
+      "notes": "다자녀 요금 감면 문의 — 「자녀 수를 확인할 수 있는 서류」만 안내하지 않았다 → incomplete, missing 1건."
+    },
+    {
+      "id": "GS-654",
+      "module": "F-2",
+      "domain": "dasan",
+      "expected_doc_ids": [],
+      "distractor_doc_ids": [],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": {
+        "procedure": "DASAN-TERM-4.14",
+        "evidence": {},
+        "expected_verdict": "incomplete",
+        "expected_missing": [
+          "신청서",
+          "신분증",
+          "자녀 수를 확인할 수 있는 서류"
+        ],
+        "source": "DASAN-TERM-4.14"
+      },
+      "source": "authored",
+      "notes": "다자녀 요금 감면 문의 — 서류 안내가 전혀 없었다(증거 비어 있음) → 필수 3종 전부 missing, 선언 순서대로."
+    },
+    {
+      "id": "GS-655",
+      "module": "F-2",
+      "domain": "dasan",
+      "expected_doc_ids": [],
+      "distractor_doc_ids": [],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": {
+        "procedure": "DASAN-TERM-4.16",
+        "evidence": {
+          "신청서": true,
+          "사업계획서": true,
+          "신분증": true,
+          "전입 사실을 확인할 수 있는 서류": true
+        },
+        "expected_verdict": "complete",
+        "expected_missing": [],
+        "source": "DASAN-TERM-4.16"
+      },
+      "source": "authored",
+      "notes": "귀농 지원사업 신청 문의 — 상담원이 필수 서류 4종을 전부 안내했다 → complete."
+    },
+    {
+      "id": "GS-656",
+      "module": "F-2",
+      "domain": "dasan",
+      "expected_doc_ids": [],
+      "distractor_doc_ids": [],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": {
+        "procedure": "DASAN-TERM-4.16",
+        "evidence": {
+          "신청서": true,
+          "사업계획서": false,
+          "신분증": true,
+          "전입 사실을 확인할 수 있는 서류": true
+        },
+        "expected_verdict": "incomplete",
+        "expected_missing": [
+          "사업계획서"
+        ],
+        "source": "DASAN-TERM-4.16"
+      },
+      "source": "authored",
+      "notes": "귀농 지원사업 신청 문의 — 「사업계획서」만 안내하지 않았다 → incomplete, missing 1건."
+    },
+    {
+      "id": "GS-657",
+      "module": "F-2",
+      "domain": "dasan",
+      "expected_doc_ids": [],
+      "distractor_doc_ids": [],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": {
+        "procedure": "DASAN-TERM-4.16",
+        "evidence": {
+          "신청서": false,
+          "사업계획서": false,
+          "신분증": false,
+          "전입 사실을 확인할 수 있는 서류": false
+        },
+        "expected_verdict": "incomplete",
+        "expected_missing": [
+          "신청서",
+          "사업계획서",
+          "신분증",
+          "전입 사실을 확인할 수 있는 서류"
+        ],
+        "source": "DASAN-TERM-4.16"
+      },
+      "source": "authored",
+      "notes": "귀농 지원사업 신청 문의 — 서류 안내가 전혀 없었다(전부 false) → 필수 4종 전부 missing, 선언 순서대로."
+    },
+    {
+      "id": "GS-658",
+      "module": "F-2",
+      "domain": "dasan",
+      "expected_doc_ids": [],
+      "distractor_doc_ids": [],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": {
+        "procedure": "DASAN-TERM-4.17",
+        "evidence": {
+          "이용 신청서": true,
+          "신청인 신분증": true
+        },
+        "expected_verdict": "complete",
+        "expected_missing": [],
+        "source": "DASAN-TERM-4.17"
+      },
+      "source": "authored",
+      "notes": "체육관 대관 문의 — 상담원이 필수 서류 2종을 전부 안내했다 → complete."
+    },
+    {
+      "id": "GS-659",
+      "module": "F-2",
+      "domain": "dasan",
+      "expected_doc_ids": [],
+      "distractor_doc_ids": [],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": {
+        "procedure": "DASAN-TERM-4.17",
+        "evidence": {
+          "이용 신청서": true,
+          "신청인 신분증": false
+        },
+        "expected_verdict": "incomplete",
+        "expected_missing": [
+          "신청인 신분증"
+        ],
+        "source": "DASAN-TERM-4.17"
+      },
+      "source": "authored",
+      "notes": "체육관 대관 문의 — 「신청인 신분증」만 안내하지 않았다 → incomplete, missing 1건."
+    },
+    {
+      "id": "GS-660",
+      "module": "F-2",
+      "domain": "dasan",
+      "expected_doc_ids": [],
+      "distractor_doc_ids": [],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": {
+        "procedure": "DASAN-TERM-4.17",
+        "evidence": {},
+        "expected_verdict": "incomplete",
+        "expected_missing": [
+          "이용 신청서",
+          "신청인 신분증"
+        ],
+        "source": "DASAN-TERM-4.17"
+      },
+      "source": "authored",
+      "notes": "체육관 대관 문의 — 서류 안내가 전혀 없었다(증거 비어 있음) → 필수 2종 전부 missing, 선언 순서대로."
+    },
+    {
+      "id": "GS-661",
+      "module": "F-2",
+      "domain": "dasan",
+      "expected_doc_ids": [],
+      "distractor_doc_ids": [],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": {
+        "procedure": "DASAN-TERM-4.18",
+        "evidence": {
+          "신분증": true
+        },
+        "expected_verdict": "complete",
+        "expected_missing": [],
+        "source": "DASAN-TERM-4.18"
+      },
+      "source": "authored",
+      "notes": "도서관 회원증 발급 문의 — 상담원이 필수 서류 1종을 전부 안내했다 → complete."
+    },
+    {
+      "id": "GS-662",
+      "module": "F-2",
+      "domain": "dasan",
+      "expected_doc_ids": [],
+      "distractor_doc_ids": [],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": {
+        "procedure": "DASAN-TERM-4.18",
+        "evidence": {
+          "신분증": false
+        },
+        "expected_verdict": "incomplete",
+        "expected_missing": [
+          "신분증"
+        ],
+        "source": "DASAN-TERM-4.18"
+      },
+      "source": "authored",
+      "notes": "도서관 회원증 발급 문의 — 「신분증」만 안내하지 않았다 → incomplete, missing 1건. 서류가 하나뿐이라 명시적 false 로 둔다."
+    },
+    {
+      "id": "GS-663",
+      "module": "F-2",
+      "domain": "dasan",
+      "expected_doc_ids": [],
+      "distractor_doc_ids": [],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": {
+        "procedure": "DASAN-TERM-4.18",
+        "evidence": {},
+        "expected_verdict": "incomplete",
+        "expected_missing": [
+          "신분증"
+        ],
+        "source": "DASAN-TERM-4.18"
+      },
+      "source": "authored",
+      "notes": "도서관 회원증 발급 문의 — 서류 안내가 전혀 없었다(증거 비어 있음) → 필수 1종 전부 missing, 선언 순서대로."
+    },
+    {
+      "id": "GS-664",
+      "module": "F-2",
+      "domain": "dasan",
+      "expected_doc_ids": [],
+      "distractor_doc_ids": [],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": {
+        "procedure": "DASAN-TERM-5.8",
+        "evidence": {
+          "신청서": true,
+          "신청인 신분증": true,
+          "격리 사실을 확인할 수 있는 서류": true,
+          "가구원을 확인할 수 있는 서류": true,
+          "입금 계좌 정보": true
+        },
+        "expected_verdict": "complete",
+        "expected_missing": [],
+        "source": "DASAN-TERM-5.8"
+      },
+      "source": "authored",
+      "notes": "격리 가구 생활지원비 문의 — 상담원이 필수 서류 5종을 전부 안내했다 → complete."
+    },
+    {
+      "id": "GS-665",
+      "module": "F-2",
+      "domain": "dasan",
+      "expected_doc_ids": [],
+      "distractor_doc_ids": [],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": {
+        "procedure": "DASAN-TERM-5.8",
+        "evidence": {
+          "신청서": true,
+          "신청인 신분증": true,
+          "격리 사실을 확인할 수 있는 서류": false,
+          "가구원을 확인할 수 있는 서류": true,
+          "입금 계좌 정보": true
+        },
+        "expected_verdict": "incomplete",
+        "expected_missing": [
+          "격리 사실을 확인할 수 있는 서류"
+        ],
+        "source": "DASAN-TERM-5.8"
+      },
+      "source": "authored",
+      "notes": "격리 가구 생활지원비 문의 — 「격리 사실을 확인할 수 있는 서류」만 안내하지 않았다 → incomplete, missing 1건."
+    },
+    {
+      "id": "GS-666",
+      "module": "F-2",
+      "domain": "dasan",
+      "expected_doc_ids": [],
+      "distractor_doc_ids": [],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": {
+        "procedure": "DASAN-TERM-5.8",
+        "evidence": {
+          "신청서": false,
+          "신청인 신분증": false,
+          "격리 사실을 확인할 수 있는 서류": false,
+          "가구원을 확인할 수 있는 서류": false,
+          "입금 계좌 정보": false
+        },
+        "expected_verdict": "incomplete",
+        "expected_missing": [
+          "신청서",
+          "신청인 신분증",
+          "격리 사실을 확인할 수 있는 서류",
+          "가구원을 확인할 수 있는 서류",
+          "입금 계좌 정보"
+        ],
+        "source": "DASAN-TERM-5.8"
+      },
+      "source": "authored",
+      "notes": "격리 가구 생활지원비 문의 — 서류 안내가 전혀 없었다(전부 false) → 필수 5종 전부 missing, 선언 순서대로."
+    },
+    {
+      "id": "GS-667",
+      "module": "F-2",
+      "domain": "dasan",
+      "expected_doc_ids": [],
+      "distractor_doc_ids": [],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": {
+        "procedure": "DASAN-TERM-5.9",
+        "evidence": {
+          "지원 신청서": true,
+          "사업자등록증": true,
+          "유급휴가 부여를 확인할 수 있는 서류": true,
+          "급여 지급을 확인할 수 있는 서류": true,
+          "입금 계좌 정보": true
+        },
+        "expected_verdict": "complete",
+        "expected_missing": [],
+        "source": "DASAN-TERM-5.9"
+      },
+      "source": "authored",
+      "notes": "사업주 유급휴가비용 지원 문의 — 상담원이 필수 서류 5종을 전부 안내했다 → complete."
+    },
+    {
+      "id": "GS-668",
+      "module": "F-2",
+      "domain": "dasan",
+      "expected_doc_ids": [],
+      "distractor_doc_ids": [],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": {
+        "procedure": "DASAN-TERM-5.9",
+        "evidence": {
+          "지원 신청서": true,
+          "사업자등록증": true,
+          "유급휴가 부여를 확인할 수 있는 서류": true,
+          "급여 지급을 확인할 수 있는 서류": false,
+          "입금 계좌 정보": true
+        },
+        "expected_verdict": "incomplete",
+        "expected_missing": [
+          "급여 지급을 확인할 수 있는 서류"
+        ],
+        "source": "DASAN-TERM-5.9"
+      },
+      "source": "authored",
+      "notes": "사업주 유급휴가비용 지원 문의 — 「급여 지급을 확인할 수 있는 서류」만 안내하지 않았다 → incomplete, missing 1건."
+    },
+    {
+      "id": "GS-669",
+      "module": "F-2",
+      "domain": "dasan",
+      "expected_doc_ids": [],
+      "distractor_doc_ids": [],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": {
+        "procedure": "DASAN-TERM-5.9",
+        "evidence": {},
+        "expected_verdict": "incomplete",
+        "expected_missing": [
+          "지원 신청서",
+          "사업자등록증",
+          "유급휴가 부여를 확인할 수 있는 서류",
+          "급여 지급을 확인할 수 있는 서류",
+          "입금 계좌 정보"
+        ],
+        "source": "DASAN-TERM-5.9"
+      },
+      "source": "authored",
+      "notes": "사업주 유급휴가비용 지원 문의 — 서류 안내가 전혀 없었다(증거 비어 있음) → 필수 5종 전부 missing, 선언 순서대로."
+    },
+    {
+      "id": "GS-670",
+      "module": "F-2",
+      "domain": "dasan",
+      "expected_doc_ids": [],
+      "distractor_doc_ids": [],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": {
+        "procedure": "DASAN-TERM-6.2",
+        "evidence": {
+          "신청서": true,
+          "신청인 신분증": true,
+          "가구 구성을 확인할 수 있는 서류": true,
+          "입금 계좌 정보": true
+        },
+        "expected_verdict": "complete",
+        "expected_missing": [],
+        "source": "DASAN-TERM-6.2"
+      },
+      "source": "authored",
+      "notes": "재난지원금 신청 문의 — 상담원이 필수 서류 4종을 전부 안내했다 → complete."
+    },
+    {
+      "id": "GS-671",
+      "module": "F-2",
+      "domain": "dasan",
+      "expected_doc_ids": [],
+      "distractor_doc_ids": [],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": {
+        "procedure": "DASAN-TERM-6.2",
+        "evidence": {
+          "신청서": true,
+          "신청인 신분증": true,
+          "가구 구성을 확인할 수 있는 서류": true,
+          "입금 계좌 정보": false
+        },
+        "expected_verdict": "incomplete",
+        "expected_missing": [
+          "입금 계좌 정보"
+        ],
+        "source": "DASAN-TERM-6.2"
+      },
+      "source": "authored",
+      "notes": "재난지원금 신청 문의 — 「입금 계좌 정보」만 안내하지 않았다 → incomplete, missing 1건."
+    },
+    {
+      "id": "GS-672",
+      "module": "F-2",
+      "domain": "dasan",
+      "expected_doc_ids": [],
+      "distractor_doc_ids": [],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": {
+        "procedure": "DASAN-TERM-6.2",
+        "evidence": {
+          "신청서": false,
+          "신청인 신분증": false,
+          "가구 구성을 확인할 수 있는 서류": false,
+          "입금 계좌 정보": false
+        },
+        "expected_verdict": "incomplete",
+        "expected_missing": [
+          "신청서",
+          "신청인 신분증",
+          "가구 구성을 확인할 수 있는 서류",
+          "입금 계좌 정보"
+        ],
+        "source": "DASAN-TERM-6.2"
+      },
+      "source": "authored",
+      "notes": "재난지원금 신청 문의 — 서류 안내가 전혀 없었다(전부 false) → 필수 4종 전부 missing, 선언 순서대로."
+    },
+    {
+      "id": "GS-673",
+      "module": "F-2",
+      "domain": "dasan",
+      "expected_doc_ids": [],
+      "distractor_doc_ids": [],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": {
+        "procedure": "DASAN-TERM-6.3",
+        "evidence": {
+          "신청서": true,
+          "신분증": true,
+          "소득 감소를 확인할 수 있는 서류": true,
+          "노무 제공 사실을 확인할 수 있는 서류": true,
+          "입금 계좌 정보": true
+        },
+        "expected_verdict": "complete",
+        "expected_missing": [],
+        "source": "DASAN-TERM-6.3"
+      },
+      "source": "authored",
+      "notes": "프리랜서 긴급고용안정지원금 문의 — 상담원이 필수 서류 5종을 전부 안내했다 → complete."
+    },
+    {
+      "id": "GS-674",
+      "module": "F-2",
+      "domain": "dasan",
+      "expected_doc_ids": [],
+      "distractor_doc_ids": [],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": {
+        "procedure": "DASAN-TERM-6.3",
+        "evidence": {
+          "신청서": true,
+          "신분증": true,
+          "소득 감소를 확인할 수 있는 서류": true,
+          "노무 제공 사실을 확인할 수 있는 서류": false,
+          "입금 계좌 정보": true
+        },
+        "expected_verdict": "incomplete",
+        "expected_missing": [
+          "노무 제공 사실을 확인할 수 있는 서류"
+        ],
+        "source": "DASAN-TERM-6.3"
+      },
+      "source": "authored",
+      "notes": "프리랜서 긴급고용안정지원금 문의 — 「노무 제공 사실을 확인할 수 있는 서류」만 안내하지 않았다 → incomplete, missing 1건."
+    },
+    {
+      "id": "GS-675",
+      "module": "F-2",
+      "domain": "dasan",
+      "expected_doc_ids": [],
+      "distractor_doc_ids": [],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": {
+        "procedure": "DASAN-TERM-6.3",
+        "evidence": {},
+        "expected_verdict": "incomplete",
+        "expected_missing": [
+          "신청서",
+          "신분증",
+          "소득 감소를 확인할 수 있는 서류",
+          "노무 제공 사실을 확인할 수 있는 서류",
+          "입금 계좌 정보"
+        ],
+        "source": "DASAN-TERM-6.3"
+      },
+      "source": "authored",
+      "notes": "프리랜서 긴급고용안정지원금 문의 — 서류 안내가 전혀 없었다(증거 비어 있음) → 필수 5종 전부 missing, 선언 순서대로."
+    },
+    {
+      "id": "GS-676",
+      "module": "F-2",
+      "domain": "dasan",
+      "expected_doc_ids": [],
+      "distractor_doc_ids": [],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": {
+        "procedure": "DASAN-TERM-6.4",
+        "evidence": {
+          "신청서": true,
+          "사업자등록증": true,
+          "대표자 신분증": true,
+          "매출 감소를 확인할 수 있는 서류": true,
+          "입금 계좌 정보": true
+        },
+        "expected_verdict": "complete",
+        "expected_missing": [],
+        "source": "DASAN-TERM-6.4"
+      },
+      "source": "authored",
+      "notes": "소상공인 지원금 문의 — 상담원이 필수 서류 5종을 전부 안내했다 → complete."
+    },
+    {
+      "id": "GS-677",
+      "module": "F-2",
+      "domain": "dasan",
+      "expected_doc_ids": [],
+      "distractor_doc_ids": [],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": {
+        "procedure": "DASAN-TERM-6.4",
+        "evidence": {
+          "신청서": true,
+          "사업자등록증": false,
+          "대표자 신분증": true,
+          "매출 감소를 확인할 수 있는 서류": true,
+          "입금 계좌 정보": true
+        },
+        "expected_verdict": "incomplete",
+        "expected_missing": [
+          "사업자등록증"
+        ],
+        "source": "DASAN-TERM-6.4"
+      },
+      "source": "authored",
+      "notes": "소상공인 지원금 문의 — 「사업자등록증」만 안내하지 않았다 → incomplete, missing 1건."
+    },
+    {
+      "id": "GS-678",
+      "module": "F-2",
+      "domain": "dasan",
+      "expected_doc_ids": [],
+      "distractor_doc_ids": [],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": {
+        "procedure": "DASAN-TERM-6.4",
+        "evidence": {
+          "신청서": false,
+          "사업자등록증": false,
+          "대표자 신분증": false,
+          "매출 감소를 확인할 수 있는 서류": false,
+          "입금 계좌 정보": false
+        },
+        "expected_verdict": "incomplete",
+        "expected_missing": [
+          "신청서",
+          "사업자등록증",
+          "대표자 신분증",
+          "매출 감소를 확인할 수 있는 서류",
+          "입금 계좌 정보"
+        ],
+        "source": "DASAN-TERM-6.4"
+      },
+      "source": "authored",
+      "notes": "소상공인 지원금 문의 — 서류 안내가 전혀 없었다(전부 false) → 필수 5종 전부 missing, 선언 순서대로."
+    },
+    {
+      "id": "GS-679",
+      "module": "F-2",
+      "domain": "dasan",
+      "expected_doc_ids": [],
+      "distractor_doc_ids": [],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": {
+        "procedure": "DASAN-TERM-6.6",
+        "evidence": {
+          "신청서": true,
+          "신분증": true,
+          "연령을 확인할 수 있는 서류": true,
+          "미취업 상태를 확인할 수 있는 서류": true,
+          "입금 계좌 정보": true
+        },
+        "expected_verdict": "complete",
+        "expected_missing": [],
+        "source": "DASAN-TERM-6.6"
+      },
+      "source": "authored",
+      "notes": "미취업 청년 지원금 문의 — 상담원이 필수 서류 5종을 전부 안내했다 → complete."
+    },
+    {
+      "id": "GS-680",
+      "module": "F-2",
+      "domain": "dasan",
+      "expected_doc_ids": [],
+      "distractor_doc_ids": [],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": {
+        "procedure": "DASAN-TERM-6.6",
+        "evidence": {
+          "신청서": true,
+          "신분증": true,
+          "연령을 확인할 수 있는 서류": false,
+          "미취업 상태를 확인할 수 있는 서류": true,
+          "입금 계좌 정보": true
+        },
+        "expected_verdict": "incomplete",
+        "expected_missing": [
+          "연령을 확인할 수 있는 서류"
+        ],
+        "source": "DASAN-TERM-6.6"
+      },
+      "source": "authored",
+      "notes": "미취업 청년 지원금 문의 — 「연령을 확인할 수 있는 서류」만 안내하지 않았다 → incomplete, missing 1건."
+    },
+    {
+      "id": "GS-681",
+      "module": "F-2",
+      "domain": "dasan",
+      "expected_doc_ids": [],
+      "distractor_doc_ids": [],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": {
+        "procedure": "DASAN-TERM-6.6",
+        "evidence": {},
+        "expected_verdict": "incomplete",
+        "expected_missing": [
+          "신청서",
+          "신분증",
+          "연령을 확인할 수 있는 서류",
+          "미취업 상태를 확인할 수 있는 서류",
+          "입금 계좌 정보"
+        ],
+        "source": "DASAN-TERM-6.6"
+      },
+      "source": "authored",
+      "notes": "미취업 청년 지원금 문의 — 서류 안내가 전혀 없었다(증거 비어 있음) → 필수 5종 전부 missing, 선언 순서대로."
+    },
+    {
+      "id": "GS-682",
+      "module": "F-2",
+      "domain": "dasan",
+      "expected_doc_ids": [],
+      "distractor_doc_ids": [],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": {
+        "procedure": "DASAN-TERM-6.7",
+        "evidence": {
+          "신청서": true,
+          "신청인 신분증": true,
+          "아동과의 관계를 확인할 수 있는 서류": true,
+          "입금 계좌 정보": true
+        },
+        "expected_verdict": "complete",
+        "expected_missing": [],
+        "source": "DASAN-TERM-6.7"
+      },
+      "source": "authored",
+      "notes": "아동돌봄 지원 문의 — 상담원이 필수 서류 4종을 전부 안내했다 → complete."
+    },
+    {
+      "id": "GS-683",
+      "module": "F-2",
+      "domain": "dasan",
+      "expected_doc_ids": [],
+      "distractor_doc_ids": [],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": {
+        "procedure": "DASAN-TERM-6.7",
+        "evidence": {
+          "신청서": true,
+          "신청인 신분증": true,
+          "아동과의 관계를 확인할 수 있는 서류": false,
+          "입금 계좌 정보": true
+        },
+        "expected_verdict": "incomplete",
+        "expected_missing": [
+          "아동과의 관계를 확인할 수 있는 서류"
+        ],
+        "source": "DASAN-TERM-6.7"
+      },
+      "source": "authored",
+      "notes": "아동돌봄 지원 문의 — 「아동과의 관계를 확인할 수 있는 서류」만 안내하지 않았다 → incomplete, missing 1건."
+    },
+    {
+      "id": "GS-684",
+      "module": "F-2",
+      "domain": "dasan",
+      "expected_doc_ids": [],
+      "distractor_doc_ids": [],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": {
+        "procedure": "DASAN-TERM-6.7",
+        "evidence": {
+          "신청서": false,
+          "신청인 신분증": false,
+          "아동과의 관계를 확인할 수 있는 서류": false,
+          "입금 계좌 정보": false
+        },
+        "expected_verdict": "incomplete",
+        "expected_missing": [
+          "신청서",
+          "신청인 신분증",
+          "아동과의 관계를 확인할 수 있는 서류",
+          "입금 계좌 정보"
+        ],
+        "source": "DASAN-TERM-6.7"
+      },
+      "source": "authored",
+      "notes": "아동돌봄 지원 문의 — 서류 안내가 전혀 없었다(전부 false) → 필수 4종 전부 missing, 선언 순서대로."
+    },
+    {
+      "id": "GS-685",
+      "module": "F-2",
+      "domain": "dasan",
+      "expected_doc_ids": [],
+      "distractor_doc_ids": [],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": {
+        "procedure": "DASAN-TERM-6.9",
+        "evidence": {
+          "이의신청서": true,
+          "소명 자료": true,
+          "신분증": true
+        },
+        "expected_verdict": "complete",
+        "expected_missing": [],
+        "source": "DASAN-TERM-6.9"
+      },
+      "source": "authored",
+      "notes": "지원금 부적격 통보 이의신청 문의 — 상담원이 필수 서류 3종을 전부 안내했다 → complete."
+    },
+    {
+      "id": "GS-686",
+      "module": "F-2",
+      "domain": "dasan",
+      "expected_doc_ids": [],
+      "distractor_doc_ids": [],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": {
+        "procedure": "DASAN-TERM-6.9",
+        "evidence": {
+          "이의신청서": false,
+          "소명 자료": true,
+          "신분증": true
+        },
+        "expected_verdict": "incomplete",
+        "expected_missing": [
+          "이의신청서"
+        ],
+        "source": "DASAN-TERM-6.9"
+      },
+      "source": "authored",
+      "notes": "지원금 부적격 통보 이의신청 문의 — 「이의신청서」만 안내하지 않았다 → incomplete, missing 1건."
+    },
+    {
+      "id": "GS-687",
+      "module": "F-2",
+      "domain": "dasan",
+      "expected_doc_ids": [],
+      "distractor_doc_ids": [],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": {
+        "procedure": "DASAN-TERM-6.9",
+        "evidence": {
+          "이의신청서": false,
+          "소명 자료": false,
+          "신분증": false
+        },
+        "expected_verdict": "incomplete",
+        "expected_missing": [
+          "이의신청서",
+          "소명 자료",
+          "신분증"
+        ],
+        "source": "DASAN-TERM-6.9"
+      },
+      "source": "authored",
+      "notes": "지원금 부적격 통보 이의신청 문의 — 서류 안내가 전혀 없었다(전부 false) → 필수 3종 전부 missing, 선언 순서대로."
+    },
+    {
+      "id": "GS-688",
+      "module": "F-2",
+      "domain": "dasan",
+      "expected_doc_ids": [],
+      "distractor_doc_ids": [],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": {
+        "procedure": "DASAN-TERM-2.5",
+        "evidence": {
+          "진단서 또는 소견서": true,
+          "위임장": true,
+          "대리인 신분증": true
+        },
+        "expected_verdict": "incomplete",
+        "expected_missing": [
+          "신청서",
+          "신분증",
+          "장애인등록증 또는 복지카드",
+          "보행상 장애 판정을 확인할 수 있는 서류"
+        ],
+        "source": "DASAN-TERM-2.5"
+      },
+      "source": "authored",
+      "notes": "경계 — 장애인콜택시 등록 문의에서 상담원이 조건부 서류(진단서·위임장)만 안내하고 기본 서류는 하나도 안내하지 않았다. 조건부는 판정에 들어가지 않으므로 필수 4종 전부 missing."
+    },
+    {
+      "id": "GS-689",
+      "module": "F-2",
+      "domain": "dasan",
+      "expected_doc_ids": [],
+      "distractor_doc_ids": [],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": {
+        "procedure": "DASAN-TERM-4.4",
+        "evidence": {
+          "신고서": true,
+          "신분증": true
+        },
+        "expected_verdict": "incomplete",
+        "expected_missing": [
+          "신고인 신분증"
+        ],
+        "source": "DASAN-TERM-4.4"
+      },
+      "source": "authored",
+      "notes": "경계 — 전입신고 문의. 규칙표의 서류 이름은 「신고인 신분증」인데 증거 키가 「신분증」이다. 키는 글자 그대로 같아야 하므로 안내로 세지 않는다 → 신고인 신분증 missing."
+    },
+    {
+      "id": "GS-690",
+      "module": "F-2",
+      "domain": "dasan",
+      "expected_doc_ids": [],
+      "distractor_doc_ids": [],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": {
+        "procedure": "DASAN-TERM-4.13",
+        "evidence": {
+          "신청서": true,
+          "신청인 신분증": true,
+          "아동과의 관계를 확인할 수 있는 서류": true,
+          "입금 계좌 정보": true,
+          "가족관계증명서": true,
+          "여권": true
+        },
+        "expected_verdict": "complete",
+        "expected_missing": [],
+        "source": "DASAN-TERM-4.13"
+      },
+      "source": "authored",
+      "notes": "경계 — 아동수당 문의. 규칙표에 없는 키(가족관계증명서·여권)가 섞여 있어도 무시되고, 필수 4종이 전부 True 라 complete."
+    },
+    {
+      "id": "GS-691",
+      "module": "F-2",
+      "domain": "dasan",
+      "expected_doc_ids": [],
+      "distractor_doc_ids": [],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": {
+        "procedure": "DASAN-TERM-6.2",
+        "evidence": {
+          "신청서": true,
+          "신청인 신분증": false,
+          "가구 구성을 확인할 수 있는 서류": true,
+          "입금 계좌 정보": false
+        },
+        "expected_verdict": "incomplete",
+        "expected_missing": [
+          "신청인 신분증",
+          "입금 계좌 정보"
+        ],
+        "source": "DASAN-TERM-6.2"
+      },
+      "source": "authored",
+      "notes": "경계 — 재난지원금 문의에서 둘이 빠졌다. missing 은 규칙표 선언 순서(신청인 신분증 → 입금 계좌 정보)로 나와야 한다."
+    },
+    {
+      "id": "GS-692",
+      "module": "F-2",
+      "domain": "dasan",
+      "expected_doc_ids": [],
+      "distractor_doc_ids": [],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": {
+        "procedure": "DASAN-TERM-3.5",
+        "evidence": {
+          "신청서": true,
+          "신분증": true,
+          "소유 또는 점유 관계를 확인할 수 있는 서류": true
+        },
+        "expected_verdict": "incomplete",
+        "expected_missing": [
+          "신규 사용자 신분증"
+        ],
+        "source": "DASAN-TERM-3.5"
+      },
+      "source": "authored",
+      "notes": "경계 — 수도 명의변경 문의. 「신규 사용자 신분증」을 「신분증」 키로 넣었다 → 이름이 다르므로 missing."
+    },
+    {
+      "id": "GS-693",
+      "module": "F-2",
+      "domain": "dasan",
+      "expected_doc_ids": [],
+      "distractor_doc_ids": [],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": {
+        "procedure": "DASAN-TERM-5.9",
+        "evidence": {
+          "지원 신청서": true,
+          "사업자등록증": true,
+          "유급휴가 부여를 확인할 수 있는 서류": true,
+          "급여 지급을 확인할 수 있는 서류": false,
+          "입금 계좌 정보": true,
+          "근로계약서": true
+        },
+        "expected_verdict": "incomplete",
+        "expected_missing": [
+          "급여 지급을 확인할 수 있는 서류"
+        ],
+        "source": "DASAN-TERM-5.9"
+      },
+      "source": "authored",
+      "notes": "경계 — 유급휴가비용 지원 문의. 규칙표에 없는 「근로계약서」는 무시되고, 급여 지급 확인 서류 하나가 false 라 그것만 missing."
+    },
+    {
+      "id": "GS-694",
+      "module": "F-2",
+      "domain": "dasan",
+      "expected_doc_ids": [],
+      "distractor_doc_ids": [],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": {
+        "procedure": "DASAN-TERM-4.12",
+        "evidence": {
+          "신청서": true,
+          "주민등록등본": true,
+          "장애인등록증": true
+        },
+        "expected_verdict": "incomplete",
+        "expected_missing": [
+          "감면 사유를 확인할 수 있는 증명서"
+        ],
+        "source": "DASAN-TERM-4.12"
+      },
+      "source": "authored",
+      "notes": "경계 — 지방세 감면 문의. 상담원이 사유별 구체 증명서 이름(등본·장애인등록증)만 말했고 규칙표 이름 「감면 사유를 확인할 수 있는 증명서」 키는 없다 → missing. ⚠ 실제 안내로는 충분할 수 있다 — 이 게이트는 evidence 키로만 판정한다는 한계를 드러내는 케이스."
+    },
+    {
+      "id": "GS-695",
+      "module": "F-2",
+      "domain": "dasan",
+      "expected_doc_ids": [],
+      "distractor_doc_ids": [],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": {
+        "procedure": "DASAN-TERM-6.9",
+        "evidence": {
+          "이의신청서": false,
+          "소명 자료": true,
+          "신분증": true
+        },
+        "expected_verdict": "incomplete",
+        "expected_missing": [
+          "이의신청서"
+        ],
+        "source": "DASAN-TERM-6.9"
+      },
+      "source": "authored",
+      "notes": "경계 — 이의신청 문의에서 첫 번째 서류(이의신청서)만 빠졌다 → missing 1건, 첫 자리."
+    },
+    {
+      "id": "GS-696",
+      "module": "F-2",
+      "domain": "dasan",
+      "expected_doc_ids": [],
+      "distractor_doc_ids": [],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": {
+        "procedure": "DASAN-TERM-4.3",
+        "evidence": {
+          "위임장": true,
+          "위임인 신분증 사본": true,
+          "대리인 신분증": true
+        },
+        "expected_verdict": "incomplete",
+        "expected_missing": [
+          "신분증"
+        ],
+        "source": "DASAN-TERM-4.3"
+      },
+      "source": "authored",
+      "notes": "경계 — 초본 대리 발급 문의. 대리 서류(조건부)만 안내하고 본인 신분증 안내가 없다 → 신분증 missing."
+    },
+    {
+      "id": "GS-697",
+      "module": "F-2",
+      "domain": "dasan",
+      "expected_doc_ids": [],
+      "distractor_doc_ids": [],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": {
+        "procedure": "DASAN-TERM-6.4",
+        "evidence": {
+          "신청서": true,
+          "사업자등록증": true,
+          "신분증": true,
+          "매출 감소를 확인할 수 있는 서류": true,
+          "입금 계좌 정보": true
+        },
+        "expected_verdict": "incomplete",
+        "expected_missing": [
+          "대표자 신분증"
+        ],
+        "source": "DASAN-TERM-6.4"
+      },
+      "source": "authored",
+      "notes": "경계 — 소상공인 지원금 문의. 「대표자 신분증」을 「신분증」 키로 넣었다 → missing."
+    },
+    {
+      "id": "GS-698",
+      "module": "F-2",
+      "domain": "dasan",
+      "expected_doc_ids": [],
+      "distractor_doc_ids": [],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": {
+        "procedure": "DASAN-TERM-2.9",
+        "evidence": {
+          "신분증": true,
+          "위임장": false,
+          "대리인 신분증": false
+        },
+        "expected_verdict": "complete",
+        "expected_missing": [],
+        "source": "DASAN-TERM-2.9"
+      },
+      "source": "authored",
+      "notes": "경계 — 분실물 수령 문의. 조건부 서류(위임장·대리인 신분증)가 false 여도 판정과 무관하다. 필수 신분증이 True 라 complete."
+    },
+    {
+      "id": "GS-699",
+      "module": "F-2",
+      "domain": "dasan",
+      "expected_doc_ids": [],
+      "distractor_doc_ids": [],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": {
+        "procedure": "DASAN-TERM-3.8",
+        "evidence": {
+          "신청서": true,
+          "신분증": true,
+          "세대 구성을 확인할 수 있는 서류": false,
+          "건축물 현황을 확인할 수 있는 서류": false
+        },
+        "expected_verdict": "incomplete",
+        "expected_missing": [
+          "세대 구성을 확인할 수 있는 서류",
+          "건축물 현황을 확인할 수 있는 서류"
+        ],
+        "source": "DASAN-TERM-3.8"
+      },
+      "source": "authored",
+      "notes": "경계 — 세대분할 문의. 뒤의 둘이 빠졌다 → missing 2건, 선언 순서."
+    },
+    {
+      "id": "GS-701",
+      "module": "B-6",
+      "domain": "dasan",
+      "customer_utterance": "여권 유효기간이 지났는데 재발급 받으려면 어디로 가야 하나요",
+      "context_utterances": [],
+      "expected_doc_ids": [],
+      "distractor_doc_ids": [],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": null,
+      "call_guard": null,
+      "no_answer_category": "other_agency",
+      "source": "authored",
+      "notes": "타 기관 소관 — 외교부(구·군 여권민원실). 지식베이스에서 「여권」은 1.4·1.5 에 신분증 종류로만 나온다. 재발급 절차 조항 없음."
+    },
+    {
+      "id": "GS-702",
+      "module": "B-6",
+      "domain": "dasan",
+      "customer_utterance": "운전면허 적성검사 기간을 놓쳤는데 갱신은 어떻게 하나요",
+      "context_utterances": [],
+      "expected_doc_ids": [],
+      "distractor_doc_ids": [],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": null,
+      "call_guard": null,
+      "no_answer_category": "other_agency",
+      "source": "authored",
+      "notes": "타 기관 소관 — 경찰청·도로교통공단. 「운전면허증」은 1.4 신분증 종류로만 등장. 「적성검사」 0건."
+    },
+    {
+      "id": "GS-703",
+      "module": "B-6",
+      "domain": "dasan",
+      "customer_utterance": "국민연금은 몇 살부터 받을 수 있나요",
+      "context_utterances": [],
+      "expected_doc_ids": [],
+      "distractor_doc_ids": [],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": null,
+      "call_guard": null,
+      "no_answer_category": "other_agency",
+      "source": "authored",
+      "notes": "타 기관 소관 — 국민연금공단. 「연금」 0건."
+    },
+    {
+      "id": "GS-704",
+      "module": "B-6",
+      "domain": "dasan",
+      "customer_utterance": "이번 달 건강보험료가 갑자기 올랐는데 왜 그런 건가요",
+      "context_utterances": [],
+      "expected_doc_ids": [],
+      "distractor_doc_ids": [],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": null,
+      "call_guard": null,
+      "no_answer_category": "other_agency",
+      "source": "authored",
+      "notes": "타 기관 소관 — 국민건강보험공단. 「건강보험」 0건."
+    },
+    {
+      "id": "GS-705",
+      "module": "B-6",
+      "domain": "dasan",
+      "customer_utterance": "종합소득세 신고는 언제까지 해야 하나요",
+      "context_utterances": [],
+      "expected_doc_ids": [],
+      "distractor_doc_ids": [],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": null,
+      "call_guard": null,
+      "no_answer_category": "other_agency",
+      "source": "authored",
+      "notes": "타 기관 소관 — 국세청(세무서). 4.7 지방세 일반 안내는 취득세·재산세·자동차세·주민세만 다루고 국세 언급이 없다. 「소득세」·「국세」 0건."
+    },
+    {
+      "id": "GS-706",
+      "module": "B-6",
+      "domain": "dasan",
+      "customer_utterance": "전기요금 고지서를 못 받았는데 얼마 나왔는지 확인할 수 있나요",
+      "context_utterances": [],
+      "expected_doc_ids": [],
+      "distractor_doc_ids": [],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": null,
+      "call_guard": null,
+      "no_answer_category": "other_agency",
+      "source": "authored",
+      "notes": "타 기관 소관 — 한국전력. 「전기」 0건. 3.3 상수도 요금 조회·6.8 공공요금 감면과 「요금·고지서」 어휘만 겹치는 하드 네거티브."
+    },
+    {
+      "id": "GS-707",
+      "module": "B-6",
+      "domain": "dasan",
+      "customer_utterance": "이사 가는데 도시가스 전출 신청은 어디에 하면 되나요",
+      "context_utterances": [],
+      "expected_doc_ids": [],
+      "distractor_doc_ids": [],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": null,
+      "call_guard": null,
+      "no_answer_category": "other_agency",
+      "source": "authored",
+      "notes": "타 기관 소관 — 도시가스 공급사. 「가스」 0건. 4.4 전입신고와 「이사·신청」 어휘가 겹친다."
+    },
+    {
+      "id": "GS-708",
+      "module": "B-6",
+      "domain": "dasan",
+      "customer_utterance": "집 인터넷 해지하면 위약금이 얼마나 나오나요",
+      "context_utterances": [],
+      "expected_doc_ids": [],
+      "distractor_doc_ids": [],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": null,
+      "call_guard": null,
+      "no_answer_category": "other_agency",
+      "source": "authored",
+      "notes": "타 기관 소관 — 통신사. 「인터넷」·「위약금」 0건. 6.8 통신비 감면은 취약계층 요금 감면이라 답이 아니다."
+    },
+    {
+      "id": "GS-709",
+      "module": "B-6",
+      "domain": "dasan",
+      "customer_utterance": "택배가 분실됐다고 하는데 보상은 어떻게 받나요",
+      "context_utterances": [],
+      "expected_doc_ids": [],
+      "distractor_doc_ids": [],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": null,
+      "call_guard": null,
+      "no_answer_category": "other_agency",
+      "source": "authored",
+      "notes": "타 기관 소관 — 택배사·한국소비자원. 4.19 여성안심택배(보관함 등록)·2.9 대중교통 분실물과 「택배·분실」 어휘가 겹치는 하드 네거티브. 「보상」 0건."
+    },
+    {
+      "id": "GS-710",
+      "module": "B-6",
+      "domain": "dasan",
+      "customer_utterance": "회사를 그만뒀는데 실업급여 신청은 어떻게 하나요",
+      "context_utterances": [],
+      "expected_doc_ids": [],
+      "distractor_doc_ids": [],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": null,
+      "call_guard": null,
+      "no_answer_category": "other_agency",
+      "source": "authored",
+      "notes": "타 기관 소관 — 고용노동부 고용센터. 6장은 재난·생계 지원금이고 실업급여 조항은 없다. 「실업」 0건."
+    },
+    {
+      "id": "GS-711",
+      "module": "B-6",
+      "domain": "dasan",
+      "customer_utterance": "등기우편 보낸 게 어디까지 갔는지 조회하려면요",
+      "context_utterances": [],
+      "expected_doc_ids": [],
+      "distractor_doc_ids": [],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": null,
+      "call_guard": null,
+      "no_answer_category": "other_agency",
+      "source": "authored",
+      "notes": "타 기관 소관 — 우체국(우정사업본부). 「등기」는 3.5 의 등기사항증명서뿐."
+    },
+    {
+      "id": "GS-712",
+      "module": "B-6",
+      "domain": "dasan",
+      "customer_utterance": "접촉사고가 났는데 자동차 보험 접수는 어떻게 하나요",
+      "context_utterances": [],
+      "expected_doc_ids": [],
+      "distractor_doc_ids": [],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": null,
+      "call_guard": null,
+      "no_answer_category": "other_agency",
+      "source": "authored",
+      "notes": "타 기관 소관 — 보험사. 「사고」 0건, 「보험」은 6.3 고용보험 1건뿐. 4.8 자동차세와 「자동차」만 겹친다."
+    },
+    {
+      "id": "GS-713",
+      "module": "B-6",
+      "domain": "dasan",
+      "customer_utterance": "예비군 훈련 날짜를 연기하려면 어떻게 하나요",
+      "context_utterances": [],
+      "expected_doc_ids": [],
+      "distractor_doc_ids": [],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": null,
+      "call_guard": null,
+      "no_answer_category": "other_agency",
+      "source": "authored",
+      "notes": "타 기관 소관 — 병무청·관할 예비군부대. 「예비군」·「병역」 0건."
+    },
+    {
+      "id": "GS-714",
+      "module": "B-6",
+      "domain": "dasan",
+      "customer_utterance": "대학병원 진료 예약을 대신 잡아 주실 수 있나요",
+      "context_utterances": [],
+      "expected_doc_ids": [],
+      "distractor_doc_ids": [],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": null,
+      "call_guard": null,
+      "no_answer_category": "other_agency",
+      "source": "authored",
+      "notes": "타 기관 소관 — 해당 병원. 「병원」 0건. 5.4 검사·진단 안내는 감염병 검사 안내라 답이 아니다. 「예약」은 4.17 대관·5.7 접종 예약에만."
+    },
+    {
+      "id": "GS-715",
+      "module": "B-6",
+      "domain": "dasan",
+      "customer_utterance": "통장 새로 만들려면 뭐가 필요한가요",
+      "context_utterances": [],
+      "expected_doc_ids": [],
+      "distractor_doc_ids": [],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": null,
+      "call_guard": null,
+      "no_answer_category": "other_agency",
+      "source": "authored",
+      "notes": "타 기관 소관 — 은행. 「통장」은 3.4 자동납부 서류(통장 사본)로만 등장. 「~하려면 뭐가 필요한가요」가 필요서류 조항 56건과 같은 문형이라 가장 강한 하드 네거티브."
+    },
+    {
+      "id": "GS-716",
+      "module": "B-6",
+      "domain": "dasan",
+      "customer_utterance": "시 공무원 9급 시험 원서 접수가 언제인가요",
+      "context_utterances": [],
+      "expected_doc_ids": [],
+      "distractor_doc_ids": [],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": null,
+      "call_guard": null,
+      "no_answer_category": "outside_dasan",
+      "source": "authored",
+      "notes": "다산 범위 밖 시 업무 — 시 인사위원회 시험 공고. 「채용」·「시험」 0건."
+    },
+    {
+      "id": "GS-717",
+      "module": "B-6",
+      "domain": "dasan",
+      "customer_utterance": "시에서 발주하는 공사 입찰 공고는 어디서 보나요",
+      "context_utterances": [],
+      "expected_doc_ids": [],
+      "distractor_doc_ids": [],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": null,
+      "call_guard": null,
+      "no_answer_category": "outside_dasan",
+      "source": "authored",
+      "notes": "다산 범위 밖 시 업무 — 계약 부서·나라장터. 「입찰」 0건."
+    },
+    {
+      "id": "GS-718",
+      "module": "B-6",
+      "domain": "dasan",
+      "customer_utterance": "오늘 저녁에 비 온다는데 우산 챙겨야 할까요",
+      "context_utterances": [],
+      "expected_doc_ids": [],
+      "distractor_doc_ids": [],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": null,
+      "call_guard": null,
+      "no_answer_category": "chit_chat",
+      "source": "authored",
+      "notes": "잡담 — 기상청. 4.22 문화행사의 「우천」 한 단어만 있다."
+    },
+    {
+      "id": "GS-719",
+      "module": "B-6",
+      "domain": "dasan",
+      "customer_utterance": "시청 근처에 점심 먹을 만한 냉면집 좀 추천해 주세요",
+      "context_utterances": [],
+      "expected_doc_ids": [],
+      "distractor_doc_ids": [],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": null,
+      "call_guard": null,
+      "no_answer_category": "chit_chat",
+      "source": "authored",
+      "notes": "잡담 — 맛집 추천. MANUAL-2.2 가 「특정 사업자를 지목해 알선하지 않는다」고 하지만 그것은 응대 규칙이지 답이 아니다."
+    },
+    {
+      "id": "GS-720",
+      "module": "B-6",
+      "domain": "dasan",
+      "customer_utterance": "이번 주 로또 1등 당첨금이 얼마예요",
+      "context_utterances": [],
+      "expected_doc_ids": [],
+      "distractor_doc_ids": [],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": null,
+      "call_guard": null,
+      "no_answer_category": "chit_chat",
+      "source": "authored",
+      "notes": "잡담 — 동행복권. 「로또」·「당첨」 0건."
+    },
+    {
+      "id": "GS-721",
+      "module": "B-6",
+      "domain": "dasan",
+      "customer_utterance": "오늘 프로야구 경기 몇 시에 시작하나요",
+      "context_utterances": [],
+      "expected_doc_ids": [],
+      "distractor_doc_ids": [],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": null,
+      "call_guard": null,
+      "no_answer_category": "chit_chat",
+      "source": "authored",
+      "notes": "잡담 — KBO. 「야구」·「경기」 0건."
+    },
+    {
+      "id": "GS-722",
+      "module": "B-6",
+      "domain": "dasan",
+      "customer_utterance": "강아지 동물등록은 어디서 하나요",
+      "context_utterances": [],
+      "expected_doc_ids": [],
+      "distractor_doc_ids": [],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": null,
+      "call_guard": null,
+      "no_answer_category": "kb_gap",
+      "source": "authored",
+      "notes": "지식베이스 공백 — 실제로는 구 동물보호 담당(120 이 답하는 업무)이지만 지식베이스에 조항이 없다. D-4 공백 리포트가 잡아야 할 유형. 「동물」 0건."
+    },
+    {
+      "id": "GS-723",
+      "module": "B-6",
+      "domain": "dasan",
+      "customer_utterance": "장롱 버리려면 스티커는 어디서 사요",
+      "context_utterances": [],
+      "expected_doc_ids": [],
+      "distractor_doc_ids": [],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": null,
+      "call_guard": null,
+      "no_answer_category": "kb_gap",
+      "source": "authored",
+      "notes": "지식베이스 공백 — 구 청소행정과(대형폐기물 배출). 4.21 은 쓰레기 무단투기 **신고** 접수라 답이 아니다. 「폐기물」·「스티커」 0건."
+    },
+    {
+      "id": "GS-724",
+      "module": "B-6",
+      "domain": "dasan",
+      "customer_utterance": "혼인신고 하려면 뭘 챙겨가야 하나요",
+      "context_utterances": [],
+      "expected_doc_ids": [],
+      "distractor_doc_ids": [],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": null,
+      "call_guard": null,
+      "no_answer_category": "kb_gap",
+      "source": "authored",
+      "notes": "지식베이스 공백 — 구 가족관계등록 담당. 「혼인」은 4.15 의 혼인 기간뿐. 4.4 전입신고·4.1 증명서 발급과 「신고·서류」 문형이 겹치는 하드 네거티브."
     }
-  ]
+  ],
+  "note_2026_09_21": "F-2 필요서류 체크리스트 케이스 99건(GS-601~GS-699, module F-2)을 더했다 — `w5-f2-golden-cases`. 규칙표(`server/apps/closure_gate/domain/value_objects/closure_rule.py`) 29조항마다 ① 전부 안내 → complete ② 하나 빠짐 → incomplete ③ 아무것도 안내 안 됨 → 전부 missing 의 3건(87건) + 경계 12건(조건부만 안내·키 이름 불일치·규칙표에 없는 키·복수 누락 순서). 기대값은 규칙표를 읽고 사람이 정한 뒤 코드와 대조했다(어긋남 0건). `EXCLUDED` 6조항(1.3·1.4·3.4·3.6·6.5·6.8)은 규칙이 없어 채점 대상이 아니다. ⚠ 규칙표 작성자(장민석)와 케이스 작성자(류준)는 다르지만, 기대값을 규칙표 자체에서 정했으므로 이 수치는 「규칙표를 코드가 그대로 따르는가」의 상한이지 「안내가 실제로 충분했는가」의 측정이 아니다. 기존 156건은 한 글자도 고치지 않았다.",
+  "note_2026_09_21_b6": "B-6 「관련 문서 없음」 케이스 24건(GS-701~GS-724, module B-6)을 더했다 — `w5-b6-no-answer-threshold`. 전부 `expected_doc_ids: []` 이고 지식베이스(98조항)를 grep 으로 대조해 관련 조항이 정말 없는 것만 골랐다. **`module: \"B\"` 가 아니다** — `metrics/retrieval.py` 의 `hit_at_k` 는 정답이 빈 항목을 True 로 치고 `aggregate_recall_mrr` 은 분모에서 빼므로, B 로 넣으면 기존 96건 수치가 흔들리거나 부풀려진다(6주차 판정 직전, `decisions/123` 과 같은 이유). 하네스는 이 항목을 `no_answer` 섹션으로 따로 센다. 일부만 겹치는 후보(청약·층간소음·항공권·휴대폰 분실·등기부등본 등)는 넣지 않았다 — 목록은 golden-set/README.md. 기존 255건은 한 글자도 고치지 않았다."
 }

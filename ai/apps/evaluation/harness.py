@@ -2,7 +2,7 @@
 """평가 하네스 골격 — [팀 분업 7.2절] 1주차엔 류준이 설계만 하고 이후 운영은 정성윤이
 맡는다. 이 파일이 그 "설계"에 해당한다.
 
-스포크(도메인 라우팅·검색·트리거·컴플라이언스·마스킹·F-2)의 접점은 **hub 아웃바운드 포트 하나뿐**이다
+스포크(도메인 라우팅·검색·트리거·컴플라이언스·마스킹·F-2·C-6·D-5)의 접점은 **hub 아웃바운드 포트 하나뿐**이다
 (apps/hub/app/ports/output/ — 2026-08-26 계약 이중화 해소). 스포크가 구현한 포트 객체를 `Ports(...)`에
 꽂으면 골든셋으로 채점한다. 아직 구현이 없는 포트는 `None`으로 둬 "측정 불가 — 미구현"으로
 정직하게 보고한다(목표 수치를 지어내지 않는다 — 6.2절 원칙 5).
@@ -14,7 +14,8 @@ async 포트(검색·컴플라이언스)는 여기서 `asyncio.run` 으로 돌�
 from __future__ import annotations
 
 import asyncio
-from dataclasses import dataclass
+import statistics
+from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Awaitable, TypeVar
 
@@ -26,9 +27,11 @@ from hub.app.ports.output.domain_routing_port import DomainRoutingPort
 from hub.app.ports.output.masking_port import MaskingPort
 from hub.app.ports.output.retrieval_port import RetrievalPort
 from hub.app.ports.output.trigger_port import TriggerPort
+from hub.app.ports.output.voice_outlier_port import VoiceOutlierPort
 
 from .golden_set import GoldenItem, load_golden_set
 from .metrics import call_guard as call_guard_metrics
+from .metrics import call_temperature as call_temperature_metrics
 from .metrics import closure_gate as closure_gate_metrics
 from .metrics import compliance as compliance_metrics
 from .metrics import domain_routing as domain_routing_metrics
@@ -56,6 +59,7 @@ class Ports:
     masking: MaskingPort | None = None
     closure_gate: ClosureGatePort | None = None
     call_guard: CallGuardPort | None = None
+    voice_outlier: VoiceOutlierPort | None = None  # D-5 통화 온도
 
 
 NOT_IMPLEMENTED = "측정 불가 — 모듈 미구현"
@@ -140,6 +144,38 @@ def run_eval(items: list[GoldenItem], ports: Ports) -> dict:
             docs = _run(ports.retrieval.retrieve(retrieval_query(it), top_k=5))
             pairs.append((it.expected_doc_ids, [d.doc_id for d in docs]))
         report["retrieval"] = retrieval_metrics.aggregate_recall_mrr(pairs)
+
+    # B-6: 「관련 문서 없음」 — 지식베이스에 정답이 없는 문의(`module: "B-6"`, `expected_doc_ids: []`).
+    # B 항목과 **섞지 않는다** — `hit_at_k` 는 정답이 빈 항목을 True 로 치고 `aggregate_recall_mrr` 은
+    # 분모에서 빼므로, B 로 넣으면 96건 수치가 흔들리거나 부풀려진다(6주차 판정 직전, `decisions/123` 과
+    # 같은 이유). 여기서는 판정하지 않고 두 가지만 센다 — ① 검색이 빈 결과를 돌려줘 「관련 문서 없음」으로
+    # 넘어간 건수(`abstained`) ② 1순위 점수 분포(min/median/max — BM25 raw · 코사인 · 리랭커 로짓 등
+    # 구성마다 눈금이 다르므로 구성 간 비교는 하지 않는다).
+    # ⚠ 2026-09-21 현재 검색에 점수 문턱이 없어 `abstained` 가 0 으로 나오는 것이 **정직한 값**이다 —
+    # 문턱 값은 `scripts/measure_no_answer_threshold.py` 의 분포 측정으로 팀이 정한다
+    # (`w5-b6-no-answer-threshold`). 문턱이 생기면 이 항목이 코드 변경 없이 그 효과를 찍는다.
+    b6_items = [it for it in items if it.module == "B-6"]
+    if ports.retrieval is None:
+        report["no_answer"] = NOT_IMPLEMENTED
+    elif not b6_items:
+        report["no_answer"] = NO_SAMPLES
+    else:
+        top1_scores: list[float] = []
+        abstained = 0
+        for it in b6_items:
+            docs = _run(ports.retrieval.retrieve(retrieval_query(it), top_k=5))
+            if not docs:
+                abstained += 1
+                continue
+            top1_scores.append(docs[0].score)
+        no_answer: dict = {"n": len(b6_items), "abstained": abstained}
+        if top1_scores:
+            no_answer["top1_score_min"] = min(top1_scores)
+            no_answer["top1_score_median"] = statistics.median(top1_scores)
+            no_answer["top1_score_max"] = max(top1_scores)
+        else:
+            no_answer["top1_score"] = "측정 불가 — 검색이 전부 기권해 점수가 없다"
+        report["no_answer"] = no_answer
 
     # B-1: 트리거 (utterance_end_ms 가 있는 항목만 채점 가능)
     # 허용 창(0~1,500ms)은 합/불 판정선일 뿐이므로, 판정 결과와 별개로 발동
@@ -269,6 +305,40 @@ def run_eval(items: list[GoldenItem], ports: Ports) -> dict:
                 )
             )
         report["closure_gate"] = closure_gate_metrics.score_closure_gate(predictions)
+
+    # D-5: 통화 온도 — 화자 자신의 기준선 대비 튄 발화(`decisions/203`). 판정은 `voice_signal`(규칙)이
+    # 하고 여기서는 라벨과 대조만 한다. 항목은 `call_temperature` 필드가 있는 것만 — 통화 1건·화자 1명이
+    # 케이스 1건이다.
+    #
+    # ⚠ 2026-09-21 배선 시점에 **음성 골든셋이 0건이다**(다산콜DB 는 발화 클립이라 통화 단위 기준선을
+    # 못 만든다, `w3-call-temperature`). 그래서 포트를 꽂아도 `NO_SAMPLES` 가 나오는 것이 정답이고,
+    # 「미구현」과 「표본 없음」을 갈라 찍는 것이 이 배선의 목적이다(절대 원칙 10). 통화 단위 + 톤
+    # 라벨이 생기면 이 분기를 타지 않게 되고 코드 변경 없이 채점된다.
+    d5_items = [it for it in items if it.call_temperature is not None]
+    if ports.voice_outlier is None:
+        report["call_temperature"] = NOT_IMPLEMENTED
+    elif not d5_items:
+        report["call_temperature"] = NO_SAMPLES
+    else:
+        cases = []
+        for it in d5_items:
+            gold = it.call_temperature
+            verdict = _run(
+                ports.voice_outlier.judge(call_id=it.id, speaker=gold.speaker, utterances=gold.utterances)
+            )
+            cases.append(
+                call_temperature_metrics.CallTemperatureCase(
+                    call_id=it.id,
+                    expected_outliers=frozenset(gold.expected_outliers),
+                    calm=frozenset(gold.calm),
+                    predicted_outliers=frozenset(o.segment_id for o in verdict.outliers),
+                    # 기준선을 못 만든 통화는 0 이 아니라 「판정하지 않음」으로 센다 — 채점기가 분모에서 뺀다
+                    judged=verdict.judged,
+                )
+            )
+        result = {"n": len(cases)}
+        result.update(asdict(call_temperature_metrics.score(cases)))
+        report["call_temperature"] = result
 
     return report
 

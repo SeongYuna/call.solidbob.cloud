@@ -55,6 +55,40 @@ class F2Case:
 
 
 @dataclass(frozen=True)
+class CallTemperatureGoldenCase:
+    """D-5 통화 온도 — **통화 1건·화자 1명**의 발화별 음성과 톤 라벨(`_project/decisions/203`).
+
+    `expected_outliers`(튀어야 할 발화)·`calm`(튀면 안 되는 발화)은 **`segment_id`** 로 적는다 —
+    `voice_signal` 이 돌려주는 `SegmentOutlier.segment_id` 와 같은 키다. 어느 쪽에도 없는 발화는
+    「애매한 턴」으로 채점에서 빠진다(`metrics/call_temperature.py`). 정답은 사람이 **음성을 듣고**
+    붙인 라벨이고, 특징값(F0·에너지)은 싣지 않는다 — 우리 추출기가 낸 값을 정답에 적어 두면
+    추출기를 고칠 때마다 정답이 낡는다. 오디오는 저작권·개인정보가 해결된 출처뿐이다(절대 원칙 7).
+
+    ⚠ **2026-09-21 현재 0건이다.** 다산콜DB 는 발화 클립이라 통화 단위 기준선을 만들 수 없다
+    (`w3-call-temperature`). 이 형식은 그 골든셋이 생겼을 때 코드 변경 없이 채점되게 하려고 먼저 둔다.
+    """
+
+    speaker: str  # "customer" | "agent"
+    utterances: list[tuple[int, str]]  # (segment_id, 오디오 경로 — JSON 파일 위치 기준 상대경로를 절대경로로 푼 것)
+    expected_outliers: list[int]
+    calm: list[int]
+    source: str | None = None
+
+    def __post_init__(self) -> None:
+        if self.speaker not in ("customer", "agent"):
+            raise ValueError(f"'{self.speaker}' 는 화자가 아닙니다 (customer | agent)")
+        ids = [sid for sid, _ in self.utterances]
+        if len(ids) != len(set(ids)):
+            raise ValueError("call_temperature.utterances 에 segment_id 가 겹친다")
+        overlap = set(self.expected_outliers) & set(self.calm)
+        if overlap:
+            raise ValueError(f"한 발화가 「튀어야 함」과 「차분함」 양쪽에 있다: {sorted(overlap)}")
+        unknown = (set(self.expected_outliers) | set(self.calm)) - set(ids)
+        if unknown:
+            raise ValueError(f"라벨이 가리키는 segment_id 가 utterances 에 없다: {sorted(unknown)}")
+
+
+@dataclass(frozen=True)
 class GoldenItem:
     id: str
     module: str
@@ -77,16 +111,38 @@ class GoldenItem:
     f2_case: F2Case | None = None
     # C-6 콜 가드 — 고객 발화의 폭언·위기 신호. 없으면 None(정상 발화).
     call_guard: "CallGuardCase | None" = None
+    # D-5 통화 온도 — 통화 단위 음성 + 톤 라벨. 없으면 None(기존 항목 전부).
+    call_temperature: CallTemperatureGoldenCase | None = None
     notes: str | None = None
 
 
+def _call_temperature_case(raw: dict, base_dir: Path) -> CallTemperatureGoldenCase:
+    """JSON 의 `call_temperature` → 케이스. 오디오 경로는 **골든셋 JSON 이 있는 디렉터리 기준**으로 푼다 —
+    음성은 `data/`(gitignore) 아래에 있어 저장소 밖 절대경로를 적을 수 없고, 실행 위치에 따라 달라지면 안 된다."""
+    utterances = []
+    for u in raw["utterances"]:
+        audio = Path(u["audio"])
+        if not audio.is_absolute():
+            audio = (base_dir / audio).resolve()
+        utterances.append((int(u["segment_id"]), str(audio)))
+    return CallTemperatureGoldenCase(
+        speaker=raw["speaker"],
+        utterances=utterances,
+        expected_outliers=[int(i) for i in raw.get("expected_outliers", [])],
+        calm=[int(i) for i in raw.get("calm", [])],
+        source=raw.get("source"),
+    )
+
+
 def load_golden_set(path: Path | str = DEFAULT_GOLDEN_SET_PATH) -> list[GoldenItem]:
-    raw = json.loads(Path(path).read_text(encoding="utf-8"))
+    path = Path(path)
+    raw = json.loads(path.read_text(encoding="utf-8"))
     items: list[GoldenItem] = []
     for entry in raw["items"]:
         cv = entry.get("compliance_violation")
         f2 = entry.get("f2_case")
         cg = entry.get("call_guard")
+        ct = entry.get("call_temperature")
         items.append(
             GoldenItem(
                 id=entry["id"],
@@ -107,6 +163,7 @@ def load_golden_set(path: Path | str = DEFAULT_GOLDEN_SET_PATH) -> list[GoldenIt
                 ],
                 f2_case=(F2Case(**f2) if f2 else None),
                 call_guard=(CallGuardCase(**cg) if cg else None),
+                call_temperature=(_call_temperature_case(ct, path.parent) if ct else None),
                 notes=entry.get("notes"),
             )
         )

@@ -95,12 +95,24 @@ Preview 이고 무료 한도가 1/4), 무료 한도가 가장 넓다. 대본 전
 - API 키 전달(헤더 `x-goog-api-key` 권장, URL `?key=` 는 유출 위험): https://docs.cloud.google.com/docs/authentication/api-keys-use
 - 할당량(요청당 5,000 바이트 · 분당 요청 수): https://docs.cloud.google.com/text-to-speech/quotas
 
-## 6. 아직 확인 못 한 것 (키가 없어서)
+## 6. 실제 키로 확인한 것 (2026-09-21) · 아직 확인 못 한 것
 
-- 실제 키로 한 번도 부르지 않았다 — REST 본문·헤더는 문서대로 맞췄고 가짜 `fetch` 로 테스트했다. **첫 실행은 `--prefetch SYN-001`(7턴)로
-  작게** 한 뒤 `data/processed/synthetic-voice/google/SYN-001/` 의 mp3 를 들어 본다.
-- WaveNet ko-KR 이 `<prosody volume="+8dB">` 를 실제로 얼마나 반영하는지(문서는 지원한다고만 적는다). 안 들리면 `google_tts.ts`
-  `TONE_PROSODY` 의 값을 키운다 — `personas.json` 톤 힌트와 함께 고친다.
+- ✅ **실제 키로 합성된다** — `--prefetch SYN-001` 7턴, 재실행은 캐시 적중으로 호출 0. 장부가 쌓인다.
+- ⚠ **WaveNet ko-KR 은 SSML `volume` 의 «올리기»(+dB)를 무시한다.** 같은 문장·같은 음성(`ko-KR-Wavenet-B`)으로 잰 값(`ffmpeg volumedetect`):
+
+  | SSML | 길이 | 평균 음량 |
+  |---|---|---|
+  | 평온(prosody 없음) | 5.47초 | -18.5 dB |
+  | `volume="+8dB"` 만 | 5.47초 | **-18.5 dB — 평온과 똑같다** |
+  | 고함 `rate 115% · pitch +5st · volume +8dB` | 4.77초 | -19.4 dB |
+  | 지침 `rate 85% · pitch -2st · volume -4dB` | 6.45초 | -23.5 dB |
+
+  속도·높이·**내리기**는 반영되고 올리기만 안 된다. 평온 합성이 이미 최대치 근처(-2.5 dBFS)라 더 키우면 찢어지기 때문으로 보인다.
+  → **기준(평온)을 -8 dB 로 낮추고** 다른 톤을 그 위아래에 두도록 `google_tts.ts` `TONE_PROSODY` 를 바꿨다. 같은 측정에서
+  평온 대비 격앙 **+3.8** · 고함 **+7.1** · 지침 **-5.0 dB**(의도 +4·+8·-4), 실제 대본 SYN-006 에서도 상담원 평온 턴 대비 고객 격앙 +4.1 · 고함 +6.6 dB(목소리가 달라 참고치).
+  `personas.json` 톤 힌트는 「평온 대비 dB」(의도)로 적고, 절대값은 코드가 정한다. **전체가 약 8 dB 작아지므로 시연 때 스피커 음량을 올린다.**
+- 미리 합성해 둔 대본(새 음량): SYN-001 · 004 · 006 · 010 · 013 · 020 · 024. 나머지는 재생 때 합성된다(`--speak google` 이 먼저 캐시를 채운다).
+- 사람 귀로는 아직 안 들었다 — 위는 음량 측정이다. 시연 전에 SYN-004·006 을 한 번 들어 본다.
 - 콘솔에서 문자 수 할당량을 **낮출 수 있는지**(§1-4) — 안 되면 예산 알림으로 대체.
 
 ## 7. `.env.example` 에 넣은 블록 (2026-09-18 반영됨)

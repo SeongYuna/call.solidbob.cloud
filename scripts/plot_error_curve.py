@@ -90,6 +90,7 @@ def draw(result: dict, out: Path, font: str | None) -> Path:
     for ax, panel in zip(axes, panels):
         ax.set_facecolor(SURFACE)
         series = result[panel]
+        placed: list[float] = []  # 끝점 라벨의 y (데이터 좌표) — 겹치면 아래로 비킨다
         for i, (name, rows) in enumerate(series.items()):
             color = SERIES_COLORS[i % len(SERIES_COLORS)]
             xs = [x_of(r) for r in rows]
@@ -99,7 +100,13 @@ def draw(result: dict, out: Path, font: str | None) -> Path:
                     markeredgecolor=SURFACE, markeredgewidth=1.2, label=name, zorder=3)
             # 계열이 넷 이하면 끝점에 이름을 직접 단다 — 색만으로 정체성을 주지 않는다
             if len(series) <= 4 and xs:
-                ax.annotate(name, (xs[-1], ys[-1]), textcoords="offset points", xytext=(6, 0),
+                # 두 계열이 같은 끝점에 닿으면(dense · rerank-dense 가 실제로 그랬다) 라벨이 포개져 읽히지 않는다.
+                # 값은 그대로 두고 **글자만** 한 줄씩 아래로 비킨다 — 점의 위치는 손대지 않는다.
+                span = (1.0 if panel == "retrieval"
+                        else max([int(r["max_miss_count"]) for rows_ in series.values() for r in rows_] + [1]))
+                dy = -10 * sum(1 for y0 in placed if abs(y0 - ys[-1]) < span * 0.04)
+                placed.append(ys[-1])
+                ax.annotate(name, (xs[-1], ys[-1]), textcoords="offset points", xytext=(6, dy),
                             va="center", fontsize=8, color=INK_SECONDARY)
 
         # 끝점 직접 라벨이 잘리지 않게 오른쪽에 여백을 둔다
@@ -147,15 +154,19 @@ def draw(result: dict, out: Path, font: str | None) -> Path:
               + (f"(흉내 못 내는 몫 {float(unmodeled) * 100:.1f}%)" if unmodeled is not None else "")
               + " — 같은 WER 에서 실제보다 덜 파괴적이라 이 곡선은 낙관 쪽으로 기운다.")
     stamp = " · ".join(str(meta.get(k)) for k in ("date", "commit", "golden_set") if meta.get(k))
+    # 명령이 길면(골든셋 절대 경로 등) 한 줄에 안 들어가 잘린다 — 줄을 바꿔 전부 남긴다(§5: 명령은 값에 붙는 넷 중 하나다)
+    import textwrap
+    footer = textwrap.fill(f"{stamp} · 시드 {meta.get('seeds')} · {meta.get('command', '')}", width=190)
+    extra_lines = footer.count("\n")
+    lift = 0.024 * extra_lines
     # 계열이 빠진 이유를 그림에 남긴다 — 「안 쟀다」와 「잴 수 없었다」는 읽는 사람에게 다른 정보다
     skipped = meta.get("skipped") or []
     if skipped:
-        fig.text(0.01, 0.078, "이 측정에서 빠진 계열(모델 파일이 없는 머신): " + " / ".join(skipped),
+        fig.text(0.01, 0.078 + lift, "이 측정에서 빠진 계열(모델 파일이 없는 머신): " + " / ".join(skipped),
                  fontsize=8, color=INK_SECONDARY)
-    fig.text(0.01, 0.045, caveat, fontsize=8, color=INK_SECONDARY)
-    fig.text(0.01, 0.012, f"{stamp} · 시드 {meta.get('seeds')} · {meta.get('command', '')}",
-             fontsize=7, color=INK_MUTED)
-    fig.subplots_adjust(left=0.075, right=0.975, top=0.86, bottom=0.25, wspace=0.26)
+    fig.text(0.01, 0.045 + lift, caveat, fontsize=8, color=INK_SECONDARY)
+    fig.text(0.01, 0.012, footer, fontsize=7, color=INK_MUTED, va="bottom")
+    fig.subplots_adjust(left=0.075, right=0.975, top=0.86, bottom=0.25 + lift, wspace=0.26)
 
     out.parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(out, facecolor=SURFACE)
