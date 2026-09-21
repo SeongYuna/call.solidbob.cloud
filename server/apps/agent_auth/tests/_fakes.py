@@ -16,7 +16,8 @@ NOW = datetime(2026, 9, 15, 12, 0, tzinfo=timezone.utc)
 
 class FakeAgentTokens(AgentTokenPort):
     def __init__(self, agents=("agent-7",)):
-        self.agents = set(agents)
+        """`agents=None` 이면 어떤 agent_id 든 받는다 — 발급 전에 디렉터리가 이미 만들어 둔 값이라 가정한다."""
+        self.agents = set(agents) if agents is not None else None
         self.rows: list[dict] = []
 
     def seed(self, agent_id: str, token: str) -> None:
@@ -29,7 +30,7 @@ class FakeAgentTokens(AgentTokenPort):
                               issued_at=row["issued_at"], revoked_at=row["revoked_at"])
 
     async def save(self, agent_id, token_hash, issued_by):
-        if agent_id not in self.agents:
+        if self.agents is not None and agent_id not in self.agents:
             raise UnknownAgentError(agent_id)
         row = {"id": len(self.rows) + 1, "agent_id": agent_id, "token_hash": token_hash,
                "issued_by": issued_by, "issued_at": NOW, "revoked_at": None}
@@ -53,6 +54,18 @@ class FakeAgentTokens(AgentTokenPort):
 class FakeAgentDirectory(AgentDirectoryPort):
     def __init__(self, agents: dict[str, str] | None = None) -> None:
         self.agents = agents or {}
+        self._created = 0
 
     async def list(self) -> list[AgentSummary]:
         return [AgentSummary(agent_id=aid, display_name=name) for aid, name in sorted(self.agents.items(), key=lambda kv: kv[1])]
+
+    async def resolve_or_create(self, identifier: str) -> AgentSummary:
+        if identifier in self.agents:
+            return AgentSummary(agent_id=identifier, display_name=self.agents[identifier])
+        for aid, name in self.agents.items():
+            if name == identifier:
+                return AgentSummary(agent_id=aid, display_name=name)
+        self._created += 1
+        new_id = f"agent-new-{self._created}"
+        self.agents[new_id] = identifier
+        return AgentSummary(agent_id=new_id, display_name=identifier)

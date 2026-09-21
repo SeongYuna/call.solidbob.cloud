@@ -1,5 +1,6 @@
 # Requirement: J-1, SEC-1, QUA-1
-"""HTTP 표면: 관리자만 발급·조회·폐기 · 원문 토큰은 발급 응답에만 · DB 없으면 501."""
+"""HTTP 표면: 관리자만 발급·조회·폐기 · 원문 토큰은 발급 응답에만 · DB 없으면 501.
+모르는 이름으로 발급하면 그 자리에서 상담원이 만들어진다(`decisions/406`)."""
 
 from fastapi.testclient import TestClient
 
@@ -7,10 +8,10 @@ from admin_auth.adapter.inbound.api.admin_guard import require_admin
 from admin_auth.app.dtos.admin_identity_dto import AdminAccount
 from admin_auth.app.ports.input.current_admin_use_case import CurrentAdminUseCase
 from admin_auth.dependencies.use_case_providers import get_current_admin_use_case
-from agent_auth.dependencies.providers import get_agent_token_port
+from agent_auth.dependencies.providers import get_agent_directory_port, get_agent_token_port
 from main import app
 
-from ._fakes import FakeAgentTokens
+from ._fakes import FakeAgentDirectory, FakeAgentTokens
 
 ADMIN = AdminAccount(id=3, email="admin@example.com", name="관리자", agent_id=None)
 
@@ -22,8 +23,11 @@ class _NoSession(CurrentAdminUseCase):
         return None
 
 
-def _client(port, admin=True):
+def _client(port, admin=True, agents=None):
     app.dependency_overrides[get_agent_token_port] = lambda: port
+    app.dependency_overrides[get_agent_directory_port] = lambda: (
+        agents if agents is not None else FakeAgentDirectory({"agent-7": "agent-7"})
+    )
     if admin:
         app.dependency_overrides[require_admin] = lambda: ADMIN
     else:
@@ -56,9 +60,16 @@ def test_발급_응답에만_원문_토큰이_있다():
     assert listed.json()["tokens"][0]["agent_id"] == "agent-7"
 
 
-def test_없는_상담원은_404_없는_토큰_폐기도_404():
+def test_모르는_이름은_새로_만들어_발급한다():
+    directory = FakeAgentDirectory()
+    with _client(FakeAgentTokens(agents=None), agents=directory) as c:
+        r = c.post("/admin/agent-tokens", json={"agent_id": "nobody"})
+    assert r.status_code == 201
+    assert r.json()["item"]["agent_id"] != "nobody"
+
+
+def test_없는_토큰_폐기는_404다():
     with _client(FakeAgentTokens()) as c:
-        assert c.post("/admin/agent-tokens", json={"agent_id": "nobody"}).status_code == 404
         assert c.post("/admin/agent-tokens/99/revoke").status_code == 404
 
 

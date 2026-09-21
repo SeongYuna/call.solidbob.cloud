@@ -162,10 +162,14 @@ function RetentionPurgeCard(): ReactElement {
  * `decisions/307` — 상담원 전용 토큰 발급. 상담원 로그인 화면이 없어 관리자가
  * 발급한 값을 `?agent_token=...` 링크로 건넨다. 토큰 원문은 발급 응답에
  * 한 번만 실린다 — 잃어버리면 폐기하고 새로 발급한다.
+ *
+ * `decisions/406` — 상담원 목록 관리 화면이 아직 없다(테스트 단계). 이름을 치면 서버가
+ * 같은 이름의 상담원을 찾아 쓰거나, 없으면 그 자리에서 새로 만든다 — 관리자가 미리
+ * `agent.agent_id`를 알아야 할 필요가 없다.
  */
 function AgentTokenIssuer(): ReactElement {
   const accessToken = useAuthStore((s) => s.accessToken);
-  const [agentId, setAgentId] = useState("");
+  const [agentName, setAgentName] = useState("");
   const [agents, setAgents] = useState<AgentSummary[]>([]);
   const [tokens, setTokens] = useState<AgentTokenItem[]>([]);
   const [issuedToken, setIssuedToken] = useState<string | null>(null);
@@ -181,33 +185,36 @@ function AgentTokenIssuer(): ReactElement {
       .catch((err: unknown) => {
         setError(err instanceof HubApiError || err instanceof Error ? err.message : "알 수 없는 오류");
       });
-    // 개발자가 아닌 관리자도 쓰는 화면이라 ID를 직접 타이핑하지 않고 이름으로 고른다
-    // (사용자 지적, 2026-09-17). 목록을 못 받으면 아래에서 직접 입력으로 대신한다.
+    // 이미 등록된 상담원이 있으면 드롭다운으로 고르게 한다. 아직 하나도 없으면(테스트
+    // 단계 기본값) 아래 입력창에 이름을 직접 친다 — 서버가 찾아 쓰거나 새로 만든다.
     fetchAgents(accessToken)
       .then((list) => {
         setAgents(list);
         if (list.length > 0) {
-          setAgentId((current) => (current.length > 0 ? current : list[0].agentId));
+          setAgentName((current) => (current.length > 0 ? current : list[0].displayName));
         }
       })
       .catch(() => {
-        // 목록 실패는 조용히 넘어간다 — 아래 입력창이 직접 ID 입력으로 대신한다
+        // 목록 실패는 조용히 넘어간다 — 아래 입력창이 이름 직접 입력으로 대신한다
       });
   }, [accessToken]);
 
   const agentNameById = new Map(agents.map((a) => [a.agentId, a.displayName]));
 
   async function handleIssue(): Promise<void> {
-    if (accessToken === null || agentId.trim().length === 0) {
+    const name = agentName.trim();
+    if (accessToken === null || name.length === 0) {
       return;
     }
     setError(null);
     try {
-      const { token, item } = await issueAgentToken(accessToken, agentId.trim());
+      const { token, item } = await issueAgentToken(accessToken, name);
       setIssuedToken(token);
       setCopied(false);
       setTokens((prev) => [item, ...prev]);
-      setAgentId(agents.length > 0 ? agents[0].agentId : "");
+      // 방금 발급한 상담원을 목록에 반영해 둔다 — 처음 등록됐다면 서버가 여기서 만든 것이다.
+      setAgents((prev) => (prev.some((a) => a.agentId === item.agent_id) ? prev : [...prev, { agentId: item.agent_id, displayName: name }]));
+      setAgentName(agents.length > 0 ? agents[0].displayName : "");
     } catch (err) {
       setError(err instanceof HubApiError || err instanceof Error ? err.message : "알 수 없는 오류");
     }
@@ -235,7 +242,9 @@ function AgentTokenIssuer(): ReactElement {
         블랙리스트 요청(<code>POST /hub/blacklist-requests</code>)은 이제 상담원 토큰이
         있어야 보낼 수 있습니다(`decisions/307`). 발급한 토큰을{" "}
         <code>?agent_token=...</code> 링크로 상담원에게 전달하세요 — 원문은 지금
-        한 번만 보이고 서버는 다시 보여주지 않습니다.
+        한 번만 보이고 서버는 다시 보여주지 않습니다. 상담원 목록 관리 화면이 아직 없어
+        <strong> 이름을 치면 그 이름의 상담원을 찾아 쓰거나 없으면 새로 만듭니다</strong>
+        (`decisions/406`) — 같은 이름을 다시 치면 같은 상담원의 토큰이 추가로 발급됩니다.
       </p>
       {error !== null ? (
         <p className="header-error" role="alert">
@@ -243,35 +252,28 @@ function AgentTokenIssuer(): ReactElement {
         </p>
       ) : null}
       <label className="admin-settings-field">
-        <span>상담원</span>
+        <span>상담원 이름</span>
         <div style={{ display: "flex", gap: 8 }}>
+          <input
+            type="text"
+            list="known-agent-names"
+            value={agentName}
+            onChange={(event) => {
+              setAgentName(event.target.value);
+            }}
+            placeholder="상담원 이름 (없으면 새로 등록됩니다)"
+          />
           {agents.length > 0 ? (
-            <select
-              value={agentId}
-              onChange={(event) => {
-                setAgentId(event.target.value);
-              }}
-            >
+            <datalist id="known-agent-names">
               {agents.map((a) => (
-                <option key={a.agentId} value={a.agentId}>
-                  {a.displayName}
-                </option>
+                <option key={a.agentId} value={a.displayName} />
               ))}
-            </select>
-          ) : (
-            <input
-              type="text"
-              value={agentId}
-              onChange={(event) => {
-                setAgentId(event.target.value);
-              }}
-              placeholder="상담원 목록을 불러오지 못했다 — agent.agent_id 직접 입력"
-            />
-          )}
+            </datalist>
+          ) : null}
           <button
             type="button"
             className="btn-outline"
-            disabled={agentId.trim().length === 0}
+            disabled={agentName.trim().length === 0}
             onClick={() => {
               void handleIssue();
             }}

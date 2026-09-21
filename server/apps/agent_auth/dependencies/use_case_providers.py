@@ -18,8 +18,11 @@ from agent_auth.app.use_cases.revoke_agent_token_interactor import RevokeAgentTo
 from agent_auth.dependencies.providers import get_agent_directory_port, get_agent_token_port
 
 
-def get_issue_agent_token_use_case(tokens: AgentTokenPort = Depends(get_agent_token_port)) -> IssueAgentTokenUseCase:
-    return IssueAgentTokenInteractor(tokens)
+def get_issue_agent_token_use_case(
+    tokens: AgentTokenPort = Depends(get_agent_token_port),
+    agents: AgentDirectoryPort = Depends(get_agent_directory_port),
+) -> IssueAgentTokenUseCase:
+    return IssueAgentTokenInteractor(tokens, agents)
 
 
 def get_current_agent_use_case(tokens: AgentTokenPort = Depends(get_agent_token_port)) -> CurrentAgentUseCase:

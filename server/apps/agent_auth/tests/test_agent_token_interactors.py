@@ -1,22 +1,26 @@
 # Requirement: J-1, SEC-1, QUA-1
-"""발급은 해시만 저장하고 원문을 한 번 돌려준다 · 폐기된 토큰과 형식이 다른 값은 상담원이 아니다."""
+"""발급은 해시만 저장하고 원문을 한 번 돌려준다 · 폐기된 토큰과 형식이 다른 값은 상담원이 아니다.
+모르는 이름으로 발급하면 그 자리에서 상담원이 만들어진다(`decisions/406`)."""
 
 import asyncio
 
 import pytest
 
-from agent_auth.app.dtos.agent_token_dto import AgentTokenNotFound, IssueAgentTokenCommand, UnknownAgentError
+from agent_auth.app.dtos.agent_token_dto import AgentTokenNotFound, IssueAgentTokenCommand
 from agent_auth.app.use_cases.agent_token_list_interactor import AgentTokenListInteractor
 from agent_auth.app.use_cases.current_agent_interactor import CurrentAgentInteractor
 from agent_auth.app.use_cases.issue_agent_token_interactor import IssueAgentTokenInteractor
 from agent_auth.app.use_cases.revoke_agent_token_interactor import RevokeAgentTokenInteractor
 from agent_auth.domain.services.agent_token import TOKEN_PREFIX, hash_token, new_token
 
-from ._fakes import FakeAgentTokens
+from ._fakes import FakeAgentDirectory, FakeAgentTokens
 
 
-def _issue(port, agent_id="agent-7"):
-    return asyncio.run(IssueAgentTokenInteractor(port).issue(IssueAgentTokenCommand(agent_id=agent_id, issued_by=3)))
+def _issue(port, agent_id="agent-7", agents=None):
+    agents = agents if agents is not None else FakeAgentDirectory({agent_id: agent_id})
+    return asyncio.run(
+        IssueAgentTokenInteractor(port, agents).issue(IssueAgentTokenCommand(agent_id=agent_id, issued_by=3))
+    )
 
 
 def test_토큰은_접두어가_붙은_난수이고_매번_다르다():
@@ -33,9 +37,18 @@ def test_발급은_해시만_저장하고_원문을_한_번_돌려준다():
     assert issued.item.agent_id == "agent-7" and issued.item.issued_by == 3
 
 
-def test_없는_상담원에게는_발급하지_않는다():
-    with pytest.raises(UnknownAgentError):
-        _issue(FakeAgentTokens(), agent_id="nobody")
+def test_모르는_이름으로_발급하면_그_자리에서_상담원을_만든다():
+    directory = FakeAgentDirectory()
+    issued = _issue(FakeAgentTokens(agents=None), agent_id="처음보는이름", agents=directory)
+    created_id = issued.item.agent_id
+    assert created_id != "처음보는이름"  # 새로 만든 agent_id, 이름을 그대로 쓰지 않는다
+    assert directory.agents[created_id] == "처음보는이름"
+
+
+def test_이미_있는_이름으로_발급하면_같은_상담원의_토큰이_된다():
+    directory = FakeAgentDirectory({"agent-7": "홍길동"})
+    issued = _issue(FakeAgentTokens(), agent_id="홍길동", agents=directory)
+    assert issued.item.agent_id == "agent-7"
 
 
 def test_빈_상담원_ID는_거절한다():
