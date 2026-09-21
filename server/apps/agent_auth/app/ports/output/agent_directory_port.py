@@ -13,6 +13,11 @@ class AgentDirectoryPort(ABC):
     async def list(self) -> list[AgentSummary]: ...
 
     @abstractmethod
+    async def get(self, agent_id: str) -> AgentSummary | None:
+        """`agent_id` 그대로 하나 찾는다 — 없으면 `None`. `resolve_or_create`와 달리 만들지 않는다."""
+        ...
+
+    @abstractmethod
     async def resolve_or_create(self, identifier: str) -> AgentSummary:
         """`agent_id` 또는 `display_name` 으로 먼저 찾고, 없으면 그 이름으로 새 상담원을 만든다.
 

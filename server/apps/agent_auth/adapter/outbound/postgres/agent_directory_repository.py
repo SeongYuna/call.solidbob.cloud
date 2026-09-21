@@ -10,6 +10,7 @@ from agent_auth.app.ports.output.agent_directory_port import AgentDirectoryPort
 from hub.adapter.outbound.postgres.connection import ConnectionFactory
 
 _LIST = 'SELECT "agent_id", "display_name" FROM "agent" ORDER BY "display_name"'
+_GET = 'SELECT "agent_id", "display_name" FROM "agent" WHERE "agent_id" = %s'
 _FIND = 'SELECT "agent_id", "display_name" FROM "agent" WHERE "agent_id" = %s OR "display_name" = %s'
 _INSERT = """
 INSERT INTO "agent" ("agent_id", "display_name", "role")
@@ -28,6 +29,13 @@ class PostgresAgentDirectoryRepository(AgentDirectoryPort):
                 await cur.execute(_LIST)
                 rows = await cur.fetchall()
         return [AgentSummary(agent_id=r[0], display_name=r[1]) for r in rows]
+
+    async def get(self, agent_id: str) -> AgentSummary | None:
+        async with self._connect() as conn:
+            async with conn.cursor() as cur:
+                await cur.execute(_GET, (agent_id,))
+                row = await cur.fetchone()
+        return AgentSummary(agent_id=row[0], display_name=row[1]) if row is not None else None
 
     async def resolve_or_create(self, identifier: str) -> AgentSummary:
         async with self._connect() as conn:

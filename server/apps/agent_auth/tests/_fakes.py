@@ -58,6 +58,10 @@ class FakeAgentDirectory(AgentDirectoryPort):
     async def list(self) -> list[AgentSummary]:
         return [AgentSummary(agent_id=aid, display_name=name) for aid, name in sorted(self.agents.items(), key=lambda kv: kv[1])]
 
+    async def get(self, agent_id: str) -> AgentSummary | None:
+        name = self.agents.get(agent_id)
+        return AgentSummary(agent_id=agent_id, display_name=name) if name is not None else None
+
     async def resolve_or_create(self, identifier: str) -> AgentSummary:
         if identifier in self.agents:
             return AgentSummary(agent_id=identifier, display_name=self.agents[identifier])

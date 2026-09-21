@@ -18,6 +18,7 @@ export type AgentAuthStatus = "checking" | "authenticated" | "unauthenticated";
 export interface AgentAuthState {
   status: AgentAuthStatus;
   agentId: string | null;
+  displayName: string | null;
   error: string | null;
   login: (token: string) => Promise<boolean>;
   logout: () => void;
@@ -28,6 +29,7 @@ export function useAgentAuth(): AgentAuthState {
     isCoreApiConfigured() ? "checking" : "authenticated",
   );
   const [agentId, setAgentId] = useState<string | null>(null);
+  const [displayName, setDisplayName] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -42,11 +44,12 @@ export function useAgentAuth(): AgentAuthState {
     }
     let cancelled = false;
     fetchAgentMe(token)
-      .then(({ agentId: id }) => {
+      .then(({ agentId: id, displayName: name }) => {
         if (cancelled) {
           return;
         }
         setAgentId(id);
+        setDisplayName(name);
         setStatus("authenticated");
       })
       .catch((err: unknown) => {
@@ -69,9 +72,10 @@ export function useAgentAuth(): AgentAuthState {
       return false;
     }
     try {
-      const { agentId: id } = await fetchAgentMe(trimmed);
+      const { agentId: id, displayName: name } = await fetchAgentMe(trimmed);
       writeAgentToken(trimmed);
       setAgentId(id);
+      setDisplayName(name);
       setError(null);
       setStatus("authenticated");
       return true;
@@ -84,9 +88,10 @@ export function useAgentAuth(): AgentAuthState {
   const logout = useCallback((): void => {
     clearAgentToken();
     setAgentId(null);
+    setDisplayName(null);
     setError(null);
     setStatus("unauthenticated");
   }, []);
 
-  return { status, agentId, error, login, logout };
+  return { status, agentId, displayName, error, login, logout };
 }

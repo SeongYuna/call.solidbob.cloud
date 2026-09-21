@@ -8,3 +8,4 @@ from pydantic import BaseModel
 
 class AgentMeResponse(BaseModel):
     agent_id: str
+    display_name: str

@@ -99,15 +99,17 @@ function post<T>(path: string, body: unknown, headers?: Record<string, string>):
 
 interface AgentMeResponseWire {
   agent_id: string;
+  display_name: string;
 }
 
 /**
  * 로그인 화면이 입력받은 토큰을 검증하는 자리(`decisions/307`). 판정(유효·폐기)은
  * 서버가 401로 이미 내리므로 여기서는 되묻지 않고 `CoreApiError`를 그대로 던진다.
+ * `display_name`은 대기화면 인사말에 쓴다 — `agent_id`를 이름 대신 보여주지 않는다.
  */
-export async function fetchAgentMe(token: string): Promise<{ agentId: string }> {
+export async function fetchAgentMe(token: string): Promise<{ agentId: string; displayName: string }> {
   const wire = await get<AgentMeResponseWire>("/hub/agents/me", { Authorization: `Bearer ${token}` });
-  return { agentId: wire.agent_id };
+  return { agentId: wire.agent_id, displayName: wire.display_name };
 }
 
 // ── GET /hub/calls ────────────────────────────────────────────────────────

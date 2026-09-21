@@ -42,7 +42,7 @@ export function App(): ReactElement {
   // 상담기록은 「요약 보기」・「자막 보기」 두 화면을 오갈 수 있다 — historyView가 고른다.
   const showSummary =
     phase === "wrapup" || (viewMode === "history" && historyView === "record");
-  const agentName = agentAuth.agentId ?? getMockAgentAccount().name;
+  const agentName = agentAuth.displayName ?? getMockAgentAccount().name;
 
   function closeSummary(): void {
     if (viewMode === "history") {
