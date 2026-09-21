@@ -105,7 +105,7 @@
     {
       "seq": 10,
       "speaker": "customer",
-      "text": "삼가긴 뭘 삼가. 네 이름 대. 내가 거기 찾아가서 너 가만 안 둬.",
+      "text": "종료는 무슨 종료야. 네 이름 대. 내가 거기 찾아가서 너 가만 안 둬.",
       "tone": "shouting",
       "labels": {
         "call_guard": [

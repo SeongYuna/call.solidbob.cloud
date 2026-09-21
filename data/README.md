@@ -33,6 +33,12 @@ data/
     │   └── validation/          환경 잡음 포함, 8,000Hz(전화망 표준)
     │       ├── label/           [VL_D01~04] D-코드별 세션(J01~J19) 구조, .txt+.json (39,916+1,926 files, 171M)
     │       └── wav/             [VS_D01~04] 16bit mono 8,000Hz, .wav 39,916 files (라벨과 1:1 매칭), 3.9G
+    ├── aihub-foreign-proficiency-71479/   AI Hub 「교육용 아시아어(중·일어 제외) 사용자의 한국어 음성」(dataSetSn=71479) — 2026-09-21
+    │   └── validation/          A-5 측정용(w3-a5-translation-spike). Training(266 GB)은 받지 않았다
+    │       ├── label/           VL_Speech_lab/ 22,447 json(정답 전사 orthographic · proficiency 4등급 · topik_level · RecordedTime)
+    │       │                    VL_pronunciation_lab/ 63,558 json + VL_pronunciation_tag/ 63,558 TextGrid(발음 평가용 — 원천 wav 는 안 받음)
+    │       └── wav/             VS_Speech_sound.zip **20 GB, 풀지 않았다**(풀면 29.7 GB) — 표본만 unzip 으로 꺼내 쓴다.
+    │                            48000Hz/1ch/16bit · 온라인 녹음(전화 아님) → 8 kHz 로 낮춰 잰다
     └── aihub-minwon-qa/         AI Hub 「민원(콜센터) 질의-응답」 데이터셋 (aihub.or.kr/aidata/30716)
         └── validation/
             ├── label/           도메인별 질의-응답 텍스트 라벨 (수십~수백 KB, 부담 없음)

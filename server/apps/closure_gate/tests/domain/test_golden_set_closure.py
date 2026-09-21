@@ -14,7 +14,9 @@ import pytest
 
 from closure_gate.adapter.outbound.rule_closure_gate_adapter import RuleClosureGateAdapter
 
-GOLDEN_SET = Path(__file__).resolve().parents[4].parent / "golden-set" / "v1-50.json"
+# 2026-09-21 `v1-50.json` → `v1-150.json`(류준, `w5-f2-golden-cases`). 공식 골든셋이 09-09 에 v1-150 으로 바뀌었는데
+# 여기만 옛 판을 읽고 있어서 F-2 케이스를 넣어도 skip 이 안 풀렸다. 경로만 고쳤다 — 판정·규칙 코드는 그대로다.
+GOLDEN_SET = Path(__file__).resolve().parents[4].parent / "golden-set" / "v1-150.json"
 
 
 def _f2_cases():

@@ -58,6 +58,9 @@ from pii_ner.adapter.outbound.layered_masking_adapter import (  # noqa: E402
 )
 from retrieval.adapter.outbound.es_bm25_retriever import EsBm25Retriever  # noqa: E402
 from retrieval.adapter.outbound.es_index import SINGLE_INDEX  # noqa: E402
+from voice_signal.adapter.outbound.wav_voice_outlier_adapter import (  # noqa: E402
+    WavVoiceOutlierAdapter,
+)
 
 
 def masking_coverage(items, *, ner_enabled: bool = False) -> dict[str, list[str]]:
@@ -166,6 +169,7 @@ def build_ports(client, *, index: str, masking=None, retriever=None) -> Ports:
             closure_gate=RuleClosureGateAdapter(),  # F-2 (server/apps/closure_gate)
             call_guard=RuleCallGuardAdapter(),      # C-6 (ai/apps/call_guard)
             compliance=RuleComplianceAdapter(),     # C-1~C-4 (ai/apps/compliance) — 규칙 v1, 수치는 상한
+            voice_outlier=WavVoiceOutlierAdapter(),  # D-5 (ai/apps/voice_signal) — 규칙 판정, 외부 의존 없음
         )
 
     retriever = retriever or EsBm25Retriever(client, index=index)
@@ -175,6 +179,11 @@ def build_ports(client, *, index: str, masking=None, retriever=None) -> Ports:
         closure_gate=RuleClosureGateAdapter(),  # F-2 (server/apps/closure_gate)
         call_guard=RuleCallGuardAdapter(),      # C-6 (ai/apps/call_guard) — 규칙 기반, 외부 의존 없음
         compliance=RuleComplianceAdapter(),     # C-1~C-4 (ai/apps/compliance) — 규칙 v1, 골든셋을 본 뒤 썼으므로 수치는 상한
+        # D-5 (ai/apps/voice_signal) — WAV 경로 → F0 중앙값 → 화자 기준선(중앙값·MAD). 규칙 판정, 외부 의존 없음.
+        # ⚠ 2026-09-21 현재 음성 골든셋이 0건이라 꽂아도 `NO_SAMPLES`(「골든셋에 채점 대상이 없다」)다 —
+        #   다산콜DB 는 발화 클립이라 통화 단위 기준선을 못 만든다(`w3-call-temperature`). 「미구현」과
+        #   「표본 없음」을 갈라 찍으려고 꽂는다(절대 원칙 10). 통화 단위 + 톤 라벨 골든셋이 생기면 코드 변경 없이 채점된다.
+        voice_outlier=WavVoiceOutlierAdapter(),
         # ⚠ trigger 는 **구현이 있는데도 일부러 꽂지 않는다**(IsFinalTrigger, B-1).
         #   TranscriptEvent 에 이벤트 도착 시각이 없어서 발동 시각을 "발화 종료 + STT 지연
         #   상수(346ms)"로 모형화하고 있다. 그대로 채점하면 지연 분포가 상수 하나로 수렴해

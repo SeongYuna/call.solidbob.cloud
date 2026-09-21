@@ -1,0 +1,294 @@
+{
+ "measured_at": "2026-09-21",
+ "commit": "97f7b25-dirty",
+ "command": "PYTHONPATH= .venv/bin/python scripts/measure_a5_proficiency.py ",
+ "dataset": "aihub-foreign-proficiency-71479/validation",
+ "stt": {
+  "api": "google-cloud-speech v1 recognize",
+  "language": "ko-KR",
+  "model": "default",
+  "automatic_punctuation": true
+ },
+ "seed": 20260921,
+ "design": {
+  "per_level": 20,
+  "min_sec": 3.0,
+  "max_sec": 6.0,
+  "max_per_speaker": 2,
+  "original_subset_per_level": 5,
+  "target_rate_hz": 8000,
+  "source_rate_hz": 48000
+ },
+ "sample": {
+  "Beginner": {
+   "n": 20,
+   "speakers": 20,
+   "label_seconds": 97.4,
+   "languages": [
+    "Armenian",
+    "Azerbaijani",
+    "Burmese",
+    "Indonesian",
+    "Mongolian",
+    "Nepali",
+    "Vietnamese"
+   ],
+   "tasks": [
+    "ATQ",
+    "LAR"
+   ]
+  },
+  "Intermediate": {
+   "n": 20,
+   "speakers": 20,
+   "label_seconds": 90.6,
+   "languages": [
+    "Armenian",
+    "Azerbaijani",
+    "Indonesian",
+    "Kazakh",
+    "Malay",
+    "Mongolian",
+    "Uzbek",
+    "Vietnamese"
+   ],
+   "tasks": [
+    "ATQ",
+    "LAR"
+   ]
+  },
+  "Advance": {
+   "n": 20,
+   "speakers": 19,
+   "label_seconds": 102.3,
+   "languages": [
+    "Azerbaijani",
+    "Indonesian",
+    "Mongolian",
+    "Uzbek",
+    "Vietnamese"
+   ],
+   "tasks": [
+    "ATQ",
+    "LAR"
+   ]
+  },
+  "Fluent": {
+   "n": 20,
+   "speakers": 16,
+   "label_seconds": 96.8,
+   "languages": [
+    "Indonesian",
+    "Kirghiz",
+    "Mongolian",
+    "Tajik",
+    "Uzbek",
+    "Vietnamese"
+   ],
+   "tasks": [
+    "ATQ",
+    "LAR"
+   ]
+  }
+ },
+ "stt_seconds": {
+  "this_run": 482.3,
+  "today_after": 482.3,
+  "month_after": 995.6,
+  "cache_hits": 0,
+  "cap_per_day": 600,
+  "cap_per_month": 3600
+ },
+ "empty_hypotheses": 0,
+ "normalization": {
+  "base": [
+   "이중 전사 `(철자)/(발음)` → 철자 쪽만 남긴다",
+   "잡음·간투어 표시 `n/` `b/` `l/` `o/` `u/` 제거",
+   "괄호 안 화자 주석 제거",
+   "문장부호 제거 — 하이픈은 공백 없이 지운다(`A-4` → `A4`)",
+   "유니코드 NFC 정규화 + 공백 1칸으로 축약"
+  ],
+  "extra_71479": [
+   "제어 문자(U+0000~U+001F, U+007F) 제거 — 라벨에 `\\x08` 이 섞여 있다",
+   "굽은따옴표 `‘’“”` 를 공백으로 — 기본 규칙이 곧은따옴표만 지운다"
+  ]
+ },
+ "limits": [
+  "온라인 녹음(48 kHz, 잡음 없음)을 다운샘플만 했다 — 실제 전화망(코덱·잡음·라인 손실)보다 좋다 → 상한",
+  "과제가 질문답변(ATQ)·낭독(LAR) 등이라 민원 어휘가 아니다",
+  "STT 예산 때문에 3~6초 짧은 발화만 골랐다(데이터 중앙값 7.5초)",
+  "모어 분포가 인도네시아·베트남에 편중돼 있다(데이터셋 자체의 분포)",
+  "등급당 n=20 — 등급 간 차이가 표본 잡음보다 작을 수 있다. 원본 재측정은 등급당 5건뿐",
+  "숫자 표기(라벨 `십오년` vs STT `15년`)와 `%` 는 정규화하지 않았다 — 그만큼 오류로 잡힌다",
+  "STT 모델은 Google Cloud Speech v1 `recognize` 기본 모델(ko-KR)이다 — 09-09 8 kHz 실험과 같은 호출. 티켓의 「Chirp 3」 표기와 다르다"
+ ],
+ "note": "이 수치는 상한이다. 목표치가 아니라 측정값이다(절대 원칙 2·10). 조건: 8000Hz(전 표본) · 8000Hz-subset(원본과 같은 건) · original(48 kHz). 각각 정규화 후/전.",
+ "scores": {
+  "normalized": {
+   "8000Hz": {
+    "Advance": {
+     "wer": 0.22522522522522523,
+     "cer": 0.08664259927797834,
+     "n": 20
+    },
+    "Beginner": {
+     "wer": 0.4117647058823529,
+     "cer": 0.22053231939163498,
+     "n": 20
+    },
+    "Fluent": {
+     "wer": 0.1981981981981982,
+     "cer": 0.06711409395973154,
+     "n": 20
+    },
+    "Intermediate": {
+     "wer": 0.26595744680851063,
+     "cer": 0.19753086419753085,
+     "n": 20
+    },
+    "__all__": {
+     "wer": 0.2727272727272727,
+     "cer": 0.13876040703052728,
+     "n": 80
+    }
+   },
+   "8000Hz-subset": {
+    "Advance": {
+     "wer": 0.24,
+     "cer": 0.109375,
+     "n": 5
+    },
+    "Beginner": {
+     "wer": 0.56,
+     "cer": 0.28125,
+     "n": 5
+    },
+    "Fluent": {
+     "wer": 0.2608695652173913,
+     "cer": 0.03278688524590164,
+     "n": 5
+    },
+    "Intermediate": {
+     "wer": 0.2631578947368421,
+     "cer": 0.19642857142857142,
+     "n": 5
+    },
+    "__all__": {
+     "wer": 0.33695652173913043,
+     "cer": 0.15510204081632653,
+     "n": 20
+    }
+   },
+   "original": {
+    "Advance": {
+     "wer": 0.16,
+     "cer": 0.046875,
+     "n": 5
+    },
+    "Beginner": {
+     "wer": 0.4,
+     "cer": 0.25,
+     "n": 5
+    },
+    "Fluent": {
+     "wer": 0.2608695652173913,
+     "cer": 0.03278688524590164,
+     "n": 5
+    },
+    "Intermediate": {
+     "wer": 0.2631578947368421,
+     "cer": 0.17857142857142858,
+     "n": 5
+    },
+    "__all__": {
+     "wer": 0.2717391304347826,
+     "cer": 0.12653061224489795,
+     "n": 20
+    }
+   }
+  },
+  "raw": {
+   "8000Hz": {
+    "Advance": {
+     "wer": 0.23423423423423423,
+     "cer": 0.087248322147651,
+     "n": 20
+    },
+    "Beginner": {
+     "wer": 0.43137254901960786,
+     "cer": 0.21201413427561838,
+     "n": 20
+    },
+    "Fluent": {
+     "wer": 0.21621621621621623,
+     "cer": 0.078125,
+     "n": 20
+    },
+    "Intermediate": {
+     "wer": 0.2872340425531915,
+     "cer": 0.19011406844106463,
+     "n": 20
+    },
+    "__all__": {
+     "wer": 0.2894736842105263,
+     "cer": 0.13831615120274915,
+     "n": 80
+    }
+   },
+   "8000Hz-subset": {
+    "Advance": {
+     "wer": 0.24,
+     "cer": 0.10144927536231885,
+     "n": 5
+    },
+    "Beginner": {
+     "wer": 0.56,
+     "cer": 0.2608695652173913,
+     "n": 5
+    },
+    "Fluent": {
+     "wer": 0.2608695652173913,
+     "cer": 0.030303030303030304,
+     "n": 5
+    },
+    "Intermediate": {
+     "wer": 0.2631578947368421,
+     "cer": 0.18032786885245902,
+     "n": 5
+    },
+    "__all__": {
+     "wer": 0.33695652173913043,
+     "cer": 0.14339622641509434,
+     "n": 20
+    }
+   },
+   "original": {
+    "Advance": {
+     "wer": 0.16,
+     "cer": 0.043478260869565216,
+     "n": 5
+    },
+    "Beginner": {
+     "wer": 0.4,
+     "cer": 0.2318840579710145,
+     "n": 5
+    },
+    "Fluent": {
+     "wer": 0.2608695652173913,
+     "cer": 0.030303030303030304,
+     "n": 5
+    },
+    "Intermediate": {
+     "wer": 0.2631578947368421,
+     "cer": 0.16393442622950818,
+     "n": 5
+    },
+    "__all__": {
+     "wer": 0.2717391304347826,
+     "cer": 0.1169811320754717,
+     "n": 20
+    }
+   }
+  }
+ }
+}

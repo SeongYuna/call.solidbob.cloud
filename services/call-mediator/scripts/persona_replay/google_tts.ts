@@ -33,13 +33,22 @@ export interface Prosody {
   volume?: string;
 }
 
-/** `personas.json` `tones` 의 SSML 힌트와 같은 값. calm 은 prosody 를 씌우지 않는다. */
+/**
+ * 톤 → SSML prosody. `personas.json` `tones` 힌트의 **의도(평온 대비 dB)** 를 실제로 들리는 값으로 옮긴 것이다.
+ *
+ * ⚠ **WaveNet 은 SSML `volume` 의 «올리기»(+dB)를 무시한다**(2026-09-21 실측 — 같은 문장·같은 음성에서
+ * `volume="+8dB"` 만 준 합성이 평온과 평균·최대 음량까지 똑같았다. 평온 합성이 이미 최대치 근처(-2.5 dBFS)라
+ * 더 키우면 찢어지기 때문으로 보인다). 내리기(-dB)와 `rate`·`pitch` 는 반영된다.
+ * 그래서 **기준(평온)을 -8 dB 로 낮추고** 다른 톤을 그 위아래에 둔다 — 같은 실측에서
+ * 평온 대비 격앙 +3.8 dB · 고함 +7.1 dB · 지침 -5.0 dB 가 나왔다(의도 +4·+8·-4).
+ * 전체가 8 dB 작아지므로 시연 때 스피커 음량을 올린다.
+ */
 export const TONE_PROSODY: Record<Tone, Prosody> = {
-  calm: {},
-  tense: { rate: "105%", pitch: "+1st" },
-  raised: { rate: "110%", pitch: "+3st", volume: "+4dB" },
-  shouting: { rate: "115%", pitch: "+5st", volume: "+8dB" },
-  weary: { rate: "85%", pitch: "-2st", volume: "-4dB" },
+  calm: { volume: "-8dB" },
+  tense: { rate: "105%", pitch: "+1st", volume: "-8dB" },
+  raised: { rate: "110%", pitch: "+3st", volume: "-4dB" },
+  shouting: { rate: "115%", pitch: "+5st" },
+  weary: { rate: "85%", pitch: "-2st", volume: "-12dB" },
 };
 
 export function escapeXml(text: string): string {

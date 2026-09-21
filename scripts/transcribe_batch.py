@@ -161,6 +161,66 @@ def transcribe(client, speech, path: Path, meta: "AudioMeta") -> dict:
             "transcript": " ".join(s["transcript"] for s in segments).strip()}
 
 
+# ─────────────────────────────────────────────── 전사 — Speech-to-Text v2 (Chirp)
+# Requirement: A-5, COST-1
+# v1 `recognize` 와 같은 자리(동기 · 파일 한 건 · 예산 가드 뒤)에서 쓰는 v2 호출이다.
+# Chirp 모델은 v2 의 **지역 엔드포인트**에서만 된다 — `{region}-speech.googleapis.com` 에
+# `projects/{p}/locations/{region}/recognizers/_`(암묵 인식기) 로 보낸다. 인코딩·샘플레이트는
+# wav 헤더를 v2 가 직접 읽는다(`auto_decoding_config`) — 8 kHz 사본을 그대로 보낸다.
+
+V2_MODELS = ("chirp_3", "chirp_2")
+V2_DEFAULT_REGION = "us-central1"
+
+
+def v2_recognizer_path(project: str, region: str) -> str:
+    """암묵 인식기 경로. 인식기를 만들지 않으므로 `speech.recognizers.create/list` 권한이 필요 없다."""
+    return f"projects/{project}/locations/{region}/recognizers/_"
+
+
+def v2_endpoint(region: str) -> str:
+    return "speech.googleapis.com" if region == "global" else f"{region}-speech.googleapis.com"
+
+
+def speech_v2_client(speech_v2, region: str):
+    from google.api_core.client_options import ClientOptions  # noqa: PLC0415
+    return speech_v2.SpeechClient(client_options=ClientOptions(api_endpoint=v2_endpoint(region)))
+
+
+def transcribe_v2(client, speech_v2, path: Path, *, project: str, region: str, model: str) -> dict:
+    """v2 동기 recognize. 결과 모양은 `transcribe`(v1) 와 같게 맞춘다 — 캐시·채점기가 구분하지 않게."""
+    with open(path, "rb") as f:
+        content = f.read()
+    config = speech_v2.RecognitionConfig(
+        auto_decoding_config=speech_v2.AutoDetectDecodingConfig(),   # wav 헤더에서 인코딩·레이트를 읽는다
+        language_codes=[LANGUAGE],
+        model=model,
+        features=speech_v2.RecognitionFeatures(
+            enable_word_time_offsets=True,          # v1 호출과 같은 기능 켬 — 비교 조건을 맞춘다
+            enable_automatic_punctuation=True,
+        ),
+    )
+    resp = client.recognize(request=speech_v2.RecognizeRequest(
+        recognizer=v2_recognizer_path(project, region), config=config, content=content,
+    ))
+    segments = []
+    for result in resp.results:
+        if not result.alternatives:
+            continue
+        alt = result.alternatives[0]
+        words = [{"word": w.word,
+                  "start_ms": int(w.start_offset.total_seconds() * 1000),
+                  "end_ms": int(w.end_offset.total_seconds() * 1000)}
+                 for w in alt.words]
+        segments.append({
+            "transcript": alt.transcript,
+            "confidence": round(alt.confidence, 4),
+            "end_ms": words[-1]["end_ms"] if words else None,
+            "words": words,
+        })
+    return {"segments": segments,
+            "transcript": " ".join(s["transcript"] for s in segments).strip()}
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("paths", nargs="*", help="전사할 wav 파일")

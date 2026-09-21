@@ -168,8 +168,8 @@
   "tones": {
     "calm": "기준 톤",
     "tense": "약간 빠르고 높음 (SSML 예: rate 105% · pitch +1st)",
-    "raised": "목소리가 커짐 (rate 110% · pitch +3st · volume +4dB)",
-    "shouting": "고함 (rate 115% · pitch +5st · volume +8dB)",
-    "weary": "느리고 낮고 작음 (rate 85% · pitch -2st · volume -4dB)"
+    "raised": "목소리가 커짐 (rate 110% · pitch +3st · 평온 대비 +4dB)",
+    "shouting": "고함 (rate 115% · pitch +5st · 평온 대비 +8dB)",
+    "weary": "느리고 낮고 작음 (rate 85% · pitch -2st · 평온 대비 -4dB)"
   }
 }

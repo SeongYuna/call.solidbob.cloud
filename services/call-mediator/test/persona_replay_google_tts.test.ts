@@ -14,9 +14,11 @@ import {
   MAX_INPUT_BYTES,
   redact,
   synthesizeToCache,
+  TONE_PROSODY,
   TTS_ENDPOINT,
   TtsBudgetExceeded,
 } from "../scripts/persona_replay/google_tts.ts";
+import { TONES, type Tone } from "../scripts/persona_replay/plan.ts";
 import { FALLBACK_VOICE, PERSONA_VOICES, pickVoice, WAVENET_GENDER } from "../scripts/persona_replay/google_voices.ts";
 import {
   capFromEnv,
@@ -46,22 +48,38 @@ function fakeFetch(calls: Array<{ url: string; headers: Record<string, string>; 
 
 // ── SSML ───────────────────────────────────────────────────────────────────────
 
-test("SSML — calm 은 prosody 없이, 다른 톤은 personas.json 힌트 값 그대로 문장 전체를 감싼다", () => {
-  assert.equal(buildSsml("네, 한별시입니다.", "calm"), "<speak>네, 한별시입니다.</speak>");
-  assert.equal(buildSsml("왜 안 되냐고요!", "shouting"), '<speak><prosody rate="115%" pitch="+5st" volume="+8dB">왜 안 되냐고요!</prosody></speak>');
-  assert.equal(buildSsml("그냥 다 힘들어요", "weary"), '<speak><prosody rate="85%" pitch="-2st" volume="-4dB">그냥 다 힘들어요</prosody></speak>');
-  assert.match(buildSsml("x", "tense"), /rate="105%" pitch="\+1st"/);
-  assert.match(buildSsml("x", "raised"), /rate="110%" pitch="\+3st" volume="\+4dB"/);
+test("SSML — 톤마다 prosody 로 문장 전체를 감싼다. 기준(평온)을 -8dB 로 낮춰 둔다", () => {
+  assert.equal(buildSsml("네, 한별시입니다.", "calm"), '<speak><prosody volume="-8dB">네, 한별시입니다.</prosody></speak>');
+  assert.equal(buildSsml("왜 안 되냐고요!", "shouting"), '<speak><prosody rate="115%" pitch="+5st">왜 안 되냐고요!</prosody></speak>');
+  assert.equal(buildSsml("그냥 다 힘들어요", "weary"), '<speak><prosody rate="85%" pitch="-2st" volume="-12dB">그냥 다 힘들어요</prosody></speak>');
+  assert.match(buildSsml("x", "tense"), /rate="105%" pitch="\+1st" volume="-8dB"/);
+  assert.match(buildSsml("x", "raised"), /rate="110%" pitch="\+3st" volume="-4dB"/);
+});
+
+test("SSML — WaveNet 이 무시하는 «올리기»(+dB)를 어떤 톤에도 쓰지 않는다(2026-09-21 실측)", () => {
+  for (const tone of TONES) {
+    assert.doesNotMatch(buildSsml("x", tone), /volume="\+/, `${tone} 에 +dB 가 있다 — 들리지 않는다`);
+  }
+});
+
+test("SSML — 톤 사이 상대 음량 순서가 의도(지침 < 평온 = 긴장 < 격앙 < 고함)와 같다", () => {
+  const db = (tone: Tone) => Number((TONE_PROSODY[tone].volume ?? "0dB").replace("dB", ""));
+  assert.ok(db("weary") < db("calm"));
+  assert.equal(db("tense"), db("calm"));
+  assert.ok(db("calm") < db("raised") && db("raised") < db("shouting"));
+  assert.equal(db("shouting") - db("calm"), 8);
+  assert.equal(db("raised") - db("calm"), 4);
+  assert.equal(db("weary") - db("calm"), -4);
 });
 
 test("SSML — XML 특수문자를 이스케이프한다(고객이 <, & 를 말해도 요청이 깨지지 않는다)", () => {
   assert.equal(escapeXml(`A & B <c> "d" 'e'`), "A &amp; B &lt;c&gt; &quot;d&quot; &apos;e&apos;");
-  assert.equal(buildSsml("돈 & child <아동수당>", "calm"), "<speak>돈 &amp; child &lt;아동수당&gt;</speak>");
+  assert.equal(buildSsml("돈 & child <아동수당>", "calm"), '<speak><prosody volume="-8dB">돈 &amp; child &lt;아동수당&gt;</prosody></speak>');
 });
 
 test("과금 문자 수는 태그·공백을 포함한 SSML 전체 코드포인트다(바이트가 아니다)", () => {
   const ssml = buildSsml("아동수당", "calm");
-  assert.equal(billableChars(ssml), "<speak>".length + 4 + "</speak>".length);
+  assert.equal(billableChars(ssml), '<speak><prosody volume="-8dB">'.length + 4 + "</prosody></speak>".length);
   assert.ok(Buffer.byteLength(ssml, "utf-8") > billableChars(ssml), "한글은 바이트가 더 많다");
 });
 
