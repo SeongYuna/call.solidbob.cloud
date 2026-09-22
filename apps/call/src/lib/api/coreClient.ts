@@ -265,7 +265,8 @@ interface BlacklistEvidenceWire {
   insult_count: string;
   threat_count: string;
   sexual_count: string;
-  temperature_outliers: string;
+  /** `decisions/316` — null 은 미측정. `_types.StrField`의 "전부 문자열" 규칙에서도 null 은 예외다. */
+  temperature_outliers: string | null;
 }
 
 interface BlacklistRequestItemWire {
@@ -298,7 +299,8 @@ function toEvidence(wire: BlacklistEvidenceWire): BlacklistEvidence {
     // ⚠ 서버는 distress_count 를 저장·응답하지 않는다(`decisions/205` ④) — 화면
     // 전용 값이라 여기서는 채울 수 없다. `has_distress`(응답 최상위)로 대신 본다.
     distress_count: 0,
-    temperature_outliers: toNum(wire.temperature_outliers),
+    temperature_outliers:
+      wire.temperature_outliers === null ? null : toNum(wire.temperature_outliers),
   };
 }
 
