@@ -167,6 +167,18 @@ function RetentionPurgeCard(): ReactElement {
  * 같은 이름의 상담원을 찾아 쓰거나, 없으면 그 자리에서 새로 만든다 — 관리자가 미리
  * `agent.agent_id`를 알아야 할 필요가 없다.
  */
+/** 발급 목록에 상담원 이름이 그대로 남지 않도록 가운데를 가린다 — 최효원 → 최*원. */
+function maskAgentName(name: string): string {
+  const chars = Array.from(name);
+  if (chars.length <= 1) {
+    return "*";
+  }
+  if (chars.length === 2) {
+    return `${chars[0]}*`;
+  }
+  return `${chars[0]}${"*".repeat(chars.length - 2)}${chars[chars.length - 1]}`;
+}
+
 function AgentTokenIssuer(): ReactElement {
   const accessToken = useAuthStore((s) => s.accessToken);
   const [agentName, setAgentName] = useState("");
@@ -185,17 +197,12 @@ function AgentTokenIssuer(): ReactElement {
       .catch((err: unknown) => {
         setError(err instanceof HubApiError || err instanceof Error ? err.message : "알 수 없는 오류");
       });
-    // 이미 등록된 상담원이 있으면 드롭다운으로 고르게 한다. 아직 하나도 없으면(테스트
-    // 단계 기본값) 아래 입력창에 이름을 직접 친다 — 서버가 찾아 쓰거나 새로 만든다.
+    // 발급 목록에 마스킹된 이름을 보여 주려고 이름 조회용으로만 불러온다. 입력창에 미리
+    // 채우거나 자동완성으로 띄우지 않는다 — 발급했던 이름이 화면에 그대로 드러나기 때문이다.
     fetchAgents(accessToken)
-      .then((list) => {
-        setAgents(list);
-        if (list.length > 0) {
-          setAgentName((current) => (current.length > 0 ? current : list[0].displayName));
-        }
-      })
+      .then(setAgents)
       .catch(() => {
-        // 목록 실패는 조용히 넘어간다 — 아래 입력창이 이름 직접 입력으로 대신한다
+        // 목록 실패는 조용히 넘어간다 — agent_id 를 대신 가려서 보여 준다
       });
   }, [accessToken]);
 
@@ -214,7 +221,7 @@ function AgentTokenIssuer(): ReactElement {
       setTokens((prev) => [item, ...prev]);
       // 방금 발급한 상담원을 목록에 반영해 둔다 — 처음 등록됐다면 서버가 여기서 만든 것이다.
       setAgents((prev) => (prev.some((a) => a.agentId === item.agent_id) ? prev : [...prev, { agentId: item.agent_id, displayName: name }]));
-      setAgentName(agents.length > 0 ? agents[0].displayName : "");
+      setAgentName("");
     } catch (err) {
       setError(err instanceof HubApiError || err instanceof Error ? err.message : "알 수 없는 오류");
     }
@@ -256,20 +263,13 @@ function AgentTokenIssuer(): ReactElement {
         <div style={{ display: "flex", gap: 8 }}>
           <input
             type="text"
-            list="known-agent-names"
+            autoComplete="off"
             value={agentName}
             onChange={(event) => {
               setAgentName(event.target.value);
             }}
             placeholder="상담원 이름 (없으면 새로 등록됩니다)"
           />
-          {agents.length > 0 ? (
-            <datalist id="known-agent-names">
-              {agents.map((a) => (
-                <option key={a.agentId} value={a.displayName} />
-              ))}
-            </datalist>
-          ) : null}
           <button
             type="button"
             className="btn-outline"
@@ -306,15 +306,12 @@ function AgentTokenIssuer(): ReactElement {
         <ul className="admin-list" style={{ marginTop: 12 }}>
           {tokens.map((t) => {
             const displayName = agentNameById.get(t.agent_id) ?? t.agent_id;
-            // agent_id 는 이름을 그대로 쓰므로(`decisions/406`) 대개 같다 — 다르면(20자 초과 등
-            // 무작위로 대신한 경우) 괄호로 실제 agent_id 를 덧붙인다.
+            // agent_id 는 이름을 그대로 쓰므로(`decisions/406`) 이름과 함께 가린다 — 둘 다
+            // 화면에 남기지 않는다. 같은 이름은 발급일로 구분한다.
             return (
             <li key={t.id} className="admin-entry-row">
               <div className="admin-entry-row-main">
-                <span className="admin-ref">
-                  {displayName}
-                  {displayName !== t.agent_id ? ` (${t.agent_id})` : ""}
-                </span>
+                <span className="admin-ref">{maskAgentName(displayName)}</span>
                 <span className="admin-meta">
                   {new Date(t.issued_at).toLocaleDateString("ko-KR")} 발급
                 </span>
