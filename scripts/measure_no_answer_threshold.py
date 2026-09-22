@@ -128,7 +128,8 @@ def main() -> int:
     from retrieval.adapter.outbound.es_index import SINGLE_INDEX
 
     for kind in [k.strip() for k in args.only.split(",") if k.strip()]:
-        port = build_retriever(client, index=SINGLE_INDEX, kind=kind, device=args.device)
+        # 문턱을 끄고 잰다 — 기권하면 1순위 점수가 안 남아 분포를 못 잰다(decisions/215 이후 운영 구성은 dense 1순위 < 0.67 에서 기권한다)
+        port = build_retriever(client, index=SINGLE_INDEX, kind=kind, device=args.device, no_answer_abstain=False)
         rows = asyncio.run(_measure(port, b_items + b6_items))
         have = [r for r in rows if r["module"] == "B"]
         none = [r for r in rows if r["module"] == "B-6"]

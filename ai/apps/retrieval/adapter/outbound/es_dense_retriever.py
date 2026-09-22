@@ -1,4 +1,4 @@
-# Requirement: B-2
+# Requirement: B-2, B-6
 """임베딩(kNN) 단독 검색 — `RetrievalPort` 구현 (`w4-dense-vector-index`).
 
 `EsBm25Retriever` 와 **같은 인덱스·같은 반환 형태**다. 둘을 나란히 재야 하이브리드에서
@@ -18,6 +18,13 @@ from hub.app.ports.output.retrieval_port import RetrievalPort
 
 from retrieval.adapter.outbound.es_index import EMBEDDING_FIELD, SINGLE_INDEX
 from retrieval.domain.value_objects.chunk import NON_RECOMMENDABLE_DOC_TYPES
+
+
+# B-6 「관련 문서 없음」 문턱 — 이 검색의 1순위 `_score`(ES cosine `(1+cos)/2`, 0~1)가 이 값보다 낮으면 기권한다.
+# `_project/decisions/215`: 후보를 먼저 얼리고(0.67) 고르는 데 안 쓴 정답 없음 24건(`golden-set/b6-holdout-2026-09-22.json`)
+# 으로 한 번 쟀다 — 걸러냄 12/24 · 정답 손실 1/93(GS-218). **이 눈금에만 맞는 값이다** — 리랭커 로짓·BM25 raw 에 쓰지 않는다.
+# 적용은 `FallbackRetriever(abstain_below=...)` 가 하고, 넘기는 곳은 `ai/provider.py` 다(dense 단독일 때만).
+NO_ANSWER_MIN_SCORE = 0.67
 
 
 class QueryEmbedder(Protocol):

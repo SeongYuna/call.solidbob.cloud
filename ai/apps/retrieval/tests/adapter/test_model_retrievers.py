@@ -1,4 +1,4 @@
-# Requirement: B-2, B-3
+# Requirement: B-2, B-3, B-6
 """임베딩·하이브리드·리랭킹·폴백 검색 — 모델·ES 없이 가짜 포트로 **배선과 불변식**만 고정한다.
 
 실제 수치는 `scripts/compare_retrievers.py` 가 낸다(`w4-dense-vector-index` · `w4-rrf-hybrid` · `w4-reranker`).
@@ -137,6 +137,48 @@ class TestFallback:
         # 벡터 없이 적재된 인덱스 — kNN 은 오류 없이 0건이다
         fb = FallbackRetriever(Fixed([]), Fixed(["B"]))
         assert [d.doc_id for d in run(fb.retrieve("q"))] == ["B"] and fb.fallbacks == 1
+
+
+class Scored(RetrievalPort):
+    """1순위 점수를 정해 두는 가짜 앞 검색 — dense 코사인 눈금을 흉내 낸다."""
+
+    def __init__(self, scores: list[float]):
+        self.scores = scores
+
+    async def retrieve(self, utterance, top_k=5):
+        return [doc(f"D{i}", s) for i, s in enumerate(self.scores[:top_k])]
+
+
+class TestFallbackAbstain:
+    """B-6 기권(`decisions/215`) — 앞 검색이 냈지만 1순위가 문턱 아래면 빈 결과, **BM25 로 내려가지 않는다.**"""
+
+    def test_top1_at_or_above_threshold_passes_through(self):
+        back = Fixed(["B"])
+        fb = FallbackRetriever(Scored([0.67, 0.60]), back, abstain_below=0.67)  # 경계값은 통과(< 만 기권)
+        assert [d.doc_id for d in run(fb.retrieve("q"))] == ["D0", "D1"]
+        assert fb.abstentions == 0 and fb.fallbacks == 0 and back.asked == []
+
+    def test_top1_below_threshold_abstains_without_fallback(self):
+        back = Fixed(["B"])
+        fb = FallbackRetriever(Scored([0.66, 0.65]), back, abstain_below=0.67)
+        assert run(fb.retrieve("감사합니다")) == []
+        # 내려갔다면 BM25 가 카드를 다시 채워 문턱이 무의미해진다
+        assert back.asked == [] and fb.fallbacks == 0 and fb.abstentions == 1
+
+    def test_zero_docs_still_falls_back_with_threshold(self):
+        # 벡터 없이 적재된 인덱스 — 0건은 «검색이 못 돌았다» 는 뜻이라 문턱과 무관하게 BM25 로 내려간다
+        back = Fixed(["B"])
+        fb = FallbackRetriever(Scored([]), back, abstain_below=0.67)
+        assert [d.doc_id for d in run(fb.retrieve("q"))] == ["B"]
+        assert fb.fallbacks == 1 and fb.abstentions == 0
+
+    def test_uses_max_score_not_list_order(self):
+        fb = FallbackRetriever(Scored([0.50, 0.80]), Fixed(["B"]), abstain_below=0.67)
+        assert len(run(fb.retrieve("q"))) == 2
+
+    def test_no_threshold_never_abstains(self):
+        fb = FallbackRetriever(Scored([0.01]), Fixed(["B"]))
+        assert len(run(fb.retrieve("q"))) == 1 and fb.abstentions == 0
 
 
 class TestIndexEmbedding:
