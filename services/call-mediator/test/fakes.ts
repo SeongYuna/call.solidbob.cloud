@@ -98,6 +98,8 @@ export class FakeHub implements HubPort {
   /** 추천 응답 1순위 카드의 근거 조항 — 주면 cards 에 한 장 싣는다. */
   topDocId: string | null = null;
   readonly docsChecked: RequiredDocsCheckRequest[] = [];
+  /** 필요서류 판정을 **물은** 조항을 순서대로 — 422 로 돌려보낸 것까지. `docsChecked` 는 판정이 돌아간 것만 담는다. */
+  readonly docsAsked: string[] = [];
   /** 규칙이 없는 조항 — 서버처럼 422 를 낸다. */
   readonly notProcedures = new Set<string>();
   failIngest: number | null = null;
@@ -151,6 +153,7 @@ export class FakeHub implements HubPort {
   }
 
   async checkRequiredDocs(request: RequiredDocsCheckRequest): Promise<ClosurePayload> {
+    this.docsAsked.push(request.procedure);
     if (this.notProcedures.has(request.procedure)) {
       throw new HubError("unknown procedure", 422);
     }

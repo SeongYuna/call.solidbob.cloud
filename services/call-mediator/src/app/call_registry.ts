@@ -112,7 +112,7 @@ interface CallState {
   readonly channels: Map<ChannelSpeaker, Channel>;
   started: Promise<boolean>;
   /**
-   * F-2 — 이 통화에서 판정 중인 절차(필요서류 조항 ID). 추천 카드를 순서대로 내려가며 서버가 규칙을 아는 첫 조항이다
+   * F-2 — 이 통화에서 판정 중인 절차(필요서류 조항 ID). 추천 **1순위 카드**의 조항 중 서버가 규칙을 아는 것이다
    * (`adoptProcedure`). 서버가 규칙이 없다고 한(422) 조항은 `notProcedures` 로 옮겨 다시 묻지 않는다.
    */
   readonly procedures: Set<string>;
@@ -512,24 +512,21 @@ export class Channel {
   }
 
   /**
-   * F-2 — 추천 카드를 순서대로 내려가며 서버가 규칙을 아는 첫 조항을 절차로 잡는다(상한 `MAX_PROCEDURE_CANDIDATES` 장).
-   * 「절차 아님」(422)은 건너뛰고 다음 카드를 묻는다 — 절차를 지어내지는 않는다(서버가 규칙을 아는 조항만 절차가 된다).
-   * 이미 판정 중인 절차가 후보에 있으면 거기서 멈춘다. 순위 자체가 틀린 것은 검색 몫이다(`decisions/208`).
+   * F-2 — 추천 **1순위 카드**의 조항만 절차 후보로 본다(`w6-procedure-pick-rule`, 2026-09-22 정성윤·류준 합의).
+   * 서버가 규칙을 알면(판정이 돌아오면) 절차로 잡고, 「절차 아님」(422 — 규칙 없는 조항·`TERM` 이 아닌 조항)이면
+   * **이 추천에서는 아무것도 잡지 않는다.** 2순위 아래로 내려가지 않는다.
+   *
+   * 전에는 422 를 건너뛰고 다음 카드로 내려가 「규칙 있는 첫 조항」을 잡았다. 1순위가 정답인데 규칙이 없으면
+   * 한참 아래 카드의 엉뚱한 절차를 잡아 틀린 「빠진 서류」를 띄웠다 — 09-22 운영 SYN-010(1순위 `TERM-2.12` 규칙 없음 →
+   * 5순위 `TERM-2.9` 채택 → `incomplete`「신분증」), 로컬 E2E 24건 중 23건(오판 75건). 판정 안 함이 틀린 판정보다 낫다.
+   * 판정 중인 절차는 그대로 둔다(누적 — 빼는 것은 화면과 맞춰야 해서 이 티켓 밖이다).
    */
-  private async adoptProcedure(candidates: string[]): Promise<void> {
-    for (const candidate of candidates) {
-      if (this.call.procedures.has(candidate)) {
-        return;
-      }
-      if (this.call.notProcedures.has(candidate)) {
-        continue;
-      }
-      this.call.procedures.add(candidate);
-      await this.checkRequiredDocs(candidate);
-      if (!this.call.notProcedures.has(candidate)) {
-        return; // 규칙이 있는 조항 — 여기서 멈춘다
-      }
+  private async adoptProcedure(candidate: string): Promise<void> {
+    if (this.call.procedures.has(candidate) || this.call.notProcedures.has(candidate)) {
+      return; // 이미 판정 중이거나 규칙이 없다고 들은 조항 — 다시 묻지 않는다
     }
+    this.call.procedures.add(candidate);
+    await this.checkRequiredDocs(candidate); // 422 면 checkRequiredDocs 가 procedures 에서 빼고 notProcedures 로 옮긴다
   }
 
   /**
@@ -562,9 +559,9 @@ export class Channel {
         type: "recommendation",
         payload: withE2eLatency(payload, item.raw.utterance_end_ms, this.callClockMs()),
       });
-      const candidates = sourceDocIds(payload);
-      if (candidates.length > 0) {
-        this.track(this.adoptProcedure(candidates));
+      const candidate = topSourceDocId(payload);
+      if (candidate !== null) {
+        this.track(this.adoptProcedure(candidate));
       }
     } catch (error) {
       this.deps.log.warn(`추천 요청 실패 call=${this.callId} segment=${item.segmentId} status=${statusOf(error)}`);
@@ -593,23 +590,17 @@ export function withE2eLatency(
   return { ...payload, e2e_latency_ms: String(Math.max(0, Math.round(broadcastAtMs - utteranceEndMs))) };
 }
 
-/** 절차 후보로 보는 추천 카드 수 — 서버 추천이 상위 5장을 준다. */
-const MAX_PROCEDURE_CANDIDATES = 5;
-
-/** 추천 응답 카드의 근거 조항 ID 를 순서대로(중복 제거, 상한 5). 카드가 없거나 모양이 다르면 빈 배열 — 절차를 지어내지 않는다. */
-function sourceDocIds(payload: Record<string, unknown>): string[] {
+/**
+ * 추천 응답 **1순위 카드**의 근거 조항 ID. 카드가 없거나 1순위 카드의 모양이 다르면 `null` — 2순위로 내려가지 않는다.
+ * 절차를 지어내지 않는다(`w6-procedure-pick-rule`).
+ */
+function topSourceDocId(payload: Record<string, unknown>): string | null {
   const cards = payload["cards"];
-  if (!Array.isArray(cards)) {
-    return [];
+  if (!Array.isArray(cards) || cards.length === 0) {
+    return null;
   }
-  const ids: string[] = [];
-  for (const card of cards.slice(0, MAX_PROCEDURE_CANDIDATES)) {
-    const source = (card as { source?: { doc_id?: unknown } } | null)?.source;
-    if (typeof source?.doc_id === "string" && source.doc_id.length > 0 && !ids.includes(source.doc_id)) {
-      ids.push(source.doc_id);
-    }
-  }
-  return ids;
+  const source = (cards[0] as { source?: { doc_id?: unknown } } | null)?.source;
+  return typeof source?.doc_id === "string" && source.doc_id.length > 0 ? source.doc_id : null;
 }
 
 function statusOf(error: unknown): string {
