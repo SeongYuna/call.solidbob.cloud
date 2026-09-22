@@ -13,6 +13,7 @@ import type {
   AgentTtsStatus,
   CallGuardFlag,
   ComplianceFinding,
+  ComplianceUnavailable,
   BlacklistEntryItem,
   BlacklistEvidence,
   BlacklistRequestItem,
@@ -145,6 +146,12 @@ export interface CallState {
    * 아직 이 값을 읽지 않는다(파서만 먼저 들어간 상태).
    */
   compliance: Record<string, ComplianceFinding[]>;
+  /**
+   * C-1~C-4 검사 실패 신호(2026-09-22) — 키는 TranscriptEvent.segment_id, 값은 가장
+   * 최근 실패 1건(call_guard와 같은 override 방식 — 검사 실패는 목록으로 쌓을 이유가
+   * 없다). 아직 어떤 컴포넌트도 읽지 않는다 — 이번 범위는 "onError 오탐 제거"까지다.
+   */
+  complianceUnavailable: Record<string, ComplianceUnavailable>;
   /** A-5 ⓑ. 키만. 점수는 없다. */
   accentHints: Record<string, true>;
   /** C-6 확장. 상담원이 통화 종료 시 수동으로 분류한 결과 — 자동 탐지가 아니다. */
@@ -179,6 +186,10 @@ export interface CallState {
   applyAgentTts: (transcriptSegmentId: string, event: AgentTtsStatus) => void;
   applyCallGuard: (transcriptSegmentId: string, event: CallGuardFlag) => void;
   applyCompliance: (transcriptSegmentId: string, event: ComplianceFinding) => void;
+  applyComplianceUnavailable: (
+    transcriptSegmentId: string,
+    event: ComplianceUnavailable,
+  ) => void;
   applyAccentHint: (transcriptSegmentId: string) => void;
   flagBlackConsumer: (callId: string) => void;
   setTargetLanguage: (lang: TargetLanguage | null) => void;
@@ -244,6 +255,7 @@ const emptyCall = {
   agentTts: {} as Record<string, AgentTtsStatus>,
   callGuard: {} as Record<string, CallGuardFlag>,
   compliance: {} as Record<string, ComplianceFinding[]>,
+  complianceUnavailable: {} as Record<string, ComplianceUnavailable>,
   accentHints: {} as Record<string, true>,
   blackConsumerFlag: null as BlackConsumerFlag | null,
 };
@@ -389,7 +401,7 @@ export function evidenceTally(closure: ClosureEvent): {
   };
 }
 
-export const useCallStore = create<CallState>((set) => ({
+export const useCallStore = create<CallState>((set, get) => ({
   mode: "mock",
   connected: false,
   error: null,
@@ -536,9 +548,10 @@ export const useCallStore = create<CallState>((set) => ({
   },
 
   toggleAdoption: (card) => {
+    const id = cardId(card);
+    const previousEntry = get().adoptions[id];
     let adopted = false;
     set((state) => {
-      const id = cardId(card);
       adopted = state.adoptions[id]?.adopted !== true;
       return {
         adoptions: {
@@ -551,8 +564,23 @@ export const useCallStore = create<CallState>((set) => ({
     // `card.card_id`(recommendation_card.card_id)는 cardId()의 로컬 dedup 키와 다르다 —
     // 서버에 저장되지 않은 카드는 null이라 그때는 보내지 않는다(decisions/308).
     if (isCoreApiConfigured() && card.card_id !== null && card.card_id !== undefined) {
-      submitCardFeedback(card.card_id, adopted ? "adopted" : "ignored").catch(() => {
-        // 피드백 저장 실패는 채택 표시 자체를 막지 않는다 — 조용히 넘어간다.
+      submitCardFeedback(card.card_id, adopted ? "adopted" : "ignored").catch((error) => {
+        // 저장 실패 — 낙관적 업데이트를 되돌리고 `AppHeader`의 에러 배너(`state.error`)로 알린다.
+        set((state) => {
+          const adoptions = { ...state.adoptions };
+          if (previousEntry === undefined) {
+            delete adoptions[id];
+          } else {
+            adoptions[id] = previousEntry;
+          }
+          return {
+            adoptions,
+            error:
+              error instanceof Error
+                ? `카드 채택 표시를 저장하지 못했다: ${error.message}`
+                : "카드 채택 표시를 저장하지 못했다.",
+          };
+        });
       });
     }
   },
@@ -617,6 +645,15 @@ export const useCallStore = create<CallState>((set) => ({
         },
       };
     });
+  },
+
+  applyComplianceUnavailable: (transcriptSegmentId, event) => {
+    set((state) => ({
+      complianceUnavailable: {
+        ...state.complianceUnavailable,
+        [transcriptSegmentId]: event,
+      },
+    }));
   },
 
   applyAccentHint: (transcriptSegmentId) => {

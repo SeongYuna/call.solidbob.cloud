@@ -351,14 +351,24 @@ export async function createBlacklistRequest(input: {
  * 문자열이다(`card_feedback_schema.py` — 2026-09-15 정정, StrField). null일 수 있는
  * 카드(DB 미연결)는 호출하는 쪽에서 애초에 걸러야 한다. 아직 `TermsPanel`의
  * 「사용 표시」 토글에는 연결하지 않았다.
+ * 상담원 토큰이 필요하다(`decisions/315` — `require_agent`, 신원은 저장하지 않고 확인만 한다).
+ * `closeCall`과 같은 패턴: 토큰이 없으면 서버를 부르지 않고 바로 던진다.
  */
 export async function submitCardFeedback(
   cardId: string,
   action: "adopted" | "ignored",
 ): Promise<{ feedbackId: string; cardId: string; action: "adopted" | "ignored" }> {
+  const token = readAgentToken();
+  if (token === null) {
+    throw new CoreApiError(
+      "상담원 토큰이 없다 — 관리자가 보낸 링크(?agent_token=...)로 다시 접속해야 한다.",
+      null,
+    );
+  }
   const wire = await post<{ feedback_id: string; card_id: string; action: "adopted" | "ignored" }>(
     `/hub/cards/${cardId}/feedback`,
     { action },
+    { Authorization: `Bearer ${token}` },
   );
   return { feedbackId: wire.feedback_id, cardId: wire.card_id, action: wire.action };
 }
