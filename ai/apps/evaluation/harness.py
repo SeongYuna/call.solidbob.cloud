@@ -1,4 +1,4 @@
-# Requirement: E-1, E-2, E-4, B-4, B-5, A-5, D-5
+# Requirement: E-1, E-2, E-4, B-4, B-5, A-5, D-1, D-2, D-5
 """평가 하네스 골격 — [팀 분업 7.2절] 1주차엔 류준이 설계만 하고 이후 운영은 정성윤이
 맡는다. 이 파일이 그 "설계"에 해당한다.
 
@@ -26,11 +26,12 @@ from hub.app.ports.output.compliance_port import CompliancePort
 from hub.app.ports.output.domain_routing_port import DomainRoutingPort
 from hub.app.ports.output.generation_port import GenerationPort
 from hub.app.ports.output.masking_port import MaskingPort
+from hub.app.ports.output.postcall_port import PostcallPort
 from hub.app.ports.output.retrieval_port import RetrievalPort
 from hub.app.ports.output.trigger_port import TriggerPort
 from hub.app.ports.output.voice_outlier_port import VoiceOutlierPort
 
-from .golden_set import GoldenItem, load_golden_set
+from .golden_set import GoldenItem, PostcallGold, load_golden_set
 from .metrics import call_guard as call_guard_metrics
 from .metrics import call_temperature as call_temperature_metrics
 from .metrics import closure_gate as closure_gate_metrics
@@ -40,6 +41,7 @@ from .metrics import generation as generation_metrics
 from .metrics import latency as latency_metrics
 from .metrics import masking as masking_metrics
 from .metrics import masking_robustness
+from .metrics import postcall as postcall_metrics
 from .metrics import retrieval as retrieval_metrics
 from .metrics import trigger as trigger_metrics
 
@@ -64,6 +66,8 @@ class Ports:
     voice_outlier: VoiceOutlierPort | None = None  # D-5 통화 온도
     # B-4·B-5 서류 목록 카드. **맨 뒤에 붙인다** — 앞 필드 순서를 바꾸면 위치 인자로 부르는 곳이 조용히 어긋난다.
     generation: GenerationPort | None = None
+    # D-1·D-2 통화 후 초안(2026-09-22, `w6-postcall-golden-cases`). 역시 **맨 뒤**다.
+    postcall: PostcallPort | None = None
 
 
 NOT_IMPLEMENTED = "측정 불가 — 모듈 미구현"
@@ -127,7 +131,7 @@ def _event_from_item(item: GoldenItem) -> TranscriptEvent:
     )
 
 
-def run_eval(items: list[GoldenItem], ports: Ports) -> dict:
+def run_eval(items: list[GoldenItem], ports: Ports, postcall_cases: list[PostcallGold] | None = None) -> dict:
     report: dict = {}
 
     # B-0: 도메인 라우팅 (자동 분류) — 정답 도메인이 있고 분류할 발화 텍스트가 있는 항목만 채점
@@ -401,7 +405,47 @@ def run_eval(items: list[GoldenItem], ports: Ports) -> dict:
     # 값은 `scripts/measure_a5_proficiency.py` 가 AI Hub 71479 로 따로 잰다(Google STT 과금 — COST-1).
     report["asr"] = ASR_NOT_WIRED
 
+    # D-1·D-2: 통화 후 초안 — 통화 단위 정답(`golden-set/postcall-v1.json`)이라 `items`(발화 단위)와 따로 받는다.
+    # **맨 뒤에 붙인다**(2026-09-22, `w6-postcall-golden-cases` · `decisions/218`). 채점은 규칙뿐이다 — 요약에 핵심 항목의
+    # 허용 표기가 글자로 있는가 · 유형이 정답과 같은가(`metrics/postcall.py`, 절대 원칙 1).
+    # 입력은 운영 `/close` 와 같게 **마스킹한 확정 발화**다(`PostcallPort` 계약 — SEC-1). 마스킹 포트가 없으면 원문 그대로 넣고
+    # `masked_input: False` 로 찍는다(대본은 합성이라 실제 개인정보는 없다).
+    report["postcall"] = _postcall_section(ports, postcall_cases)
+
     return report
+
+
+def _postcall_section(ports: Ports, cases: list[PostcallGold] | None) -> dict | str:
+    if ports.postcall is None:
+        return NOT_IMPLEMENTED
+    if not cases:
+        return NO_SAMPLES
+    scored = []
+    for case in cases:
+        segments = [
+            TranscriptEvent(
+                call_id=case.id,
+                segment_id=seq,
+                speaker=speaker,
+                text=ports.masking.mask(text)[0] if ports.masking is not None else text,
+                is_final=True,
+            )
+            for seq, speaker, text in case.turns
+        ]
+        draft = _run(ports.postcall.summarize(case.id, segments))
+        scored.append(
+            postcall_metrics.PostcallCase(
+                call_id=case.id,
+                key_items=case.key_items,
+                expected_type=case.inquiry_type,
+                summary=draft.summary_text,
+                predicted_type=draft.inquiry_type,
+            )
+        )
+    # 어느 요약기를 쟀는지 찍는다 — 같은 포함률이라도 규칙 발췌와 모델 요약은 다른 수치다
+    result: dict = {"summarizer": type(ports.postcall).__name__, "masked_input": ports.masking is not None}
+    result.update(postcall_metrics.score_postcall(scored))
+    return result
 
 
 def main() -> None:  # pragma: no cover — 수동 실행용

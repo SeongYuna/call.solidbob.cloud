@@ -1,0 +1,644 @@
+{
+  "version": "postcall-v1",
+  "description": "D-1 요약 핵심 항목 · D-2 문의 유형 정답 — 합성 대본 dasan-v0 24건 중 10건 (w6-postcall-golden-cases, decisions/218). 채점은 규칙(허용 표기 포함 여부 · 유형 글자 일치)만 쓴다.",
+  "labeled_by": "Claude Code (claude-opus-5) · 2026-09-22 · 대본 글만 보고 붙임(요약기 출력을 보기 전) · 사람 검토 전",
+  "type_catalogue": {
+    "source": "ai/apps/postcall_summary/domain/services/rules.py INQUIRY_TYPES (= knowledge-base/dasan/terms 2~5장 = AI Hub 민원(콜센터) 다산콜센터 카테고리)",
+    "types": [
+      "대중교통 안내",
+      "생활하수도 관련 문의",
+      "일반행정 문의",
+      "코로나19 관련 상담"
+    ]
+  },
+  "items": [
+    {
+      "id": "PC-01",
+      "script_id": "SYN-001",
+      "script": "scripts/persona_sim/dasan-v0/SYN-001.json",
+      "turn_count": 7,
+      "length_class": "short",
+      "title": "유학생 도서관 회원 가입 문의",
+      "inquiry_type": "일반행정 문의",
+      "key_items": [
+        {
+          "id": "inquiry",
+          "kind": "문의",
+          "label": "도서관 회원 가입",
+          "forms": [
+            "도서관 회원 가입",
+            "도서관 가입"
+          ]
+        },
+        {
+          "id": "doc-id",
+          "kind": "서류",
+          "label": "신분증",
+          "forms": [
+            "신분증"
+          ]
+        },
+        {
+          "id": "doc-arc",
+          "kind": "서류",
+          "label": "외국인등록증 인정",
+          "forms": [
+            "외국인등록증"
+          ]
+        },
+        {
+          "id": "guide-loan",
+          "kind": "안내",
+          "label": "다른 지역 거주자는 대출 범위 제한",
+          "forms": [
+            "대출 범위",
+            "대출이 제한",
+            "대출 제한"
+          ]
+        },
+        {
+          "id": "action-recheck",
+          "kind": "조치",
+          "label": "방문할 도서관에서 다시 확인",
+          "forms": [
+            "도서관에서 한 번 더 확인",
+            "도서관에서 확인"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "PC-02",
+      "script_id": "SYN-002",
+      "script": "scripts/persona_sim/dasan-v0/SYN-002.json",
+      "turn_count": 19,
+      "length_class": "medium",
+      "title": "결혼이민자 전입신고 필요서류",
+      "inquiry_type": "일반행정 문의",
+      "key_items": [
+        {
+          "id": "inquiry",
+          "kind": "문의",
+          "label": "전입신고",
+          "forms": [
+            "전입신고"
+          ]
+        },
+        {
+          "id": "doc-form",
+          "kind": "서류",
+          "label": "신고서",
+          "forms": [
+            "신고서"
+          ]
+        },
+        {
+          "id": "doc-arc",
+          "kind": "서류",
+          "label": "신고인 외국인등록증(원본)",
+          "forms": [
+            "외국인등록증",
+            "등록증 원본"
+          ]
+        },
+        {
+          "id": "doc-head",
+          "kind": "서류",
+          "label": "세대주(남편) 신분증 또는 세대주 확인서",
+          "forms": [
+            "세대주 확인서",
+            "남편분 신분증",
+            "남편 신분증",
+            "세대주 신분증"
+          ]
+        },
+        {
+          "id": "request-interp",
+          "kind": "요청",
+          "label": "통역 지원",
+          "forms": [
+            "통역"
+          ]
+        },
+        {
+          "id": "action-reinform",
+          "kind": "조치",
+          "label": "소관 부서 확인 후 다시 안내",
+          "forms": [
+            "다시 안내드리겠습니다",
+            "다시 안내드릴게요",
+            "재안내"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "PC-03",
+      "script_id": "SYN-005",
+      "script": "scripts/persona_sim/dasan-v0/SYN-005.json",
+      "turn_count": 25,
+      "length_class": "long",
+      "title": "누수 요금 감면 — 한 번 폭발하고 진정",
+      "inquiry_type": "생활하수도 관련 문의",
+      "key_items": [
+        {
+          "id": "inquiry",
+          "kind": "문의",
+          "label": "수도요금이 평소보다 많이 나옴",
+          "forms": [
+            "수도요금",
+            "수도 요금"
+          ]
+        },
+        {
+          "id": "cause",
+          "kind": "안내",
+          "label": "옥내 누수",
+          "forms": [
+            "누수"
+          ]
+        },
+        {
+          "id": "doc-form",
+          "kind": "서류",
+          "label": "감면 신청서",
+          "forms": [
+            "감면 신청서"
+          ]
+        },
+        {
+          "id": "doc-repair",
+          "kind": "서류",
+          "label": "수리 영수증 또는 수리 확인서",
+          "forms": [
+            "수리 영수증",
+            "수리 확인서"
+          ]
+        },
+        {
+          "id": "doc-id",
+          "kind": "서류",
+          "label": "신분증",
+          "forms": [
+            "신분증"
+          ]
+        },
+        {
+          "id": "guide-review",
+          "kind": "안내",
+          "label": "감면 여부·금액은 소관 부서 심사로 정해짐",
+          "forms": [
+            "심사"
+          ]
+        },
+        {
+          "id": "action-contact",
+          "kind": "조치",
+          "label": "소관 부서 확인 후 연락",
+          "forms": [
+            "연락드리겠습니다",
+            "다시 안내드리겠습니다"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "PC-04",
+      "script_id": "SYN-008",
+      "script": "scripts/persona_sim/dasan-v0/SYN-008.json",
+      "turn_count": 16,
+      "length_class": "medium",
+      "title": "수도요금 이의신청 재문의 — 욕설 없이 강하게 항의",
+      "inquiry_type": "생활하수도 관련 문의",
+      "key_items": [
+        {
+          "id": "inquiry",
+          "kind": "문의",
+          "label": "수도요금 이의신청 재문의",
+          "forms": [
+            "이의신청"
+          ]
+        },
+        {
+          "id": "request-contact",
+          "kind": "요청",
+          "label": "접수 뒤 연락이 없어 결과 연락을 요구",
+          "forms": [
+            "연락이 없",
+            "꼭 연락"
+          ]
+        },
+        {
+          "id": "guide-remeter",
+          "kind": "안내",
+          "label": "재검침 필요 여부는 검침 이력을 보고 소관 부서가 정함",
+          "forms": [
+            "재검침"
+          ]
+        },
+        {
+          "id": "guide-review",
+          "kind": "안내",
+          "label": "조정 여부·금액은 심사로 정해짐",
+          "forms": [
+            "심사"
+          ]
+        },
+        {
+          "id": "action-contact",
+          "kind": "조치",
+          "label": "소관 부서 확인 후 결과 연락",
+          "forms": [
+            "연락드리겠습니다",
+            "결과를 안내드리겠습니다"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "PC-05",
+      "script_id": "SYN-010",
+      "script": "scripts/persona_sim/dasan-v0/SYN-010.json",
+      "turn_count": 5,
+      "length_class": "short",
+      "title": "고속버스 예매 취소 — 시 소관 아님",
+      "inquiry_type": "대중교통 안내",
+      "key_items": [
+        {
+          "id": "inquiry",
+          "kind": "문의",
+          "label": "고속버스 예매 취소",
+          "forms": [
+            "고속버스"
+          ]
+        },
+        {
+          "id": "request-cancel",
+          "kind": "요청",
+          "label": "예매 취소",
+          "forms": [
+            "취소"
+          ]
+        },
+        {
+          "id": "guide-scope",
+          "kind": "안내",
+          "label": "시 소관이 아님",
+          "forms": [
+            "시 소관이 아니",
+            "소관이 아니"
+          ]
+        },
+        {
+          "id": "action-redirect",
+          "kind": "조치",
+          "label": "예매처·운영 기관 고객센터로 문의",
+          "forms": [
+            "예매하신 곳",
+            "운영 기관",
+            "고객센터"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "PC-06",
+      "script_id": "SYN-012",
+      "script": "scripts/persona_sim/dasan-v0/SYN-012.json",
+      "turn_count": 24,
+      "length_class": "long",
+      "title": "과태료 이의신청 — 처음부터 끝까지 화가 난 민원인",
+      "inquiry_type": "일반행정 문의",
+      "key_items": [
+        {
+          "id": "inquiry",
+          "kind": "문의",
+          "label": "주차 과태료 부과에 이의",
+          "forms": [
+            "과태료"
+          ]
+        },
+        {
+          "id": "request-reason",
+          "kind": "요청",
+          "label": "짐만 잠깐 내렸다는 사정",
+          "forms": [
+            "짐만",
+            "짐을 내리"
+          ]
+        },
+        {
+          "id": "guide-objection",
+          "kind": "안내",
+          "label": "이의신청 가능",
+          "forms": [
+            "이의신청"
+          ]
+        },
+        {
+          "id": "doc-form",
+          "kind": "서류",
+          "label": "이의신청서",
+          "forms": [
+            "이의신청서"
+          ]
+        },
+        {
+          "id": "doc-evidence",
+          "kind": "서류",
+          "label": "소명 자료",
+          "forms": [
+            "소명 자료"
+          ]
+        },
+        {
+          "id": "guide-prepay",
+          "kind": "안내",
+          "label": "사전납부 감경 제도",
+          "forms": [
+            "사전납부",
+            "감경"
+          ]
+        },
+        {
+          "id": "action-deadline",
+          "kind": "조치",
+          "label": "기한은 확인 후 연락",
+          "forms": [
+            "기한은 확인 후",
+            "기한은 소관 부서 확인 후"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "PC-07",
+      "script_id": "SYN-013",
+      "script": "scripts/persona_sim/dasan-v0/SYN-013.json",
+      "turn_count": 26,
+      "length_class": "long",
+      "title": "장애인콜택시 대리 신청 — 지친 보호자가 두 번 가라앉음",
+      "inquiry_type": "대중교통 안내",
+      "key_items": [
+        {
+          "id": "inquiry",
+          "kind": "문의",
+          "label": "장애인콜택시 이용 등록",
+          "forms": [
+            "장애인콜택시"
+          ]
+        },
+        {
+          "id": "request-proxy",
+          "kind": "요청",
+          "label": "보호자(아내) 대리 신청",
+          "forms": [
+            "대리 신청",
+            "대신 신청"
+          ]
+        },
+        {
+          "id": "doc-form",
+          "kind": "서류",
+          "label": "신청서",
+          "forms": [
+            "신청서"
+          ]
+        },
+        {
+          "id": "doc-disability",
+          "kind": "서류",
+          "label": "장애인등록증 또는 복지카드",
+          "forms": [
+            "장애인등록증",
+            "복지카드"
+          ]
+        },
+        {
+          "id": "doc-judgement",
+          "kind": "서류",
+          "label": "보행상 장애 판정 확인 서류",
+          "forms": [
+            "보행상 장애",
+            "판정"
+          ]
+        },
+        {
+          "id": "doc-proxy",
+          "kind": "서류",
+          "label": "위임장·대리인 신분증",
+          "forms": [
+            "위임장",
+            "대리인 신분증"
+          ]
+        },
+        {
+          "id": "action-contact",
+          "kind": "조치",
+          "label": "서류를 정리해 연락(발급처·처리 시기 확인 후 안내)",
+          "forms": [
+            "연락드리겠습니다",
+            "정리해서 다시 안내"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "PC-08",
+      "script_id": "SYN-015",
+      "script": "scripts/persona_sim/dasan-v0/SYN-015.json",
+      "turn_count": 9,
+      "length_class": "short",
+      "title": "주민등록초본 대리 발급 — 급한 직장인, 무뚝뚝한 상담원",
+      "inquiry_type": "일반행정 문의",
+      "key_items": [
+        {
+          "id": "inquiry",
+          "kind": "문의",
+          "label": "주민등록초본 발급",
+          "forms": [
+            "초본"
+          ]
+        },
+        {
+          "id": "request-proxy",
+          "kind": "요청",
+          "label": "배우자 대리 발급",
+          "forms": [
+            "대리 발급",
+            "대신 떼"
+          ]
+        },
+        {
+          "id": "doc-poa",
+          "kind": "서류",
+          "label": "위임장",
+          "forms": [
+            "위임장"
+          ]
+        },
+        {
+          "id": "doc-copy",
+          "kind": "서류",
+          "label": "위임인 신분증 사본",
+          "forms": [
+            "신분증 사본"
+          ]
+        },
+        {
+          "id": "doc-agent",
+          "kind": "서류",
+          "label": "대리인(배우자) 신분증 원본",
+          "forms": [
+            "대리인",
+            "배우자분 신분증"
+          ]
+        },
+        {
+          "id": "action-window",
+          "kind": "조치",
+          "label": "접수 창구는 소관 부서 확인 후 안내",
+          "forms": [
+            "접수 창구",
+            "소관 부서 확인 후 안내"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "PC-09",
+      "script_id": "SYN-018",
+      "script": "scripts/persona_sim/dasan-v0/SYN-018.json",
+      "turn_count": 24,
+      "length_class": "long",
+      "title": "수도 사용자 명의변경 — 이야기가 자꾸 옆길로 새는 고령 민원인",
+      "inquiry_type": "생활하수도 관련 문의",
+      "key_items": [
+        {
+          "id": "inquiry",
+          "kind": "문의",
+          "label": "수도 사용자 명의변경",
+          "forms": [
+            "명의변경",
+            "이름으로 바꾸"
+          ]
+        },
+        {
+          "id": "doc-form",
+          "kind": "서류",
+          "label": "신청서",
+          "forms": [
+            "신청서"
+          ]
+        },
+        {
+          "id": "doc-id",
+          "kind": "서류",
+          "label": "새 사용자 신분증",
+          "forms": [
+            "신분증"
+          ]
+        },
+        {
+          "id": "doc-owner",
+          "kind": "서류",
+          "label": "소유·점유 관계 확인 서류(등기사항증명서·임대차계약서)",
+          "forms": [
+            "등기사항증명서",
+            "임대차계약서",
+            "소유 관계",
+            "점유 관계",
+            "소유나 점유"
+          ]
+        },
+        {
+          "id": "guide-proxy",
+          "kind": "안내",
+          "label": "대리 신청 시 위임장·대리인 신분증 추가",
+          "forms": [
+            "위임장"
+          ]
+        },
+        {
+          "id": "action-contact",
+          "kind": "조치",
+          "label": "소유 서류 건 확인 후 연락",
+          "forms": [
+            "연락드리겠습니다",
+            "확인 후 안내드리겠습니다"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "PC-10",
+      "script_id": "SYN-020",
+      "script": "scripts/persona_sim/dasan-v0/SYN-020.json",
+      "turn_count": 23,
+      "length_class": "long",
+      "title": "아버지 경로 우대용 교통카드 대리 신청 — 묻지 않은 개인정보를 부르는 아들",
+      "inquiry_type": "대중교통 안내",
+      "key_items": [
+        {
+          "id": "inquiry",
+          "kind": "문의",
+          "label": "경로 우대용 교통카드",
+          "forms": [
+            "교통카드"
+          ]
+        },
+        {
+          "id": "request-proxy",
+          "kind": "요청",
+          "label": "아버지 대신 아들이 신청",
+          "forms": [
+            "대리 신청",
+            "대신 만들"
+          ]
+        },
+        {
+          "id": "doc-owner-id",
+          "kind": "서류",
+          "label": "아버님 신분증",
+          "forms": [
+            "아버님 신분증",
+            "아버지 신분증"
+          ]
+        },
+        {
+          "id": "doc-poa",
+          "kind": "서류",
+          "label": "위임장",
+          "forms": [
+            "위임장"
+          ]
+        },
+        {
+          "id": "doc-agent-id",
+          "kind": "서류",
+          "label": "신청인(아들) 신분증",
+          "forms": [
+            "고객님 신분증",
+            "대리인 신분증"
+          ]
+        },
+        {
+          "id": "guide-disabled",
+          "kind": "안내",
+          "label": "장애인 우대용이면 장애인등록증 추가",
+          "forms": [
+            "장애인등록증"
+          ]
+        },
+        {
+          "id": "action-form",
+          "kind": "조치",
+          "label": "위임장 양식은 소관 부서 확인 후 안내",
+          "forms": [
+            "위임장 양식"
+          ]
+        }
+      ]
+    }
+  ]
+}
