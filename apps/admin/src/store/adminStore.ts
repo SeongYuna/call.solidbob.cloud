@@ -2,10 +2,9 @@ import { create } from "zustand";
 import {
   changeBlacklistEntryExpiry,
   decideBlacklistRequestApi,
+  fetchAdminStats,
   fetchBlacklistEntries,
   fetchBlacklistRequests,
-  fetchCallGuardFlagTotal,
-  fetchCallListTotal,
   fetchKnowledgeGaps,
   fetchRoutingSetting,
   HubApiError,
@@ -38,6 +37,17 @@ interface AdminState {
   knowledgeGaps: KnowledgeGapItem[];
   callGuardTotal: number;
   completedCallsTotal: number;
+  /**
+   * `GET /hub/admin-stats`가 준 승인 대기·활성 등록 건수(2026-09-22) — 현황판
+   * 전용 스냅샷이다. 사이드바 배지·`NotificationBell`이 쓰는 `AdminPanel.tsx`의
+   * `pendingCount`/`activeEntryCount`(요청·등록 목록에서 그때그때 다시 세는
+   * 값)와는 다르다 — 그쪽은 승인·해제 직후 바로 갱신돼야 해서 계속 목록에서
+   * 센다. 이 값은 `loadAll` 시점의 스냅샷이라 그 사이엔 갱신되지 않는다.
+   */
+  statsPendingRequests: number;
+  statsActiveEntries: number;
+  /** 현황판에 "OO시 기준"으로 보여준다. 아직 못 불렀으면 null. */
+  statsCountedAt: string | null;
   /** `decisions/313` — 서버 값(`GET /hub/routing-settings`). `loadAll` 전까지는 로컬 기본값. */
   veteranThresholdYears: number;
   /**
@@ -81,6 +91,9 @@ export const useAdminStore = create<AdminState>((set, get) => ({
   knowledgeGaps: [],
   callGuardTotal: 0,
   completedCallsTotal: 0,
+  statsPendingRequests: 0,
+  statsActiveEntries: 0,
+  statsCountedAt: null,
   veteranThresholdYears: 3,
   blacklistExpiryMonths: 6,
 
@@ -92,23 +105,24 @@ export const useAdminStore = create<AdminState>((set, get) => ({
     }
     set({ status: "loading", error: null });
     try {
-      const [requests, entries, knowledgeGaps, callGuardTotal, completedCallsTotal, routingSetting] =
-        await Promise.all([
-          fetchBlacklistRequests(accessToken),
-          fetchBlacklistEntries(accessToken),
-          fetchKnowledgeGaps(accessToken),
-          fetchCallGuardFlagTotal(accessToken),
-          fetchCallListTotal(),
-          fetchRoutingSetting(accessToken),
-        ]);
+      const [requests, entries, knowledgeGaps, stats, routingSetting] = await Promise.all([
+        fetchBlacklistRequests(accessToken),
+        fetchBlacklistEntries(accessToken),
+        fetchKnowledgeGaps(accessToken),
+        fetchAdminStats(accessToken),
+        fetchRoutingSetting(accessToken),
+      ]);
       set({
         status: "ready",
         error: null,
         requests,
         entries,
         knowledgeGaps,
-        callGuardTotal,
-        completedCallsTotal,
+        callGuardTotal: stats.callGuardFlags,
+        completedCallsTotal: stats.callsClosed,
+        statsPendingRequests: stats.pendingRequests,
+        statsActiveEntries: stats.activeEntries,
+        statsCountedAt: stats.countedAt,
         veteranThresholdYears: routingSetting.veteranYears,
       });
     } catch (error) {

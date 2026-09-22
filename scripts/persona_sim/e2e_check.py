@@ -10,6 +10,10 @@
 전제: 로컬 스택(서버 :8000 · 콜 미디에이터 :8080 · PostgreSQL · ES) — 띄우는 순서는 `E2E.md`.
 출력: `data/processed/persona-e2e/<YYYY-MM-DD-HHMM>.json` + `.md` (gitignore — 커밋하지 않는다)
 
+`--close`(통화 후 요약)는 상담원 토큰이 있어야 한다(`decisions/315`). 환경변수 `CALL_AGENT_TOKEN` 이 없으면 **로컬 검사 DB 에
+임시 상담원 토큰을 만들어** 재생기 환경변수로만 넘기고, 끝나면 폐기한다(`e2e/agent_token.py`). DB·서버가 루프백이 아니면
+만들지 않는다 — 운영 DB 에는 쓰지 않는다. 토큰 값은 어디에도 찍지 않는다.
+
 판정은 `e2e/judge.py`(순수 함수)가 한다. 이 파일은 재생기를 subprocess 로 부르고, API·DB 를 읽어 넘길 뿐이다.
 재생기 stdout 은 **파싱하지 않는다** — call_id 를 내가 정해 넘기고(`--call-id`) 나머지는 API·DB 로 본다.
 ⚠ 여기 나온 것은 `source: synthetic` 이다 — 성능 수치가 아니다(절대 원칙 10).
@@ -30,6 +34,7 @@ from pathlib import Path
 from typing import Any
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+from e2e import agent_token  # noqa: E402
 from e2e.judge import Verdict, judge  # noqa: E402
 from e2e.report import to_json, to_markdown  # noqa: E402
 
@@ -54,6 +59,8 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
     p.add_argument("--settle", type=float, default=2.0, help="재생 뒤 저장이 끝나길 기다리는 시간(초)")
     p.add_argument("--dry-run", action="store_true", help="스택 없이 판정 로직만 돌린다(전부 ❌ 가 정상)")
     p.add_argument("--out-dir", default=str(OUT_DIR))
+    p.add_argument("--no-agent-token", action="store_true",
+                   help="검사 DB 에 임시 상담원 토큰을 만들지 않는다(그러면 --close 가 401 — D-1 판정이 ❌)")
     args = p.parse_args(argv)
     if args.skip_replay and not args.call_id:
         p.error("--skip-replay 는 --call-id 가 필요하다")
@@ -126,12 +133,52 @@ def fetch_db(database_url: str, call_id: str) -> dict[str, Any]:
         return {}
 
 
+# ---------------------------------------------------------------- 상담원 토큰 (재생기 --close)
+
+def issue_agent_token(database_url: str, core_url: str) -> tuple[str | None, int | None]:
+    """로컬 검사 DB 에 임시 상담원 토큰을 만든다 — (원문, 행 id). 못 만들면 (None, None) 과 이유를 stderr 에.
+    원문은 돌려주기만 한다 — 찍지 않는다."""
+    reason = agent_token.refusal_reason(database_url, core_url)
+    if reason:
+        print(f"  ⚠ 상담원 토큰을 만들지 않는다: {reason}. --close 가 401 이면 {agent_token.ENV_AGENT_TOKEN} 를 직접 준다", file=sys.stderr)
+        return None, None
+    try:
+        import psycopg  # type: ignore
+    except ImportError:
+        print("  ⚠ psycopg 가 없어 상담원 토큰을 만들지 못했다(.venv/bin/python 으로 실행)", file=sys.stderr)
+        return None, None
+    token = agent_token.new_token()
+    try:
+        with psycopg.connect(database_url, connect_timeout=5) as conn, conn.cursor() as cur:
+            cur.execute(agent_token.INSERT_AGENT, (agent_token.E2E_AGENT_ID, agent_token.E2E_AGENT_NAME, "e2e", "agent"))
+            cur.execute(agent_token.INSERT_TOKEN, (agent_token.E2E_AGENT_ID, agent_token.hash_token(token)))
+            row = cur.fetchone()
+            conn.commit()
+    except Exception as exc:  # noqa: BLE001 — 토큰 없이도 나머지 판정은 돈다
+        print(f"  ⚠ 상담원 토큰을 만들지 못했다: {type(exc).__name__}", file=sys.stderr)
+        return None, None
+    print(f"  상담원 토큰: 검사 DB 에 임시 발급({agent_token.E2E_AGENT_ID}) — 재생기 환경변수로만 넘기고 끝나면 폐기한다")
+    return token, int(row[0]) if row else None
+
+
+def revoke_agent_token(database_url: str, token_id: int) -> None:
+    try:
+        import psycopg  # type: ignore
+        with psycopg.connect(database_url, connect_timeout=5) as conn, conn.cursor() as cur:
+            cur.execute(agent_token.REVOKE_TOKEN, (token_id,))
+            conn.commit()
+    except Exception as exc:  # noqa: BLE001
+        print(f"  ⚠ 임시 상담원 토큰(id={token_id})을 폐기하지 못했다: {type(exc).__name__} — agent_token 에서 직접 revoked_at 을 채운다", file=sys.stderr)
+
+
 # ---------------------------------------------------------------- 재생
 
-def replay(script_id: str, call_id: str, args: argparse.Namespace) -> tuple[int, str]:
+def replay(script_id: str, call_id: str, args: argparse.Namespace, agent_token_value: str | None = None) -> tuple[int, str]:
     cmd = ["node", str(REPLAYER), script_id, "--call-id", call_id, "--speed", str(args.speed), "--url", args.mediator_url,
            "--watch", "--close", "--core-url", args.core_url]
     env = {**os.environ}
+    if agent_token_value:
+        env[agent_token.ENV_AGENT_TOKEN] = agent_token_value  # 헤더로만 나간다(재생기 close_auth.ts). 명령줄에 싣지 않는다
     try:
         proc = subprocess.run(cmd, cwd=REPLAYER.parent.parent, capture_output=True, text=True, timeout=args.replay_timeout, env=env)
     except subprocess.TimeoutExpired:
@@ -160,6 +207,32 @@ def read_commit() -> tuple[str, str]:
         return head[:12], "detached"
     except OSError:
         return "?", "?"
+
+
+def run_scripts(ids: list[str], call_ids: list[str], stamp: str, args: argparse.Namespace,
+                agent_token_value: str | None) -> list[Verdict]:
+    verdicts: list[Verdict] = []
+    for i, script_id in enumerate(ids):
+        script = load_script(script_id)
+        call_id = call_ids[i] if args.skip_replay else f"syn-e2e-{script_id.lower()}-{stamp}"
+        print(f"[{i + 1}/{len(ids)}] {script_id} {script.get('title', '')} → {call_id}")
+        if args.dry_run:
+            verdicts.append(judge(script, call_id, [], {}, {}))
+            continue
+        if not args.skip_replay:
+            code, tail = replay(script_id, call_id, args, agent_token_value)
+            print(f"  재생기 종료 {code}" + (f"\n    {tail.replace(chr(10), chr(10) + '    ')}" if code != 0 else ""))
+            time.sleep(args.settle)
+        segments = fetch_transcript(args.core_url, call_id)
+        record = fetch_record(args.core_url, call_id)
+        db = fetch_db(args.database_url, call_id)
+        v = judge(script, call_id, segments, record, db)
+        verdicts.append(v)
+        for c in v.checks:
+            if not c.ok:
+                print(f"  {'⚠' if c.warn_only else '❌'} {c.name} — {c.detail}")
+        print(f"  → {'✅' if v.ok else '❌'} ({len(v.failed)} 실패 · {len(v.warned)} 경고)")
+    return verdicts
 
 
 def main(argv: list[str]) -> int:
@@ -191,27 +264,18 @@ def main(argv: list[str]) -> int:
         meta["server_health"] = json.dumps(http_get(f"{args.core_url}/health"), ensure_ascii=False)[:300]
         meta["mediator_health"] = json.dumps(http_get(args.mediator_url.replace("ws://", "http://").replace("wss://", "https://") + "/health"), ensure_ascii=False)[:300]
 
-    verdicts: list[Verdict] = []
-    for i, script_id in enumerate(ids):
-        script = load_script(script_id)
-        call_id = call_ids[i] if args.skip_replay else f"syn-e2e-{script_id.lower()}-{stamp}"
-        print(f"[{i + 1}/{len(ids)}] {script_id} {script.get('title', '')} → {call_id}")
-        if args.dry_run:
-            verdicts.append(judge(script, call_id, [], {}, {}))
-            continue
-        if not args.skip_replay:
-            code, tail = replay(script_id, call_id, args)
-            print(f"  재생기 종료 {code}" + (f"\n    {tail.replace(chr(10), chr(10) + '    ')}" if code != 0 else ""))
-            time.sleep(args.settle)
-        segments = fetch_transcript(args.core_url, call_id)
-        record = fetch_record(args.core_url, call_id)
-        db = fetch_db(args.database_url, call_id)
-        v = judge(script, call_id, segments, record, db)
-        verdicts.append(v)
-        for c in v.checks:
-            if not c.ok:
-                print(f"  {'⚠' if c.warn_only else '❌'} {c.name} — {c.detail}")
-        print(f"  → {'✅' if v.ok else '❌'} ({len(v.failed)} 실패 · {len(v.warned)} 경고)")
+    token_value: str | None = None
+    token_id: int | None = None
+    if not args.dry_run and not args.skip_replay and not args.no_agent_token:
+        if os.environ.get(agent_token.ENV_AGENT_TOKEN, "").strip():
+            print(f"  상담원 토큰: 환경변수 {agent_token.ENV_AGENT_TOKEN} 를 쓴다")
+        else:
+            token_value, token_id = issue_agent_token(args.database_url, args.core_url)
+    try:
+        verdicts = run_scripts(ids, call_ids, stamp, args, token_value)
+    finally:
+        if token_id is not None:
+            revoke_agent_token(args.database_url, token_id)
 
     out_dir = Path(args.out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)

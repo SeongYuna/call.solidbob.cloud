@@ -8,9 +8,15 @@ import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
  * 있는 누적 건수다.
  *
  * ⚠ `apps/admin`은 상담원 대시보드와 완전히 분리된 별도 앱이라(2026-09-10)
- * "지금 진행 중인 통화" 같은 실시간 신호는 여기서 알 수 없다. 지금은
- * `store/adminStore.ts`의 mock 시드 값 + 이 세션에서 처리한 것만 보여준다 —
- * 백엔드가 붙으면 조회 API로 바꾼다.
+ * "지금 진행 중인 통화" 같은 실시간 신호는 여기서 알 수 없다.
+ *
+ * 2026-09-22 — `GET /hub/admin-stats` 하나로 네 지표를 전부 받는다
+ * (`store/adminStore.ts`의 `loadAll`). 예전엔 목록 API를 `limit=1`로 불러
+ * `total`만 뽑거나(완료 통화·콜가드) 클라이언트에서 목록을 세는(승인 대기·
+ * 활성 등록) 방식이었다 — mock 시드값이 아니라 그때도 이미 실제 값이었지만,
+ * 호출이 넷으로 흩어져 있었다. `countedAt`은 서버가 그 값을 센 시각이다 —
+ * `loadAll` 시점의 스냅샷이라 그 사이 승인·해제해도 다시 부르기 전까진
+ * 안 바뀐다.
  *
  * 2026-09-15 — 좌측 통계 카드 4개(그대로) + 우측 비율 도넛 차트로 재설계했다.
  * 새 지표를 만들지 않는다 — 기존 4개 값의 **비중**만 다르게 보여줄 뿐이다.
@@ -20,11 +26,14 @@ export function WallboardTab({
   callGuardTotal,
   pendingRequestCount,
   activeEntryCount,
+  countedAt,
 }: {
   completedCallsTotal: number;
   callGuardTotal: number;
   pendingRequestCount: number;
   activeEntryCount: number;
+  /** `GET /hub/admin-stats`의 `counted_at` — 아직 못 불렀으면 null. */
+  countedAt: string | null;
 }): ReactElement {
   const slices = useMemo(
     () => [
@@ -40,7 +49,9 @@ export function WallboardTab({
   return (
     <section aria-label="현황판">
       <p className="admin-help">
-        백엔드 연동 전이라 mock 시드 값 + 이 세션에서 처리한 건수입니다.
+        {countedAt !== null
+          ? `${new Date(countedAt).toLocaleString("ko-KR")} 기준입니다.`
+          : "집계 시각을 아직 불러오지 못했습니다."}{" "}
         실시간 통화 현황(지금 몇 통화가 진행 중인지)은 상담원 앱과 분리돼
         있어 여기서 볼 수 없습니다.
       </p>

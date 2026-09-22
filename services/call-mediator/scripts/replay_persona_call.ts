@@ -5,7 +5,7 @@
  *
  *   node scripts/replay_persona_call.ts --list
  *   node scripts/replay_persona_call.ts SYN-004 [--url ws://localhost:8080] [--speak [say|google]] [--watch] [--speed 1] [--dry-run]
- *       [--close --core-url http://localhost:8000]
+ *       [--close --core-url http://localhost:8000] [--save-ws /경로/frames.jsonl] [--final-timeout 20]
  *   node scripts/replay_persona_call.ts --prefetch [SYN-004]      # 재생 없이 Google TTS 캐시만 채운다(전 대본 또는 하나)
  *
  * - 두 화자를 **채널 둘**로 연다(`speaker=agent` · `speaker=customer`, `channels=2`) — 데모의 물리 2채널과 같은 모양이다.
@@ -18,10 +18,19 @@
  *   (`persona_replay/tts_budget.ts`, COST-1 과 같은 2단 가드). 키가 없는데 캐시도 없으면 **`say` 로 조용히 넘어가지 않고** 실패한다.
  *   발급·설정·비용은 `scripts/persona_sim/TTS.md`.
  * - `--watch` 는 `/ws?call_id=` 를 함께 열어 대시보드가 받는 것(마스킹된 자막·카드·콜 가드·필요서류)을 찍는다.
+ *   추천 줄에는 카드 제목과 함께 **지연 구간**(`retrieval_ms`·`generation_ms`·`internal_latency_ms`·`e2e_latency_ms`)을 찍는다
+ *   (`persona_replay/ws_view.ts`). `--save-ws <경로>` 는 `/ws` 로 받은 프레임을 그대로 jsonl 로 남긴다 — 마스킹본뿐이지만
+ *   운영에서 뜬 것은 저장소 밖(또는 gitignore 인 `data/`)에 둔다.
+ * - **마지막 턴을 확인하고 닫는다**(2026-09-22, `w6-replay-last-turn`). `/ws` 를 열 수 있으면(`--watch`·`--close`·`--save-ws`,
+ *   또는 뷰 토큰이 있거나 루프백 주소) 보낸 확정이 화자별로 전부 `/ws` 로 돌아올 때까지 기다린 뒤 `{"type":"end"}` 를 보낸다.
+ *   `--final-timeout`(기본 20초) 안에 안 돌아오면 **경고를 찍고 종료 코드 1** 로 끝낸다 — 조용히 닫지 않는다
+ *   (`persona_replay/final_echo.ts`). 생산자 소켓이 이미 닫혀 확정을 못 보낸 경우도 경고한다(전에는 조용히 건너뛰었다).
  * - `--close --core-url <서버>` 는 재생이 끝나면 `POST /hub/calls/{id}/close` 로 통화 후 요약 초안을 만든다(D-1~D-3).
  *   본문에는 **`/ws` 로 받은 마스킹본만** 싣는다 — 대본 원문을 보내지 않는다(SEC-1). 그래서 `--watch` 와 같은 뷰 토큰이 필요하다.
- *   서버가 이 API 를 잠갔다(`decisions/315`) — 환경변수 `CORE_API_TOKEN`(콜 미디에이터가 서버에 쓰는 서비스 토큰과 같은 값)을
- *   헤더로 싣는다. 없으면 401 이다.
+ *   서버 문(`decisions/315`, `close_guard.py`)은 **상담원 토큰 또는 서비스 토큰**을 받는다 — 환경변수 `CALL_AGENT_TOKEN`
+ *   (상담원 토큰 `cga_…`)이 있으면 그것, 없으면 `CORE_API_TOKEN`(서버 `INGEST_SERVICE_TOKEN` 과 같은 값)을 헤더로 싣는다
+ *   (`persona_replay/close_auth.ts`). 서비스 토큰을 설정하지 않은 로컬 서버는 상담원 토큰만 통한다 — `e2e_check.py` 가
+ *   로컬 검사 DB 에 임시로 발급해 넘긴다(`scripts/persona_sim/E2E.md`).
  * - 통화 기록 엔진은 `synthetic-script` 로 남는다(`producer=script`). STT 를 거치지 않았으므로 **여기서 나온 검색·마스킹
  *   수치는 상한이고, 지연 시각은 지어낸 값이다.**
  *
@@ -33,6 +42,7 @@
  * 있으면 그것이 이긴다. **실제 시민 번호를 넣지 않는다.**
  */
 import { execFileSync, spawn, type ChildProcess } from "node:child_process";
+import { createWriteStream, type WriteStream } from "node:fs";
 import { readdir, readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { WebSocket } from "ws";
@@ -48,6 +58,9 @@ import {
   type Player,
 } from "./persona_replay/google_tts.ts";
 import { capFromEnv, TtsBudget, TtsLedgerFile } from "./persona_replay/tts_budget.ts";
+import { describeMissing, FinalEchoTracker } from "./persona_replay/final_echo.ts";
+import { closeAuth, ENV_AGENT_TOKEN, ENV_SERVICE_TOKEN } from "./persona_replay/close_auth.ts";
+import { formatRecommendation } from "./persona_replay/ws_view.ts";
 
 const REPO_ROOT = fileURLToPath(new URL("../../../", import.meta.url));
 const SCRIPTS_DIR = `${REPO_ROOT}scripts/persona_sim/dasan-v0/`;
@@ -55,6 +68,13 @@ const FALLBACK_VOICE = "Yuna";
 /** Google TTS 캐시·장부. `data/processed/` 는 gitignore 다. `GOOGLE_TTS_CACHE_DIR` 로 캐시 위치만 바꿀 수 있다. */
 const TTS_CACHE_ROOT = (process.env.GOOGLE_TTS_CACHE_DIR ?? "").trim() || `${REPO_ROOT}data/processed/synthetic-voice/google`;
 const TTS_LEDGER_PATH = `${REPO_ROOT}data/processed/tts-usage.json`;
+/**
+ * `end` 를 보낸 뒤 콜 미디에이터가 채널을 닫기를 기다리는 상한. 미디에이터 `drain` 상한(10초, `call_registry.ts`)에 여유를 둔다 —
+ * 그 안에 마지막 확정의 추천·컴플라이언스·필요서류 판정이 끝난다.
+ */
+const PRODUCER_CLOSE_TIMEOUT_MS = 15_000;
+/** 생산자를 닫은 뒤 `/ws` 를 조금 더 연다 — 마지막 추천·필요서류 판정이 방송될 틈. */
+const VIEW_LINGER_MS = 3_000;
 
 type SpeakEngine = "off" | "say" | "google";
 
@@ -70,6 +90,10 @@ interface Args {
   list: boolean;
   close: boolean;
   coreUrl: string;
+  /** `/ws` 프레임을 jsonl 로 남길 경로. 빈 문자열이면 남기지 않는다 */
+  saveWs: string;
+  /** 마지막 확정이 `/ws` 로 돌아오길 기다리는 상한(ms) */
+  finalTimeoutMs: number;
 }
 
 /** `/ws` 로 받은 확정 자막 — 서버가 마스킹해 돌려준 것. 통화 후 요약 요청에 이것만 싣는다. */
@@ -114,6 +138,8 @@ function parseArgs(argv: string[]): Args {
     list: false,
     close: false,
     coreUrl: "",
+    saveWs: "",
+    finalTimeoutMs: 20_000,
   };
   for (let i = 0; i < argv.length; i += 1) {
     const flag = argv[i];
@@ -150,12 +176,24 @@ function parseArgs(argv: string[]): Args {
     } else if (flag === "--core-url") {
       args.coreUrl = value.replace(/\/+$/, "");
       i += 1;
+    } else if (flag === "--save-ws") {
+      args.saveWs = value;
+      i += 1;
+    } else if (flag === "--final-timeout") {
+      args.finalTimeoutMs = Number(value) * 1000;
+      i += 1;
     } else if (flag !== undefined && !flag.startsWith("--")) {
       args.target = flag;
     }
   }
   if (!(args.speed > 0)) {
     throw new Error("--speed 는 0 보다 커야 한다");
+  }
+  if (!(args.finalTimeoutMs > 0)) {
+    throw new Error("--final-timeout 은 0 보다 큰 초다");
+  }
+  if (args.saveWs.startsWith("--")) {
+    throw new Error("--save-ws 는 저장할 파일 경로가 있어야 한다");
   }
   if (args.close && args.coreUrl === "") {
     throw new Error("--close 는 --core-url(서버 주소)이 있어야 한다 — 콜 미디에이터 주소와 다르다");
@@ -235,21 +273,45 @@ function bearer(token: string | undefined): Record<string, string> {
   return value ? { authorization: `Bearer ${value}` } : {};
 }
 
-function watch(args: Args, callId: string, finals: Map<number, MaskedFinal>, print: boolean): Promise<WebSocket> {
+/** 루프백 콜 미디에이터 — 뷰 토큰 없이 `/ws` 가 열린다(`src/domain/access.ts`). */
+function isLoopbackUrl(url: string): boolean {
+  try {
+    const host = new URL(url).hostname.replace(/^\[|\]$/g, "");
+    return host === "localhost" || host === "::1" || host.startsWith("127.");
+  } catch {
+    return false;
+  }
+}
+
+interface ViewOptions {
+  finals: Map<number, MaskedFinal>;
+  echo: FinalEchoTracker;
+  print: boolean;
+  /** 받은 프레임을 그대로 남길 곳(jsonl). null 이면 남기지 않는다 */
+  save: WriteStream | null;
+}
+
+function watch(args: Args, callId: string, view: ViewOptions): Promise<WebSocket> {
+  const { finals, echo, print, save } = view;
   return open(`${args.url}/ws?call_id=${encodeURIComponent(callId)}`, bearer(process.env.CALL_MEDIATOR_VIEW_TOKEN)).then((ws) => {
     ws.on("message", (data) => {
-      const message = JSON.parse(data.toString()) as { type: string; payload: Record<string, unknown> };
+      const raw = data.toString();
+      // 받은 그대로 남긴다 — 마스킹본만 오는 문이다(SEC-1). 받은 시각은 이 머신 시계다
+      save?.write(`${JSON.stringify({ received_at: new Date().toISOString(), frame: raw })}\n`);
+      const message = JSON.parse(raw) as { type: string; payload: Record<string, unknown> };
       const p = message.payload;
       if (message.type === "transcript" && p["is_final"] === "true") {
         // 계약상 전 필드가 문자열이다(§7.3) — 요약 요청 스키마의 숫자·불리언으로 되돌린다
         const endMs = Number(p["utterance_end_ms"]);
+        const speaker: Speaker = p["speaker"] === "agent" ? "agent" : "customer";
         finals.set(Number(p["segment_id"]), {
           segment_id: Number(p["segment_id"]),
-          speaker: p["speaker"] === "agent" ? "agent" : "customer",
+          speaker,
           text: String(p["text"]),
           is_final: true,
           utterance_end_ms: Number.isFinite(endMs) ? endMs : null,
         });
+        echo.noteEcho(speaker, Number(p["segment_id"]));
       }
       if (!print) {
         return;
@@ -257,8 +319,7 @@ function watch(args: Args, callId: string, finals: Map<number, MaskedFinal>, pri
       if (message.type === "transcript" && p["is_final"] === "true") {
         console.log(`    ↳ 자막 [${String(p["speaker"])}] ${String(p["text"])}`);
       } else if (message.type === "recommendation") {
-        const cards = Array.isArray(p["cards"]) ? (p["cards"] as Array<{ title?: string }>).map((c) => c.title) : [];
-        console.log(`    ↳ 추천 fired=${String(p["fired"])} ${cards.length ? JSON.stringify(cards) : ""}`);
+        console.log(`    ↳ ${formatRecommendation(p)}`);
       } else if (message.type !== "transcript") {
         console.log(`    ↳ ${message.type} ${JSON.stringify(p).slice(0, 160)}`);
       }
@@ -284,21 +345,30 @@ async function openSpeakers(args: Args, callId: string, phone: string): Promise<
   return { agent, customer };
 }
 
-/** 통화 후 요약 초안(D-1~D-3). 마스킹본이 한 건도 없으면 부르지 않는다 — 원문으로 대신 채우지 않는다. */
+/**
+ * 통화 후 요약 초안(D-1~D-3). 마스킹본이 한 건도 없으면 부르지 않는다 — 원문으로 대신 채우지 않는다.
+ * 토큰은 `closeAuth` 가 고른다(상담원 토큰 우선, 없으면 서비스 토큰) — 값은 찍지 않고 변수 이름만 찍는다.
+ */
 async function closeCall(coreUrl: string, callId: string, segments: MaskedFinal[]): Promise<void> {
   if (segments.length === 0) {
     console.error("  → 통화 후 요약을 건너뛴다: /ws 로 받은 마스킹 자막이 0건이다(뷰 토큰·콜 미디에이터 확인)");
     process.exitCode = 1;
     return;
   }
+  const auth = closeAuth(process.env);
   const res = await fetch(`${coreUrl}/hub/calls/${encodeURIComponent(callId)}/close`, {
     method: "POST",
-    headers: { "content-type": "application/json", ...bearer(process.env.CORE_API_TOKEN) },
+    headers: { "content-type": "application/json", ...auth.headers },
     body: JSON.stringify({ call_id: callId, segments }),
   });
   const body = (await res.json().catch(() => ({}))) as Record<string, unknown>;
   if (!res.ok) {
     console.error(`  → 통화 후 요약 실패 HTTP ${res.status} ${JSON.stringify(body).slice(0, 200)}`);
+    if (res.status === 401) {
+      console.error(
+        `    토큰: ${auth.source ?? "없음"} — /close 는 상담원 토큰(${ENV_AGENT_TOKEN}) 또는 서버 INGEST_SERVICE_TOKEN 과 같은 서비스 토큰(${ENV_SERVICE_TOKEN})을 받는다`,
+      );
+    }
     process.exitCode = 1;
     return;
   }
@@ -429,7 +499,23 @@ async function main(): Promise<void> {
   }
 
   const finals = new Map<number, MaskedFinal>();
-  const watcher = (args.watch || args.close) && !args.dryRun ? await watch(args, callId, finals, args.watch) : null;
+  const echo = new FinalEchoTracker();
+  const save = args.saveWs !== "" && !args.dryRun ? createWriteStream(args.saveWs, { flags: "a" }) : null;
+  // `/ws` 는 보여 주려고(--watch)·요약하려고(--close)·남기려고(--save-ws) 연다. 그 밖에도 열 수 있으면(뷰 토큰·루프백)
+  // 연다 — 마지막 확정이 돌아왔는지 확인하는 데 쓴다. 이때 실패는 치명이 아니다(확인 없이 닫는다고 경고한다).
+  const viewRequired = args.watch || args.close || save !== null;
+  const viewPossible = (process.env.CALL_MEDIATOR_VIEW_TOKEN ?? "").trim() !== "" || isLoopbackUrl(args.url);
+  let watcher: WebSocket | null = null;
+  if (!args.dryRun && (viewRequired || viewPossible)) {
+    try {
+      watcher = await watch(args, callId, { finals, echo, print: args.watch, save });
+    } catch (error) {
+      if (viewRequired) {
+        throw error;
+      }
+      console.warn(`  ⚠ /ws 를 열지 못했다 — 마지막 확정이 돌아왔는지 확인하지 못한다: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  }
   const sockets = args.dryRun ? null : await openSpeakers(args, callId, phone);
   let stopped = false;
   process.once("SIGINT", () => {
@@ -446,8 +532,20 @@ async function main(): Promise<void> {
     const plan = planTurn(turn, args.speed);
     const ws = sockets?.[turn.speaker];
     const send = (text: string, isFinal: boolean): void => {
-      if (ws?.readyState === WebSocket.OPEN) {
-        ws.send(JSON.stringify({ text, is_final: isFinal }));
+      if (ws === undefined) {
+        return; // dry-run
+      }
+      if (ws.readyState !== WebSocket.OPEN) {
+        // 전에는 조용히 건너뛰었다 — 확정을 잃으면 저장 건수가 모자라는데 아무 흔적이 없었다
+        if (isFinal) {
+          console.error(`  ⚠ #${turn.seq} [${turn.speaker}] 생산자 소켓이 열려 있지 않아(readyState=${ws.readyState}) 확정을 보내지 못했다`);
+          process.exitCode = 1;
+        }
+        return;
+      }
+      ws.send(JSON.stringify({ text, is_final: isFinal }));
+      if (isFinal) {
+        echo.noteSent(turn.speaker);
       }
     };
     console.log(`#${String(turn.seq).padStart(2)} [${turn.speaker === "agent" ? "상담원" : "고객  "}|${turn.tone}] ${turn.text}`);
@@ -471,6 +569,20 @@ async function main(): Promise<void> {
   }
 
   if (sockets !== null) {
+    // ① 보낸 확정이 전부 `/ws` 로 돌아왔는가 — 마지막 턴까지 서버 마스킹·저장을 거쳐 방송됐다는 양성 확인이다
+    //    (콜 미디에이터는 서버 `/hub/transcripts` 가 성공한 것만 방송한다 — `call_registry.ts` `forward`)
+    if (watcher !== null && !stopped) {
+      const result = await echo.whenAllEchoed(args.finalTimeoutMs);
+      if (result.ok) {
+        console.log(`  ✓ 확정 자막 ${finals.size}건이 전부 /ws 로 돌아왔다 (마지막 확인까지 ${result.waitedMs}ms)`);
+      } else {
+        console.error(`  ⚠ ${describeMissing(result)} — 저장되지 않았을 수 있다. 콜 미디에이터 로그의 「전사 전달 실패 call=${callId}」를 본다`);
+        process.exitCode = 1;
+      }
+    } else if (watcher === null) {
+      console.warn("  ⚠ /ws 없이 닫는다 — 마지막 확정이 저장됐는지 이 재생기는 모른다(뷰 토큰을 주거나 --watch)");
+    }
+    // ② 그 뒤에야 끝을 알린다. 콜 미디에이터가 남은 판정(추천·컴플라이언스·필요서류)을 비우고 닫는다
     const closed = Object.values(sockets).map(
       (ws) => new Promise<void>((resolve) => (ws.readyState === WebSocket.CLOSED ? resolve() : ws.once("close", () => resolve()))),
     );
@@ -479,11 +591,21 @@ async function main(): Promise<void> {
         ws.send(JSON.stringify({ type: "end" }));
       }
     }
-    await Promise.race([Promise.all(closed), sleep(10_000)]);
+    const drained = await Promise.race([Promise.all(closed).then(() => true), sleep(PRODUCER_CLOSE_TIMEOUT_MS).then(() => false)]);
+    if (!drained) {
+      console.warn(`  ⚠ 콜 미디에이터가 ${PRODUCER_CLOSE_TIMEOUT_MS / 1000}초 안에 채널을 닫지 않았다 — 이쪽에서 닫는다`);
+      for (const ws of Object.values(sockets)) {
+        ws.close(1000, "재생 끝");
+      }
+    }
   }
   if (watcher !== null) {
-    await sleep(3000); // 마지막 추천·필요서류 판정을 조금 기다린다
+    await sleep(VIEW_LINGER_MS); // 마지막 추천·필요서류 판정을 조금 기다린다
     watcher.close();
+  }
+  if (save !== null) {
+    await new Promise<void>((resolve) => save.end(() => resolve()));
+    console.log(`  → /ws 프레임을 남겼다: ${args.saveWs}`);
   }
   if (args.close && !args.dryRun) {
     await closeCall(args.coreUrl, callId, [...finals.values()].sort((a, b) => a.segment_id - b.segment_id));
