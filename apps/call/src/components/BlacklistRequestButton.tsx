@@ -78,9 +78,14 @@ export function BlacklistRequestButton({
       ) : (
         <div className="wrapup-card blacklist-form">
           <h3>블랙리스트 전환 요청</h3>
+          {/* ⚠ "바뀌는 것은 누구에게 배정되는가"라고 썼던 문장을 뺐다 — J-5 배정 판정
+              (인입 전이든 통화 시작 직후든)을 실제로 부르는 곳이 아직 없어(콜 미디에이터
+              미배선, `w7-j5-routing-caller`) 사실이 아니었다. `decisions/407`(313의
+              "인입 전"을 126의 "통화 시작 직후·기록 목적"으로 재정의) 참고. 구현되면
+              "이후 통화부터 배정 판정이 기록에 남는다" 식으로 다시 채운다. */}
           <p className="blacklist-help">
             요청은 <strong>관리자 승인</strong>을 거쳐야 적용됩니다. 승인되어도 전화는
-            정상적으로 받으며, 바뀌는 것은 <strong>누구에게 배정되는가</strong> 하나입니다.
+            <strong>정상적으로 받습니다</strong> — 차단이 아닙니다.
           </p>
 
           {/* ⚠ 위기 신호는 폭언과 다르게 다룬다 — DASAN-MANUAL-5.4.
