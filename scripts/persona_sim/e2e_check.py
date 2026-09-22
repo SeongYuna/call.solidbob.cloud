@@ -6,6 +6,7 @@
     .venv/bin/python scripts/persona_sim/e2e_check.py --only SYN-004 SYN-006
     .venv/bin/python scripts/persona_sim/e2e_check.py --only SYN-004 --skip-replay --call-id syn-e2e-syn-004-20260918T1602
     .venv/bin/python scripts/persona_sim/e2e_check.py --dry-run             # 스택 없이 판정 로직만(대본 ↔ 빈 응답)
+    .venv/bin/python scripts/persona_sim/e2e_check.py --scripts-dir scripts/persona_sim/dasan-v1-holdout   # 보류 표본(decisions/219)
 
 전제: 로컬 스택(서버 :8000 · 콜 미디에이터 :8080 · PostgreSQL · ES) — 띄우는 순서는 `E2E.md`.
 출력: `data/processed/persona-e2e/<YYYY-MM-DD-HHMM>.json` + `.md` (gitignore — 커밋하지 않는다)
@@ -36,7 +37,7 @@ from typing import Any
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from e2e import agent_token  # noqa: E402
 from e2e.judge import Verdict, judge  # noqa: E402
-from e2e.report import to_json, to_markdown  # noqa: E402
+from e2e.report import procedure_summary, to_json, to_markdown  # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[2]
 SCRIPTS_DIR = ROOT / "scripts" / "persona_sim" / "dasan-v0"
@@ -59,6 +60,8 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
     p.add_argument("--settle", type=float, default=2.0, help="재생 뒤 저장이 끝나길 기다리는 시간(초)")
     p.add_argument("--dry-run", action="store_true", help="스택 없이 판정 로직만 돌린다(전부 ❌ 가 정상)")
     p.add_argument("--out-dir", default=str(OUT_DIR))
+    p.add_argument("--scripts-dir", default=str(SCRIPTS_DIR),
+                   help="대본 폴더(기본 dasan-v0). 보류 표본은 scripts/persona_sim/dasan-v1-holdout — 재생기에는 JSON 경로로 넘긴다")
     p.add_argument("--no-agent-token", action="store_true",
                    help="검사 DB 에 임시 상담원 토큰을 만들지 않는다(그러면 --close 가 401 — D-1 판정이 ❌)")
     args = p.parse_args(argv)
@@ -69,12 +72,17 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
 
 # ---------------------------------------------------------------- 입력
 
-def list_script_ids() -> list[str]:
-    return sorted(f.stem for f in SCRIPTS_DIR.glob("SYN-*.json"))
+def list_script_ids(scripts_dir: Path = SCRIPTS_DIR) -> list[str]:
+    return sorted(f.stem for f in scripts_dir.glob("SYN-*.json"))
 
 
-def load_script(script_id: str) -> dict[str, Any]:
-    return json.loads((SCRIPTS_DIR / f"{script_id}.json").read_text(encoding="utf-8"))
+def load_script(script_id: str, scripts_dir: Path = SCRIPTS_DIR) -> dict[str, Any]:
+    return json.loads((scripts_dir / f"{script_id}.json").read_text(encoding="utf-8"))
+
+
+def scripts_dir_of(args: argparse.Namespace) -> Path:
+    path = Path(args.scripts_dir)
+    return path if path.is_absolute() else (ROOT / path)
 
 
 def _read_headers() -> dict[str, str]:
@@ -180,7 +188,9 @@ def revoke_agent_token(database_url: str, token_id: int) -> None:
 # ---------------------------------------------------------------- 재생
 
 def replay(script_id: str, call_id: str, args: argparse.Namespace, agent_token_value: str | None = None) -> tuple[int, str]:
-    cmd = ["node", str(REPLAYER), script_id, "--call-id", call_id, "--speed", str(args.speed), "--url", args.mediator_url,
+    # 재생기는 ID 만 주면 dasan-v0 에서 찾는다 — 늘 JSON 경로를 넘겨 폴더를 가리지 않는다
+    target = str(scripts_dir_of(args) / f"{script_id}.json")
+    cmd = ["node", str(REPLAYER), target, "--call-id", call_id, "--speed", str(args.speed), "--url", args.mediator_url,
            "--watch", "--close", "--core-url", args.core_url]
     env = {**os.environ}
     if agent_token_value:
@@ -219,7 +229,7 @@ def run_scripts(ids: list[str], call_ids: list[str], stamp: str, args: argparse.
                 agent_token_value: str | None) -> list[Verdict]:
     verdicts: list[Verdict] = []
     for i, script_id in enumerate(ids):
-        script = load_script(script_id)
+        script = load_script(script_id, scripts_dir_of(args))
         call_id = call_ids[i] if args.skip_replay else f"syn-e2e-{script_id.lower()}-{stamp}"
         print(f"[{i + 1}/{len(ids)}] {script_id} {script.get('title', '')} → {call_id}")
         if args.dry_run:
@@ -243,8 +253,9 @@ def run_scripts(ids: list[str], call_ids: list[str], stamp: str, args: argparse.
 
 def main(argv: list[str]) -> int:
     args = parse_args(argv)
-    ids = [s.upper() for s in args.only] or list_script_ids()
-    missing = [s for s in ids if not (SCRIPTS_DIR / f"{s}.json").exists()]
+    scripts_dir = scripts_dir_of(args)
+    ids = [s.upper() for s in args.only] or list_script_ids(scripts_dir)
+    missing = [s for s in ids if not (scripts_dir / f"{s}.json").exists()]
     if missing:
         print(f"대본이 없다: {missing}", file=sys.stderr)
         return 2
@@ -261,7 +272,7 @@ def main(argv: list[str]) -> int:
         "branch": branch,
         "core_url": args.core_url,
         "mediator_url": args.mediator_url,
-        "scripts_dir": str(SCRIPTS_DIR.relative_to(ROOT)),
+        "scripts_dir": str(scripts_dir.relative_to(ROOT)) if scripts_dir.is_relative_to(ROOT) else str(scripts_dir),
         "command": " ".join(["e2e_check.py", *argv]),
         "speed": args.speed,
         "dry_run": args.dry_run,
@@ -291,7 +302,10 @@ def main(argv: list[str]) -> int:
     passed = sum(1 for v in verdicts if v.ok)
     shown = base.with_suffix(".md")
     shown = shown.relative_to(ROOT) if shown.is_relative_to(ROOT) else shown
+    ps = procedure_summary(verdicts)
     print(f"\n{len(verdicts)}건 중 ✅ {passed} · ❌ {len(verdicts) - passed} → {shown}")
+    print(f"F-2 절차 — 엉뚱한 쌍 {ps['wrong_pairs']} · 행 {ps['wrong_rows']} (대본 {ps['scripts_with_wrong']}건) · "
+          f"정답 절차 판정 {ps['needed_hit']}/{ps['needed_scripts']}" + (f" 없음 {ps['needed_missed']}" if ps["needed_missed"] else ""))
     return 0 if passed == len(verdicts) else 1
 
 

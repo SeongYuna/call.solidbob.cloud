@@ -59,6 +59,8 @@ const registry = new CallRegistry({
   // C-1~C-4 컴플라이언스 메시지 — 2026-09-22 켰다. apps/call 파서가 main 에 들어왔다(349b18b, 조서희). 검사·저장은 늘 돈다.
   // `compliance`(위반) 와 `compliance_unavailable`(검사 실패) 둘 다 이 스위치를 탄다
   announceCompliance: true,
+  // F-2 절차 채택 조건 — 기본 top1(`w6-procedure-pick-rule`). 다른 값은 `decisions/219` 후보를 재는 용도다
+  procedureAdoption: config.procedureAdoption,
 });
 
 const server = createCallMediatorServer({
@@ -71,6 +73,7 @@ const server = createCallMediatorServer({
     const usage = budget.snapshot();
     return {
       status: "ok",
+      procedure_adoption: config.procedureAdoption,
       stt_engine: stt.name,
       stt_credentials_configured: config.googleCredentialsReady,
       stt_caps_configured: usage.capsConfigured,

@@ -112,7 +112,27 @@ export interface RegistryDeps {
    * 기본 `INGEST_RETRY_DELAYS_MS`. 테스트가 줄인다. interim 과 4xx 는 다시 보내지 않는다(`isRetryableIngestError`).
    */
   ingestRetryDelaysMs?: readonly number[];
+  /**
+   * F-2 — 추천 1순위 카드의 조항을 **언제** 절차로 잡나(`decisions/219`). 기본 `top1`(= 지금까지의 동작, C0).
+   * 나머지 둘은 219 가 사전 등록한 후보를 재려고 둔 것이다 — 채택 여부는 결정 기록을 따른다.
+   * - `top1` — 추천마다 1순위 조항을 잡는다(`w6-procedure-pick-rule`)
+   * - `two-consecutive` — **고객 발화로 발동한 추천 두 번이 연달아** 같은 1순위 조항일 때만 잡는다(C1·C3).
+   *   발동하지 않은 추천(`fired` ≠ `"true"` — 상담원 발화·트리거가 거른 맞장구)은 연속을 끊지도 잇지도 않는다
+   * - `score-floor` — 1순위 카드의 `similarity_score` 가 `PROCEDURE_SCORE_FLOOR` 이상일 때만 잡는다(C2)
+   */
+  procedureAdoption?: ProcedureAdoption;
 }
+
+export type ProcedureAdoption = "top1" | "two-consecutive" | "score-floor";
+export const PROCEDURE_ADOPTIONS: readonly ProcedureAdoption[] = ["top1", "two-consecutive", "score-floor"];
+
+/**
+ * C2(`score-floor`)의 하한 — `decisions/219` 사전 등록값. **학습 표본(`dasan-v0` 24건, 09-22 16:43 로컬 E2E)에서** 골랐다:
+ * 필요서류 대본마다 「대본 절차가 1순위였던 추천」의 최고 점수를 구하고, 그 최솟값(SYN-015 초본 4.3, 0.6359)을 넘지 않게
+ * 내림한 값이다 — v0 에서 C0 이 잡던 필요한 절차를 하나도 잃지 않는 가장 높은 하한. 점수 눈금은 dense(KoE5) cosine
+ * `(1 + cos) / 2`(운영 구성, 리랭커 없음). 값을 바꾸려면 다시 사전 등록하고 새 표본으로 잰다 — 설정이 아니라 결정이다.
+ */
+export const PROCEDURE_SCORE_FLOOR = 0.635;
 
 /**
  * 확정 전사 재시도 간격 — 처음 + 두 번 = 최대 3회. 2026-09-22 운영 SYN-010 에서 마지막 상담원 확정이 콜 미디에이터까지
@@ -152,7 +172,15 @@ interface CallState {
   readonly agentFinals: string[];
   /** 판정 요청을 한 줄로 세운다 — 늦게 보낸 요청의 응답이 먼저 와서 화면이 옛 판정으로 되돌아가지 않게. */
   closureChain: Promise<void>;
+  /**
+   * `two-consecutive` 전용 — 고객 확정 발화마다 보낸 추천의 1순위 조항(발화 번호 순). 추천은 줄 밖에서 동시에 돌아
+   * 응답 순서가 발화 순서와 다를 수 있어서, 응답을 받기 전(`pending`)에도 자리를 잡아 둔다 — 사이의 응답이 아직 안 왔으면
+   * 「연달아」를 판정하지 않는다. `skip` 은 발동하지 않았거나 실패한 추천이다(연속에서 빠진다).
+   */
+  readonly customerTops: Map<number, TopEntry>;
 }
+
+type TopEntry = { state: "pending" } | { state: "skip" } | { state: "done"; docId: string | null };
 
 export class CallRegistry {
   private readonly deps: RegistryDeps;
@@ -220,6 +248,7 @@ export class CallRegistry {
       notProcedures: new Set(),
       agentFinals: [],
       closureChain: Promise.resolve(),
+      customerTops: new Map(),
     };
     this.calls.set(spec.callId, call);
     const engine =
@@ -615,8 +644,14 @@ export class Channel {
         payload: { call_id: this.callId, segment_id: String(item.segmentId) },
       });
     }
+    const mode = this.deps.procedureAdoption ?? "top1";
+    const tracksStreak = mode === "two-consecutive" && item.raw.speaker === "customer";
+    if (tracksStreak) {
+      this.call.customerTops.set(item.segmentId, { state: "pending" });
+    }
+    let payload: RecommendPayload;
     try {
-      const payload = await this.deps.hub.recommend({
+      payload = await this.deps.hub.recommend({
         call_id: this.callId,
         segment_id: item.segmentId,
         speaker: item.raw.speaker,
@@ -625,16 +660,53 @@ export class Channel {
         utterance_end_ms: item.raw.utterance_end_ms,
         received_at_ms: item.receivedAtMs,
       });
-      this.deps.broadcaster.publish(this.callId, {
-        type: "recommendation",
-        payload: withE2eLatency(payload, item.raw.utterance_end_ms, this.callClockMs()),
-      });
-      const candidate = topSourceDocId(payload);
+    } catch (error) {
+      this.deps.log.warn(`추천 요청 실패 call=${this.callId} segment=${item.segmentId} status=${statusOf(error)}`);
+      if (tracksStreak) {
+        this.call.customerTops.set(item.segmentId, { state: "skip" });
+        this.adoptStreaks();
+      }
+      return;
+    }
+    this.deps.broadcaster.publish(this.callId, {
+      type: "recommendation",
+      payload: withE2eLatency(payload, item.raw.utterance_end_ms, this.callClockMs()),
+    });
+    const candidate = topSourceDocId(payload);
+    if (mode === "top1") {
       if (candidate !== null) {
         this.track(this.adoptProcedure(candidate));
       }
-    } catch (error) {
-      this.deps.log.warn(`추천 요청 실패 call=${this.callId} segment=${item.segmentId} status=${statusOf(error)}`);
+    } else if (mode === "score-floor") {
+      const score = topSimilarityScore(payload);
+      if (candidate !== null && score !== null && score >= PROCEDURE_SCORE_FLOOR) {
+        this.track(this.adoptProcedure(candidate));
+      }
+    } else if (tracksStreak) {
+      this.call.customerTops.set(
+        item.segmentId,
+        payload["fired"] === "true" ? { state: "done", docId: candidate } : { state: "skip" },
+      );
+      this.adoptStreaks();
+    }
+  }
+
+  /**
+   * `two-consecutive` — 발동한 고객 추천을 발화 번호 순으로 늘어놓고, **이웃한 둘이 모두 응답을 받았고 1순위 조항이 같으면**
+   * 그 조항을 잡는다. 사이에 아직 응답이 안 온 추천이 있으면 그 쌍은 보지 않는다(그 응답이 올 때 다시 본다).
+   * 이미 잡았거나 규칙이 없다고 들은 조항은 `adoptProcedure` 가 다시 묻지 않는다 — 여러 번 불러도 된다.
+   */
+  private adoptStreaks(): void {
+    const entries = [...this.call.customerTops.entries()]
+      .filter(([, entry]) => entry.state !== "skip")
+      .sort(([a], [b]) => a - b)
+      .map(([, entry]) => entry);
+    for (let i = 1; i < entries.length; i += 1) {
+      const prev = entries[i - 1]!;
+      const cur = entries[i]!;
+      if (prev.state === "done" && cur.state === "done" && cur.docId !== null && prev.docId === cur.docId) {
+        this.track(this.adoptProcedure(cur.docId));
+      }
     }
   }
 }
@@ -671,6 +743,17 @@ function topSourceDocId(payload: Record<string, unknown>): string | null {
   }
   const source = (cards[0] as { source?: { doc_id?: unknown } } | null)?.source;
   return typeof source?.doc_id === "string" && source.doc_id.length > 0 ? source.doc_id : null;
+}
+
+/** 1순위 카드의 `similarity_score`(7.3절 — 문자열). 없거나 숫자가 아니면 `null` — 하한을 넘었다고 치지 않는다. */
+function topSimilarityScore(payload: Record<string, unknown>): number | null {
+  const cards = payload["cards"];
+  if (!Array.isArray(cards) || cards.length === 0) {
+    return null;
+  }
+  const raw = (cards[0] as { similarity_score?: unknown } | null)?.similarity_score;
+  const score = typeof raw === "number" ? raw : typeof raw === "string" && raw.trim() !== "" ? Number(raw) : Number.NaN;
+  return Number.isFinite(score) ? score : null;
 }
 
 function statusOf(error: unknown): string {

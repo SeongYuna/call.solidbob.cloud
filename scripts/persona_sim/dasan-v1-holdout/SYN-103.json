@@ -1,0 +1,127 @@
+{
+  "id": "SYN-103",
+  "version": "dasan-v1-holdout",
+  "source": "synthetic",
+  "generated_by": "Claude Code (claude-opus-5) · 2026-09-22 · 보류 표본(decisions/219) · 사람 검토 전",
+  "title": "광역알뜰교통카드 신청 — 마일리지를 모르는 청년, 지하철 요금 곁가지",
+  "length_class": "medium",
+  "turn_count": 14,
+  "caller_number": "01000000203",
+  "agent_persona": "A02",
+  "customer_persona": "C09",
+  "procedure": {
+    "doc_ids": [
+      "DASAN-TERM-2.7",
+      "DASAN-TERM-2.4",
+      "DASAN-MANUAL-3.3"
+    ],
+    "required_documents": [
+      "신청서",
+      "신분증",
+      "주소지를 확인할 수 있는 서류"
+    ],
+    "conditional_documents": [
+      "연령 또는 자격을 확인할 수 있는 서류"
+    ]
+  },
+  "turns": [
+    {
+      "seq": 1,
+      "speaker": "agent",
+      "text": "한별시 통합민원콜센터입니다.",
+      "tone": "calm"
+    },
+    {
+      "seq": 2,
+      "speaker": "customer",
+      "text": "알뜰교통카드 신청하려고요. 뭐가 필요해요?",
+      "tone": "calm"
+    },
+    {
+      "seq": 3,
+      "speaker": "agent",
+      "text": "광역알뜰교통카드 마일리지 적립 신청은 신청서, 신분증, 주소지를 확인할 수 있는 서류로 접수하세요.",
+      "tone": "calm"
+    },
+    {
+      "seq": 4,
+      "speaker": "customer",
+      "text": "마일리지가 뭐예요?",
+      "tone": "calm"
+    },
+    {
+      "seq": 5,
+      "speaker": "agent",
+      "text": "걷거나 자전거로 이동한 거리만큼 적립해 드리는 제도예요. 청년이시면 추가 적립 대상인지 확인해 보실 수 있어요.",
+      "tone": "calm"
+    },
+    {
+      "seq": 6,
+      "speaker": "customer",
+      "text": "저 스물여섯이에요.",
+      "tone": "calm"
+    },
+    {
+      "seq": 7,
+      "speaker": "agent",
+      "text": "청년 추가 적립 대상이면 연령을 확인할 수 있는 서류를 함께 내시면 되고, 자격 심사는 소관 부서에서 합니다.",
+      "tone": "calm"
+    },
+    {
+      "seq": 8,
+      "speaker": "customer",
+      "text": "아 그렇구나. 근데 지하철 요금도 이걸로 싸지는 거예요?",
+      "tone": "calm"
+    },
+    {
+      "seq": 9,
+      "speaker": "agent",
+      "text": "지하철 요금은 이용 거리와 교통카드 종류에 따라 달라서, 할인 폭은 제가 딱 잘라 말씀드리기 어려워요.",
+      "tone": "calm"
+    },
+    {
+      "seq": 10,
+      "speaker": "customer",
+      "text": "네.",
+      "tone": "calm"
+    },
+    {
+      "seq": 11,
+      "speaker": "agent",
+      "text": "신청 서류 다시 말씀드리면 신청서, 신분증, 주소지 확인 서류, 그리고 연령 확인 서류예요.",
+      "tone": "calm"
+    },
+    {
+      "seq": 12,
+      "speaker": "customer",
+      "text": "네 부탁드려요. 문자로도 보내 주세요.",
+      "tone": "calm"
+    },
+    {
+      "seq": 13,
+      "speaker": "agent",
+      "text": "번호 확인되는 대로 문자로 보내 드릴게요. 이용해 주셔서 감사합니다.",
+      "tone": "calm"
+    },
+    {
+      "seq": 14,
+      "speaker": "customer",
+      "text": "수고하세요.",
+      "tone": "calm"
+    }
+  ],
+  "expected": {
+    "pii_by_pattern": {},
+    "compliance": [],
+    "call_guard_by_type": {},
+    "customer_non_calm_turns": [],
+    "j": {
+      "blacklist_request": false,
+      "routing": "normal"
+    }
+  },
+  "notes": [
+    "TERM-2.7: 신청서·신분증·주소지 확인 서류. 청년·저소득층 추가 적립은 연령·자격 확인 서류. 자격 심사는 소관 부서",
+    "지하철 요금(2.4)은 곁가지 — 규칙 없는 안내 조항"
+  ]
+}

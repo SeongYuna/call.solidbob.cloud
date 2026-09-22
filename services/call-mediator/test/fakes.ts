@@ -99,6 +99,8 @@ export class FakeHub implements HubPort {
   failGuard: number | null = null;
   /** 추천 응답 1순위 카드의 근거 조항 — 주면 cards 에 한 장 싣는다. */
   topDocId: string | null = null;
+  /** 추천 카드의 `similarity_score`(문자열 — 7.3절). `null` 이면 필드를 싣지 않는다. */
+  topScore: string | null = "0.9";
   readonly docsChecked: RequiredDocsCheckRequest[] = [];
   /** 필요서류 판정을 **물은** 조항을 순서대로 — 422 로 돌려보낸 것까지. `docsChecked` 는 판정이 돌아간 것만 담는다. */
   readonly docsAsked: string[] = [];
@@ -168,7 +170,7 @@ export class FakeHub implements HubPort {
             title: "t",
             summary: "s",
             source: { doc_id: docId, title: "t" },
-            similarity_score: "0.9",
+            ...(this.topScore === null ? {} : { similarity_score: this.topScore }),
           })),
           internal_latency_ms: "1",
         }

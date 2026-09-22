@@ -1,0 +1,125 @@
+{
+  "id": "SYN-108",
+  "version": "dasan-v1-holdout",
+  "source": "synthetic",
+  "generated_by": "Claude Code (claude-opus-5) · 2026-09-22 · 보류 표본(decisions/219) · 사람 검토 전",
+  "title": "전입신고 — 이사 온 일본 출신 직장인, 세대주를 모른다",
+  "length_class": "medium",
+  "turn_count": 12,
+  "caller_number": "01000000208",
+  "agent_persona": "A06",
+  "customer_persona": "C16",
+  "procedure": {
+    "doc_ids": [
+      "DASAN-TERM-4.4",
+      "DASAN-TERM-1.5",
+      "DASAN-TERM-1.4",
+      "DASAN-MANUAL-3.3"
+    ],
+    "required_documents": [
+      "신고서",
+      "신고인 신분증(외국인등록증 원본)"
+    ],
+    "conditional_documents": [
+      "세대주 확인(세대주 신분증 또는 확인서)"
+    ]
+  },
+  "turns": [
+    {
+      "seq": 1,
+      "speaker": "agent",
+      "text": "한별시 통합민원콜센터입니다. 한국어가 어려우시면 통역 지원을 안내해 드릴 수 있어요.",
+      "tone": "calm"
+    },
+    {
+      "seq": 2,
+      "speaker": "customer",
+      "text": "괜찮아요. 천천히 해 주세요. 이사했어요. 신고 해야 해요?",
+      "tone": "calm"
+    },
+    {
+      "seq": 3,
+      "speaker": "agent",
+      "text": "네, 이사하시면 전입신고를 정해진 기간 안에 하셔야 해요. 신고서와 신고인 신분증이 필요해요.",
+      "tone": "calm"
+    },
+    {
+      "seq": 4,
+      "speaker": "customer",
+      "text": "はい... 네. 외국인등록증 돼요?",
+      "tone": "calm"
+    },
+    {
+      "seq": 5,
+      "speaker": "agent",
+      "text": "네, 외국인등록증은 주민등록증과 같은 절차로 접수돼요. 원본을 가져오세요.",
+      "tone": "calm"
+    },
+    {
+      "seq": 6,
+      "speaker": "customer",
+      "text": "새 집은 한별시 누리구 솔바람로 31, 402호예요.",
+      "tone": "calm",
+      "labels": {
+        "pii": [
+          {
+            "pattern": "P7",
+            "span": "한별시 누리구 솔바람로 31, 402호"
+          }
+        ]
+      }
+    },
+    {
+      "seq": 7,
+      "speaker": "agent",
+      "text": "주소는 신고서에 적으시면 돼요. 혹시 새 집에서 세대주이신가요?",
+      "tone": "calm"
+    },
+    {
+      "seq": 8,
+      "speaker": "customer",
+      "text": "세대주가 뭐예요?",
+      "tone": "calm"
+    },
+    {
+      "seq": 9,
+      "speaker": "agent",
+      "text": "그 집 주민등록의 대표가 되는 사람이에요. 혼자 사시면 보통 본인이 세대주예요.",
+      "tone": "calm"
+    },
+    {
+      "seq": 10,
+      "speaker": "customer",
+      "text": "아, 혼자 살아요.",
+      "tone": "calm"
+    },
+    {
+      "seq": 11,
+      "speaker": "agent",
+      "text": "그러면 신고서와 외국인등록증 원본이면 돼요. 세대주가 아니시면 세대주 확인이 더 필요하고요.",
+      "tone": "calm"
+    },
+    {
+      "seq": 12,
+      "speaker": "customer",
+      "text": "네, 알겠습니다. ありがとう, 감사합니다.",
+      "tone": "calm"
+    }
+  ],
+  "expected": {
+    "pii_by_pattern": {
+      "P7": 1
+    },
+    "compliance": [],
+    "call_guard_by_type": {},
+    "customer_non_calm_turns": [],
+    "j": {
+      "blacklist_request": false,
+      "routing": "normal"
+    }
+  },
+  "notes": [
+    "TERM-4.4: 신고서·신고인 신분증. 세대주가 아니면 세대주 확인. TERM-1.5: 외국인등록증은 주민등록증과 같은 절차, 통역 안내",
+    "일본어 맞장구(「はい」)·되묻기(「세대주가 뭐예요?」)·주소(P7)"
+  ]
+}

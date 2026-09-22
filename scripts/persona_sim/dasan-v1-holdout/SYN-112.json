@@ -1,0 +1,117 @@
+{
+  "id": "SYN-112",
+  "version": "dasan-v1-holdout",
+  "source": "synthetic",
+  "generated_by": "Claude Code (claude-opus-5) · 2026-09-22 · 보류 표본(decisions/219) · 사람 검토 전",
+  "title": "골목 불법 주정차 신고 — 처리 결과를 세 번 묻는 민원인",
+  "length_class": "medium",
+  "turn_count": 12,
+  "caller_number": "01000000212",
+  "agent_persona": "A04",
+  "customer_persona": "C15",
+  "procedure": {
+    "doc_ids": [
+      "DASAN-TERM-4.21",
+      "DASAN-TERM-4.20"
+    ],
+    "required_documents": []
+  },
+  "turns": [
+    {
+      "seq": 1,
+      "speaker": "agent",
+      "text": "한별시 통합민원콜센터입니다.",
+      "tone": "calm"
+    },
+    {
+      "seq": 2,
+      "speaker": "customer",
+      "text": "우리 집 골목에 차가 매일 서 있어서 소방차가 못 들어갈 것 같아요. 신고하려고요.",
+      "tone": "calm"
+    },
+    {
+      "seq": 3,
+      "speaker": "agent",
+      "text": "장소와 시간, 사진 같은 확인 가능한 자료가 있으면 말씀해 주세요.",
+      "tone": "calm"
+    },
+    {
+      "seq": 4,
+      "speaker": "customer",
+      "text": "네. 한별시 나래구 꽃담길 입구요. 저녁 여덟 시부터 아침까지 서 있어요.",
+      "tone": "calm",
+      "labels": {
+        "pii": [
+          {
+            "pattern": "P7",
+            "span": "한별시 나래구 꽃담길"
+          }
+        ]
+      }
+    },
+    {
+      "seq": 5,
+      "speaker": "agent",
+      "text": "접수합니다. 사진이 있으시면 담당 부서 안내에 따라 제출하시면 됩니다.",
+      "tone": "calm"
+    },
+    {
+      "seq": 6,
+      "speaker": "customer",
+      "text": "신고하면 과태료 나오는 거죠?",
+      "tone": "calm"
+    },
+    {
+      "seq": 7,
+      "speaker": "agent",
+      "text": "처분 여부는 담당 부서가 확인 후 정합니다. 제가 결과를 약속드릴 수 없습니다.",
+      "tone": "calm"
+    },
+    {
+      "seq": 8,
+      "speaker": "customer",
+      "text": "그럼 결과는 저한테 알려 주나요?",
+      "tone": "calm"
+    },
+    {
+      "seq": 9,
+      "speaker": "agent",
+      "text": "처분 결과를 신고하신 분께 따로 알려 드린다고 약속드리기는 어렵습니다.",
+      "tone": "calm"
+    },
+    {
+      "seq": 10,
+      "speaker": "customer",
+      "text": "그러니까 신고는 된 거고, 결과는 모른다는 거죠?",
+      "tone": "calm"
+    },
+    {
+      "seq": 11,
+      "speaker": "agent",
+      "text": "네, 신고는 접수됐고 처리는 담당 부서가 합니다.",
+      "tone": "calm"
+    },
+    {
+      "seq": 12,
+      "speaker": "customer",
+      "text": "네.",
+      "tone": "calm"
+    }
+  ],
+  "expected": {
+    "pii_by_pattern": {
+      "P7": 1
+    },
+    "compliance": [],
+    "call_guard_by_type": {},
+    "customer_non_calm_turns": [],
+    "j": {
+      "blacklist_request": false,
+      "routing": "normal"
+    }
+  },
+  "notes": [
+    "TERM-4.21: 발생 장소·일시·확인 가능한 자료를 확인해 접수. 처분 결과를 개별 통보한다고 약속하지 않는다",
+    "필요서류 절차가 없는 통화 — 신고 접수이지 서류 신청이 아니다"
+  ]
+}

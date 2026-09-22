@@ -2,7 +2,7 @@
 title: "필요서류 절차를 잡는 조건을 다시 설계한다 — 맞장구·잡음 발화의 1순위가 절차가 된다"
 assignee: "류준"
 role: "ai"
-status: "todo"
+status: "in-progress"
 sprint: 6
 priority: 58
 date: 2026-09-22

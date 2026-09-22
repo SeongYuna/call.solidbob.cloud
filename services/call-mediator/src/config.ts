@@ -13,6 +13,7 @@
  * | `CORS_ALLOWED_ORIGINS` | 대시보드 `Origin` 허용 목록 — 서버와 같은 키·같은 기본값 | 로컬 Vite 둘 |
  * | `CALL_MEDIATOR_INGEST_TOKEN` | `/ingest`(과금) — 진짜 비밀, 생산자만 (`domain/access.ts`) | **이 머신(루프백) 접속만 받는다** |
  * | `CALL_MEDIATOR_VIEW_TOKEN` | `/ws`(자막 보기) — 브라우저가 내므로 비밀이 아니다 | **이 머신(루프백) 접속만 받는다** |
+ * | `F2_PROCEDURE_ADOPTION` | F-2 절차를 잡는 조건 — `top1` · `two-consecutive` · `score-floor`(`decisions/219` 후보를 재는 용도) | `top1`. 모르는 값도 `top1` |
  *
  * ⚠ `CALL_MEDIATOR_PORT`·`CORE_API_URL`·`CALL_MEDIATOR_INGEST_TOKEN`·`CALL_MEDIATOR_VIEW_TOKEN` 은 아직 `.env.example` 에 없다 — 그 파일은 자격증명 보호 훅이
  * 편집을 막아 사람이 직접 채운다(`server/CLAUDE.md` §6 과 같은 처지).
@@ -20,6 +21,7 @@
 import { existsSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import type { Caps } from "./domain/budget.ts";
+import { PROCEDURE_ADOPTIONS, type ProcedureAdoption } from "./app/call_registry.ts";
 
 export interface CallMediatorConfig {
   port: number;
@@ -35,6 +37,8 @@ export interface CallMediatorConfig {
   /** 키 파일이 실제로 있는가. 경로 자체는 밖에 싣지 않는다. */
   googleCredentialsReady: boolean;
   usageFile: string;
+  /** F-2 절차 채택 조건(`decisions/219`). 기본 `top1`. */
+  procedureAdoption: ProcedureAdoption;
 }
 
 const LOCAL_VITE_ORIGINS = ["http://localhost:5173", "http://127.0.0.1:5173"];
@@ -60,7 +64,13 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): CallMediatorCo
     },
     googleCredentialsReady: credentials.length > 0 && existsSync(credentials),
     usageFile: USAGE_FILE,
+    procedureAdoption: procedureAdoptionOr(env.F2_PROCEDURE_ADOPTION),
   };
+}
+
+function procedureAdoptionOr(value: string | undefined): ProcedureAdoption {
+  const v = (value ?? "").trim();
+  return (PROCEDURE_ADOPTIONS as readonly string[]).includes(v) ? (v as ProcedureAdoption) : "top1";
 }
 
 function intOr(value: string | undefined, fallback: number): number {

@@ -1,0 +1,164 @@
+{
+  "id": "SYN-104",
+  "version": "dasan-v1-holdout",
+  "source": "synthetic",
+  "generated_by": "Claude Code (claude-opus-5) · 2026-09-22 · 보류 표본(decisions/219) · 사람 검토 전",
+  "title": "소상공인 지원금 — 「무조건」 단정을 정정하는 상담원, 재촉하는 사장님",
+  "length_class": "medium",
+  "turn_count": 12,
+  "caller_number": "01000000204",
+  "agent_persona": "A05",
+  "customer_persona": "C14",
+  "procedure": {
+    "doc_ids": [
+      "DASAN-TERM-6.4",
+      "DASAN-TERM-6.1",
+      "DASAN-MANUAL-1.1",
+      "DASAN-MANUAL-1.4"
+    ],
+    "required_documents": [
+      "신청서",
+      "사업자등록증",
+      "대표자 신분증",
+      "매출 감소를 확인할 수 있는 서류",
+      "입금 계좌 정보"
+    ]
+  },
+  "turns": [
+    {
+      "seq": 1,
+      "speaker": "agent",
+      "text": "네, 한별시 통합민원콜센터입니다! 무엇을 도와드릴까요?",
+      "tone": "calm"
+    },
+    {
+      "seq": 2,
+      "speaker": "customer",
+      "text": "가게 하는데요, 소상공인 지원금 서류 뭐 챙겨요? 빨리요.",
+      "tone": "tense"
+    },
+    {
+      "seq": 3,
+      "speaker": "agent",
+      "text": "소상공인 지원금은 신청서, 사업자등록증, 대표자 신분증, 매출 감소를 확인할 수 있는 서류, 입금 계좌 정보로 신청하세요!",
+      "tone": "calm"
+    },
+    {
+      "seq": 4,
+      "speaker": "customer",
+      "text": "아 네. 그럼 받는 건 확실하죠?",
+      "tone": "tense"
+    },
+    {
+      "seq": 5,
+      "speaker": "agent",
+      "text": "그럼요, 서류만 내시면 무조건 받으세요!",
+      "tone": "calm",
+      "labels": {
+        "compliance": [
+          {
+            "type": "C-1",
+            "phrase": "무조건 받으세요",
+            "expected_alternative_source": "DASAN-MANUAL-1.4"
+          }
+        ]
+      }
+    },
+    {
+      "seq": 6,
+      "speaker": "customer",
+      "text": "작년에 두 달 문 닫았었는데요.",
+      "tone": "tense"
+    },
+    {
+      "seq": 7,
+      "speaker": "agent",
+      "text": "아, 제가 단정해서 말씀드렸네요. 휴업이나 폐업 이력이 있으면 대상에서 제외될 수 있어요. 지급 여부는 심사 후에 정해집니다.",
+      "tone": "calm"
+    },
+    {
+      "seq": 8,
+      "speaker": "customer",
+      "text": "뭐야, 그럼 안 될 수도 있다는 거네.",
+      "tone": "tense"
+    },
+    {
+      "seq": 9,
+      "speaker": "agent",
+      "text": "네, 그럴 수 있어요. 신청은 하실 수 있고 결과는 심사로 정해져요. 입금 계좌는 신청서에 적으시면 돼요.",
+      "tone": "calm"
+    },
+    {
+      "seq": 10,
+      "speaker": "customer",
+      "text": "계좌는 000000204204예요. 적어 둬요.",
+      "tone": "tense",
+      "labels": {
+        "pii": [
+          {
+            "pattern": "P3",
+            "span": "000000204204"
+          }
+        ]
+      }
+    },
+    {
+      "seq": 11,
+      "speaker": "agent",
+      "text": "계좌는 신청서에 직접 적어 주시면 되고, 전화로는 받지 않을게요. 서류는 다섯 가지예요.",
+      "tone": "calm"
+    },
+    {
+      "seq": 12,
+      "speaker": "customer",
+      "text": "알았어요. 끊어요.",
+      "tone": "tense"
+    }
+  ],
+  "expected": {
+    "pii_by_pattern": {
+      "P3": 1
+    },
+    "compliance": [
+      {
+        "seq": 5,
+        "type": "C-1"
+      }
+    ],
+    "call_guard_by_type": {},
+    "customer_non_calm_turns": [
+      {
+        "seq": 2,
+        "tone": "tense"
+      },
+      {
+        "seq": 4,
+        "tone": "tense"
+      },
+      {
+        "seq": 6,
+        "tone": "tense"
+      },
+      {
+        "seq": 8,
+        "tone": "tense"
+      },
+      {
+        "seq": 10,
+        "tone": "tense"
+      },
+      {
+        "seq": 12,
+        "tone": "tense"
+      }
+    ],
+    "j": {
+      "blacklist_request": false,
+      "routing": "normal"
+    }
+  },
+  "notes": [
+    "TERM-6.4: 신청서·사업자등록증·대표자 신분증·매출 감소 확인 서류·입금 계좌. 휴·폐업 이력이 있으면 제외될 수 있음",
+    "A05 가 「무조건」 으로 단정했다가 스스로 정정한다(C-1)"
+  ]
+}

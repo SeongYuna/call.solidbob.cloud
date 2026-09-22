@@ -1,0 +1,128 @@
+{
+  "id": "SYN-101",
+  "version": "dasan-v1-holdout",
+  "source": "synthetic",
+  "generated_by": "Claude Code (claude-opus-5) · 2026-09-22 · 보류 표본(decisions/219) · 사람 검토 전",
+  "title": "중학생 아들 청소년증 — 베트남 출신 어머니의 대리 신청",
+  "length_class": "medium",
+  "turn_count": 14,
+  "caller_number": "01000000201",
+  "agent_persona": "A06",
+  "customer_persona": "C02",
+  "procedure": {
+    "doc_ids": [
+      "DASAN-TERM-4.6",
+      "DASAN-TERM-1.5",
+      "DASAN-MANUAL-3.3"
+    ],
+    "required_documents": [
+      "발급 신청서",
+      "사진",
+      "본인 확인 서류"
+    ],
+    "conditional_documents": [
+      "보호자 신분증",
+      "가족관계를 확인할 수 있는 서류"
+    ]
+  },
+  "turns": [
+    {
+      "seq": 1,
+      "speaker": "agent",
+      "text": "한별시 통합민원콜센터입니다. 천천히 말씀하셔도 괜찮아요.",
+      "tone": "calm"
+    },
+    {
+      "seq": 2,
+      "speaker": "customer",
+      "text": "안녕하세요. 우리 아들 중학생이에요. 청소년증 만들고 싶어요.",
+      "tone": "calm"
+    },
+    {
+      "seq": 3,
+      "speaker": "agent",
+      "text": "네, 청소년증 발급이요. 아드님이 직접 신청하시나요, 어머님이 대신 신청하시나요?",
+      "tone": "calm"
+    },
+    {
+      "seq": 4,
+      "speaker": "customer",
+      "text": "제가 해요. 아들은 학교 가요.",
+      "tone": "calm"
+    },
+    {
+      "seq": 5,
+      "speaker": "agent",
+      "text": "보호자 대리 신청이시군요. 기본 서류는 발급 신청서, 사진, 본인 확인 서류예요.",
+      "tone": "calm"
+    },
+    {
+      "seq": 6,
+      "speaker": "customer",
+      "text": "네.",
+      "tone": "calm"
+    },
+    {
+      "seq": 7,
+      "speaker": "agent",
+      "text": "그리고 어머님이 대신 신청하시니까 어머님 신분증과 가족관계를 확인할 수 있는 서류가 더 필요해요.",
+      "tone": "calm"
+    },
+    {
+      "seq": 8,
+      "speaker": "customer",
+      "text": "본인 확인 서류가 뭐예요?",
+      "tone": "calm"
+    },
+    {
+      "seq": 9,
+      "speaker": "agent",
+      "text": "아드님 본인인지 확인하는 서류예요. 어머님 신분증은 외국인등록증도 똑같이 인정돼요.",
+      "tone": "calm"
+    },
+    {
+      "seq": 10,
+      "speaker": "customer",
+      "text": "아 네.",
+      "tone": "calm"
+    },
+    {
+      "seq": 11,
+      "speaker": "agent",
+      "text": "발급에는 시간이 조금 걸려서 바로 받으실 수는 없어요. 한국어가 어려우시면 통역 지원도 안내해 드릴 수 있어요.",
+      "tone": "calm"
+    },
+    {
+      "seq": 12,
+      "speaker": "customer",
+      "text": "괜찮아요. 천천히 말해 줘서 알아들어요.",
+      "tone": "calm"
+    },
+    {
+      "seq": 13,
+      "speaker": "agent",
+      "text": "다시 짚어 드릴게요. 발급 신청서, 사진, 본인 확인 서류, 그리고 어머님 신분증과 가족관계 서류예요.",
+      "tone": "calm"
+    },
+    {
+      "seq": 14,
+      "speaker": "customer",
+      "text": "네, 감사합니다. 안녕히 계세요.",
+      "tone": "calm"
+    }
+  ],
+  "expected": {
+    "pii_by_pattern": {},
+    "compliance": [],
+    "call_guard_by_type": {},
+    "customer_non_calm_turns": [],
+    "j": {
+      "blacklist_request": false,
+      "routing": "normal"
+    }
+  },
+  "notes": [
+    "TERM-4.6: 발급 신청서·사진·본인 확인 서류 + 보호자 대리면 보호자 신분증·가족관계 서류. 즉시 수령을 약속하지 않는다",
+    "되묻기 「본인 확인 서류가 뭐예요?」 와 맞장구 「네」·「아 네」 가 절차 채택의 잡음이다"
+  ]
+}

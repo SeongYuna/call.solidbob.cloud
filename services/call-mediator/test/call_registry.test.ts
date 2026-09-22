@@ -2,7 +2,12 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { BudgetGuard } from "../src/app/budget_guard.ts";
-import { CallRegistry, type Channel } from "../src/app/call_registry.ts";
+import {
+  CallRegistry,
+  PROCEDURE_SCORE_FLOOR,
+  type Channel,
+  type ProcedureAdoption,
+} from "../src/app/call_registry.ts";
 import { localDay } from "../src/domain/budget.ts";
 import { CaptureBroadcaster, FakeHub, FakeStt, MemoryLedger, newLog, silence, tick } from "./fakes.ts";
 
@@ -18,6 +23,7 @@ function setup(
     announceClosure?: boolean;
     routingCandidates?: string[];
     ingestRetryDelaysMs?: number[];
+    procedureAdoption?: ProcedureAdoption;
   } = {},
 ) {
   const hub = new FakeHub();
@@ -47,6 +53,7 @@ function setup(
     routingCandidates: opts.routingCandidates,
     // 테스트는 재시도 간격을 짧게 — 기본값(운영)은 call_registry.ts 의 INGEST_RETRY_DELAYS_MS
     ingestRetryDelaysMs: opts.ingestRetryDelaysMs ?? [1, 1],
+    procedureAdoption: opts.procedureAdoption,
   });
   return {
     hub,
@@ -713,4 +720,110 @@ test("재시도하는 동안 뒤 결과는 기다린다 — 자막 순서가 뒤
     hub.ingestAttempts.map((raw) => raw.segment_id),
     [1, 1, 2],
   );
+});
+
+// ── decisions/219 — 절차 채택 조건 후보. 기본(top1)은 위 F-2 테스트들이 고정한다 ─────────────────────────
+
+/** 고객 발화마다 1순위 조항을 바꿔 가며 흘리고, 판정을 물은 조항(422 포함)을 돌려준다. */
+async function askedProcedures(
+  mode: ProcedureAdoption | undefined,
+  turns: Array<{ speaker: "agent" | "customer"; text: string; top?: string | null; score?: string | null; fired?: boolean }>,
+): Promise<string[]> {
+  const { registry, hub, stt } = setup({ procedureAdoption: mode });
+  const agent = await openOk(registry, "test-1", "agent", 2);
+  const customer = await openOk(registry, "test-1", "customer", 2);
+  let at = 1000;
+  for (const turn of turns) {
+    hub.topDocId = turn.top ?? null;
+    hub.topScore = turn.score === undefined ? "0.9" : turn.score;
+    hub.fired = turn.fired ?? true;
+    stt.streams[turn.speaker === "agent" ? 0 : 1]!.emit(turn.text, true, at);
+    at += 1000;
+    await tick(20);
+  }
+  await agent.close();
+  await customer.close();
+  return [...new Set(hub.docsAsked)];
+}
+
+test("219 — 기본값은 top1 이다: 고객 발화 한 번의 1순위도 절차로 잡는다 (C0 그대로)", async () => {
+  const asked = await askedProcedures(undefined, [{ speaker: "customer", text: "네", top: "DASAN-TERM-4.13" }]);
+  assert.deepEqual(asked, ["DASAN-TERM-4.13"]);
+});
+
+test("219 C1 — two-consecutive: 한 번만 1순위인 조항은 잡지 않는다", async () => {
+  const asked = await askedProcedures("two-consecutive", [
+    { speaker: "customer", text: "청소년증 서류요", top: "DASAN-TERM-4.6" },
+    { speaker: "agent", text: "신청서 사진 본인 확인 서류요", top: null },
+    { speaker: "customer", text: "네", top: "DASAN-TERM-4.13" },
+  ]);
+  assert.deepEqual(asked, []);
+});
+
+test("219 C1 — two-consecutive: 고객 추천 두 번이 연달아 같은 1순위면 잡는다. 사이의 상담원 발화는 연속을 끊지 않는다", async () => {
+  const asked = await askedProcedures("two-consecutive", [
+    { speaker: "customer", text: "청소년증 서류요", top: "DASAN-TERM-4.6" },
+    { speaker: "agent", text: "신청서 사진 본인 확인 서류요", top: "DASAN-TERM-9.9" }, // 상담원 추천은 보지 않는다
+    { speaker: "customer", text: "본인 확인 서류가 뭐예요?", top: "DASAN-TERM-4.6" },
+  ]);
+  assert.deepEqual(asked, ["DASAN-TERM-4.6"]);
+});
+
+test("219 C1 — two-consecutive: 다른 1순위가 끼면 끊긴다", async () => {
+  const asked = await askedProcedures("two-consecutive", [
+    { speaker: "customer", text: "청소년증 서류요", top: "DASAN-TERM-4.6" },
+    { speaker: "customer", text: "네", top: "DASAN-TERM-4.13" },
+    { speaker: "customer", text: "사진은요", top: "DASAN-TERM-4.6" },
+  ]);
+  assert.deepEqual(asked, []);
+});
+
+test("219 C3 — two-consecutive: 발동하지 않은 추천(트리거가 거른 맞장구)은 연속을 끊지 않는다", async () => {
+  const asked = await askedProcedures("two-consecutive", [
+    { speaker: "customer", text: "청소년증 서류요", top: "DASAN-TERM-4.6" },
+    { speaker: "customer", text: "네", top: "DASAN-TERM-4.13", fired: false },
+    { speaker: "customer", text: "사진은요", top: "DASAN-TERM-4.6" },
+  ]);
+  assert.deepEqual(asked, ["DASAN-TERM-4.6"]);
+});
+
+test("219 C1 — two-consecutive: 카드 0장인 추천은 연속을 끊는다(1순위가 없다)", async () => {
+  const asked = await askedProcedures("two-consecutive", [
+    { speaker: "customer", text: "청소년증 서류요", top: "DASAN-TERM-4.6" },
+    { speaker: "customer", text: "음", top: null },
+    { speaker: "customer", text: "사진은요", top: "DASAN-TERM-4.6" },
+  ]);
+  assert.deepEqual(asked, []);
+});
+
+test("219 C1 — two-consecutive: 응답이 발화 순서와 다르게 와도 발화 번호로 이웃을 본다", async () => {
+  const { registry, hub, stt } = setup({ procedureAdoption: "two-consecutive" });
+  const customer = await openOk(registry, "test-1", "customer");
+  // 첫 추천을 늦게 돌려준다 — 두 번째 응답이 먼저 온다
+  const original = hub.recommend.bind(hub);
+  let first = true;
+  hub.recommend = async (request) => {
+    if (first) {
+      first = false;
+      await new Promise((resolve) => setTimeout(resolve, 60));
+    }
+    return original(request);
+  };
+  hub.topDocId = "DASAN-TERM-4.6";
+  stt.last().emit("청소년증 서류요", true, 1000);
+  stt.last().emit("사진은요", true, 2000);
+  await tick(120);
+  await customer.close();
+  assert.deepEqual([...new Set(hub.docsAsked)], ["DASAN-TERM-4.6"]);
+});
+
+test("219 C2 — score-floor: 1순위 점수가 하한 아래면 잡지 않고, 하한 이상이면 잡는다. 점수가 없으면 잡지 않는다", async () => {
+  assert.equal(PROCEDURE_SCORE_FLOOR, 0.635);
+  const asked = await askedProcedures("score-floor", [
+    { speaker: "customer", text: "네", top: "DASAN-TERM-4.13", score: "0.6349" },
+    { speaker: "customer", text: "청소년증 서류요", top: "DASAN-TERM-4.6", score: "0.635" },
+    { speaker: "customer", text: "그리고요", top: "DASAN-TERM-3.8", score: null },
+    { speaker: "customer", text: "음", top: "DASAN-TERM-6.4", score: "숫자 아님" },
+  ]);
+  assert.deepEqual(asked, ["DASAN-TERM-4.6"]);
 });

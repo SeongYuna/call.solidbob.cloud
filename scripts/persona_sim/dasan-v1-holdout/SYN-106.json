@@ -1,0 +1,129 @@
+{
+  "id": "SYN-106",
+  "version": "dasan-v1-holdout",
+  "source": "synthetic",
+  "generated_by": "Claude Code (claude-opus-5) · 2026-09-22 · 보류 표본(decisions/219) · 사람 검토 전",
+  "title": "체육관 대관 — 배드민턴 동호회 총무, 동호회 자랑이 길다",
+  "length_class": "medium",
+  "turn_count": 12,
+  "caller_number": "01000000206",
+  "agent_persona": "A01",
+  "customer_persona": "C03",
+  "procedure": {
+    "doc_ids": [
+      "DASAN-TERM-4.17",
+      "DASAN-MANUAL-3.3"
+    ],
+    "required_documents": [
+      "이용 신청서",
+      "신청인 신분증"
+    ],
+    "conditional_documents": [
+      "단체를 확인할 수 있는 서류",
+      "자격 증명서"
+    ]
+  },
+  "turns": [
+    {
+      "seq": 1,
+      "speaker": "agent",
+      "text": "안녕하세요, 한별시 통합민원콜센터입니다!",
+      "tone": "calm"
+    },
+    {
+      "seq": 2,
+      "speaker": "customer",
+      "text": "구민체육관 대관하려고요. 배드민턴 동호회에서 토요일마다 쓰려고 하는데 뭐 가져가면 돼요?",
+      "tone": "calm"
+    },
+    {
+      "seq": 3,
+      "speaker": "agent",
+      "text": "체육시설 대관은 이용 신청서와 신청인 신분증으로 접수하세요. 동호회처럼 단체로 쓰시면 단체를 확인할 수 있는 서류가 더 필요해요.",
+      "tone": "calm"
+    },
+    {
+      "seq": 4,
+      "speaker": "customer",
+      "text": "아 그래요? 저희 동호회가 벌써 십 년 됐거든요. 회원이 서른 명이에요.",
+      "tone": "calm"
+    },
+    {
+      "seq": 5,
+      "speaker": "agent",
+      "text": "오래된 동호회네요. 단체 확인 서류는 회칙이나 회원 명단처럼 단체를 확인할 수 있는 서류면 돼요.",
+      "tone": "calm"
+    },
+    {
+      "seq": 6,
+      "speaker": "customer",
+      "text": "네.",
+      "tone": "calm"
+    },
+    {
+      "seq": 7,
+      "speaker": "agent",
+      "text": "토요일 예약이 되는지는 시설 운영 일정에 따라 달라서 제가 지금 확답은 못 드려요.",
+      "tone": "calm"
+    },
+    {
+      "seq": 8,
+      "speaker": "customer",
+      "text": "그럼 누가 연락 주는 거예요? 저 총무 최하늘이고요, 번호는 010-0000-0206이에요.",
+      "tone": "calm",
+      "labels": {
+        "pii": [
+          {
+            "pattern": "P6",
+            "span": "최하늘"
+          },
+          {
+            "pattern": "P4",
+            "span": "010-0000-0206"
+          }
+        ]
+      }
+    },
+    {
+      "seq": 9,
+      "speaker": "agent",
+      "text": "대관 담당 부서에서 일정 확인 후 연락드리도록 전달할게요.",
+      "tone": "calm"
+    },
+    {
+      "seq": 10,
+      "speaker": "customer",
+      "text": "네 부탁드려요.",
+      "tone": "calm"
+    },
+    {
+      "seq": 11,
+      "speaker": "agent",
+      "text": "서류는 이용 신청서, 신청인 신분증, 단체 확인 서류입니다.",
+      "tone": "calm"
+    },
+    {
+      "seq": 12,
+      "speaker": "customer",
+      "text": "감사합니다.",
+      "tone": "calm"
+    }
+  ],
+  "expected": {
+    "pii_by_pattern": {
+      "P4": 1,
+      "P6": 1
+    },
+    "compliance": [],
+    "call_guard_by_type": {},
+    "customer_non_calm_turns": [],
+    "j": {
+      "blacklist_request": false,
+      "routing": "normal"
+    }
+  },
+  "notes": [
+    "TERM-4.17: 이용 신청서·신청인 신분증. 단체 이용은 단체 확인 서류 추가. 예약 가능 여부는 시설별 운영 일정",
+    "이름(P6)·전화(P4) 가 나온다 — 대관 담당 부서가 연락하도록 남긴다"
+  ]
+}
