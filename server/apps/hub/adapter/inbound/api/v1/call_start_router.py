@@ -46,4 +46,5 @@ async def start_call(
         status=call.status,
         created=call.created,
         customer_linked=call.customer_id is not None,
+        last_segment_id=call.last_segment_id,
     )

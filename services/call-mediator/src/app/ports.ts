@@ -150,8 +150,18 @@ export class HubError extends Error {
   }
 }
 
+/**
+ * `POST /hub/calls` 응답에서 콜 미디에이터가 쓰는 것. 서버는 같은 `call_id` 를 다시 받아도 행을 건드리지 않고(멱등),
+ * **이미 저장된 가장 큰 발화 번호**를 돌려준다 — 통화를 다시 열면(파드 재시작·연결 끊김 뒤 재연결) 여기서 이어 센다.
+ * 1부터 다시 세면 저장된 전사를 같은 번호로 덮어썼다(2026-09-22 운영 QA `test-qa-05`, `w6-segment-id-reuse`).
+ */
+export interface CallStartResult {
+  /** 새 통화이거나 필드가 없는 옛 서버면 0 */
+  lastSegmentId: number;
+}
+
 export interface HubPort {
-  startCall(request: CallStartRequest): Promise<void>;
+  startCall(request: CallStartRequest): Promise<CallStartResult>;
   decideRouting(request: RoutingDecisionRequest): Promise<RoutingDecisionPayload>;
   ingestTranscript(raw: RawTranscript): Promise<MaskedTranscript>;
   recommend(request: RecommendRequest): Promise<RecommendPayload>;

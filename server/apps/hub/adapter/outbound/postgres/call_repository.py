@@ -29,6 +29,9 @@ ON CONFLICT ("customer_id") DO NOTHING
 """
 
 
+_LAST_SEGMENT = 'SELECT COALESCE(MAX("segment_id"), 0) FROM "transcript_segment" WHERE "call_id" = %s'
+
+
 class PostgresCallRepository(CallStartRecordPort):
     def __init__(self, connect: ConnectionFactory) -> None:
         self._connect = connect
@@ -49,3 +52,10 @@ class PostgresCallRepository(CallStartRecordPort):
                     rowcount = getattr(cur, "rowcount", 1)
             await conn.commit()
         return rowcount > 0
+
+    async def last_segment_id(self, call_id: str) -> int:
+        async with self._connect() as conn:
+            async with conn.cursor() as cur:
+                await cur.execute(_LAST_SEGMENT, (call_id,))
+                row = await cur.fetchone()
+        return int(row[0]) if row and row[0] is not None else 0

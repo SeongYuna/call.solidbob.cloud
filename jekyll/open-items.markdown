@@ -714,7 +714,7 @@ Environment Variables → **Production 만** → Deployments → Redeploy(`VITE_
 - [ ] **Root Directory 셋이 실제 폴더와 맞는지 눈으로 확인** — 어긋나면 Ignored Build Step 의 `git diff` 가
   항상 비어 **빌드가 영원히 건너뛰어진다**(빨간불이 아니라 조용한 초록). 09-14 `apps/dashboard` → `apps/call`
   개명이 있었고 위 뷰 토큰 항목에도 옛 경로가 적혀 있었다(이번에 고쳤다). 확인법은 런북 18-4.
-- [ ] **Ignored Build Step 으로는 배포 한도를 못 막는다 — `vercel.json` `git.deploymentEnabled` 가 필요하다 (신규, 2026-09-22, 정성윤)** —
+- [x] **Ignored Build Step 으로는 배포 한도를 못 막는다 — `vercel.json` `git.deploymentEnabled` 가 필요하다 (신규, 2026-09-22, 정성윤)** — ✅ **09-22 정성윤이 파일 대신 Vercel 프로젝트 설정에서 직접 막았다**(`w6-vercel-json-branch-deploys` done — 설정은 저장소 밖이라 프로젝트를 새로 만들면 다시 한다). 원문 —
   09-22 다시 한도에 걸렸다(`api-deployments-free-per-day` 100 · 24시간에 147건 생성). 취소된 빌드도 배포 1건으로 센다.
   줄이는 길은 Root Directory 안 `vercel.json` 에 `{"git":{"deploymentEnabled":{"PM":false,"ai":false,"server":false}}}` 를
   두는 것뿐이다(main·frontend 만 남겨 147 → 76). **`apps/call`·`apps/admin`·`apps/platform` 셋에 같은 파일** — `apps/` 가

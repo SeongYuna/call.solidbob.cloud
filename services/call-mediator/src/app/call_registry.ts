@@ -236,7 +236,14 @@ export class CallRegistry {
         ...(spec.callerPhone ? { caller_phone: spec.callerPhone } : {}),
       })
       .then(
-        () => true,
+        (result) => {
+          // 다시 연 통화면 저장된 번호 뒤에서 센다 — 채널은 `started` 를 기다린 뒤에 번호를 받으므로 첫 발화 전에 끝난다
+          if (result.lastSegmentId > 0) {
+            call.counter.resumeAfter(result.lastSegmentId);
+            this.deps.log.info(`통화 다시 열림 call=${spec.callId} 발화 번호 ${result.lastSegmentId + 1} 부터`);
+          }
+          return true;
+        },
         (error: unknown) => {
           this.deps.log.warn(`통화 시작 실패 call=${spec.callId} status=${statusOf(error)}`);
           return false;

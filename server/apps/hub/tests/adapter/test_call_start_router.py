@@ -46,6 +46,27 @@ def test_같은_통화를_다시_알리면_created가_False다():
     assert r.status_code == 200 and r.json()["created"] == "false"
 
 
+class _ResumedRecord(_SpyRecord):
+    def __init__(self, last: int):
+        super().__init__(created=False)
+        self._last = last
+
+    async def last_segment_id(self, call_id: str) -> int:
+        return self._last
+
+
+def test_다시_연_통화면_응답에_마지막_발화_번호가_있다():
+    """w6-segment-id-reuse — 콜 미디에이터가 `last_segment_id + 1` 부터 센다. 응답 필드는 문자열(StrField)."""
+    r = _post({"call_id": "test-qa-05"}, _ResumedRecord(last=6))
+    assert r.status_code == 200
+    assert r.json()["created"] == "false" and r.json()["last_segment_id"] == "6"
+
+
+def test_새_통화의_마지막_발화_번호는_0이다():
+    r = _post({"call_id": "test-c002"}, _SpyRecord())
+    assert r.json()["last_segment_id"] == "0"
+
+
 def test_DDL에_없는_domain은_422다():
     r = _post({"call_id": "test-c001", "domain": "telecom"}, _SpyRecord())
     assert r.status_code == 422
@@ -65,6 +86,8 @@ def test_DB가_없으면_로그_어댑터로_떨어져도_200이다(monkeypatch)
 _RESPONSE_FIELDS = {
     "call_id", "domain", "stt_engine", "channel_count",
     "started_at", "status", "created", "customer_linked",
+    # 2026-09-22 w6-segment-id-reuse — 발화 순번 하나(개인정보 아님). 콜 미디에이터가 재연결 때 이어 센다
+    "last_segment_id",
 }
 
 

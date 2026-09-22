@@ -36,3 +36,7 @@ class CallStartedSchema(BaseModel):
     customer_linked: StrField = Field(
         description="고객 식별자를 붙였는가. 번호가 없거나 서버에 HMAC 키가 없으면 false. 식별자 값은 싣지 않는다"
     )
+    last_segment_id: StrField = Field(
+        default="0",
+        description="이미 있던 통화에 저장된 가장 큰 segment_id(새 통화면 0). 콜 미디에이터는 다음 발화를 이 값 + 1 부터 센다",
+    )

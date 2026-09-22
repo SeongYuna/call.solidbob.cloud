@@ -108,3 +108,9 @@ python scripts/run_eval.py --runs 3 --no-ner --retriever bm25        # 3회 중 
 > **판정문 초안 (2026-09-21, 정성윤)** — `_project/baseline-check-2026-09-30-draft.md`(비공개). 기준 · 지금 있는 값과 네 조건 · 측정 불가 목록 · 한계 넷 · 판정일 명령을 채워 두었다.
 > 판정일에 빈칸을 채워 `_logs/` 로 옮긴다. ⚠ **지금 가장 약한 것은 E** — 09-21 값에 `run_id` 가 없다. 판정일 전에 `--record` 로 한 번 더 돌린다.
 > 모델 배치는 `decisions/124`(09-22)로 정해졌다 — **NER·임베딩만 운영 노드에 CPU 로**(리랭커 제외). F-2 는 `decisions/125` 로 「구현 완결」이 됐고 골든셋에 `f2_case` 99건이 들어와 **이제 잰다** — 초안의 측정 불가 목록을 그에 맞춰 고쳤다(09-22).
+
+## 2026-09-22 — 선행 조건 풀림 (정성윤)
+
+`w2-baseline-gate` 가 닫혔다(`decisions/134`). 판정일에 할 일은 판정문 초안(`_project/baseline-check-2026-09-30-draft.md`)대로 운영 `/health` 확인 + 검색 기준선 확인 한 번:
+`ELASTICSEARCH_URL=… python scripts/run_eval.py --runs 3 --no-ner --retriever bm25 --report-json r.json && python scripts/check_baseline.py r.json`.
+09-22 에 이 머신에서 같은 명령으로 **Recall@5 0.853 · MRR 0.686(n 102) — 통과**를 확인했다(기록 DB 없음, 공식 값은 류준 run_id 8·9).

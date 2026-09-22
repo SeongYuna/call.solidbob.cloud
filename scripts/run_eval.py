@@ -43,7 +43,7 @@ from closure_gate.adapter.outbound.rule_closure_gate_adapter import (  # noqa: E
     RuleClosureGateAdapter,
 )
 from evaluation.golden_set import DEFAULT_POSTCALL_SET_PATH, load_golden_set, load_postcall_set  # noqa: E402
-from evaluation.harness import Ports, run_eval  # noqa: E402
+from evaluation.harness import NOT_IMPLEMENTED, RETRIEVAL_NO_ENGINE, Ports, run_eval  # noqa: E402
 from evaluation.report import print_report  # noqa: E402
 from hub.adapter.outbound.postgres.eval_run_repository import (  # noqa: E402
     EvalRunRecord,
@@ -261,6 +261,12 @@ def main() -> int:
     ports = build_ports(client, index=args.index, masking=masking, retriever=retriever, generation=generation)
     postcall_cases = load_postcall_set(args.postcall_set) if args.postcall_set.exists() else []
     reports = [run_eval(items, ports, postcall_cases) for _ in range(args.runs)]
+    if client is None:
+        # 검색 모듈은 있다 — 없는 것은 이 실행의 ES 다. 「모듈 미구현」이 아니라 그 사유를 싣는다(w2-baseline-gate)
+        for report in reports:
+            for key in ("retrieval", "no_answer"):
+                if report.get(key) == NOT_IMPLEMENTED:
+                    report[key] = RETRIEVAL_NO_ENGINE
     print_report(
         reports[0],
         golden_set_path=golden_path,
