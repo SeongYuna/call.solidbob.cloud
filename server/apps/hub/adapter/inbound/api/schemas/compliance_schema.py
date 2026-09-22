@@ -15,9 +15,9 @@ class ComplianceCheckRequest(BaseModel):
 
 
 class ComplianceFindingSchema(BaseModel):
-    rule_code: str = Field(description="C-1 ~ C-3 (db: compliance_flag.rule_code)")
+    rule_code: str = Field(description="C-1 ~ C-4 (db: compliance_flag.rule_code)")
     phrase: str = Field(description="위반으로 잡힌 표현")
-    alternative_source: SourceSchema | None = Field(default=None, description="C-4 권장 대체 표현 출처")
+    alternative_source: SourceSchema | None = Field(default=None, description="권장 대체 표현 출처 — C-1~C-4 공통")
 
 
 class ComplianceCheckResponse(BaseModel):

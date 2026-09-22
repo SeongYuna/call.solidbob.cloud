@@ -81,7 +81,7 @@ COMMENT ON COLUMN "masking_event"."call_id" IS 'transcript_segment 복합 FK 의
 COMMENT ON COLUMN "masking_event"."pattern" IS 'P1~P7';
 CREATE INDEX "masking_event_idx0" ON "masking_event" ("call_id", "segment_id");
 
--- C-1~C-4 위반 유형 카탈로그 — 팀 교차검증(팀원 ERD)에서 반영: suggestion이 C-4(권장 대체 표현 제시) 요구사항의 실제 저장 위치
+-- C-1~C-4 위반 유형 카탈로그 — 팀 교차검증(팀원 ERD)에서 반영: suggestion 은 코드별 권장 대체 표현 근거(C-1~C-4 공통 출력, decisions/211)
 CREATE TABLE "compliance_rule" (
     "rule_code" VARCHAR(4) NOT NULL,
     "label" VARCHAR(50) NOT NULL,
