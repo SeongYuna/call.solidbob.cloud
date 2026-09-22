@@ -34,7 +34,7 @@ function isRepeatOffender(
   );
 }
 
-/** J-4 블랙리스트 관리창. */
+/** Requirement: J-3 블랙리스트 관리창. */
 export function EntriesTab({
   entries,
   requests,
