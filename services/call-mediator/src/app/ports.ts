@@ -115,6 +115,18 @@ export interface ComplianceCheckRequest {
 /** `POST /hub/compliance-checks` 응답 그대로 — `{call_id, segment_id, findings: [{rule_code, phrase, alternative_source?}]}`. 빈 배열은 「잡힌 것 없음」이지 「안전함」이 아니다(부록 A-1). */
 export type CompliancePayload = Record<string, unknown> & { findings: unknown[] };
 
+/**
+ * 「검사 못 함」 — 상담원 발화 하나의 컴플라이언스 검사가 **서버에 닿지 못했거나 서버가 거절**했다. 위반이 없는 것과
+ * 다르다(위반 없음은 아무 메시지도 안 보낸다). 화면은 이것을 「탐지 미동작」으로 보여야지 초록으로 두면 안 된다
+ * (`w6-compliance-alert-ui` 완료 조건). `status` 는 HTTP 상태 문자열 — `"501"` 은 스포크 미등록(탐지 자체가 없다),
+ * `"404"` 는 호출 순서(전사가 먼저 저장되지 않음), `"연결 실패"` 는 서버에 닿지 못함. 값은 전부 문자열(7.3절).
+ */
+export interface ComplianceUnavailable {
+  call_id: string;
+  segment_id: string;
+  status: string;
+}
+
 export class HubError extends Error {
   readonly status: number | null;
 
@@ -151,6 +163,7 @@ export type CallMediatorMessage =
   | { type: "recommendation"; payload: RecommendPayload }
   | { type: "call_guard"; payload: CallGuardPayload }
   | { type: "compliance"; payload: CompliancePayload }
+  | { type: "compliance_unavailable"; payload: ComplianceUnavailable }
   | { type: "closure"; payload: ClosurePayload };
 
 export interface Broadcaster {

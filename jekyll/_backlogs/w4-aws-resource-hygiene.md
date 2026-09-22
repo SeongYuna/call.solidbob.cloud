@@ -37,3 +37,30 @@ requirement:
 ## 완료 조건
 
 RDS 권장 사항이 0건이거나 «의도한 것»으로 판단 근거가 남아 있고, 7월 잔재가 목록에서 사라진다.
+
+## 2026-09-21 읽기 전용 확인 (정성윤) — 급한 둘은 해당 없음
+
+| 확인 | 값 | 판단 |
+|---|---|---|
+| RDS 백업 보존 | **7일** | 즉시 조치 대상 아님 |
+| RDS 퍼블릭 접근 | **꺼짐** | 즉시 조치 대상 아님 |
+| RDS 저장소 암호화 | 켜짐 | — |
+| Enhanced Monitoring | **꺼짐**(`MonitoringInterval 0`) | `rds-monitoring-role` 은 남아 있지만 비용은 안 나간다 |
+| RDS 권장 사항 | **2건 · 둘 다 informational** — `enhanced_monitoring_off` · `multi_az_instance` | 둘 다 「더 켜라」는 권고다. 켜면 돈이 든다 → **안 한다**로 닫을 수 있다 |
+
+**7월 잔재** — 과금은 없다. 지우는 이유는 목록이 읽히게 하는 것이다.
+- 두 번째 VPC `vpc-0a2f05f0b6898780f`(10.0.0.0/16) — 서브넷 1 · 인터넷 게이트웨이 1 · 라우트 테이블 2(메인 1) · **네트워크 인터페이스 0** · NAT 0 · 엔드포인트 0. 안에 보안 그룹 `admin-security`
+- 기본 VPC 의 `launch-wizard-1` — 어느 네트워크 인터페이스에도 붙어 있지 않다
+- `launch-wizard-2` 는 **건드리지 않는다** — `decisions/116` ⑥ 이 하지 않기로 했다
+
+지우는 명령 — **실행하지 않았다.** 되돌릴 수 없으니 콘솔에서 한 번 더 보고 한 줄씩 친다(순서가 있다 — 의존하는 것부터).
+```bash
+R="--region ap-northeast-2"
+aws ec2 delete-security-group $R --group-id sg-0037a91800c29936d          # launch-wizard-1 (기본 VPC)
+aws ec2 delete-security-group $R --group-id sg-0f1a2dfb593e9548b          # admin-security
+aws ec2 delete-subnet $R --subnet-id subnet-021169b3144ecb757
+aws ec2 delete-route-table $R --route-table-id rtb-0cf14e9e6721be9f6      # 메인이 아닌 쪽. 메인은 VPC 와 함께 지워진다
+aws ec2 detach-internet-gateway $R --internet-gateway-id igw-08af6f27a9a8cbab8 --vpc-id vpc-0a2f05f0b6898780f
+aws ec2 delete-internet-gateway $R --internet-gateway-id igw-08af6f27a9a8cbab8
+aws ec2 delete-vpc $R --vpc-id vpc-0a2f05f0b6898780f
+```
