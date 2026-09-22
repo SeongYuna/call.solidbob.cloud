@@ -1,8 +1,8 @@
-# Requirement: E-1, E-2, E-4
+# Requirement: E-1, E-2, E-4, B-4, B-5, A-5, D-5
 """평가 하네스 골격 — [팀 분업 7.2절] 1주차엔 류준이 설계만 하고 이후 운영은 정성윤이
 맡는다. 이 파일이 그 "설계"에 해당한다.
 
-스포크(도메인 라우팅·검색·트리거·컴플라이언스·마스킹·F-2·C-6·D-5)의 접점은 **hub 아웃바운드 포트 하나뿐**이다
+스포크(도메인 라우팅·검색·트리거·컴플라이언스·마스킹·F-2·C-6·D-5·B-4 생성)의 접점은 **hub 아웃바운드 포트 하나뿐**이다
 (apps/hub/app/ports/output/ — 2026-08-26 계약 이중화 해소). 스포크가 구현한 포트 객체를 `Ports(...)`에
 꽂으면 골든셋으로 채점한다. 아직 구현이 없는 포트는 `None`으로 둬 "측정 불가 — 미구현"으로
 정직하게 보고한다(목표 수치를 지어내지 않는다 — 6.2절 원칙 5).
@@ -24,6 +24,7 @@ from hub.app.ports.output.call_guard_port import CallGuardPort
 from hub.app.ports.output.closure_gate_port import ClosureGatePort
 from hub.app.ports.output.compliance_port import CompliancePort
 from hub.app.ports.output.domain_routing_port import DomainRoutingPort
+from hub.app.ports.output.generation_port import GenerationPort
 from hub.app.ports.output.masking_port import MaskingPort
 from hub.app.ports.output.retrieval_port import RetrievalPort
 from hub.app.ports.output.trigger_port import TriggerPort
@@ -35,6 +36,7 @@ from .metrics import call_temperature as call_temperature_metrics
 from .metrics import closure_gate as closure_gate_metrics
 from .metrics import compliance as compliance_metrics
 from .metrics import domain_routing as domain_routing_metrics
+from .metrics import generation as generation_metrics
 from .metrics import latency as latency_metrics
 from .metrics import masking as masking_metrics
 from .metrics import masking_robustness
@@ -60,6 +62,8 @@ class Ports:
     closure_gate: ClosureGatePort | None = None
     call_guard: CallGuardPort | None = None
     voice_outlier: VoiceOutlierPort | None = None  # D-5 통화 온도
+    # B-4·B-5 서류 목록 카드. **맨 뒤에 붙인다** — 앞 필드 순서를 바꾸면 위치 인자로 부르는 곳이 조용히 어긋난다.
+    generation: GenerationPort | None = None
 
 
 NOT_IMPLEMENTED = "측정 불가 — 모듈 미구현"
@@ -73,6 +77,23 @@ NOT_IMPLEMENTED = "측정 불가 — 모듈 미구현"
 # (절대 원칙 10). 장민석이 2026-08-27 에 `test_골든셋에_C5_케이스가_실려있다` 로 pytest
 # 쪽에 세운 「빈 채로 초록불」 가드를, 2026-08-28 에 하네스 리포트 쪽에도 세웠다.
 NO_SAMPLES = "측정 불가 — 골든셋에 채점 대상이 없다"
+
+# 「미구현」·「표본 없음」 둘로 가를 수 없는 경우는 **사유를 문장으로** 싣는다(2026-09-22, `w6-harness-silent-metrics`).
+# 셋 다 `측정 불가 — ` 로 시작하는 문자열이라 `flatten_report` 가 DB 에 숫자로 남기지 않는다.
+#
+# B-4·B-5 — 구현(`ai/apps/generation`)은 있으나 모델 서버가 있어야 돈다. 합성 루트가 꽂지 않으면 이것이다.
+GENERATION_NOT_PLUGGED = (
+    "측정 불가 — 생성 포트를 이 실행에 꽂지 않았다(모델 서버 Ollama 가 있어야 돈다 — "
+    "run_eval.py --ollama-url, 또는 scripts/eval_generation.py)"
+)
+# 생성의 입력은 검색 결과다. 검색이 없으면 카드를 만들 근거 조항이 없다.
+GENERATION_NO_RETRIEVAL = "측정 불가 — 검색 포트가 없어 생성에 넣을 근거 조항이 없다"
+# A-5 — 채점기는 있으나 하네스 경로가 없다. 「모듈 미구현」이라 쓰면 STT 가 없는 것처럼 읽히고,
+# 「표본 없음」이라 쓰면 포트는 있는 것처럼 읽힌다 — 둘 다 아니다.
+ASR_NOT_WIRED = (
+    "측정 불가 — 하네스에 STT 포트가 없고(STT 는 콜 미디에이터에 있다) 골든셋에 음성·정답 전사가 없다"
+    "(등급별 WER/CER 은 scripts/measure_a5_proficiency.py 가 따로 잰다)"
+)
 
 
 def retrieval_query(item: GoldenItem) -> str:
@@ -339,6 +360,46 @@ def run_eval(items: list[GoldenItem], ports: Ports) -> dict:
         result = {"n": len(cases)}
         result.update(asdict(call_temperature_metrics.score(cases)))
         report["call_temperature"] = result
+
+    # ── 아래 두 섹션은 2026-09-22 에 붙였다(`w6-harness-silent-metrics`). **맨 뒤에 붙인다** — 기존 섹션의
+    # 순서·값이 바뀌지 않아야 이전 리포트와 줄 단위로 대조된다(`test_harness_silent_metrics.py` 가 지킨다).
+    # 전에는 채점기(metrics/generation·asr)가 있는데도 하네스가 부르지 않아 리포트에 **줄 자체가 없었다** —
+    # 빈칸은 읽는 사람이 「문제 없음」으로 읽는다(절대 원칙 10).
+
+    # B-4·B-5: 서류 목록 카드 — 검색 결과를 생성 포트에 넣고, 화면에 나간 카드를 규칙으로 센다.
+    # 생성은 검색 결과가 입력이라 검색 포트가 없으면 잴 수 없다. 포트는 카드만 돌려주므로 모델 원출력 환각은
+    # 여기서 세지 않고 사유를 싣는다(`generation_metrics.RAW_NOT_AVAILABLE`).
+    if ports.generation is None:
+        report["generation"] = GENERATION_NOT_PLUGGED
+    elif ports.retrieval is None:
+        report["generation"] = GENERATION_NO_RETRIEVAL
+    elif not b_items:
+        report["generation"] = NO_SAMPLES
+    else:
+        rows: list[dict] = []
+        no_docs = 0
+        for it in b_items:
+            docs = _run(ports.retrieval.retrieve(retrieval_query(it), top_k=5))
+            if not docs:
+                no_docs += 1
+            by_id = {d.doc_id: d for d in docs}
+            for card in _run(ports.generation.to_cards(it.customer_utterance or retrieval_query(it), docs)):
+                doc = by_id.get(card.source.doc_id)
+                # 근거 = 그 카드가 가리키는 조항 **본문**(`scripts/eval_generation.py` 와 같다). 검색 결과에 없는 조항을
+                # 가리키면 근거가 빈 문자열이 되어 서류 목록 항목이 전부 환각으로 잡힌다 — 그게 맞다.
+                rows.append({
+                    "doc_id": card.source.doc_id,
+                    "summary": card.summary,
+                    "source_text": doc.snippet if doc else "",
+                })
+        result = {"questions": len(b_items), "no_docs_questions": no_docs}
+        result.update(generation_metrics.score_shipped_cards(rows))
+        report["generation"] = result
+
+    # A-5: 서툰 한국어 전사 정확도(숙련도 등급별 WER/CER). 채점기(`metrics/asr.py`)는 있지만 **하네스가 부를 곳이 없다** —
+    # STT 는 콜 미디에이터(Node)에 있어 hub 에 STT 포트가 없고, 골든셋은 텍스트뿐이라 음성·정답 전사가 없다.
+    # 값은 `scripts/measure_a5_proficiency.py` 가 AI Hub 71479 로 따로 잰다(Google STT 과금 — COST-1).
+    report["asr"] = ASR_NOT_WIRED
 
     return report
 
