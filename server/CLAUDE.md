@@ -86,7 +86,7 @@ server/
 
 ```bash
 cd server && pytest                            # 단위 테스트
-cd server && PYTHONPATH=apps lint-imports --config .importlinter   # 구조 계약 4종
+cd server && PYTHONPATH=apps lint-imports --config .importlinter   # 구조 계약 5종 (2026-09-22 — hub.app → 스포크 금지 추가)
 ```
 
 CI(`.github/workflows/test.yml`)의 `server` job 이 이 둘을 돌린다.

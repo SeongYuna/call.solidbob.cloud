@@ -84,3 +84,13 @@ def test_요약_추천_판정을_문자열로_돌려준다():
     assert closure["verdict"] == "incomplete" and closure["detected"] == "true"
     assert closure["items"] == [{"rank": "1", "document_name": "신분증", "informed": "false"}]
     assert all(v is None or isinstance(v, str) for v in _leaves(b)), b
+
+
+def test_고객_식별자를_싣는다_HMAC_이지_번호가_아니다():
+    """재문의 고객 화면(조서희 요청, `w6-call-record-customer-id`) — `call.customer_id` 는 전화번호 HMAC 64자다(`decisions/304`).
+    발신 번호가 없던 통화는 null."""
+    from dataclasses import replace  # noqa: PLC0415
+
+    hmac = "a" * 64
+    assert _get(replace(RECORD, customer_id=hmac)).json()["customer_id"] == hmac
+    assert _get(RECORD).json()["customer_id"] is None

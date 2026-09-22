@@ -466,6 +466,8 @@ def health(request: Request) -> dict:
         "ingest_guard": ingest_guard_state(settings),
         # "open" = 토큰 없는 읽기가 지나간다(이행기, decisions/322). "locked" = READ_AUTH_REQUIRED
         "read_guard": read_guard_state(settings),
+        # 배포된 이미지 태그(빌드 인자 APP_VERSION). 로컬은 "unknown" — 지어내지 않는다
+        "version": settings.app_version or "unknown",
     }
 
 

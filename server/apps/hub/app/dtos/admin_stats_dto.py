@@ -7,7 +7,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import date, datetime
 
 
 @dataclass(frozen=True)
@@ -21,3 +21,8 @@ class AdminStats:
     routing_blacklisted: int    # 그중 블랙리스트 고객
     routing_fell_back: int      # 그중 베테랑이 없어 일반 배정으로 떨어진 건
     counted_at: datetime        # DB 가 센 시각 — 화면의 숫자가 «언제» 값인지
+    # 오늘(KST) 칸 — 누적만으로는 「오늘 통화 N건」을 못 읽는다(09-22 운영: 누적 14 중 10건이 09-11~15 테스트, w6-admin-stats-today)
+    calls_today: int = 0             # 오늘 시작된 통화
+    call_guard_flags_today: int = 0  # 오늘 잡힌 콜 가드 신호
+    requests_today: int = 0          # 오늘 올라온 블랙리스트 요청(상태 무관)
+    today: date | None = None        # 「오늘」이 어느 날인지(KST) — DB 시각 기준

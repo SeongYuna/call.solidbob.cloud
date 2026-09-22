@@ -40,6 +40,7 @@ async def get_call_record(
         status=r.status,
         started_at=r.started_at.isoformat(),
         ended_at=r.ended_at.isoformat() if r.ended_at else None,
+        customer_id=r.customer_id,
         summary_text=r.summary_text,
         inquiry_type=r.inquiry_type,
         summary_confirmed=r.summary_confirmed_at is not None,

@@ -111,6 +111,10 @@ class Settings:
     # 먼저 켜면 운영 상담원 화면이 깨진다. 상태는 `/health` 의 `read_guard` 가 말한다.
     read_auth_required: bool = False
 
+    # --- 배포 버전 (2026-09-22, `w6-server-loose-ends` ①) — 이미지 빌드 인자로 굽는다(`infra/docker/server.Dockerfile`) ---
+    # `/health` 의 `version`. 밖에서 어느 태그가 떠 있는지 보려고 둔다. 비밀이 아니다. 로컬은 없다 → "unknown"
+    app_version: str | None = None
+
     @property
     def postgres_configured(self) -> bool:
         return bool(self.database_url) or all(
@@ -158,4 +162,5 @@ def load_settings() -> Settings:
         ollama_url=_env("OLLAMA_URL"),
         generation_model=_env("GENERATION_MODEL"),
         read_auth_required=(_env("READ_AUTH_REQUIRED") or "").strip().lower() in ("1", "true", "yes"),
+        app_version=_env("APP_VERSION"),
     )

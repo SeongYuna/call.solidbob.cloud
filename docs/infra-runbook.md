@@ -1722,6 +1722,8 @@ curl -s $B/health
 #    "open" 은 fail-closed 이전 서버(이행기)에서만 나온다 — 쓰기 경로가 토큰 없이 열려 있다는 뜻이다.
 #    0.1.35 부터 `"read_guard"` 도 나온다(`decisions/322`) — "open" 이면 통화 목록·전사·기록·수동 검색이 토큰 없이 읽힌다.
 #    상담원 화면이 상담원 토큰을 싣기 시작하면(`w6-read-path-token-ui`) server-env 에 READ_AUTH_REQUIRED=true → "locked".
+#    0.1.35 부터 `"version"` 도 나온다 — 떠 있는 이미지 태그(빌드 인자 APP_VERSION). kustomization 의 newTag 와 같아야 한다.
+#    "unknown" 이면 태그 없이 구운 이미지다(로컬 빌드) — 운영에서 나오면 release.yml 의 build-args 를 본다.
 
 # 9-1. 설정이 아니라 «실제로 붙는가» (server 0.1.19+, 2026-09-19 추가)
 #      기대: 200 + {"status":"ok","checks":{"postgres":{"ok":true,...},"elasticsearch":{"ok":true,...}}}
@@ -1760,6 +1762,10 @@ unset T AUTH
 > ⚠ **같은 이미지는 DB 스키마도 바뀐다**(`decisions/307`) — `agent_token` 신설(25 → 26 테이블). **이미지를 올리기 전에**
 > `db/migrations/2026-09-15-agent-token.sql` 을 넣는다(09-14 마이그레이션이 먼저 들어가 있어야 한다 — 파일이 확인하고 멈춘다).
 > 안 넣으면 `POST /hub/blacklist-requests` 와 `/admin/agent-tokens` 가 500(`42P01`)이다. 6번 기대값도 26 이 된다.
+>
+> ⚠ **`0.1.35` 에 스키마 변경이 하나 있다 — 서버 이미지와는 무관하다**(`w6-server-loose-ends` ②) — `eval_run.components` 신설(29 테이블 그대로).
+> 이 컬럼은 평가 스크립트(`scripts/run_eval.py --record`)만 쓴다. **`--record` 로 운영 DB 에 기록하기 전에** `db/migrations/2026-09-22-eval-run-components.sql` 을 넣는다
+> (`2026-09-22-blacklist-request-note-unmeasured.sql` 이 먼저여야 한다 — 파일이 확인하고 멈춘다). 배포 전 스키마 대조(`decisions/128`)가 붙으면 넣기 전까지 어긋남으로 잡힌다.
 >
 > ⚠ **`0.1.9` 도 스키마가 바뀐다**(`decisions/309`) — `blacklist_entry_expiry_change` 신설(26 → 27). **이미지를 올리기 전에**
 > `db/migrations/2026-09-15-blacklist-expiry-change.sql` 을 넣는다(`agent_token` 마이그레이션이 먼저여야 한다 — 파일이 확인하고 멈춘다).
