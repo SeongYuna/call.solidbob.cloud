@@ -80,6 +80,22 @@ def test_본문은_nori_로_분석한다():
     assert analysis["analyzer"]["korean"]["tokenizer"] == "kb_nori"
 
 
+def test_품사_필터를_토크나이저_바로_뒤에_기본_목록으로_둔다():
+    """조사·어미가 BM25 순위를 정하던 문제(GS-205, `decisions/214`).
+
+    순서가 뜻을 가진다 — 품사 정보는 토크나이저가 붙이므로 다른 필터보다 먼저 와야 한다.
+    제외 품사는 nori 기본값이다: 사용자 정의 필터(`stoptags`)를 두지 않는다 — 골든셋에 맞춰
+    목록을 고르지 않는다는 결정이 코드에 남도록 여기서 막는다.
+    """
+    analysis = es_index.build_settings()["analysis"]
+    assert analysis["analyzer"]["korean"]["filter"] == [
+        "nori_part_of_speech",
+        "nori_readingform",
+        "lowercase",
+    ]
+    assert "filter" not in analysis, "품사 필터를 사용자 정의(stoptags)로 바꾸면 decisions/214 를 먼저 고친다"
+
+
 def test_사전에_없는_도메인_용어를_사용자_사전에_등록한다():
     """nori 가 명사를 용언으로 오분석하던 것들. 2026-08-27 `_analyze` 실측으로 찾았다."""
     rules = es_index.build_settings()["analysis"]["tokenizer"]["kb_nori"]["user_dictionary_rules"]

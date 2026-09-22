@@ -500,11 +500,30 @@ test("C-1~C-4 — 꺼져 있으면 검사 실패도 화면에 알리지 않는�
   assert.ok(log.warnings.some((w) => w.includes("컴플라이언스 검사 실패")));
 });
 
-test("F-2 — 1순위 카드가 절차가 아니면(422) 다음 카드로 내려가 규칙 있는 첫 조항을 절차로 잡는다", async () => {
+test("F-2 — 1순위 카드가 규칙 없는 조항(422)이면 아래 카드로 내려가지 않고 아무것도 잡지 않는다 (w6-procedure-pick-rule)", async () => {
   const { registry, hub, stt, broadcaster } = setup({ announceClosure: true });
   hub.cardDocIds = ["DASAN-POLICY-1", "DASAN-TERM-4.4", "DASAN-TERM-6.2", "DASAN-TERM-4.3"];
   hub.notProcedures.add("DASAN-POLICY-1");
-  hub.notProcedures.add("DASAN-TERM-4.4");
+  const agent = await openOk(registry, "test-1", "agent", 2);
+  const customer = await openOk(registry, "test-1", "customer", 2);
+  stt.streams[1]!.emit("재난지원금 뭐 필요해요", true, 1000);
+  await tick(30);
+  stt.streams[0]!.emit("신분증 가져오세요", true, 2000);
+  await tick(30);
+  // 다음 추천도 같은 1순위면 다시 묻지 않는다(422 를 이미 들었다)
+  stt.streams[1]!.emit("그리고요", true, 3000);
+  await agent.close();
+  await customer.close();
+
+  // 1순위만 한 번 묻는다. 규칙 있는 2순위(4.4)·3순위(6.2)는 묻지도 않는다
+  assert.deepEqual(hub.docsAsked, ["DASAN-POLICY-1"]);
+  assert.equal(hub.docsChecked.length, 0);
+  assert.equal(broadcaster.ofType("closure").length, 0);
+});
+
+test("F-2 — 1순위 카드에 규칙이 있으면 그대로 절차로 잡고, 상담원 발화마다 다시 판정한다 (w6-procedure-pick-rule)", async () => {
+  const { registry, hub, stt, broadcaster } = setup({ announceClosure: true });
+  hub.cardDocIds = ["DASAN-TERM-6.2", "DASAN-TERM-4.4", "DASAN-TERM-4.3"];
   const agent = await openOk(registry, "test-1", "agent", 2);
   const customer = await openOk(registry, "test-1", "customer", 2);
   stt.streams[1]!.emit("재난지원금 뭐 필요해요", true, 1000);
@@ -513,16 +532,31 @@ test("F-2 — 1순위 카드가 절차가 아니면(422) 다음 카드로 내려
   await agent.close();
   await customer.close();
 
-  // 422 두 번(순서대로) → 6.2 채택. 4.3 은 묻지 않는다 — 규칙 있는 첫 조항에서 멈춘다
+  assert.deepEqual(hub.docsAsked, ["DASAN-TERM-6.2", "DASAN-TERM-6.2"]);
   assert.deepEqual(
-    hub.docsChecked.map((r) => r.procedure),
-    ["DASAN-TERM-6.2", "DASAN-TERM-6.2"],
+    broadcaster.ofType("closure").map((m) => [m.payload.procedure, m.payload["verdict"]]),
+    [["DASAN-TERM-6.2", "incomplete"], ["DASAN-TERM-6.2", "complete"]],
   );
-  assert.ok(broadcaster.ofType("closure").every((m) => m.payload.procedure === "DASAN-TERM-6.2"));
-  // 다음 추천이 같은 후보를 주면 다시 묻지 않는다(이미 판정 중)
-  stt.streams[1]!.emit("그리고요", true, 3000);
+});
+
+test("F-2 회귀 — SYN-010: 1순위 2.12(규칙 없음)면 5순위 2.9(규칙 있음)를 잡아 「신분증」을 빠졌다고 하지 않는다", async () => {
+  // 09-22 운영: [2.12, 2.8, 2.10, 2.1, 2.9] 에서 규칙 있는 첫 조항 2.9(분실물 수령)를 잡아 incomplete 「신분증」을 띄웠다
+  const { registry, hub, stt, broadcaster } = setup({ announceClosure: true });
+  hub.cardDocIds = ["DASAN-TERM-2.12", "DASAN-TERM-2.8", "DASAN-TERM-2.10", "DASAN-TERM-2.1", "DASAN-TERM-2.9"];
+  for (const id of ["DASAN-TERM-2.12", "DASAN-TERM-2.8", "DASAN-TERM-2.10", "DASAN-TERM-2.1"]) {
+    hub.notProcedures.add(id);
+  }
+  const agent = await openOk(registry, "test-1", "agent", 2);
+  const customer = await openOk(registry, "test-1", "customer", 2);
+  stt.streams[1]!.emit("광역버스 환승 할인 되나요", true, 1000);
   await tick(30);
-  assert.equal(hub.docsChecked.length, 2);
+  stt.streams[0]!.emit("네 확인해 드릴게요", true, 2000);
+  await agent.close();
+  await customer.close();
+
+  assert.deepEqual(hub.docsAsked, ["DASAN-TERM-2.12"]);
+  assert.equal(hub.docsChecked.some((r) => r.procedure === "DASAN-TERM-2.9"), false);
+  assert.equal(broadcaster.ofType("closure").length, 0);
 });
 
 test("추천을 방송할 때 e2e_latency_ms 를 채운다 — 발화 종료 → 방송 직전 (decisions/119)", async () => {

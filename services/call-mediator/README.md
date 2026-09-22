@@ -131,7 +131,8 @@ node scripts/replay_persona_call.ts SYN-004 --watch --speak
   `{"type":"call_guard","payload":{…}}` 을 보낼 수 있다. 검사·저장(`call_guard_flag`)은 늘 돈다
 - **`closure`** — F-2 필요서류 체크리스트(`decisions/305`). 추천 응답 **1순위 카드의 `source.doc_id`** 를 통화의 절차로 잡고,
   상담원 확정 발화(마스킹본)가 쌓일 때마다 `POST /hub/required-docs-checks` 로 다시 판정한다. 한 통화의 판정 요청은 줄을 세운다.
-  서버가 422(규칙 없는 조항)면 그 조항은 다시 묻지 않는다
+  서버가 422(규칙 없는 조항)면 그 조항은 다시 묻지 않고, **그 추천에서는 절차를 잡지 않는다 — 2순위 아래로 내려가지 않는다**
+  (2026-09-22 `w6-procedure-pick-rule`. 전에는 규칙 있는 첫 카드까지 내려가 엉뚱한 절차의 「빠진 서류」를 띄웠다 — 운영 SYN-010)
 - **`call_guard`·`closure` 의 대시보드 전송은 2026-09-15 부터 켜져 있다**(`main.ts` `announceCallGuard`·`announceClosure` 가 `true`) —
   `apps/call` 실서버 파서가 둘을 받는다. 끄려면 `false` 로 되돌린다
 - **추천 요청에는 `received_at_ms` 를 싣는다** — STT final 을 받은 시각(통화 기준 ms). 서버 트리거가 발동 시각으로 쓴다
