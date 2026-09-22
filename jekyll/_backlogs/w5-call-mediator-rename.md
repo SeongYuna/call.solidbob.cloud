@@ -2,7 +2,7 @@
 title: "gateway → call-mediator 개명 — 저장소 · CI · 배포 · 프론트"
 assignee: "정성윤"
 role: "infra"
-status: "in-progress"
+status: "done"
 sprint: 5
 priority: 1
 date: 2026-09-17
@@ -31,7 +31,7 @@ paths:
 - [x] 머지 · 배포 뒤 `/call-mediator/health` ok — **09-19 실측**: `status ok` + 넷 전부 true(`stt_credentials`·`stt_caps`·`ingest_token`·`view_token`), `/call-mediator/dev` 200 · `/call-mediator/ingest` 토큰 없이 401 · **옛 `/gateway/*` 는 404**
 - [x] EC2 옛 Deployment·Service·시크릿 삭제 — **09-19 SSM 으로 확인: 지울 것이 없었다.** `deploy`·`svc`·`secret`·`ingress` 어디에도 `gateway` 이름이 없고(시크릿은 `call-mediator-tokens`·`callguard-server-tls`·`gcp-stt-credentials`·`server-env` 넷뿐), 파드도 넷 다 새 이름이다. 적용 스크립트에 prune 이 없어 남을 줄 알았는데 남지 않았다
 - [x] 로컬 `.env` 키 변경 — `CALL_MEDIATOR_PORT`·`_INGEST_TOKEN`·`_VIEW_TOKEN` 만 있고 `GATEWAY_*` 는 0개(09-19 확인)
-- [ ] **Vercel 옛 변수 `VITE_GATEWAY_WS_URL`·`VITE_GATEWAY_DEMO_BASE_URL` 삭제 — 이것 하나 남았다.** 콘솔에서만 보이고 CLI·토큰이 이 머신에 없다. 새 변수는 이미 번들에 구워져 도는 중이라 **지워도 화면에 영향 없다**
+- [x] **Vercel 옛 변수 `VITE_GATEWAY_WS_URL`·`VITE_GATEWAY_DEMO_BASE_URL` 삭제 — 이것 하나 남았다.** 콘솔에서만 보이고 CLI·토큰이 이 머신에 없다. 새 변수는 이미 번들에 구워져 도는 중이라 **지워도 화면에 영향 없다** → **09-22 정성윤: 이 머신에 Vercel CLI 를 넣고 API 로 확인 — kxu6 에는 이미 없었고 admin 에 `GATEWAY_INGEST_TOKEN`·`GATEWAY_VIEW_TOKEN`(옛 이름)이 남아 있어 같은 날 프론트 3곳의 비-`VITE_` 변수 62개와 함께 지웠다(로그 `2026-09-22-01`). 남은 것 없음 — 닫는다.**
 - [x] `STATE.md` 의 「문서는 새 이름, 운영은 옛 경로」 문장 걷기 — 09-19. 런북 19-1 머리말 경고·미결 항목도 같이
 
 > **2026-09-17 에 1차 확인이 있었다**(`/call-mediator/health` ok · 옛 경로 404 · 번들 구독 주소로 운영 `/ws` 열림,

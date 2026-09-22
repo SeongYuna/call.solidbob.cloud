@@ -20,7 +20,8 @@
  * - `--watch` 는 `/ws?call_id=` 를 함께 열어 대시보드가 받는 것(마스킹된 자막·카드·콜 가드·필요서류)을 찍는다.
  * - `--close --core-url <서버>` 는 재생이 끝나면 `POST /hub/calls/{id}/close` 로 통화 후 요약 초안을 만든다(D-1~D-3).
  *   본문에는 **`/ws` 로 받은 마스킹본만** 싣는다 — 대본 원문을 보내지 않는다(SEC-1). 그래서 `--watch` 와 같은 뷰 토큰이 필요하다.
- *   ⚠ 이 API 는 통화의 `ended_at`·`status` 를 바꾸지 않는다(2026-09-17 확인 — 서버에 그 경로가 없다).
+ *   서버가 이 API 를 잠갔다(`decisions/315`) — 환경변수 `CORE_API_TOKEN`(콜 미디에이터가 서버에 쓰는 서비스 토큰과 같은 값)을
+ *   헤더로 싣는다. 없으면 401 이다.
  * - 통화 기록 엔진은 `synthetic-script` 로 남는다(`producer=script`). STT 를 거치지 않았으므로 **여기서 나온 검색·마스킹
  *   수치는 상한이고, 지연 시각은 지어낸 값이다.**
  *
@@ -292,7 +293,7 @@ async function closeCall(coreUrl: string, callId: string, segments: MaskedFinal[
   }
   const res = await fetch(`${coreUrl}/hub/calls/${encodeURIComponent(callId)}/close`, {
     method: "POST",
-    headers: { "content-type": "application/json" },
+    headers: { "content-type": "application/json", ...bearer(process.env.CORE_API_TOKEN) },
     body: JSON.stringify({ call_id: callId, segments }),
   });
   const body = (await res.json().catch(() => ({}))) as Record<string, unknown>;

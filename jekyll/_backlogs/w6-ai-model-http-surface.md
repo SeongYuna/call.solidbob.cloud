@@ -2,7 +2,7 @@
 title: "ai/ 모델 HTTP 표면 — GPU 인스턴스에서 도는 추론 서비스"
 assignee: "류준"
 role: "ai"
-status: "todo"
+status: "cancelled"
 sprint: 6
 priority: 68
 date: 2026-09-21
@@ -38,3 +38,7 @@ paths:
 - [ ] 표면 위치·프레임워크·인증을 결정 기록으로 남긴다
 - [ ] 엔드포인트별 단위 테스트 + `.importlinter` 계약 3종 KEPT
 - [ ] 로컬에서 서버 원격 어댑터([w6-server-remote-model-adapter](/backlog/w6-server-remote-model-adapter/))와 왕복 1건
+
+---
+
+> **취소 (2026-09-22, 정성윤).** `_project/decisions/124` 로 모델을 전용 GPU EC2 가 아니라 운영 노드에 CPU 로 싣기로 했다. 전용 인스턴스·HTTP 표면·원격 어댑터가 필요 없어졌다. 이어받는 티켓: [w5-models-on-node](/backlog/w5-models-on-node/).

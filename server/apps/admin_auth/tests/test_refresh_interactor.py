@@ -43,6 +43,9 @@ class _FakeAccounts(AdminAccountPort):
     async def find_by_id(self, account_id: int) -> AdminAccount | None:
         return self._by_id.get(account_id)
 
+    async def link_agent(self, account_id: int, agent_id: str) -> str:
+        raise NotImplementedError
+
 
 class _FakeAccessIssuer(AccessTokenIssuerPort):
     async def issue(self, account: AdminAccount) -> IssuedAccessToken:

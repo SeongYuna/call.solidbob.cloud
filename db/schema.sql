@@ -331,12 +331,13 @@ CREATE TABLE "blacklist_request" (
     "insult_count" SMALLINT NOT NULL,
     "threat_count" SMALLINT NOT NULL,
     "sexual_count" SMALLINT NOT NULL,
-    "temperature_outliers" SMALLINT NOT NULL,
+    "temperature_outliers" SMALLINT NULL,
     "status" VARCHAR(30) NOT NULL,
     "requested_at" TIMESTAMPTZ NOT NULL,
     "decided_by" VARCHAR(20) NULL,
     "decided_at" TIMESTAMPTZ NULL,
     "evidence_snapshot_at" TIMESTAMPTZ NOT NULL,
+    "decision_note" VARCHAR(500) NULL,
     PRIMARY KEY ("request_id"),
     CHECK ("status" IN ('pending','approved','rejected')),
     FOREIGN KEY ("call_id") REFERENCES "call"("call_id"),
@@ -344,12 +345,13 @@ CREATE TABLE "blacklist_request" (
     FOREIGN KEY ("decided_by") REFERENCES "agent"("agent_id")
 );
 COMMENT ON COLUMN "blacklist_request"."customer_ref" IS '⚠ **전화번호의 HMAC-SHA256 이다. 평문을 넣지 않는다**(`decisions/205` ③) — 전화번호는 C-5 의 P4 이고, 자막에서 지운 값을 여기 평문으로 두면 마스킹을 앞단에 둔 의미가 사라진다. 키는 .env(SEC-2)';
-COMMENT ON COLUMN "blacklist_request"."display_hint" IS '화면 표시 전용(뒤 4자리 등). 조회·배정은 customer_ref 로만 한다';
+COMMENT ON COLUMN "blacklist_request"."display_hint" IS '⚠ **채우지 않는다**(`decisions/316`) — 전화번호 뒷자리도 P4 의 일부라 HMAC 으로 가린 것을 되돌리는 단서가 된다. 관리자는 call_id·마스킹된 자막으로 알아본다. 컬럼은 되돌릴 때를 위해 남긴다';
 COMMENT ON COLUMN "blacklist_request"."reason" IS '상담원이 적은 사유';
 COMMENT ON COLUMN "blacklist_request"."context_excerpt" IS '⚠ **마스킹된 자막**이다. 원문을 넣지 않는다 — MANUAL-5.5 · C-5 · SEC-1';
-COMMENT ON COLUMN "blacklist_request"."temperature_outliers" IS 'D-5 통화 온도 이상 구간 수(`decisions/203`). 점수가 아니라 건수다 — 부록 A-1';
+COMMENT ON COLUMN "blacklist_request"."temperature_outliers" IS 'D-5 통화 온도 이상 구간 수(`decisions/203`). 점수가 아니라 건수다 — 부록 A-1. **NULL 은 「미측정」**이다 — 서버 요청 경로에 D-5 판정이 붙지 않아 셀 수 없었다(`decisions/316`). 0(「이상 없음」)과 다르다';
 COMMENT ON COLUMN "blacklist_request"."status" IS '**요청의 상태만** 담는다(`decisions/205` ②). 해제(released)는 등록의 상태이지 요청의 상태가 아니다 — 두 곳에 두면 한쪽만 갱신돼 어긋난다. 상담원은 pending 까지만 만들 수 있다';
 COMMENT ON COLUMN "blacklist_request"."evidence_snapshot_at" IS '위 *_count 를 집계한 시각. 원천은 call_guard_flag·voice_outlier 이고 여기 값은 **관리자가 본 시점의 스냅샷**이다(`decisions/205`)';
+COMMENT ON COLUMN "blacklist_request"."decision_note" IS '**반려 사유**(관리자, 반려면 필수 — `decisions/316`). 저장 전 마스킹. 승인 메모는 여기가 아니라 blacklist_entry.note 다. 반려 180일 뒤 비운다(`decisions/312`)';
 CREATE INDEX "blacklist_request_idx0" ON "blacklist_request" ("status", "requested_at" DESC);
 
 -- J-4 등록 **에피소드**. 고객이 아니라 「이번 등록」이 한 행이다 — 해제 후 재등록되면 행이 하나 더 생기고 옛 행은 released_at 이 찍힌 채 남는다. ⚠ PK 를 customer_ref 로 두었더니 **재등록이 PK 위반이거나 첫 등록 이력을 덮어썼다**(`decisions/205` ②). ⚠ **차단 목록이 아니다** — 전화는 정상적으로 받고, 바뀌는 것은 누구에게 배정되는가뿐이다
@@ -422,7 +424,7 @@ CREATE TABLE "admin_account" (
 );
 COMMENT ON COLUMN "admin_account"."email" IS '구글 계정 이메일. 대소문자는 저장 전에 소문자로 맞춘다';
 COMMENT ON COLUMN "admin_account"."name" IS '구글 프로필 이름 — 화면 표시용, 판단에 쓰지 않는다';
-COMMENT ON COLUMN "admin_account"."agent_id" IS '이 관리자가 J-4 승인·해제를 기록할 때 쓰는 상담원 마스터 ID(`decisions/304`). `blacklist_request.decided_by`·`blacklist_entry.released_by` 가 agent 를 참조해서다. NULL 이면 로그인은 되지만 블랙리스트 결정은 못 한다(409) — 누구로 기록할지 지어내지 않는다';
+COMMENT ON COLUMN "admin_account"."agent_id" IS '이 관리자가 J-4 승인·해제를 기록할 때 쓰는 상담원 마스터 ID(`decisions/304`). `blacklist_request.decided_by`·`blacklist_entry.released_by` 가 agent 를 참조해서다. 비어 있으면 처음 결정할 때 서버가 그 관리자 전용 agent 행(`admin-<id>`, role=admin)을 만들어 채운다(`decisions/314` — 전엔 409). 채운 값은 덮어쓰지 않는다';
 
 -- 관리자 세션의 refresh token. **원문을 저장하지 않는다** — SHA-256 해시만 둔다(SEC-1과 같은 원칙: 탈취되는 값을 저장하지 않는다). 만료(10분, 테스트 값)는 애플리케이션이 계산해서 넣는다. 회전(rotation) 방식이라 refresh 할 때마다 기존 행을 revoked_at 으로 무효화하고 새 행을 만든다 — 지우지 않는다 (절대 원칙 8, 탈취 흔적 추적용)
 CREATE TABLE "admin_refresh_token" (

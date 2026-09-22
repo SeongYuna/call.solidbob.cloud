@@ -12,4 +12,4 @@ class BlacklistDecisionCommand:
     approve: bool
     decided_by: str  # 로그인한 관리자에 연결된 agent_id (`decisions/304`)
     expires_in_days: int | None = None  # 승인이면 필수(1~365). 반려면 무시한다
-    note: str | None = None  # 관리자 승인 메모 — 저장 전 마스킹
+    note: str | None = None  # 승인이면 메모(선택), 반려면 사유(필수 — `decisions/316`). 저장 전 마스킹

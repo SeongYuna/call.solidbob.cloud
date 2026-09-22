@@ -2,7 +2,7 @@
 title: "남이 고친 서버 변경 검토 — 0.1.15 ~ 0.1.23"
 assignee: "장민석"
 role: "ai"
-status: "todo"
+status: "done"
 sprint: 5
 priority: 61
 date: 2026-09-21
@@ -35,3 +35,10 @@ paths:
 
 - [ ] 고칠 것이 있으면 고치고, 없으면 **「봤고 그대로 둔다」를 `_logs/` 에 남긴다** — 침묵은 검토가 아니다
 - [ ] `STATE.md` `server/` 줄의 「장민석 님 검토 전」 표기를 걷는다
+
+---
+
+> **2026-09-22 장민석 — 봤다.** `d6f2951..HEAD`(0.1.14→0.1.24) `server/` 93파일. 계층·SEC-1·SQL↔스키마·`closure_rule` 29 복원(공통 서류만 필수 — 305 의 제외 사유와 모순 없음)·
+> 서비스 토큰 문·`/health/ready` 는 **그대로 둔다.** 고친 것 하나: `resolve_or_create` 동시 발급 시 PK 위반 500(`ON CONFLICT` + 재조회).
+> 미결로 넘긴 것 둘: 동명이인이 한 상담원으로 합쳐진다 · 저장 실패 정책이 경로마다 다르다(콜 가드·컴플라이언스 200+로그 / 추천·필요서류 500).
+> 리뷰가 낸 「`retrieval_ms`·`generation_ms` 가 안 쓰인다」는 **오판**이었다(응답 스키마로 미디에이터에 나간다). 사소: `VoiceOutlierPort.judge` 인자 이름 `utterances` 가 실제로는 오디오 경로 — 안 고쳤다.
