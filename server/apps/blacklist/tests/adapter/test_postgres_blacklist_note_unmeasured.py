@@ -74,6 +74,12 @@ def test_미측정은_NULL로_남고_반려_사유는_요청에_남는다(integr
             assert (await repo.find_entry(REF)).note == "승인 메모"
             listed = {r.request_id: r for r in await repo.list_requests()}
             assert listed[a.request_id].decision_note == "통화 기록상 폭언 아님"
+            # 「내 요청」 — 요청자로 거른다(`w6-agent-my-requests-api`)
+            mine = {r.request_id for r in await repo.list_requests(requested_by="it-316-agent")}
+            assert {a.request_id, b.request_id} <= mine
+            assert await repo.list_requests(requested_by="it-316-admin") == []
+            assert [r.request_id for r in await repo.list_requests("rejected", requested_by="it-316-agent")
+                    if r.request_id in (a.request_id, b.request_id)] == [a.request_id]
         finally:
             await reset()
 

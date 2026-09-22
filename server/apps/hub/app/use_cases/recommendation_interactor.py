@@ -13,10 +13,13 @@
 
 발동한 추천은 기록 포트로 남기고 돌아온 `card_id` 를 카드에 붙인다(카드 피드백 E-1 이 그 값으로 카드를 가리킨다).
 기록 포트가 없으면(스텁 조립) 저장하지 않고 `card_id` 는 None 이다.
+**기록이 실패해도 카드는 나간다**(`decisions/318`) — 그때도 `card_id` 는 None 이다(카드 피드백만 못 남긴다).
+통화가 없는 것(호출자 실수)은 삼키지 않는다 — 404.
 """
 
 from __future__ import annotations
 
+import logging
 from dataclasses import replace
 from time import perf_counter
 from typing import Callable
@@ -28,7 +31,10 @@ from hub.app.ports.output.domain_routing_port import DomainRoutingPort
 from hub.app.ports.output.generation_port import GenerationPort
 from hub.app.ports.output.recommendation_record_port import RecommendationRecordPort
 from hub.app.ports.output.retrieval_port import RetrievalPort
+from hub.app.ports.output.transcript_ingest_record_port import CallNotStartedError
 from hub.app.ports.output.trigger_port import TriggerPort
+
+logger = logging.getLogger(__name__)
 
 
 class RecommendationInteractor(RecommendationUseCase):
@@ -81,6 +87,13 @@ class RecommendationInteractor(RecommendationUseCase):
             generation_ms=int((after_generation - after_retrieval) * 1000),
         )
         if self._record is not None:
-            card_ids = await self._record.record(batch)
-            batch = replace(batch, cards=tuple(replace(c, card_id=i) for c, i in zip(batch.cards, card_ids, strict=True)))
+            try:
+                card_ids = await self._record.record(batch)
+            except CallNotStartedError:
+                raise
+            except Exception as exc:  # noqa: BLE001 — 기록 실패(우리 쪽 DB 흔들림)로 상담원 화면의 카드가 사라지지 않게
+                logger.warning("recommendation not stored call_id=%s cards=%d reason=%s",
+                               event.call_id, len(batch.cards), type(exc).__name__)
+            else:
+                batch = replace(batch, cards=tuple(replace(c, card_id=i) for c, i in zip(batch.cards, card_ids, strict=True)))
         return RecommendResult(fired=True, domain=domain, cards=batch)
