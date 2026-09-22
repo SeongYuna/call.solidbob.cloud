@@ -389,7 +389,7 @@ export function evidenceTally(closure: ClosureEvent): {
   };
 }
 
-export const useCallStore = create<CallState>((set) => ({
+export const useCallStore = create<CallState>((set, get) => ({
   mode: "mock",
   connected: false,
   error: null,
@@ -536,9 +536,10 @@ export const useCallStore = create<CallState>((set) => ({
   },
 
   toggleAdoption: (card) => {
+    const id = cardId(card);
+    const previousEntry = get().adoptions[id];
     let adopted = false;
     set((state) => {
-      const id = cardId(card);
       adopted = state.adoptions[id]?.adopted !== true;
       return {
         adoptions: {
@@ -551,8 +552,23 @@ export const useCallStore = create<CallState>((set) => ({
     // `card.card_id`(recommendation_card.card_id)는 cardId()의 로컬 dedup 키와 다르다 —
     // 서버에 저장되지 않은 카드는 null이라 그때는 보내지 않는다(decisions/308).
     if (isCoreApiConfigured() && card.card_id !== null && card.card_id !== undefined) {
-      submitCardFeedback(card.card_id, adopted ? "adopted" : "ignored").catch(() => {
-        // 피드백 저장 실패는 채택 표시 자체를 막지 않는다 — 조용히 넘어간다.
+      submitCardFeedback(card.card_id, adopted ? "adopted" : "ignored").catch((error) => {
+        // 저장 실패 — 낙관적 업데이트를 되돌리고 `AppHeader`의 에러 배너(`state.error`)로 알린다.
+        set((state) => {
+          const adoptions = { ...state.adoptions };
+          if (previousEntry === undefined) {
+            delete adoptions[id];
+          } else {
+            adoptions[id] = previousEntry;
+          }
+          return {
+            adoptions,
+            error:
+              error instanceof Error
+                ? `카드 채택 표시를 저장하지 못했다: ${error.message}`
+                : "카드 채택 표시를 저장하지 못했다.",
+          };
+        });
       });
     }
   },
