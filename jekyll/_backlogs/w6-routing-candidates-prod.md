@@ -32,3 +32,8 @@ J-5 배정 판정 호출(PR #131)은 후보 목록이 비면 늘 「일반 배�
 - 근속 3년 이상: A03(7년) · A04(4년) · A06(3년)
 - ⚠ **시크릿이 아니라 매니페스트에 넣었다** — `agent_id` 는 비밀이 아니다(`infra/k8s/base/call-mediator.yaml`). SSM 작업이 필요 없다
 - 남은 것: 배포 뒤 관리자 토큰으로 시드 한 번(런북 12-2-c) → 테스트 통화로 `routing_log` · SYN-007 `veteran`
+
+## 2026-09-22 — 배포
+
+- **`0.1.35` 운영 배포됨** (PR #132 머지 07:57 → release 성공 · `/health` `version: 0.1.35` · `read_guard: open` 확인, 09-22) · 매니페스트 `ROUTING_CANDIDATES` 반영
+- 남은 것: 시드 스크립트 한 번(관리자 토큰, 런북 12-2-c) → 테스트 통화로 `routing_log` · SYN-007 `veteran`
