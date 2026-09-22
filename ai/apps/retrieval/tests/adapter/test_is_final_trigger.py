@@ -95,3 +95,27 @@ def test_도착_시각은_발동하지_않을_때_시각을_만들지_않는다(
     d = IsFinalTrigger().decide(event(speaker="agent", received_at_ms=3620))
     assert d.fire is False
     assert d.at_ms is None
+
+
+# ── 맞장구 억제(`decisions/216`) ──────────────────────────────────────────────
+
+@pytest.mark.parametrize("text", ["아 네, 알겠습니다.", "감사합니다", "수고하세요", "네."])
+def test_맞장구_억제를_켜면_맞장구에는_발동하지_않는다(text):
+    d = IsFinalTrigger(suppress_backchannel=True).decide(event(text=text))
+    assert d.fire is False
+    assert d.at_ms is None
+
+
+@pytest.mark.parametrize("text", ["네, 그런데 초본은요?", "***이요.", "반품하려는데 배송비는 제가 내야 하나요"])
+def test_맞장구_억제를_켜도_내용이_있으면_발동한다(text):
+    d = IsFinalTrigger(suppress_backchannel=True).decide(event(text=text))
+    assert d.fire is True
+    assert d.at_ms == 3100 + STT_FINAL_LAG_MS
+
+
+def test_맞장구_억제를_끄면_지금처럼_발동한다():
+    assert IsFinalTrigger(suppress_backchannel=False).decide(event(text="아 네, 알겠습니다.")).fire is True
+
+
+def test_맞장구_억제는_상담원_발화_판정을_바꾸지_않는다():
+    assert IsFinalTrigger(suppress_backchannel=True).decide(event(speaker="agent", text="네, 그런데 초본은요?")).fire is False
