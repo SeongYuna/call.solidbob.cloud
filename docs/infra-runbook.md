@@ -1702,6 +1702,13 @@ PR #94 에서 `admin`·`kxu6` 가 `Deployment rate limited — retry in 24 hours
 
 ## 19. 검증 체크리스트
 
+> ✅ **2026-09-22 — 「이미지보다 먼저 스키마」를 사람 기억에서 워크플로로 옮겼다**(`decisions/128`, `w6-deploy-schema-precheck`).
+> `release.yml` `k3s-deploy` 의 **「운영 스키마를 대조한다」** 단계가 매니페스트 적용 **전에** 서버 파드 안에서 운영 컬럼을 뜨고
+> `scripts/compare_prod_schema.py --allow-prod-extra` 로 이 커밋의 `db/schema.sql` 과 대조한다. **어긋나면 적용하지 않고 실패한다**(운영은 그대로 —
+> 되돌리기 단계는 적용이 실패했을 때만 돈다). 실패하면: ① 로그의 🟡/🔴 줄을 본다 ② `db/migrations/` 의 해당 파일을 17-2 방식으로 운영에 넣는다
+> ③ Actions 에서 그 릴리스를 **Re-run** 한다. 운영에만 있는 컬럼은 경고로만 찍힌다. SSM 출력이 잘리면(24,000자 — 지금 약 8.8 KB) 판정하지 않고 멈춘다.
+> 아래 표의 「이미지를 올리기 전에 ○○.sql 을 넣는다」 줄들은 이제 **워크플로가 잊지 않게 막아 준다** — 넣는 것은 여전히 사람이다.
+
 > **2026-09-11 실물 기준으로 고쳤다** — 네임스페이스 `callguard` · ES 는 StatefulSet(`elasticsearch-0`) ·
 > DB 확인은 17장처럼 서버 파드 안에서. **10 · 11번(DB 읽기·쓰기)을 새로 넣었다** — 09-08 배포는 9번까지
 > 통과했는데 운영 DB 연결은 한 번도 되지 않았다. `/health` 의 `postgres_configured` 는 **설정이 있다는 뜻일 뿐**

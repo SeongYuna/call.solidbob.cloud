@@ -12,7 +12,7 @@ from hub.adapter.inbound.api.schemas.transcript_ingest_schema import (
 )
 from hub.app.dtos.transcript_ingest_dto import TranscriptIngestCommand
 from hub.app.ports.input.transcript_ingest_use_case import TranscriptIngestUseCase
-from hub.app.ports.output.transcript_ingest_record_port import CallNotStartedError
+from hub.app.ports.output.transcript_ingest_record_port import CallNotStartedError, SegmentSpeakerConflictError
 from hub.dependencies.transcript_ingest_provider import get_transcript_ingest_use_case
 
 transcript_ingest_router = APIRouter(prefix="/hub", tags=["hub"])
@@ -21,7 +21,7 @@ transcript_ingest_router = APIRouter(prefix="/hub", tags=["hub"])
 @transcript_ingest_router.post(
     "/transcripts",
     response_model=TranscriptEventSchema,
-    responses={409: {"description": "통화가 시작되지 않았다 — `POST /hub/calls` 를 먼저 보낸다"}},
+    responses={409: {"description": "통화가 시작되지 않았다(`POST /hub/calls` 먼저) · 또는 저장된 발화 번호를 다른 화자로 덮으려 했다"}},
 )
 async def ingest_transcript(
     body: TranscriptIngestRequest,
@@ -44,6 +44,13 @@ async def ingest_transcript(
             status_code=409,
             detail=f"통화 '{exc.call_id}' 가 시작되지 않았다 — POST /hub/calls 를 전사보다 먼저 보낸다 "
                    "(decisions/301)",
+        ) from exc
+    except SegmentSpeakerConflictError as exc:
+        # 원문은 싣지 않는다(SEC-1). 번호만 알려 준다 — 콜 미디에이터가 번호를 다시 센 것이다
+        raise HTTPException(
+            status_code=409,
+            detail=f"통화 '{exc.call_id}' 의 발화 {exc.segment_id} 는 이미 다른 화자로 저장돼 있다 — 덮어쓰지 않는다. "
+                   "발화 번호를 POST /hub/calls 응답의 last_segment_id 다음부터 센다(w6-segment-id-reuse)",
         ) from exc
     return TranscriptEventSchema(
         call_id=event.call_id,
