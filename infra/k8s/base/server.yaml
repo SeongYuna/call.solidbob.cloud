@@ -36,9 +36,17 @@ spec:
             initialDelaySeconds: 10
             periodSeconds: 10
           resources:
-            requests: { cpu: 200m, memory: 512Mi }
-            limits:   { memory: 1Gi }
+            # 2026-09-22 `decisions/124`: NER(0.45GB)+KoE5 임베딩(2.2GB)을 CPU 로 싣는다 → 상한 1Gi → 3Gi.
+            # 노드는 7.6GB 이고 ES 힙 1GiB·redis·미디에이터가 같이 산다. 모델을 안 켜면(환경변수 없음) 전처럼 500MB 대다.
+            requests: { cpu: 200m, memory: 1Gi }
+            limits:   { memory: 3Gi }
           volumeMounts:
+            # 모델 파일(decisions/124). 노드 디스크의 /opt/callguard/models 를 그대로 본다 —
+            # 이미지에 넣지 않고(수 GB), PVC 도 두지 않는다(노드가 하나라 hostPath 로 충분).
+            # 채우는 법·해시 대조: 런북 11장 「실물 — CPU 노드에 모델 싣기」.
+            - name: models
+              mountPath: /models
+              readOnly: true
             # Google STT(A-1) 서비스 계정 키 파일. 값이 아니라 **파일**이라
             # 시크릿을 볼륨으로 마운트한다 — server-env 의
             # GOOGLE_APPLICATION_CREDENTIALS 가 이 경로를 가리켜야 한다.
@@ -49,6 +57,10 @@ spec:
         - name: gcp-stt-credentials
           secret:
             secretName: gcp-stt-credentials
+        - name: models
+          hostPath:
+            path: /opt/callguard/models
+            type: DirectoryOrCreate   # 폴더가 없어도 파드는 뜬다 — 모델 층만 안 켜진다(/health spokes 로 본다)
 ---
 apiVersion: v1
 kind: Service
