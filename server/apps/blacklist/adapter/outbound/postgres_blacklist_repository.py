@@ -162,8 +162,16 @@ class PostgresBlacklistRepository(BlacklistPort):
             await conn.commit()
         return _request(row)
 
-    async def list_requests(self, status: str | None = None) -> list[BlacklistRequest]:
-        sql, args = (_LIST_REQUESTS, ()) if status is None else (_LIST_REQUESTS + ' WHERE "status" = %s', (status,))
+    async def list_requests(self, status: str | None = None, requested_by: str | None = None) -> list[BlacklistRequest]:
+        clauses, params = [], []
+        if status is not None:
+            clauses.append('"status" = %s')
+            params.append(status)
+        if requested_by is not None:
+            clauses.append('"requested_by" = %s')
+            params.append(requested_by)
+        sql = _LIST_REQUESTS + (" WHERE " + " AND ".join(clauses) if clauses else "")
+        args = tuple(params)
         async with self._connect() as conn:
             async with conn.cursor() as cur:
                 await cur.execute(sql + ' ORDER BY "requested_at" DESC, "request_id" DESC', args)
