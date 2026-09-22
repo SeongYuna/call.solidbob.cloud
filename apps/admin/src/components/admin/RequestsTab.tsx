@@ -3,7 +3,7 @@ import { abuseTotal, hasDistress } from "../../lib/blacklist/collectEvidence";
 import type { BlacklistRequestItem } from "../../types/blacklist";
 
 /**
- * J-3 승인요청창. 관리자가 **통화를 다시 듣지 않고** 판단할 수 있어야 하므로
+ * Requirement: J-3 승인요청창. 관리자가 **통화를 다시 듣지 않고** 판단할 수 있어야 하므로
  * 요청 카드에 근거를 전부 펼쳐 둔다 — 통화 시간·폭언 건수·통화 온도 이상 구간,
  * 그리고 **마스킹된 대화 맥락**.
  *
@@ -120,7 +120,11 @@ function RequestCard({
         </div>
         <div>
           <dt>통화 온도 이상 구간</dt>
-          <dd>{request.evidence.temperature_outliers}건</dd>
+          <dd>
+            {request.evidence.temperature_outliers === null
+              ? "미측정"
+              : `${request.evidence.temperature_outliers}건`}
+          </dd>
         </div>
         <div>
           <dt>통화 시간</dt>

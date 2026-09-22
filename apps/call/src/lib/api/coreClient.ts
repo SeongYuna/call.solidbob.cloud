@@ -265,7 +265,8 @@ interface BlacklistEvidenceWire {
   insult_count: string;
   threat_count: string;
   sexual_count: string;
-  temperature_outliers: string;
+  /** `decisions/316` — null 은 미측정. `_types.StrField`의 "전부 문자열" 규칙에서도 null 은 예외다. */
+  temperature_outliers: string | null;
 }
 
 interface BlacklistRequestItemWire {
@@ -298,7 +299,8 @@ function toEvidence(wire: BlacklistEvidenceWire): BlacklistEvidence {
     // ⚠ 서버는 distress_count 를 저장·응답하지 않는다(`decisions/205` ④) — 화면
     // 전용 값이라 여기서는 채울 수 없다. `has_distress`(응답 최상위)로 대신 본다.
     distress_count: 0,
-    temperature_outliers: toNum(wire.temperature_outliers),
+    temperature_outliers:
+      wire.temperature_outliers === null ? null : toNum(wire.temperature_outliers),
   };
 }
 
@@ -542,6 +544,58 @@ export async function reviseSummary(
     followUpActions: wire.follow_up_actions,
     revisedAt: wire.revision.revised_at,
   };
+}
+
+// ── GET /hub/calls/{call_id}/summary-revisions ────────────────────────────
+
+interface SummaryRevisionItemWire {
+  revision_id: string;
+  call_id: string;
+  previous_summary_text: string;
+  previous_inquiry_type: string | null;
+  reason: string;
+  revised_at: string;
+}
+
+interface SummaryRevisionListResponseWire {
+  revisions: SummaryRevisionItemWire[];
+}
+
+export interface SummaryRevisionItem {
+  revisionId: string;
+  callId: string;
+  previousSummaryText: string;
+  previousInquiryType: string | null;
+  reason: string;
+  revisedAt: string;
+}
+
+/**
+ * `decisions/311` — 확정된 요약을 고친 이력, 오래된 순(서버가 그렇게 준다).
+ * 상담원 토큰 필요(`require_agent`) — `reviseSummary`와 같은 방식(`readAgentToken()`
+ * → 없으면 즉시 던짐 → `Authorization: Bearer`)으로 읽는다. `revision_id`도
+ * `_types.StrField`라 이미 문자열이라 별도 숫자 변환이 필요 없다.
+ */
+export async function fetchSummaryRevisions(callId: string): Promise<SummaryRevisionItem[]> {
+  const token = readAgentToken();
+  if (token === null) {
+    throw new CoreApiError(
+      "상담원 토큰이 없다 — 관리자가 보낸 링크(?agent_token=...)로 다시 접속해야 한다.",
+      null,
+    );
+  }
+  const wire = await get<SummaryRevisionListResponseWire>(
+    `/hub/calls/${encodeURIComponent(callId)}/summary-revisions`,
+    { Authorization: `Bearer ${token}` },
+  );
+  return wire.revisions.map((r) => ({
+    revisionId: r.revision_id,
+    callId: r.call_id,
+    previousSummaryText: r.previous_summary_text,
+    previousInquiryType: r.previous_inquiry_type,
+    reason: r.reason,
+    revisedAt: r.revised_at,
+  }));
 }
 
 // ── GET /hub/calls/{call_id}/record ──────────────────────────────────────

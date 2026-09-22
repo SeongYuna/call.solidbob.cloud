@@ -105,7 +105,11 @@ export function BlacklistRequestButton({
             </div>
             <div>
               <dt>통화 온도 이상 구간</dt>
-              <dd>{evidence.temperature_outliers}건</dd>
+              <dd>
+                {evidence.temperature_outliers === null
+                  ? "미측정"
+                  : `${evidence.temperature_outliers}건`}
+              </dd>
             </div>
           </dl>
 

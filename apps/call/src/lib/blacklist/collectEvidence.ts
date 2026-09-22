@@ -29,17 +29,19 @@ export const EMPTY_EVIDENCE: BlacklistEvidence = {
   threat_count: 0,
   sexual_count: 0,
   distress_count: 0,
-  temperature_outliers: 0,
+  // 아직 이 값을 실시간으로 세는 신호가 없다(호출부 어디도 옵션을 안 넘긴다) — "0건 확인됨"이
+  // 아니라 "미측정"이다(`decisions/316`과 같은 원칙). `?? 0`으로 뭉개지 않는다.
+  temperature_outliers: null,
 };
 
 export function collectEvidence(
   flags: CallGuardFlag[],
-  options: { callDurationS?: number; temperatureOutliers?: number } = {},
+  options: { callDurationS?: number; temperatureOutliers?: number | null } = {},
 ): BlacklistEvidence {
   const evidence: BlacklistEvidence = {
     ...EMPTY_EVIDENCE,
     call_duration_s: options.callDurationS ?? 0,
-    temperature_outliers: options.temperatureOutliers ?? 0,
+    temperature_outliers: options.temperatureOutliers ?? null,
   };
   for (const flag of flags) {
     const field = CATEGORY_TO_FIELD[flag.category];

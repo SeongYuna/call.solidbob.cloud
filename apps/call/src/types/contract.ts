@@ -361,8 +361,12 @@ export interface BlacklistEvidence {
    * 대응 컬럼이 없다 — 이 값은 **요청 화면의 경고를 띄우기 위한 일회성 값**이다.
    */
   distress_count: number;
-  /** D-5 통화 온도 이상 구간 수(`decisions/203`). 점수가 아니라 건수다. */
-  temperature_outliers: number;
+  /**
+   * D-5 통화 온도 이상 구간 수(`decisions/203`). 점수가 아니라 건수다.
+   * `null`은 **미측정**이다 — 0(이상 없음, 측정됨)과 다른 값이다(`decisions/316`).
+   * 빈 findings 배열이 "안전함"이 아닌 것과 같은 원칙.
+   */
+  temperature_outliers: number | null;
 }
 
 export interface BlacklistRequestItem {

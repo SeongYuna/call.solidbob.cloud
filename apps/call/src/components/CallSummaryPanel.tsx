@@ -1,6 +1,15 @@
 import { useEffect, useMemo, useState, type ReactElement, type ReactNode } from "react";
 import type { CallWrapUp, SentimentSummary } from "../types/contract";
-import { confirmSummary, getHistoryPlayback, isCoreApiConfigured, reviseSummary, type CallRecord } from "../lib/api/coreClient";
+import {
+  confirmSummary,
+  fetchSummaryRevisions,
+  getHistoryPlayback,
+  isCoreApiConfigured,
+  reviseSummary,
+  type CallRecord,
+  type SummaryRevisionItem,
+} from "../lib/api/coreClient";
+import type { CallMediatorMode } from "../lib/ws";
 import { DEFAULT_LOCAL_RESOURCES } from "../mock/localResources";
 import { cardId, useCallStore, type Utterance } from "../store/callStore";
 import { BlackConsumerAction } from "./BlackConsumerAction";
@@ -25,7 +34,18 @@ interface CallSummaryPanelProps {
   historyConfirmed?: boolean;
 }
 
-export function callSummaryFromWrapUp(wrapUp: CallWrapUp): CallSummaryModel {
+/**
+ * G-2 미구현 — 서버(`closeCall`·`fetchCallRecord`)는 `local_resources`를 아직
+ * 채우지 않는다. **`mode === "mock"`일 때만** mock 목록으로 대신 채운다(mock
+ * WS·mock 상담기록 재생은 이미 자기 쪽에서 `DEFAULT_LOCAL_RESOURCES`를 채워
+ * 들어오므로 — `mock/mockCallMediator.ts`·`mock/callHistory.ts` — 이 폴백은
+ * 주로 방어적이다). 실서버 모드에서 비어 있으면 `undefined`로 그대로 둔다 —
+ * "안내할 지역자원이 없다"를 mock 지역자원으로 덮지 않는다(2026-09-22).
+ */
+export function callSummaryFromWrapUp(
+  wrapUp: CallWrapUp,
+  mode: CallMediatorMode,
+): CallSummaryModel {
   return {
     callId: wrapUp.call_id,
     summary: wrapUp.summary.join(" "),
@@ -41,7 +61,9 @@ export function callSummaryFromWrapUp(wrapUp: CallWrapUp): CallSummaryModel {
     resources:
       wrapUp.local_resources !== undefined && wrapUp.local_resources.length > 0
         ? wrapUp.local_resources
-        : [...DEFAULT_LOCAL_RESOURCES],
+        : mode === "mock"
+          ? [...DEFAULT_LOCAL_RESOURCES]
+          : undefined,
     sentiment: wrapUp.sentiment,
   };
 }
@@ -75,6 +97,7 @@ export function CallSummaryHost({
   const viewMode = useCallStore((state) => state.viewMode);
   const historyCallId = useCallStore((state) => state.historyCallId);
   const historyRecord = useCallStore((state) => state.historyRecord);
+  const mode = useCallStore((state) => state.mode);
   const [live, setLive] = useState<CallWrapUp | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -129,7 +152,7 @@ export function CallSummaryHost({
       }
       return (
         <CallSummaryPanel
-          call={callSummaryFromWrapUp(wrapUpFromRecord(historyRecord))}
+          call={callSummaryFromWrapUp(wrapUpFromRecord(historyRecord), mode)}
           onClose={onClose}
           onStartNewCall={onStartNewCall}
           historyConfirmed={historyRecord.summaryConfirmed}
@@ -149,7 +172,7 @@ export function CallSummaryHost({
     }
     return (
       <CallSummaryPanel
-        call={callSummaryFromWrapUp(playback.wrapUp)}
+        call={callSummaryFromWrapUp(playback.wrapUp, mode)}
         onClose={onClose}
         onStartNewCall={onStartNewCall}
       />
@@ -181,7 +204,7 @@ export function CallSummaryHost({
 
   return (
     <CallSummaryPanel
-      call={callSummaryFromWrapUp(live)}
+      call={callSummaryFromWrapUp(live, mode)}
       onClose={onClose}
       onStartNewCall={onStartNewCall}
     />
@@ -208,7 +231,6 @@ export function CallSummaryPanel({
     [cards, adoptions],
   );
   const failed = manualSearches.filter((entry) => !entry.found);
-  const resources = call.resources ?? [];
 
   return (
     <CallSummaryShell onClose={onClose} onStartNewCall={onStartNewCall}>
@@ -247,22 +269,27 @@ export function CallSummaryPanel({
 
       <FollowUpChecklist title="후속 조치" items={call.followUps} />
 
-      <section className="wrapup-card">
-        <div className="wrapup-card-head">
-          <h3>연계 가능한 지역자원</h3>
-        </div>
-        <ul className="resource-list">
-          {resources.map((item) => (
-            <li key={`${item.orgName}-${item.phone}`}>
-              <LocalResourceCard
-                orgName={item.orgName}
-                address={item.address}
-                phone={item.phone}
-              />
-            </li>
-          ))}
-        </ul>
-      </section>
+      {/* G-2 미구현 — 실서버 모드에서 안내할 지역자원이 없으면 섹션째 렌더하지
+          않는다("카드 사용 현황"·"지식베이스 공백"과 같은 패턴). mock 목록으로
+          덮지 않는다(2026-09-22). */}
+      {call.resources !== undefined && call.resources.length > 0 ? (
+        <section className="wrapup-card">
+          <div className="wrapup-card-head">
+            <h3>연계 가능한 지역자원</h3>
+          </div>
+          <ul className="resource-list">
+            {call.resources.map((item) => (
+              <li key={`${item.orgName}-${item.phone}`}>
+                <LocalResourceCard
+                  orgName={item.orgName}
+                  address={item.address}
+                  phone={item.phone}
+                />
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
 
       {showLiveExtras && cards.length > 0 ? (
         <section className="wrapup-card">
@@ -477,41 +504,45 @@ function SummaryConfirmationForm({
 
   if (locked) {
     return (
-      <section className="wrapup-card">
-        <div className="wrapup-card-head">
-          <h3>요약 확정</h3>
-        </div>
-        <p className="wrapup-note">
-          {confirmedAt !== null
-            ? `${new Date(confirmedAt).toLocaleString("ko-KR")}에 확정했습니다.`
-            : "이미 확정된 요약입니다."}
-          {lastRevisedAt !== null
-            ? ` 최근 재수정: ${new Date(lastRevisedAt).toLocaleString("ko-KR")}.`
-            : ""}
-        </p>
-        {error !== null ? (
-          <p className="wrapup-error" role="alert">
-            {error}
+      <>
+        <section className="wrapup-card">
+          <div className="wrapup-card-head">
+            <h3>요약 확정</h3>
+          </div>
+          <p className="wrapup-note">
+            {confirmedAt !== null
+              ? `${new Date(confirmedAt).toLocaleString("ko-KR")}에 확정했습니다.`
+              : "이미 확정된 요약입니다."}
+            {lastRevisedAt !== null
+              ? ` 최근 재수정: ${new Date(lastRevisedAt).toLocaleString("ko-KR")}.`
+              : ""}
           </p>
-        ) : null}
-        <button
-          type="button"
-          className="btn-outline"
-          onClick={() => {
-            setError(null);
-            setRevising(true);
-          }}
-        >
-          재수정
-        </button>
-      </section>
+          {error !== null ? (
+            <p className="wrapup-error" role="alert">
+              {error}
+            </p>
+          ) : null}
+          <button
+            type="button"
+            className="btn-outline"
+            onClick={() => {
+              setError(null);
+              setRevising(true);
+            }}
+          >
+            재수정
+          </button>
+        </section>
+        <SummaryRevisionHistory callId={callId} refreshKey={lastRevisedAt} />
+      </>
     );
   }
 
   const isRevision = confirmed;
 
   return (
-    <section className="wrapup-card">
+    <>
+      <section className="wrapup-card">
       <div className="wrapup-card-head">
         <h3>{isRevision ? "요약 재수정" : "요약 확정"}</h3>
       </div>
@@ -597,6 +628,92 @@ function SummaryConfirmationForm({
           </button>
         ) : null}
       </div>
+      </section>
+      {isRevision ? <SummaryRevisionHistory callId={callId} refreshKey={lastRevisedAt} /> : null}
+    </>
+  );
+}
+
+/**
+ * `GET .../summary-revisions` — 확정된 요약을 고친 이력, 오래된 순.
+ *
+ * `lastRevisedAt`(위 잠금 카드의 "최근 재수정: ..." 문구)과 겹치지만 대체하지
+ * 않는다 — 그 문구는 재수정 직후 서버를 다시 부르지 않고도 바로 채워지는
+ * 가벼운 요약이고, 이 목록은 그 아래서 필요할 때만 펼쳐 보는 상세(이전
+ * 요약·이전 유형·사유)다. "카드 사용 현황"이 총계와 채택 목록을 같이 두는
+ * 것과 같은 방식 — 하나가 실패해도(fetch 오류) 다른 하나는 여전히 보인다.
+ *
+ * `refreshKey`에 `lastRevisedAt`을 그대로 받는다 — 재수정이 성공할 때마다
+ * 값이 바뀌어 새로 부른다. 첫 마운트(값이 `null`)에도 한 번 부른다.
+ */
+function SummaryRevisionHistory({
+  callId,
+  refreshKey,
+}: {
+  callId: string;
+  refreshKey: string | null;
+}): ReactElement {
+  const [state, setState] = useState<
+    | { status: "loading" }
+    | { status: "ready"; revisions: SummaryRevisionItem[] }
+    | { status: "error"; message: string }
+  >({ status: "loading" });
+
+  useEffect(() => {
+    let alive = true;
+    setState({ status: "loading" });
+    fetchSummaryRevisions(callId)
+      .then((revisions) => {
+        if (alive) {
+          setState({ status: "ready", revisions });
+        }
+      })
+      .catch((error: unknown) => {
+        if (alive) {
+          setState({
+            status: "error",
+            message: error instanceof Error ? error.message : "재수정 이력을 불러오지 못했습니다.",
+          });
+        }
+      });
+    return () => {
+      alive = false;
+    };
+  }, [callId, refreshKey]);
+
+  return (
+    <section className="wrapup-card">
+      <div className="wrapup-card-head">
+        <h3>재수정 이력</h3>
+      </div>
+      {state.status === "loading" ? (
+        <p className="wrapup-loading">
+          <span className="spinner" aria-hidden="true" />
+          불러오는 중...
+        </p>
+      ) : state.status === "error" ? (
+        <p className="wrapup-error" role="alert">
+          {state.message}
+        </p>
+      ) : state.revisions.length === 0 ? (
+        <p className="wrapup-note">재수정한 적이 없습니다.</p>
+      ) : (
+        <ul className="adopt-titles">
+          {state.revisions.map((rev) => (
+            <li key={rev.revisionId}>
+              <span>
+                <strong>{new Date(rev.revisedAt).toLocaleString("ko-KR")}</strong> · 사유:{" "}
+                {rev.reason}
+                <br />
+                이전 요약: {rev.previousSummaryText}
+                {rev.previousInquiryType !== null
+                  ? ` · 이전 유형: ${rev.previousInquiryType}`
+                  : ""}
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
     </section>
   );
 }

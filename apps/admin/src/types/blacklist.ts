@@ -20,8 +20,11 @@ export interface BlacklistEvidence {
   sexual_count: number;
   /** ⚠ 블랙리스트 사유가 아니다(`decisions/205` ④) — 위기 신호는 전환 근거에서 뺀다. */
   distress_count: number;
-  /** D-5 통화 온도 이상 구간 수(`decisions/203`). 점수가 아니라 건수다. */
-  temperature_outliers: number;
+  /**
+   * D-5 통화 온도 이상 구간 수(`decisions/203`). 점수가 아니라 건수다.
+   * `null`은 **미측정**이다 — 0(이상 없음, 측정됨)과 다른 값이다(`decisions/316`).
+   */
+  temperature_outliers: number | null;
 }
 
 export interface BlacklistRequestItem {

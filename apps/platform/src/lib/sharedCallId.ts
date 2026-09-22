@@ -25,3 +25,37 @@ export function readSharedCallId(): string | null {
     return null;
   }
 }
+
+/** `CALL_ID` 정규식을 항상 만족하는 새 통화 ID — 영문·숫자만 쓰는 `Date.now().toString(36)`
+ * 조합이라 별도 인코딩 없이 그대로 통과한다. */
+function generateCallId(): string {
+  return `call-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+}
+
+/**
+ * 통화 ID가 URL에 없으면 새로 만들어 `?call_id=`로 반영하고, 있으면 그 값을 그대로 쓴다.
+ * 두 화면(홍보 페이지·상담원 대시보드) 모두 이 함수를 거치면 어느 쪽이 먼저 열려도 같은
+ * 통화 ID로 수렴한다 — 지금까지는 `readSharedCallId() ?? 각자 생성`이라 URL에 아무것도
+ * 안 남아 상대 화면과 맞출 방법이 없었다(2026-09-22).
+ *
+ * `history.replaceState`를 쓴다 — 새 히스토리 엔트리를 쌓으면 "뒤로 가기"가 이 쿼리
+ * 추가 자체를 되짚어야 해서 어색하다. URL을 못 바꾸는 환경(SSR 등)이어도 이번 통화는
+ * 새로 만든 값으로 그대로 진행한다 — 상대와 안 맞을 뿐 통화 자체는 된다.
+ */
+export function ensureSharedCallId(): string {
+  const existing = readSharedCallId();
+  if (existing !== null) {
+    return existing;
+  }
+  const generated = generateCallId();
+  if (typeof window !== "undefined") {
+    try {
+      const url = new URL(window.location.href);
+      url.searchParams.set(QUERY_KEY, generated);
+      window.history.replaceState({}, "", url.toString());
+    } catch {
+      // URL을 못 바꿔도 이번 통화는 이 값으로 진행한다 — 아래 return 은 그대로 유효하다
+    }
+  }
+  return generated;
+}
