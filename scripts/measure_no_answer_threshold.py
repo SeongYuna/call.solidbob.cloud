@@ -99,6 +99,11 @@ def main() -> int:
     ap.add_argument("--only", default=",".join(KINDS))
     ap.add_argument("--device", default=None)
     ap.add_argument("--out", type=Path, default=None, help="측정 원자료 JSON")
+    ap.add_argument("--no-answer-set", type=Path, default=None,
+                    help="정답 없음(B-6) 항목을 이 파일에서 읽는다 — 보류 표본(held-out) 재측정용(decisions/215). "
+                         "정답 있음(B)은 그대로 --golden-set 에서")
+    ap.add_argument("--at", type=float, action="append", default=[],
+                    help="미리 정한 문턱 t 에서의 「정답 잃음 · 걸러냄」을 따로 찍는다(여러 번 줄 수 있다). 문턱을 고르지 않는다")
     args = ap.parse_args()
 
     client = _es_client(os.environ.get("ELASTICSEARCH_URL"))
@@ -106,12 +111,17 @@ def main() -> int:
         raise SystemExit("ELASTICSEARCH_URL 이 없다 — 이 측정은 ES 없이 못 한다")
     items = load_golden_set(args.golden_set)
     b_items = [it for it in items if it.module == "B"]
-    b6_items = [it for it in items if it.module == "B-6"]
+    b6_source = load_golden_set(args.no_answer_set) if args.no_answer_set else items
+    b6_items = [it for it in b6_source if it.module == "B-6"]
+    # 유형(no_answer_category)은 GoldenItem 에 없는 필드라 원본 JSON 에서 읽는다 — 유형별 걸러냄을 찍으려고
+    raw = json.loads((args.no_answer_set or args.golden_set).read_text(encoding="utf-8"))
+    category = {e["id"]: e.get("no_answer_category") for e in raw["items"] if e.get("module") == "B-6"}
     if not b6_items:
         raise SystemExit("골든셋에 B-6 항목이 0건이다 — 잴 것이 없다")
 
     meta = {"date": date.today().isoformat(), "commit": _git_commit(), "golden_set": args.golden_set.name,
-            "n_have": len(b_items), "n_none": len(b6_items), "device": args.device or "cpu",
+            "n_have": len(b_items), "n_none": len(b6_items),
+            "no_answer_set": args.no_answer_set.name if args.no_answer_set else args.golden_set.name, "device": args.device or "cpu",
             "platform": f"{platform.system()} {platform.machine()}", "python": platform.python_version()}
     print(json.dumps(meta, ensure_ascii=False))
     result = {"meta": meta, "kinds": {}}
@@ -122,6 +132,8 @@ def main() -> int:
         rows = asyncio.run(_measure(port, b_items + b6_items))
         have = [r for r in rows if r["module"] == "B"]
         none = [r for r in rows if r["module"] == "B-6"]
+        for r in none:
+            r["category"] = category.get(r["id"])
         have_all = [r["top1_score"] for r in have if r["top1_score"] is not None]
         have_hit = [r["top1_score"] for r in have if r["top1_score"] is not None and r["hit5"]]
         none_s = [r["top1_score"] for r in none if r["top1_score"] is not None]
@@ -139,6 +151,7 @@ def main() -> int:
                         "separable": (overlap[0] is not None and overlap[1] is not None and overlap[1] < overlap[0])},
             "picks_vs_hit5": _pick_rows(sweep_hit, len(have_hit), len(none_s)),
             "picks_vs_all": _pick_rows(sweep_all, len(have_all), len(none_s)),
+            "at": [_at(t, have, none) for t in args.at],
         }
         result["kinds"][kind] = {"summary": summary, "rows": rows, "sweep_hit5": sweep_hit}
         _print(kind, summary, none)
@@ -147,6 +160,24 @@ def main() -> int:
         args.out.write_text(json.dumps(result, ensure_ascii=False, indent=1), encoding="utf-8")
         print(f"\n원자료: {args.out}")
     return 0
+
+
+def _at(t: float, have: list[dict], none: list[dict]) -> dict:
+    """미리 정한 문턱 t 하나에서 — 1순위 점수 < t 면 기권. 「정답 잃음」은 상위5 적중 항목 기준(표의 정의와 같다)."""
+    below = lambda r: r["top1_score"] is not None and r["top1_score"] < t  # noqa: E731
+    cats: dict[str, list[int]] = {}
+    for r in none:
+        c = cats.setdefault(r.get("category") or "?", [0, 0])
+        c[1] += 1
+        c[0] += below(r)
+    return {"t": t,
+            "have_hit5_lost": sorted(r["id"] for r in have if r["hit5"] and below(r)),
+            "have_hit5_n": sum(1 for r in have if r["hit5"]),
+            "have_all_abstained": sorted(r["id"] for r in have if below(r)),
+            "have_all_n": len(have),
+            "none_filtered": sum(1 for r in none if below(r)), "none_n": len(none),
+            "none_by_category": {k: f"{v[0]}/{v[1]}" for k, v in cats.items()},
+            "none_kept": sorted(r["id"] for r in none if not below(r))}
 
 
 def _fmt(x):
@@ -167,6 +198,10 @@ def _print(kind: str, s: dict, none_rows: list[dict]) -> None:
     print("  문턱 후보 (상위5 적중 항목 기준 손실):")
     for r in s["picks_vs_hit5"]:
         print(f"    {r['label']:<28} t={r['t']:.4f}  정답 잃음 {r['have_lost']:>2}  정답 없음 걸러냄 {r['none_filtered']:>2}")
+    for a in s.get("at", []):
+        print(f"  [t={a['t']}] 정답 잃음(상위5 적중 {a['have_hit5_n']}건 중) {len(a['have_hit5_lost'])} {a['have_hit5_lost']} · "
+              f"B 전체 {a['have_all_n']}건 중 기권 {len(a['have_all_abstained'])} · "
+              f"정답 없음 걸러냄 {a['none_filtered']}/{a['none_n']} {a['none_by_category']}")
     print("  B-6 항목별 1순위:")
     for r in none_rows:
         print(f"    {r['id']} {_fmt(r['top1_score'])} {r['top1_id']}")
