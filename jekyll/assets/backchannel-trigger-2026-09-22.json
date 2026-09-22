@@ -1,0 +1,3681 @@
+{
+ "measured_on": "2026-09-22",
+ "commit": "41c62bd-dirty",
+ "command": "scripts/measure_backchannel_trigger.py --device mps --e2e-texts /Users/ryujun/Documents/com.ryujun.demo/data/processed/qa-2026-09-22/v2/dense-scores-1510.json --out jekyll/assets/backchannel-trigger-2026-09-22.json",
+ "host": "Darwin arm64",
+ "index": "callguard-kb-single",
+ "n": 189,
+ "text_source_counts": {
+  "e2e": 189,
+  "script": 0
+ },
+ "label_counts": {
+  "needed": 132,
+  "backchannel": 22,
+  "other": 35
+ },
+ "A": {
+  "risk_set": 145,
+  "risk_needed": 132,
+  "risk_procedure_in_top5_not_needed": 13,
+  "lost": [
+   "SYN-008-16"
+  ],
+  "pass": false
+ },
+ "B": {
+  "backchannel": 22,
+  "suppressed": 16,
+  "rate": 0.7272727272727273,
+  "min": 0.9,
+  "pass": false,
+  "not_suppressed": [
+   {
+    "id": "SYN-004-18",
+    "text": "Thank you!"
+   },
+   {
+    "id": "SYN-005-24",
+    "text": "네, 부탁합니다."
+   },
+   {
+    "id": "SYN-013-24",
+    "text": "네, 부탁드려요."
+   },
+   {
+    "id": "SYN-016-14",
+    "text": "네, 이번엔 알겠습니다."
+   },
+   {
+    "id": "SYN-018-22",
+    "text": "고마워요. 젊은 사람이 친절하네."
+   },
+   {
+    "id": "SYN-018-24",
+    "text": "네, 수고해요."
+   }
+  ]
+ },
+ "report_only": {
+  "other_suppressed": [],
+  "masked_turns": [
+   {
+    "id": "SYN-002-12",
+    "label": "other",
+    "text": "제 이름은 *** ***이에요. 주소는 ********************예요.",
+    "fired_with_rule": true
+   },
+   {
+    "id": "SYN-002-16",
+    "label": "other",
+    "text": "***************예요.",
+    "fired_with_rule": true
+   },
+   {
+    "id": "SYN-003-06",
+    "label": "needed",
+    "text": "아 그래요? 다행이다. 어머니 주민번호도 알아야 되나요? ************* 이거요.",
+    "fired_with_rule": true
+   },
+   {
+    "id": "SYN-003-10",
+    "label": "other",
+    "text": "알겠어요. 제 이름은 ***이고요, 연락처는 *************입니다.",
+    "fired_with_rule": true
+   },
+   {
+    "id": "SYN-004-08",
+    "label": "other",
+    "text": "네. 계좌는... 제 통장 번호 ************ 이에요.",
+    "fired_with_rule": true
+   },
+   {
+    "id": "SYN-004-12",
+    "label": "needed",
+    "text": "진짜요? 좋아요! 인터넷 했어요. 문자 왔어요. 인증번호 ******. 이거 어디 넣어요?",
+    "fired_with_rule": true
+   },
+   {
+    "id": "SYN-004-16",
+    "label": "other",
+    "text": "*************. 이름 ** ***.",
+    "fired_with_rule": true
+   },
+   {
+    "id": "SYN-005-16",
+    "label": "other",
+    "text": "***요. **************************.",
+    "fired_with_rule": true
+   },
+   {
+    "id": "SYN-006-04",
+    "label": "needed",
+    "text": "우리 집 앞 *************** 앞에 잠깐 댔는데 주정차 딱지를 끊었어. 이게 말이 되냐고.",
+    "fired_with_rule": true
+   },
+   {
+    "id": "SYN-008-04",
+    "label": "other",
+    "text": "***이요. ******************.",
+    "fired_with_rule": true
+   },
+   {
+    "id": "SYN-008-14",
+    "label": "other",
+    "text": "...진짜 이게 몇 번째인지. 연락처는 ***********이에요. 이번엔 꼭 연락 주세요.",
+    "fired_with_rule": true
+   },
+   {
+    "id": "SYN-009-06",
+    "label": "needed",
+    "text": "*************이요.",
+    "fired_with_rule": true
+   },
+   {
+    "id": "SYN-009-14",
+    "label": "needed",
+    "text": "인터넷은 못 해요. 그리고 어제 지원금 준다고 문자가 와서 시키는 대로 인증번호 ****** 알려 줬는데 그건 괜찮은 거죠?",
+    "fired_with_rule": true
+   },
+   {
+    "id": "SYN-009-16",
+    "label": "needed",
+    "text": "카드 번호도 불러 줬는데... ******************* 이거요. 계좌는 없고 카드만 있어서.",
+    "fired_with_rule": true
+   },
+   {
+    "id": "SYN-011-20",
+    "label": "other",
+    "text": "**************요.",
+    "fired_with_rule": true
+   },
+   {
+    "id": "SYN-012-20",
+    "label": "other",
+    "text": "*************요! 빨리 연락 주세요!",
+    "fired_with_rule": true
+   },
+   {
+    "id": "SYN-013-22",
+    "label": "other",
+    "text": "**************에요.",
+    "fired_with_rule": true
+   },
+   {
+    "id": "SYN-014-18",
+    "label": "other",
+    "text": "*************입니다.",
+    "fired_with_rule": true
+   },
+   {
+    "id": "SYN-015-08",
+    "label": "other",
+    "text": "*************요. 빨리 좀 부탁드립니다.",
+    "fired_with_rule": true
+   },
+   {
+    "id": "SYN-016-12",
+    "label": "other",
+    "text": "**************에요. 문자로 주시면 좋겠어요.",
+    "fired_with_rule": true
+   },
+   {
+    "id": "SYN-017-12",
+    "label": "needed",
+    "text": "원본, 네. 알겠어요. 연락 주세요. 저 이름 *** *이. 전화 *************.",
+    "fired_with_rule": true
+   },
+   {
+    "id": "SYN-018-12",
+    "label": "needed",
+    "text": "손주한테 시키면 되겠네. 그 녀석 이름이 ***예요. 착해요.",
+    "fired_with_rule": true
+   },
+   {
+    "id": "SYN-018-18",
+    "label": "other",
+    "text": "전화는 **************고, 집은 **************이에요.",
+    "fired_with_rule": true
+   },
+   {
+    "id": "SYN-019-10",
+    "label": "other",
+    "text": "그것도 모르시는군요. 뭐, 그럴 줄 알았어요. 계좌는 남편 거 ************이에요. 적어 두세요.",
+    "fired_with_rule": true
+   },
+   {
+    "id": "SYN-019-14",
+    "label": "other",
+    "text": "*************요. 이름은 ****요. 꼭 연락 주세요, 안 오실 것 같지만.",
+    "fired_with_rule": true
+   },
+   {
+    "id": "SYN-020-04",
+    "label": "needed",
+    "text": "네, 제가요. 아버지 주민번호는 *************이고요, 필요하시죠?",
+    "fired_with_rule": true
+   },
+   {
+    "id": "SYN-020-08",
+    "label": "needed",
+    "text": "*, 편하네요. 그럼 아버지 신분증만 들고 가면 되는 거죠?",
+    "fired_with_rule": true
+   },
+   {
+    "id": "SYN-020-10",
+    "label": "needed",
+    "text": "아 위임장이 필요하구나. 알겠어요. 발급 수수료는 제 카드로 내면 되죠? 카드번호 *******************이에요.",
+    "fired_with_rule": true
+   },
+   {
+    "id": "SYN-020-12",
+    "label": "needed",
+    "text": "아 네네. 혹시 환급 같은 거 있으면 제 계좌 ************으로 넣어 주시면 되고요.",
+    "fired_with_rule": true
+   },
+   {
+    "id": "SYN-020-16",
+    "label": "other",
+    "text": "저는 ****요, 아버지는 ***이에요. 연락처는 *************입니다.",
+    "fired_with_rule": true
+   },
+   {
+    "id": "SYN-021-08",
+    "label": "other",
+    "text": "**************요.",
+    "fired_with_rule": true
+   },
+   {
+    "id": "SYN-022-10",
+    "label": "needed",
+    "text": "네. 아 그리고 어제 문자 왔어요. 돌봄 돈 준다고, 링크 누르고 인증번호 ****** 넣으래요. 넣었어요. 괜찮아요?",
+    "fired_with_rule": true
+   },
+   {
+    "id": "SYN-022-12",
+    "label": "needed",
+    "text": "Oh no... 알겠어요. 신고할게요. 연락처는 *************, 이름 *** ***예요.",
+    "fired_with_rule": true
+   },
+   {
+    "id": "SYN-024-12",
+    "label": "needed",
+    "text": "네. 마지막으로 한 번만 *요. 신고서, 계약서, 신분증, 감면 서류. 이 넷이면 되는 거죠?",
+    "fired_with_rule": true
+   },
+   {
+    "id": "SYN-024-14",
+    "label": "other",
+    "text": "***************. 문자로 주세요.",
+    "fired_with_rule": true
+   }
+  ],
+  "script_text_differs": [],
+  "suppressed_total": 16
+ },
+ "adopted": false,
+ "rows": [
+  {
+   "id": "SYN-001-02",
+   "label": "needed",
+   "text": "안녕하세요, 저는 중국 유학생이에요. 시립도서관 회원 가입하고 싶은데 뭐 필요해요?",
+   "text_source": "e2e",
+   "masked": false,
+   "fired_without_rule": true,
+   "fired_with_rule": true,
+   "fired_with_rule_on_script_text": true,
+   "top5_without_rule": [
+    "DASAN-TERM-4.18",
+    "DASAN-TERM-1.5",
+    "DASAN-TERM-4.17",
+    "DASAN-TERM-2.7",
+    "DASAN-TERM-2.9"
+   ],
+   "procedure_in_top5": true
+  },
+  {
+   "id": "SYN-001-04",
+   "label": "needed",
+   "text": "아 외국인등록증 있어요. 그런데 제 기숙사가 다른 지역이에요. 괜찮아요?",
+   "text_source": "e2e",
+   "masked": false,
+   "fired_without_rule": true,
+   "fired_with_rule": true,
+   "fired_with_rule_on_script_text": true,
+   "top5_without_rule": [
+    "DASAN-TERM-1.5",
+    "DASAN-TERM-4.18",
+    "DASAN-TERM-1.4",
+    "DASAN-TERM-4.17",
+    "DASAN-TERM-4.4"
+   ],
+   "procedure_in_top5": true
+  },
+  {
+   "id": "SYN-001-06",
+   "label": "backchannel",
+   "text": "네 알겠어요, 감사합니다!",
+   "text_source": "e2e",
+   "masked": false,
+   "fired_without_rule": true,
+   "fired_with_rule": false,
+   "fired_with_rule_on_script_text": false,
+   "top5_without_rule": [
+    "DASAN-MANUAL-1.4",
+    "DASAN-TERM-4.22",
+    "DASAN-TERM-6.1",
+    "DASAN-MANUAL-1.3",
+    "DASAN-TERM-4.15"
+   ],
+   "procedure_in_top5": false
+  },
+  {
+   "id": "SYN-002-02",
+   "label": "needed",
+   "text": "안녕하세요. 저 이사 했어요. 새 집으로. 전입신고 해야 돼요? 뭐 가져가요?",
+   "text_source": "e2e",
+   "masked": false,
+   "fired_without_rule": true,
+   "fired_with_rule": true,
+   "fired_with_rule_on_script_text": true,
+   "top5_without_rule": [
+    "DASAN-TERM-4.4",
+    "DASAN-TERM-4.9",
+    "DASAN-TERM-3.5",
+    "DASAN-TERM-4.3",
+    "DASAN-TERM-6.2"
+   ],
+   "procedure_in_top5": true
+  },
+  {
+   "id": "SYN-002-04",
+   "label": "needed",
+   "text": "세대주... chủ hộ? 무슨 뜻이에요? 잘 몰라요.",
+   "text_source": "e2e",
+   "masked": false,
+   "fired_without_rule": true,
+   "fired_with_rule": true,
+   "fired_with_rule_on_script_text": true,
+   "top5_without_rule": [
+    "DASAN-TERM-3.8",
+    "DASAN-TERM-4.3",
+    "DASAN-TERM-4.4",
+    "DASAN-TERM-4.10",
+    "DASAN-TERM-4.15"
+   ],
+   "procedure_in_top5": true
+  },
+  {
+   "id": "SYN-002-06",
+   "label": "needed",
+   "text": "아, 남편이요. 남편이 대표예요. 저는 아내.",
+   "text_source": "e2e",
+   "masked": false,
+   "fired_without_rule": true,
+   "fired_with_rule": true,
+   "fired_with_rule_on_script_text": true,
+   "top5_without_rule": [
+    "DASAN-MANUAL-3.4",
+    "DASAN-TERM-4.15",
+    "DASAN-MANUAL-4.1",
+    "DASAN-TERM-5.1",
+    "DASAN-MANUAL-1.4"
+   ],
+   "procedure_in_top5": false
+  },
+  {
+   "id": "SYN-002-08",
+   "label": "needed",
+   "text": "제 신분증 외국인등록증 돼요? 여권도 있어요.",
+   "text_source": "e2e",
+   "masked": false,
+   "fired_without_rule": true,
+   "fired_with_rule": true,
+   "fired_with_rule_on_script_text": true,
+   "top5_without_rule": [
+    "DASAN-TERM-1.5",
+    "DASAN-TERM-1.4",
+    "DASAN-TERM-4.3",
+    "DASAN-TERM-4.4",
+    "DASAN-TERM-4.1"
+   ],
+   "procedure_in_top5": true
+  },
+  {
+   "id": "SYN-002-10",
+   "label": "backchannel",
+   "text": "네. 알겠어요.",
+   "text_source": "e2e",
+   "masked": false,
+   "fired_without_rule": true,
+   "fired_with_rule": false,
+   "fired_with_rule_on_script_text": false,
+   "top5_without_rule": [
+    "DASAN-MANUAL-1.4",
+    "DASAN-MANUAL-1.1",
+    "DASAN-TERM-6.1",
+    "DASAN-MANUAL-1.6",
+    "DASAN-MANUAL-1.3"
+   ],
+   "procedure_in_top5": false
+  },
+  {
+   "id": "SYN-002-12",
+   "label": "other",
+   "text": "제 이름은 *** ***이에요. 주소는 ********************예요.",
+   "text_source": "e2e",
+   "masked": true,
+   "fired_without_rule": true,
+   "fired_with_rule": true,
+   "fired_with_rule_on_script_text": true,
+   "top5_without_rule": [
+    "DASAN-TERM-3.5",
+    "DASAN-MANUAL-1.2",
+    "DASAN-TERM-6.12",
+    "DASAN-TERM-4.3",
+    "DASAN-TERM-3.4"
+   ],
+   "procedure_in_top5": false
+  },
+  {
+   "id": "SYN-002-14",
+   "label": "needed",
+   "text": "온라인 한국어 어려워요. 그냥 가요. 통역 있어요?",
+   "text_source": "e2e",
+   "masked": false,
+   "fired_without_rule": true,
+   "fired_with_rule": true,
+   "fired_with_rule_on_script_text": true,
+   "top5_without_rule": [
+    "DASAN-TERM-1.5",
+    "DASAN-MANUAL-1.4",
+    "DASAN-MANUAL-5.1",
+    "DASAN-MANUAL-4.2",
+    "DASAN-MANUAL-3.1"
+   ],
+   "procedure_in_top5": true
+  },
+  {
+   "id": "SYN-002-16",
+   "label": "other",
+   "text": "***************예요.",
+   "text_source": "e2e",
+   "masked": true,
+   "fired_without_rule": true,
+   "fired_with_rule": true,
+   "fired_with_rule_on_script_text": true,
+   "top5_without_rule": [
+    "DASAN-TERM-6.12",
+    "DASAN-TERM-3.13",
+    "DASAN-TERM-4.22",
+    "DASAN-TERM-3.5",
+    "DASAN-TERM-3.4"
+   ],
+   "procedure_in_top5": false
+  },
+  {
+   "id": "SYN-002-18",
+   "label": "needed",
+   "text": "신고서, 제 등록증, 남편 신분증. 네 알겠어요. 감사합니다.",
+   "text_source": "e2e",
+   "masked": false,
+   "fired_without_rule": true,
+   "fired_with_rule": true,
+   "fired_with_rule_on_script_text": true,
+   "top5_without_rule": [
+    "DASAN-TERM-4.4",
+    "DASAN-TERM-4.9",
+    "DASAN-TERM-1.4",
+    "DASAN-TERM-4.14",
+    "DASAN-TERM-4.3"
+   ],
+   "procedure_in_top5": true
+  },
+  {
+   "id": "SYN-003-02",
+   "label": "needed",
+   "text": "안녕하세요, 저희 어머니 인감증명서를 떼야 되는데요, 어머니가 거동이 불편하셔서 제가 대신 가도 되나 해서요.",
+   "text_source": "e2e",
+   "masked": false,
+   "fired_without_rule": true,
+   "fired_with_rule": true,
+   "fired_with_rule_on_script_text": true,
+   "top5_without_rule": [
+    "DASAN-TERM-4.5",
+    "DASAN-TERM-1.4",
+    "DASAN-TERM-2.5",
+    "DASAN-TERM-1.5",
+    "DASAN-TERM-2.2"
+   ],
+   "procedure_in_top5": true
+  },
+  {
+   "id": "SYN-003-04",
+   "label": "needed",
+   "text": "부동산 매도 때문에 필요하대요. 이번 주 안에 해야 돼서 좀 급해요.",
+   "text_source": "e2e",
+   "masked": false,
+   "fired_without_rule": true,
+   "fired_with_rule": true,
+   "fired_with_rule_on_script_text": true,
+   "top5_without_rule": [
+    "DASAN-TERM-4.9",
+    "DASAN-TERM-4.11",
+    "DASAN-TERM-4.3",
+    "DASAN-TERM-3.5",
+    "DASAN-TERM-4.4"
+   ],
+   "procedure_in_top5": false
+  },
+  {
+   "id": "SYN-003-06",
+   "label": "needed",
+   "text": "아 그래요? 다행이다. 어머니 주민번호도 알아야 되나요? ************* 이거요.",
+   "text_source": "e2e",
+   "masked": true,
+   "fired_without_rule": true,
+   "fired_with_rule": true,
+   "fired_with_rule_on_script_text": true,
+   "top5_without_rule": [
+    "DASAN-MANUAL-1.2",
+    "DASAN-TERM-4.14",
+    "DASAN-TERM-4.3",
+    "DASAN-TERM-1.5",
+    "DASAN-TERM-4.1"
+   ],
+   "procedure_in_top5": false
+  },
+  {
+   "id": "SYN-003-08",
+   "label": "needed",
+   "text": "네? 그럼 뭘 가져가야 되는데요?",
+   "text_source": "e2e",
+   "masked": false,
+   "fired_without_rule": true,
+   "fired_with_rule": true,
+   "fired_with_rule_on_script_text": true,
+   "top5_without_rule": [
+    "DASAN-TERM-2.9",
+    "DASAN-TERM-2.5",
+    "DASAN-TERM-4.17",
+    "DASAN-TERM-4.5",
+    "DASAN-TERM-4.18"
+   ],
+   "procedure_in_top5": true
+  },
+  {
+   "id": "SYN-003-10",
+   "label": "other",
+   "text": "알겠어요. 제 이름은 ***이고요, 연락처는 *************입니다.",
+   "text_source": "e2e",
+   "masked": true,
+   "fired_without_rule": true,
+   "fired_with_rule": true,
+   "fired_with_rule_on_script_text": true,
+   "top5_without_rule": [
+    "DASAN-MANUAL-1.2",
+    "DASAN-TERM-6.12",
+    "DASAN-TERM-3.5",
+    "DASAN-TERM-1.5",
+    "DASAN-TERM-3.4"
+   ],
+   "procedure_in_top5": false
+  },
+  {
+   "id": "SYN-003-12",
+   "label": "backchannel",
+   "text": "네, 감사합니다.",
+   "text_source": "e2e",
+   "masked": false,
+   "fired_without_rule": true,
+   "fired_with_rule": false,
+   "fired_with_rule_on_script_text": false,
+   "top5_without_rule": [
+    "DASAN-MANUAL-1.4",
+    "DASAN-TERM-6.12",
+    "DASAN-MANUAL-4.1",
+    "DASAN-TERM-4.21",
+    "DASAN-TERM-6.1"
+   ],
+   "procedure_in_top5": false
+  },
+  {
+   "id": "SYN-004-02",
+   "label": "needed",
+   "text": "Hello... 안녕하세요. 저 아기 있어요. 돈, 음, child... 아동수당? 받고 싶어요.",
+   "text_source": "e2e",
+   "masked": false,
+   "fired_without_rule": true,
+   "fired_with_rule": true,
+   "fired_with_rule_on_script_text": true,
+   "top5_without_rule": [
+    "DASAN-TERM-4.13",
+    "DASAN-TERM-6.7",
+    "DASAN-TERM-4.14",
+    "DASAN-TERM-5.8",
+    "DASAN-TERM-6.12"
+   ],
+   "procedure_in_top5": true
+  },
+  {
+   "id": "SYN-004-04",
+   "label": "needed",
+   "text": "Yes, 네, 엄마예요. 아기 3개월.",
+   "text_source": "e2e",
+   "masked": false,
+   "fired_without_rule": true,
+   "fired_with_rule": true,
+   "fired_with_rule_on_script_text": true,
+   "top5_without_rule": [
+    "DASAN-TERM-4.13",
+    "DASAN-TERM-6.7",
+    "DASAN-MANUAL-3.1",
+    "DASAN-TERM-4.14",
+    "DASAN-MANUAL-3.4"
+   ],
+   "procedure_in_top5": true
+  },
+  {
+   "id": "SYN-004-06",
+   "label": "needed",
+   "text": "관계... 서류? 무슨... I don't understand.",
+   "text_source": "e2e",
+   "masked": false,
+   "fired_without_rule": true,
+   "fired_with_rule": true,
+   "fired_with_rule_on_script_text": true,
+   "top5_without_rule": [
+    "DASAN-MANUAL-3.4",
+    "DASAN-MANUAL-3.3",
+    "DASAN-TERM-1.3",
+    "DASAN-TERM-1.4",
+    "DASAN-TERM-4.3"
+   ],
+   "procedure_in_top5": false
+  },
+  {
+   "id": "SYN-004-08",
+   "label": "other",
+   "text": "네. 계좌는... 제 통장 번호 ************ 이에요.",
+   "text_source": "e2e",
+   "masked": true,
+   "fired_without_rule": true,
+   "fired_with_rule": true,
+   "fired_with_rule_on_script_text": true,
+   "top5_without_rule": [
+    "DASAN-TERM-6.12",
+    "DASAN-TERM-3.4",
+    "DASAN-TERM-3.13",
+    "DASAN-TERM-3.5",
+    "DASAN-TERM-6.2"
+   ],
+   "procedure_in_top5": true
+  },
+  {
+   "id": "SYN-004-10",
+   "label": "needed",
+   "text": "아 그리고 아기 태어난 때부터 돈 다 나와요? 3개월 전부터?",
+   "text_source": "e2e",
+   "masked": false,
+   "fired_without_rule": true,
+   "fired_with_rule": true,
+   "fired_with_rule_on_script_text": true,
+   "top5_without_rule": [
+    "DASAN-TERM-4.13",
+    "DASAN-TERM-6.10",
+    "DASAN-MANUAL-1.6",
+    "DASAN-TERM-6.7",
+    "DASAN-TERM-6.1"
+   ],
+   "procedure_in_top5": true
+  },
+  {
+   "id": "SYN-004-12",
+   "label": "needed",
+   "text": "진짜요? 좋아요! 인터넷 했어요. 문자 왔어요. 인증번호 ******. 이거 어디 넣어요?",
+   "text_source": "e2e",
+   "masked": true,
+   "fired_without_rule": true,
+   "fired_with_rule": true,
+   "fired_with_rule_on_script_text": true,
+   "top5_without_rule": [
+    "DASAN-TERM-6.12",
+    "DASAN-TERM-3.13",
+    "DASAN-TERM-1.4",
+    "DASAN-TERM-4.5",
+    "DASAN-TERM-4.6"
+   ],
+   "procedure_in_top5": true
+  },
+  {
+   "id": "SYN-004-14",
+   "label": "needed",
+   "text": "Oh... okay. 빨리 할게요.",
+   "text_source": "e2e",
+   "masked": false,
+   "fired_without_rule": true,
+   "fired_with_rule": true,
+   "fired_with_rule_on_script_text": true,
+   "top5_without_rule": [
+    "DASAN-MANUAL-1.4",
+    "DASAN-TERM-4.2",
+    "DASAN-MANUAL-1.1",
+    "DASAN-MANUAL-1.6",
+    "DASAN-TERM-1.3"
+   ],
+   "procedure_in_top5": false
+  },
+  {
+   "id": "SYN-004-16",
+   "label": "other",
+   "text": "*************. 이름 ** ***.",
+   "text_source": "e2e",
+   "masked": true,
+   "fired_without_rule": true,
+   "fired_with_rule": true,
+   "fired_with_rule_on_script_text": true,
+   "top5_without_rule": [
+    "DASAN-TERM-3.5",
+    "DASAN-TERM-6.12",
+    "DASAN-MANUAL-1.2",
+    "DASAN-TERM-3.13",
+    "DASAN-TERM-3.4"
+   ],
+   "procedure_in_top5": true
+  },
+  {
+   "id": "SYN-004-18",
+   "label": "backchannel",
+   "text": "Thank you!",
+   "text_source": "e2e",
+   "masked": false,
+   "fired_without_rule": true,
+   "fired_with_rule": true,
+   "fired_with_rule_on_script_text": true,
+   "top5_without_rule": [
+    "DASAN-TERM-6.12",
+    "DASAN-MANUAL-1.4",
+    "DASAN-TERM-4.22",
+    "DASAN-TERM-4.15",
+    "DASAN-TERM-2.12"
+   ],
+   "procedure_in_top5": true
+  },
+  {
+   "id": "SYN-005-02",
+   "label": "needed",
+   "text": "아니 수도요금이 이번 달에 평소 세 배가 나왔어요. 이게 말이 됩니까?",
+   "text_source": "e2e",
+   "masked": false,
+   "fired_without_rule": true,
+   "fired_with_rule": true,
+   "fired_with_rule_on_script_text": true,
+   "top5_without_rule": [
+    "DASAN-TERM-3.1",
+    "DASAN-TERM-3.3",
+    "DASAN-TERM-3.4",
+    "DASAN-TERM-3.6",
+    "DASAN-TERM-3.9"
+   ],
+   "procedure_in_top5": true
+  },
+  {
+   "id": "SYN-005-04",
+   "label": "needed",
+   "text": "누수 있었죠. 화장실 배관이 터져서 지난주에 고쳤어요.",
+   "text_source": "e2e",
+   "masked": false,
+   "fired_without_rule": true,
+   "fired_with_rule": true,
+   "fired_with_rule_on_script_text": true,
+   "top5_without_rule": [
+    "DASAN-TERM-3.15",
+    "DASAN-TERM-3.2",
+    "DASAN-TERM-3.11",
+    "DASAN-TERM-3.9",
+    "DASAN-TERM-3.7"
+   ],
+   "procedure_in_top5": true
+  },
+  {
+   "id": "SYN-005-06",
+   "label": "needed",
+   "text": "그러니까 그걸 왜 내가 다 내야 되냐고요. 내가 일부러 물을 틀어 놓은 것도 아니고.",
+   "text_source": "e2e",
+   "masked": false,
+   "fired_without_rule": true,
+   "fired_with_rule": true,
+   "fired_with_rule_on_script_text": true,
+   "top5_without_rule": [
+    "DASAN-TERM-3.4",
+    "DASAN-TERM-3.9",
+    "DASAN-TERM-3.16",
+    "DASAN-TERM-3.7",
+    "DASAN-TERM-3.14"
+   ],
+   "procedure_in_top5": true
+  },
+  {
+   "id": "SYN-005-08",
+   "label": "needed",
+   "text": "서류는 됐고, 그래서 전액 빼 주는 거예요 안 빼 주는 거예요? 확실하게 말해요.",
+   "text_source": "e2e",
+   "masked": false,
+   "fired_without_rule": true,
+   "fired_with_rule": true,
+   "fired_with_rule_on_script_text": true,
+   "top5_without_rule": [
+    "DASAN-MANUAL-3.2",
+    "DASAN-MANUAL-3.3",
+    "DASAN-TERM-3.7",
+    "DASAN-TERM-1.3",
+    "DASAN-TERM-4.12"
+   ],
+   "procedure_in_top5": true
+  },
+  {
+   "id": "SYN-005-10",
+   "label": "needed",
+   "text": "아 진짜 이 멍청한 놈이 말귀를 못 알아듣네. 너 같은 게 무슨 상담을 한다고.",
+   "text_source": "e2e",
+   "masked": false,
+   "fired_without_rule": true,
+   "fired_with_rule": true,
+   "fired_with_rule_on_script_text": true,
+   "top5_without_rule": [
+    "DASAN-MANUAL-4.1",
+    "DASAN-MANUAL-5.1",
+    "DASAN-MANUAL-5.4",
+    "DASAN-MANUAL-5.3",
+    "DASAN-MANUAL-2.2"
+   ],
+   "procedure_in_top5": true
+  },
+  {
+   "id": "SYN-005-12",
+   "label": "needed",
+   "text": "뭘 삼가? 거기 찾아가서 가만 안 둔다 진짜.",
+   "text_source": "e2e",
+   "masked": false,
+   "fired_without_rule": true,
+   "fired_with_rule": true,
+   "fired_with_rule_on_script_text": true,
+   "top5_without_rule": [
+    "DASAN-MANUAL-1.3",
+    "DASAN-MANUAL-1.1",
+    "DASAN-MANUAL-2.2",
+    "DASAN-TERM-2.11",
+    "DASAN-MANUAL-5.4"
+   ],
+   "procedure_in_top5": false
+  },
+  {
+   "id": "SYN-005-14",
+   "label": "needed",
+   "text": "알았어요. 알았다고요. 그래서 신청은 어떻게 하는데요.",
+   "text_source": "e2e",
+   "masked": false,
+   "fired_without_rule": true,
+   "fired_with_rule": true,
+   "fired_with_rule_on_script_text": true,
+   "top5_without_rule": [
+    "DASAN-TERM-4.13",
+    "DASAN-TERM-2.2",
+    "DASAN-TERM-6.3",
+    "DASAN-TERM-4.16",
+    "DASAN-TERM-3.4"
+   ],
+   "procedure_in_top5": false
+  },
+  {
+   "id": "SYN-005-16",
+   "label": "other",
+   "text": "***요. **************************.",
+   "text_source": "e2e",
+   "masked": true,
+   "fired_without_rule": true,
+   "fired_with_rule": true,
+   "fired_with_rule_on_script_text": true,
+   "top5_without_rule": [
+    "DASAN-MANUAL-1.1",
+    "DASAN-TERM-6.12",
+    "DASAN-MANUAL-1.4",
+    "DASAN-TERM-4.22",
+    "DASAN-TERM-3.4"
+   ],
+   "procedure_in_top5": false
+  },
+  {
+   "id": "SYN-005-18",
+   "label": "needed",
+   "text": "영수증은 있어요. 카드로 긁었으니까.",
+   "text_source": "e2e",
+   "masked": false,
+   "fired_without_rule": true,
+   "fired_with_rule": true,
+   "fired_with_rule_on_script_text": true,
+   "top5_without_rule": [
+    "DASAN-TERM-2.7",
+    "DASAN-TERM-3.7",
+    "DASAN-TERM-2.6",
+    "DASAN-TERM-4.6",
+    "DASAN-TERM-4.5"
+   ],
+   "procedure_in_top5": true
+  },
+  {
+   "id": "SYN-005-20",
+   "label": "needed",
+   "text": "근데 얼마나 빠지는지는 대충이라도 몰라요?",
+   "text_source": "e2e",
+   "masked": false,
+   "fired_without_rule": true,
+   "fired_with_rule": true,
+   "fired_with_rule_on_script_text": true,
+   "top5_without_rule": [
+    "DASAN-MANUAL-1.6",
+    "DASAN-TERM-5.6",
+    "DASAN-TERM-6.10",
+    "DASAN-TERM-6.1",
+    "DASAN-TERM-2.4"
+   ],
+   "procedure_in_top5": true
+  },
+  {
+   "id": "SYN-005-22",
+   "label": "other",
+   "text": "...아까는 제가 좀 심했네요. 요금 보고 너무 열받아서.",
+   "text_source": "e2e",
+   "masked": false,
+   "fired_without_rule": true,
+   "fired_with_rule": true,
+   "fired_with_rule_on_script_text": true,
+   "top5_without_rule": [
+    "DASAN-TERM-3.16",
+    "DASAN-TERM-3.3",
+    "DASAN-TERM-2.4",
+    "DASAN-MANUAL-1.6",
+    "DASAN-TERM-3.4"
+   ],
+   "procedure_in_top5": true
+  },
+  {
+   "id": "SYN-005-24",
+   "label": "backchannel",
+   "text": "네, 부탁합니다.",
+   "text_source": "e2e",
+   "masked": false,
+   "fired_without_rule": true,
+   "fired_with_rule": true,
+   "fired_with_rule_on_script_text": true,
+   "top5_without_rule": [
+    "DASAN-MANUAL-1.4",
+    "DASAN-MANUAL-3.1",
+    "DASAN-MANUAL-3.4",
+    "DASAN-TERM-6.12",
+    "DASAN-MANUAL-1.2"
+   ],
+   "procedure_in_top5": false
+  },
+  {
+   "id": "SYN-006-02",
+   "label": "needed",
+   "text": "어이 아가씨, 목소리 좋네. 과태료 딱지 때문에 전화했는데.",
+   "text_source": "e2e",
+   "masked": false,
+   "fired_without_rule": true,
+   "fired_with_rule": true,
+   "fired_with_rule_on_script_text": true,
+   "top5_without_rule": [
+    "DASAN-TERM-4.20",
+    "DASAN-TERM-3.16",
+    "DASAN-MANUAL-4.2",
+    "DASAN-MANUAL-5.1",
+    "DASAN-MANUAL-5.2"
+   ],
+   "procedure_in_top5": true
+  },
+  {
+   "id": "SYN-006-04",
+   "label": "needed",
+   "text": "우리 집 앞 *************** 앞에 잠깐 댔는데 주정차 딱지를 끊었어. 이게 말이 되냐고.",
+   "text_source": "e2e",
+   "masked": true,
+   "fired_without_rule": true,
+   "fired_with_rule": true,
+   "fired_with_rule_on_script_text": true,
+   "top5_without_rule": [
+    "DASAN-TERM-4.21",
+    "DASAN-TERM-4.20",
+    "DASAN-MANUAL-1.1",
+    "DASAN-MANUAL-5.5",
+    "DASAN-MANUAL-5.1"
+   ],
+   "procedure_in_top5": true
+  },
+  {
+   "id": "SYN-006-06",
+   "label": "needed",
+   "text": "이의신청 같은 소리 하네. 그냥 네가 지금 취소해.",
+   "text_source": "e2e",
+   "masked": false,
+   "fired_without_rule": true,
+   "fired_with_rule": true,
+   "fired_with_rule_on_script_text": true,
+   "top5_without_rule": [
+    "DASAN-TERM-4.20",
+    "DASAN-TERM-3.16",
+    "DASAN-TERM-6.9",
+    "DASAN-MANUAL-5.2",
+    "DASAN-TERM-6.11"
+   ],
+   "procedure_in_top5": true
+  },
+  {
+   "id": "SYN-006-08",
+   "label": "needed",
+   "text": "이 머저리 같은 게. 너 몇 살이야? 끝나고 나랑 술이나 한잔하면 생각해 보지.",
+   "text_source": "e2e",
+   "masked": false,
+   "fired_without_rule": true,
+   "fired_with_rule": true,
+   "fired_with_rule_on_script_text": true,
+   "top5_without_rule": [
+    "DASAN-MANUAL-5.2",
+    "DASAN-MANUAL-1.6",
+    "DASAN-TERM-3.12",
+    "DASAN-TERM-5.5",
+    "DASAN-TERM-6.6"
+   ],
+   "procedure_in_top5": true
+  },
+  {
+   "id": "SYN-006-10",
+   "label": "needed",
+   "text": "종료는 무슨 종료야. 네 이름 대. 내가 거기 찾아가서 너 가만 안 둬.",
+   "text_source": "e2e",
+   "masked": false,
+   "fired_without_rule": true,
+   "fired_with_rule": true,
+   "fired_with_rule_on_script_text": true,
+   "top5_without_rule": [
+    "DASAN-MANUAL-5.2",
+    "DASAN-TERM-4.2",
+    "DASAN-MANUAL-1.1",
+    "DASAN-TERM-1.2",
+    "DASAN-MANUAL-1.4"
+   ],
+   "procedure_in_top5": true
+  },
+  {
+   "id": "SYN-006-12",
+   "label": "needed",
+   "text": "야! 야!",
+   "text_source": "e2e",
+   "masked": false,
+   "fired_without_rule": true,
+   "fired_with_rule": true,
+   "fired_with_rule_on_script_text": true,
+   "top5_without_rule": [
+    "DASAN-MANUAL-1.4",
+    "DASAN-MANUAL-1.1",
+    "DASAN-TERM-4.2",
+    "DASAN-TERM-6.12",
+    "DASAN-MANUAL-4.2"
+   ],
+   "procedure_in_top5": false
+  },
+  {
+   "id": "SYN-007-02",
+   "label": "needed",
+   "text": "저번에 과태료 때문에 전화했는데 그 아가씨가 그냥 끊어 버렸어. 너네 다 머저리들이야.",
+   "text_source": "e2e",
+   "masked": false,
+   "fired_without_rule": true,
+   "fired_with_rule": true,
+   "fired_with_rule_on_script_text": true,
+   "top5_without_rule": [
+    "DASAN-MANUAL-5.2",
+    "DASAN-MANUAL-5.1",
+    "DASAN-MANUAL-5.3",
+    "DASAN-TERM-4.20",
+    "DASAN-TERM-6.11"
+   ],
+   "procedure_in_top5": true
+  },
+  {
+   "id": "SYN-007-04",
+   "label": "needed",
+   "text": "...그래서 이의신청 하면 취소되는 거요?",
+   "text_source": "e2e",
+   "masked": false,
+   "fired_without_rule": true,
+   "fired_with_rule": true,
+   "fired_with_rule_on_script_text": true,
+   "top5_without_rule": [
+    "DASAN-TERM-6.9",
+    "DASAN-TERM-3.16",
+    "DASAN-TERM-4.20",
+    "DASAN-TERM-6.11",
+    "DASAN-TERM-2.8"
+   ],
+   "procedure_in_top5": true
+  },
+  {
+   "id": "SYN-007-06",
+   "label": "needed",
+   "text": "사전에 내면 깎아 준다는 건 뭐요?",
+   "text_source": "e2e",
+   "masked": false,
+   "fired_without_rule": true,
+   "fired_with_rule": true,
+   "fired_with_rule_on_script_text": true,
+   "top5_without_rule": [
+    "DASAN-TERM-3.7",
+    "DASAN-MANUAL-1.6",
+    "DASAN-MANUAL-4.3",
+    "DASAN-TERM-2.1",
+    "DASAN-MANUAL-2.1"
+   ],
+   "procedure_in_top5": false
+  },
+  {
+   "id": "SYN-007-08",
+   "label": "backchannel",
+   "text": "알았어요.",
+   "text_source": "e2e",
+   "masked": false,
+   "fired_without_rule": true,
+   "fired_with_rule": false,
+   "fired_with_rule_on_script_text": false,
+   "top5_without_rule": [
+    "DASAN-MANUAL-1.4",
+    "DASAN-TERM-6.1",
+    "DASAN-MANUAL-4.3",
+    "DASAN-MANUAL-1.1",
+    "DASAN-MANUAL-1.3"
+   ],
+   "procedure_in_top5": false
+  },
+  {
+   "id": "SYN-008-02",
+   "label": "needed",
+   "text": "지난주에 수도요금 때문에 전화했던 사람인데요. 이의신청 접수됐다고 했는데 아직 아무 연락이 없어요.",
+   "text_source": "e2e",
+   "masked": false,
+   "fired_without_rule": true,
+   "fired_with_rule": true,
+   "fired_with_rule_on_script_text": true,
+   "top5_without_rule": [
+    "DASAN-TERM-3.16",
+    "DASAN-TERM-3.4",
+    "DASAN-TERM-3.6",
+    "DASAN-TERM-6.9",
+    "DASAN-TERM-6.11"
+   ],
+   "procedure_in_top5": true
+  },
+  {
+   "id": "SYN-008-04",
+   "label": "other",
+   "text": "***이요. ******************.",
+   "text_source": "e2e",
+   "masked": true,
+   "fired_without_rule": true,
+   "fired_with_rule": true,
+   "fired_with_rule_on_script_text": true,
+   "top5_without_rule": [
+    "DASAN-TERM-6.12",
+    "DASAN-MANUAL-1.2",
+    "DASAN-TERM-3.5",
+    "DASAN-TERM-3.4",
+    "DASAN-TERM-3.13"
+   ],
+   "procedure_in_top5": false
+  },
+  {
+   "id": "SYN-008-06",
+   "label": "needed",
+   "text": "지난번에는 재검침 필요 없다고 했거든요. 전에 전화했을 때랑 말이 다르잖아요.",
+   "text_source": "e2e",
+   "masked": false,
+   "fired_without_rule": true,
+   "fired_with_rule": true,
+   "fired_with_rule_on_script_text": true,
+   "top5_without_rule": [
+    "DASAN-TERM-3.16",
+    "DASAN-MANUAL-4.1",
+    "DASAN-TERM-5.4",
+    "DASAN-MANUAL-1.3",
+    "DASAN-MANUAL-1.4"
+   ],
+   "procedure_in_top5": true
+  },
+  {
+   "id": "SYN-008-08",
+   "label": "other",
+   "text": "아니 그러니까 제가 몇 번을 전화해야 되냐고요. 저 일하다가 나와서 전화하는 거예요.",
+   "text_source": "e2e",
+   "masked": false,
+   "fired_without_rule": true,
+   "fired_with_rule": true,
+   "fired_with_rule_on_script_text": true,
+   "top5_without_rule": [
+    "DASAN-MANUAL-5.3",
+    "DASAN-MANUAL-5.2",
+    "DASAN-MANUAL-5.1",
+    "DASAN-MANUAL-4.2",
+    "DASAN-MANUAL-1.2"
+   ],
+   "procedure_in_top5": false
+  },
+  {
+   "id": "SYN-008-10",
+   "label": "needed",
+   "text": "그래서 요금은 얼마나 조정되는데요.",
+   "text_source": "e2e",
+   "masked": false,
+   "fired_without_rule": true,
+   "fired_with_rule": true,
+   "fired_with_rule_on_script_text": true,
+   "top5_without_rule": [
+    "DASAN-TERM-3.16",
+    "DASAN-TERM-2.4",
+    "DASAN-TERM-3.3",
+    "DASAN-MANUAL-1.6",
+    "DASAN-TERM-3.9"
+   ],
+   "procedure_in_top5": true
+  },
+  {
+   "id": "SYN-008-12",
+   "label": "needed",
+   "text": "절반이요? 확실해요?",
+   "text_source": "e2e",
+   "masked": false,
+   "fired_without_rule": true,
+   "fired_with_rule": true,
+   "fired_with_rule_on_script_text": true,
+   "top5_without_rule": [
+    "DASAN-TERM-5.5",
+    "DASAN-MANUAL-1.1",
+    "DASAN-MANUAL-1.6",
+    "DASAN-MANUAL-4.1",
+    "DASAN-TERM-5.4"
+   ],
+   "procedure_in_top5": true
+  },
+  {
+   "id": "SYN-008-14",
+   "label": "other",
+   "text": "...진짜 이게 몇 번째인지. 연락처는 ***********이에요. 이번엔 꼭 연락 주세요.",
+   "text_source": "e2e",
+   "masked": true,
+   "fired_without_rule": true,
+   "fired_with_rule": true,
+   "fired_with_rule_on_script_text": true,
+   "top5_without_rule": [
+    "DASAN-TERM-6.12",
+    "DASAN-MANUAL-5.3",
+    "DASAN-MANUAL-1.2",
+    "DASAN-MANUAL-5.2",
+    "DASAN-MANUAL-4.2"
+   ],
+   "procedure_in_top5": false
+  },
+  {
+   "id": "SYN-008-16",
+   "label": "backchannel",
+   "text": "네.",
+   "text_source": "e2e",
+   "masked": false,
+   "fired_without_rule": true,
+   "fired_with_rule": false,
+   "fired_with_rule_on_script_text": false,
+   "top5_without_rule": [
+    "DASAN-MANUAL-1.4",
+    "DASAN-TERM-4.21",
+    "DASAN-MANUAL-4.1",
+    "DASAN-MANUAL-1.1",
+    "DASAN-TERM-4.22"
+   ],
+   "procedure_in_top5": true
+  },
+  {
+   "id": "SYN-009-02",
+   "label": "needed",
+   "text": "저기요... 재난지원금 그거 신청하려고 하는데요, 뭘 가져가야 하는지 몰라서요.",
+   "text_source": "e2e",
+   "masked": false,
+   "fired_without_rule": true,
+   "fired_with_rule": true,
+   "fired_with_rule_on_script_text": true,
+   "top5_without_rule": [
+    "DASAN-TERM-6.2",
+    "DASAN-TERM-6.3",
+    "DASAN-TERM-5.8",
+    "DASAN-TERM-5.9",
+    "DASAN-TERM-6.4"
+   ],
+   "procedure_in_top5": true
+  },
+  {
+   "id": "SYN-009-04",
+   "label": "needed",
+   "text": "아니요, 아들이 세대주예요. 근데 아들이랑 연락이 잘 안 돼요.",
+   "text_source": "e2e",
+   "masked": false,
+   "fired_without_rule": true,
+   "fired_with_rule": true,
+   "fired_with_rule_on_script_text": true,
+   "top5_without_rule": [
+    "DASAN-TERM-3.8",
+    "DASAN-TERM-4.4",
+    "DASAN-TERM-4.13",
+    "DASAN-MANUAL-3.4",
+    "DASAN-MANUAL-2.2"
+   ],
+   "procedure_in_top5": false
+  },
+  {
+   "id": "SYN-009-06",
+   "label": "needed",
+   "text": "*************이요.",
+   "text_source": "e2e",
+   "masked": true,
+   "fired_without_rule": true,
+   "fired_with_rule": true,
+   "fired_with_rule_on_script_text": true,
+   "top5_without_rule": [
+    "DASAN-TERM-6.12",
+    "DASAN-MANUAL-1.2",
+    "DASAN-TERM-3.5",
+    "DASAN-TERM-3.13",
+    "DASAN-TERM-3.4"
+   ],
+   "procedure_in_top5": true
+  },
+  {
+   "id": "SYN-009-08",
+   "label": "needed",
+   "text": "아들 신분증을 어떻게 받아요... 연락도 안 되는데.",
+   "text_source": "e2e",
+   "masked": false,
+   "fired_without_rule": true,
+   "fired_with_rule": true,
+   "fired_with_rule_on_script_text": true,
+   "top5_without_rule": [
+    "DASAN-TERM-1.4",
+    "DASAN-TERM-4.13",
+    "DASAN-TERM-4.6",
+    "DASAN-TERM-2.9",
+    "DASAN-TERM-1.5"
+   ],
+   "procedure_in_top5": false
+  },
+  {
+   "id": "SYN-009-10",
+   "label": "needed",
+   "text": "위임장은 제가 쓰는 거예요, 아들이 쓰는 거예요?",
+   "text_source": "e2e",
+   "masked": false,
+   "fired_without_rule": true,
+   "fired_with_rule": true,
+   "fired_with_rule_on_script_text": true,
+   "top5_without_rule": [
+    "DASAN-MANUAL-3.4",
+    "DASAN-TERM-4.5",
+    "DASAN-TERM-4.3",
+    "DASAN-MANUAL-3.1",
+    "DASAN-TERM-3.5"
+   ],
+   "procedure_in_top5": false
+  },
+  {
+   "id": "SYN-009-12",
+   "label": "needed",
+   "text": "그것도 아들한테 받아야 되는 거면... 못 받는데.",
+   "text_source": "e2e",
+   "masked": false,
+   "fired_without_rule": true,
+   "fired_with_rule": true,
+   "fired_with_rule_on_script_text": true,
+   "top5_without_rule": [
+    "DASAN-TERM-4.13",
+    "DASAN-TERM-6.7",
+    "DASAN-TERM-6.11",
+    "DASAN-TERM-4.14",
+    "DASAN-TERM-6.1"
+   ],
+   "procedure_in_top5": false
+  },
+  {
+   "id": "SYN-009-14",
+   "label": "needed",
+   "text": "인터넷은 못 해요. 그리고 어제 지원금 준다고 문자가 와서 시키는 대로 인증번호 ****** 알려 줬는데 그건 괜찮은 거죠?",
+   "text_source": "e2e",
+   "masked": true,
+   "fired_without_rule": true,
+   "fired_with_rule": true,
+   "fired_with_rule_on_script_text": true,
+   "top5_without_rule": [
+    "DASAN-TERM-6.12",
+    "DASAN-TERM-6.1",
+    "DASAN-TERM-6.10",
+    "DASAN-TERM-6.11",
+    "DASAN-TERM-5.8"
+   ],
+   "procedure_in_top5": true
+  },
+  {
+   "id": "SYN-009-16",
+   "label": "needed",
+   "text": "카드 번호도 불러 줬는데... ******************* 이거요. 계좌는 없고 카드만 있어서.",
+   "text_source": "e2e",
+   "masked": true,
+   "fired_without_rule": true,
+   "fired_with_rule": true,
+   "fired_with_rule_on_script_text": true,
+   "top5_without_rule": [
+    "DASAN-TERM-6.12",
+    "DASAN-MANUAL-1.2",
+    "DASAN-TERM-3.5",
+    "DASAN-TERM-2.7",
+    "DASAN-TERM-3.4"
+   ],
+   "procedure_in_top5": true
+  },
+  {
+   "id": "SYN-009-18",
+   "label": "needed",
+   "text": "이것도 안 되고 돈도 뺏기고... 그냥 다 끝내고 싶어요.",
+   "text_source": "e2e",
+   "masked": false,
+   "fired_without_rule": true,
+   "fired_with_rule": true,
+   "fired_with_rule_on_script_text": true,
+   "top5_without_rule": [
+    "DASAN-MANUAL-5.2",
+    "DASAN-TERM-6.12",
+    "DASAN-TERM-3.14",
+    "DASAN-MANUAL-5.1",
+    "DASAN-MANUAL-5.4"
+   ],
+   "procedure_in_top5": true
+  },
+  {
+   "id": "SYN-009-20",
+   "label": "backchannel",
+   "text": "...네.",
+   "text_source": "e2e",
+   "masked": false,
+   "fired_without_rule": true,
+   "fired_with_rule": false,
+   "fired_with_rule_on_script_text": false,
+   "top5_without_rule": [
+    "DASAN-MANUAL-1.4",
+    "DASAN-MANUAL-1.1",
+    "DASAN-MANUAL-4.1",
+    "DASAN-TERM-4.21",
+    "DASAN-TERM-5.1"
+   ],
+   "procedure_in_top5": false
+  },
+  {
+   "id": "SYN-010-02",
+   "label": "needed",
+   "text": "고속버스 예매한 거 취소하려고 하는데 여기서 되나요?",
+   "text_source": "e2e",
+   "masked": false,
+   "fired_without_rule": true,
+   "fired_with_rule": true,
+   "fired_with_rule_on_script_text": true,
+   "top5_without_rule": [
+    "DASAN-TERM-2.12",
+    "DASAN-TERM-2.8",
+    "DASAN-TERM-2.10",
+    "DASAN-TERM-2.1",
+    "DASAN-TERM-2.9"
+   ],
+   "procedure_in_top5": true
+  },
+  {
+   "id": "SYN-010-04",
+   "label": "backchannel",
+   "text": "아 네, 알겠습니다.",
+   "text_source": "e2e",
+   "masked": false,
+   "fired_without_rule": true,
+   "fired_with_rule": false,
+   "fired_with_rule_on_script_text": false,
+   "top5_without_rule": [
+    "DASAN-MANUAL-1.4",
+    "DASAN-TERM-6.1",
+    "DASAN-MANUAL-1.1",
+    "DASAN-MANUAL-1.6",
+    "DASAN-TERM-4.22"
+   ],
+   "procedure_in_top5": false
+  },
+  {
+   "id": "SYN-011-02",
+   "label": "needed",
+   "text": "가게를 정리해서 수도를 끊으려고 하는데요, 어떻게 하면 되나요?",
+   "text_source": "e2e",
+   "masked": false,
+   "fired_without_rule": true,
+   "fired_with_rule": true,
+   "fired_with_rule_on_script_text": true,
+   "top5_without_rule": [
+    "DASAN-TERM-3.14",
+    "DASAN-TERM-3.4",
+    "DASAN-TERM-3.15",
+    "DASAN-TERM-3.5",
+    "DASAN-TERM-3.9"
+   ],
+   "procedure_in_top5": true
+  },
+  {
+   "id": "SYN-011-04",
+   "label": "needed",
+   "text": "임대로 쓰던 가게라서 계약서가 있어요. 그걸로 되나요?",
+   "text_source": "e2e",
+   "masked": false,
+   "fired_without_rule": true,
+   "fired_with_rule": true,
+   "fired_with_rule_on_script_text": true,
+   "top5_without_rule": [
+    "DASAN-TERM-4.17",
+    "DASAN-TERM-3.13",
+    "DASAN-TERM-3.4",
+    "DASAN-TERM-3.14",
+    "DASAN-TERM-3.7"
+   ],
+   "procedure_in_top5": true
+  },
+  {
+   "id": "SYN-011-06",
+   "label": "needed",
+   "text": "네, 알겠어요. 그런데 지난달 요금이 아직 안 나왔던데요.",
+   "text_source": "e2e",
+   "masked": false,
+   "fired_without_rule": true,
+   "fired_with_rule": true,
+   "fired_with_rule_on_script_text": true,
+   "top5_without_rule": [
+    "DASAN-TERM-3.16",
+    "DASAN-MANUAL-1.6",
+    "DASAN-TERM-3.3",
+    "DASAN-TERM-2.4",
+    "DASAN-TERM-3.11"
+   ],
+   "procedure_in_top5": true
+  },
+  {
+   "id": "SYN-011-08",
+   "label": "needed",
+   "text": "아니 가게 문을 닫은 지가 언젠데 아직도 요금을 내라고요? 장사도 안 했는데 그게 말이 됩니까!",
+   "text_source": "e2e",
+   "masked": false,
+   "fired_without_rule": true,
+   "fired_with_rule": true,
+   "fired_with_rule_on_script_text": true,
+   "top5_without_rule": [
+    "DASAN-TERM-3.16",
+    "DASAN-TERM-3.14",
+    "DASAN-MANUAL-1.6",
+    "DASAN-TERM-4.10",
+    "DASAN-TERM-3.2"
+   ],
+   "procedure_in_top5": true
+  },
+  {
+   "id": "SYN-011-10",
+   "label": "needed",
+   "text": "검침 이력이요. 네, 그건 어디서 확인하나요?",
+   "text_source": "e2e",
+   "masked": false,
+   "fired_without_rule": true,
+   "fired_with_rule": true,
+   "fired_with_rule_on_script_text": true,
+   "top5_without_rule": [
+    "DASAN-TERM-5.4",
+    "DASAN-TERM-3.16",
+    "DASAN-MANUAL-3.1",
+    "DASAN-MANUAL-3.4",
+    "DASAN-TERM-4.4"
+   ],
+   "procedure_in_top5": false
+  },
+  {
+   "id": "SYN-011-12",
+   "label": "other",
+   "text": "고지서는 집에 있어요. 나중에 볼게요.",
+   "text_source": "e2e",
+   "masked": false,
+   "fired_without_rule": true,
+   "fired_with_rule": true,
+   "fired_with_rule_on_script_text": true,
+   "top5_without_rule": [
+    "DASAN-TERM-3.13",
+    "DASAN-TERM-3.3",
+    "DASAN-TERM-3.16",
+    "DASAN-MANUAL-3.2",
+    "DASAN-TERM-2.9"
+   ],
+   "procedure_in_top5": true
+  },
+  {
+   "id": "SYN-011-14",
+   "label": "needed",
+   "text": "그리고 다시 가게를 열면 그때는 바로 쓸 수 있는 거죠?",
+   "text_source": "e2e",
+   "masked": false,
+   "fired_without_rule": true,
+   "fired_with_rule": true,
+   "fired_with_rule_on_script_text": true,
+   "top5_without_rule": [
+    "DASAN-TERM-5.3",
+    "DASAN-TERM-4.19",
+    "DASAN-TERM-2.8",
+    "DASAN-TERM-5.5",
+    "DASAN-TERM-3.14"
+   ],
+   "procedure_in_top5": true
+  },
+  {
+   "id": "SYN-011-16",
+   "label": "needed",
+   "text": "또 절차가 있어요? 한 번에 알려 주면 되지 왜 매번 따로따로 하라는 거예요!",
+   "text_source": "e2e",
+   "masked": false,
+   "fired_without_rule": true,
+   "fired_with_rule": true,
+   "fired_with_rule_on_script_text": true,
+   "top5_without_rule": [
+    "DASAN-TERM-1.3",
+    "DASAN-MANUAL-3.2",
+    "DASAN-MANUAL-1.6",
+    "DASAN-MANUAL-3.3",
+    "DASAN-TERM-3.16"
+   ],
+   "procedure_in_top5": false
+  },
+  {
+   "id": "SYN-011-18",
+   "label": "other",
+   "text": "네, 그렇게 해 주세요.",
+   "text_source": "e2e",
+   "masked": false,
+   "fired_without_rule": true,
+   "fired_with_rule": true,
+   "fired_with_rule_on_script_text": true,
+   "top5_without_rule": [
+    "DASAN-MANUAL-1.4",
+    "DASAN-MANUAL-4.1",
+    "DASAN-TERM-1.3",
+    "DASAN-MANUAL-1.1",
+    "DASAN-TERM-6.12"
+   ],
+   "procedure_in_top5": false
+  },
+  {
+   "id": "SYN-011-20",
+   "label": "other",
+   "text": "**************요.",
+   "text_source": "e2e",
+   "masked": true,
+   "fired_without_rule": true,
+   "fired_with_rule": true,
+   "fired_with_rule_on_script_text": true,
+   "top5_without_rule": [
+    "DASAN-TERM-6.12",
+    "DASAN-TERM-3.4",
+    "DASAN-MANUAL-1.2",
+    "DASAN-TERM-3.5",
+    "DASAN-TERM-4.22"
+   ],
+   "procedure_in_top5": false
+  },
+  {
+   "id": "SYN-011-22",
+   "label": "needed",
+   "text": "알겠습니다. 계약서 사본도 되나요?",
+   "text_source": "e2e",
+   "masked": false,
+   "fired_without_rule": true,
+   "fired_with_rule": true,
+   "fired_with_rule_on_script_text": true,
+   "top5_without_rule": [
+    "DASAN-TERM-4.3",
+    "DASAN-TERM-1.4",
+    "DASAN-TERM-4.5",
+    "DASAN-TERM-4.1",
+    "DASAN-TERM-3.4"
+   ],
+   "procedure_in_top5": false
+  },
+  {
+   "id": "SYN-011-24",
+   "label": "other",
+   "text": "네, 연락 기다릴게요.",
+   "text_source": "e2e",
+   "masked": false,
+   "fired_without_rule": true,
+   "fired_with_rule": true,
+   "fired_with_rule_on_script_text": true,
+   "top5_without_rule": [
+    "DASAN-TERM-6.12",
+    "DASAN-TERM-6.10",
+    "DASAN-MANUAL-1.6",
+    "DASAN-MANUAL-1.4",
+    "DASAN-MANUAL-4.2"
+   ],
+   "procedure_in_top5": false
+  },
+  {
+   "id": "SYN-011-26",
+   "label": "backchannel",
+   "text": "수고하세요.",
+   "text_source": "e2e",
+   "masked": false,
+   "fired_without_rule": true,
+   "fired_with_rule": false,
+   "fired_with_rule_on_script_text": false,
+   "top5_without_rule": [
+    "DASAN-MANUAL-4.1",
+    "DASAN-TERM-6.12",
+    "DASAN-MANUAL-1.4",
+    "DASAN-TERM-3.5",
+    "DASAN-TERM-2.11"
+   ],
+   "procedure_in_top5": false
+  },
+  {
+   "id": "SYN-012-02",
+   "label": "needed",
+   "text": "주차 과태료가 날아왔는데요, 저는 거기 잠깐 짐만 내렸다고요!",
+   "text_source": "e2e",
+   "masked": false,
+   "fired_without_rule": true,
+   "fired_with_rule": true,
+   "fired_with_rule_on_script_text": true,
+   "top5_without_rule": [
+    "DASAN-TERM-4.20",
+    "DASAN-TERM-3.16",
+    "DASAN-TERM-4.19",
+    "DASAN-TERM-4.21",
+    "DASAN-TERM-2.10"
+   ],
+   "procedure_in_top5": true
+  },
+  {
+   "id": "SYN-012-04",
+   "label": "needed",
+   "text": "이의신청을 왜 제가 해야 돼요? 단속한 사람이 잘못한 거잖아요!",
+   "text_source": "e2e",
+   "masked": false,
+   "fired_without_rule": true,
+   "fired_with_rule": true,
+   "fired_with_rule_on_script_text": true,
+   "top5_without_rule": [
+    "DASAN-TERM-4.20",
+    "DASAN-TERM-3.16",
+    "DASAN-TERM-6.9",
+    "DASAN-TERM-4.21",
+    "DASAN-TERM-2.10"
+   ],
+   "procedure_in_top5": true
+  },
+  {
+   "id": "SYN-012-06",
+   "label": "needed",
+   "text": "소명 자료가 뭔데요? 제가 뭘 증명해야 되는데요!",
+   "text_source": "e2e",
+   "masked": false,
+   "fired_without_rule": true,
+   "fired_with_rule": true,
+   "fired_with_rule_on_script_text": true,
+   "top5_without_rule": [
+    "DASAN-TERM-1.4",
+    "DASAN-TERM-4.5",
+    "DASAN-TERM-6.9",
+    "DASAN-TERM-4.3",
+    "DASAN-TERM-4.6"
+   ],
+   "procedure_in_top5": false
+  },
+  {
+   "id": "SYN-012-08",
+   "label": "needed",
+   "text": "사진도 안 찍었는데 그걸 어떻게 보여 줘요!",
+   "text_source": "e2e",
+   "masked": false,
+   "fired_without_rule": true,
+   "fired_with_rule": true,
+   "fired_with_rule_on_script_text": true,
+   "top5_without_rule": [
+    "DASAN-TERM-5.4",
+    "DASAN-TERM-4.21",
+    "DASAN-MANUAL-3.2",
+    "DASAN-TERM-4.22",
+    "DASAN-TERM-4.20"
+   ],
+   "procedure_in_top5": true
+  },
+  {
+   "id": "SYN-012-10",
+   "label": "needed",
+   "text": "그래서 취소가 된다는 거예요 안 된다는 거예요!",
+   "text_source": "e2e",
+   "masked": false,
+   "fired_without_rule": true,
+   "fired_with_rule": true,
+   "fired_with_rule_on_script_text": true,
+   "top5_without_rule": [
+    "DASAN-MANUAL-5.2",
+    "DASAN-MANUAL-1.4",
+    "DASAN-TERM-5.5",
+    "DASAN-TERM-4.22",
+    "DASAN-MANUAL-1.1"
+   ],
+   "procedure_in_top5": false
+  },
+  {
+   "id": "SYN-012-12",
+   "label": "other",
+   "text": "아니 그걸 모르면 전화를 왜 받아요!",
+   "text_source": "e2e",
+   "masked": false,
+   "fired_without_rule": true,
+   "fired_with_rule": true,
+   "fired_with_rule_on_script_text": true,
+   "top5_without_rule": [
+    "DASAN-TERM-6.12",
+    "DASAN-MANUAL-4.3",
+    "DASAN-MANUAL-1.2",
+    "DASAN-MANUAL-5.4",
+    "DASAN-MANUAL-5.2"
+   ],
+   "procedure_in_top5": false
+  },
+  {
+   "id": "SYN-012-14",
+   "label": "needed",
+   "text": "돈을 먼저 내라는 거예요? 억울한데 왜 먼저 내요!",
+   "text_source": "e2e",
+   "masked": false,
+   "fired_without_rule": true,
+   "fired_with_rule": true,
+   "fired_with_rule_on_script_text": true,
+   "top5_without_rule": [
+    "DASAN-MANUAL-1.6",
+    "DASAN-TERM-3.16",
+    "DASAN-TERM-6.11",
+    "DASAN-TERM-6.12",
+    "DASAN-TERM-3.4"
+   ],
+   "procedure_in_top5": false
+  },
+  {
+   "id": "SYN-012-16",
+   "label": "needed",
+   "text": "기한은 언제까지인데요!",
+   "text_source": "e2e",
+   "masked": false,
+   "fired_without_rule": true,
+   "fired_with_rule": true,
+   "fired_with_rule_on_script_text": true,
+   "top5_without_rule": [
+    "DASAN-TERM-6.10",
+    "DASAN-MANUAL-1.6",
+    "DASAN-TERM-3.13",
+    "DASAN-TERM-5.5",
+    "DASAN-TERM-4.2"
+   ],
+   "procedure_in_top5": false
+  },
+  {
+   "id": "SYN-012-18",
+   "label": "needed",
+   "text": "그것도 확인해야 돼요? 정말 답답하네요!",
+   "text_source": "e2e",
+   "masked": false,
+   "fired_without_rule": true,
+   "fired_with_rule": true,
+   "fired_with_rule_on_script_text": true,
+   "top5_without_rule": [
+    "DASAN-MANUAL-3.1",
+    "DASAN-TERM-3.16",
+    "DASAN-MANUAL-3.3",
+    "DASAN-MANUAL-1.6",
+    "DASAN-MANUAL-1.3"
+   ],
+   "procedure_in_top5": false
+  },
+  {
+   "id": "SYN-012-20",
+   "label": "other",
+   "text": "*************요! 빨리 연락 주세요!",
+   "text_source": "e2e",
+   "masked": true,
+   "fired_without_rule": true,
+   "fired_with_rule": true,
+   "fired_with_rule_on_script_text": true,
+   "top5_without_rule": [
+    "DASAN-TERM-6.12",
+    "DASAN-MANUAL-4.2",
+    "DASAN-MANUAL-1.2",
+    "DASAN-TERM-3.13",
+    "DASAN-TERM-3.11"
+   ],
+   "procedure_in_top5": false
+  },
+  {
+   "id": "SYN-012-22",
+   "label": "other",
+   "text": "알았어요! 꼭 연락 주세요!",
+   "text_source": "e2e",
+   "masked": false,
+   "fired_without_rule": true,
+   "fired_with_rule": true,
+   "fired_with_rule_on_script_text": true,
+   "top5_without_rule": [
+    "DASAN-TERM-6.12",
+    "DASAN-MANUAL-3.1",
+    "DASAN-TERM-3.13",
+    "DASAN-MANUAL-4.2",
+    "DASAN-TERM-5.7"
+   ],
+   "procedure_in_top5": false
+  },
+  {
+   "id": "SYN-012-24",
+   "label": "backchannel",
+   "text": "네!",
+   "text_source": "e2e",
+   "masked": false,
+   "fired_without_rule": true,
+   "fired_with_rule": false,
+   "fired_with_rule_on_script_text": false,
+   "top5_without_rule": [
+    "DASAN-MANUAL-1.4",
+    "DASAN-MANUAL-1.1",
+    "DASAN-MANUAL-4.1",
+    "DASAN-TERM-4.15",
+    "DASAN-TERM-4.22"
+   ],
+   "procedure_in_top5": false
+  },
+  {
+   "id": "SYN-013-02",
+   "label": "needed",
+   "text": "남편이 거동이 불편해서 장애인콜택시를 신청하려고 하는데요.",
+   "text_source": "e2e",
+   "masked": false,
+   "fired_without_rule": true,
+   "fired_with_rule": true,
+   "fired_with_rule_on_script_text": true,
+   "top5_without_rule": [
+    "DASAN-TERM-2.5",
+    "DASAN-TERM-2.2",
+    "DASAN-TERM-2.6",
+    "DASAN-TERM-1.5",
+    "DASAN-TERM-2.11"
+   ],
+   "procedure_in_top5": true
+  },
+  {
+   "id": "SYN-013-04",
+   "label": "needed",
+   "text": "제가 대신 신청하려고요. 남편은 집 밖에 나가기가 어려워서요.",
+   "text_source": "e2e",
+   "masked": false,
+   "fired_without_rule": true,
+   "fired_with_rule": true,
+   "fired_with_rule_on_script_text": true,
+   "top5_without_rule": [
+    "DASAN-TERM-6.2",
+    "DASAN-TERM-2.5",
+    "DASAN-TERM-5.8",
+    "DASAN-TERM-6.3",
+    "DASAN-TERM-2.2"
+   ],
+   "procedure_in_top5": true
+  },
+  {
+   "id": "SYN-013-06",
+   "label": "needed",
+   "text": "서류가 많네요. 하나씩 적을게요.",
+   "text_source": "e2e",
+   "masked": false,
+   "fired_without_rule": true,
+   "fired_with_rule": true,
+   "fired_with_rule_on_script_text": true,
+   "top5_without_rule": [
+    "DASAN-MANUAL-3.2",
+    "DASAN-TERM-1.3",
+    "DASAN-MANUAL-3.3",
+    "DASAN-TERM-4.14",
+    "DASAN-TERM-4.1"
+   ],
+   "procedure_in_top5": false
+  },
+  {
+   "id": "SYN-013-08",
+   "label": "needed",
+   "text": "판정 서류는 어디서 받는 거예요?",
+   "text_source": "e2e",
+   "masked": false,
+   "fired_without_rule": true,
+   "fired_with_rule": true,
+   "fired_with_rule_on_script_text": true,
+   "top5_without_rule": [
+    "DASAN-TERM-1.4",
+    "DASAN-TERM-2.9",
+    "DASAN-TERM-1.3",
+    "DASAN-MANUAL-3.2",
+    "DASAN-MANUAL-3.3"
+   ],
+   "procedure_in_top5": false
+  },
+  {
+   "id": "SYN-013-10",
+   "label": "other",
+   "text": "요즘 병원 다니고 수발드느라 서류 떼러 다닐 힘도 없어요.",
+   "text_source": "e2e",
+   "masked": false,
+   "fired_without_rule": true,
+   "fired_with_rule": true,
+   "fired_with_rule_on_script_text": true,
+   "top5_without_rule": [
+    "DASAN-TERM-2.5",
+    "DASAN-TERM-2.6",
+    "DASAN-TERM-4.6",
+    "DASAN-TERM-4.13",
+    "DASAN-MANUAL-3.4"
+   ],
+   "procedure_in_top5": true
+  },
+  {
+   "id": "SYN-013-12",
+   "label": "other",
+   "text": "네, 그래 주시면 좋겠어요.",
+   "text_source": "e2e",
+   "masked": false,
+   "fired_without_rule": true,
+   "fired_with_rule": true,
+   "fired_with_rule_on_script_text": true,
+   "top5_without_rule": [
+    "DASAN-MANUAL-1.4",
+    "DASAN-TERM-1.3",
+    "DASAN-MANUAL-4.1",
+    "DASAN-TERM-6.12",
+    "DASAN-MANUAL-3.1"
+   ],
+   "procedure_in_top5": false
+  },
+  {
+   "id": "SYN-013-14",
+   "label": "needed",
+   "text": "남편 도장은 제가 가지고 있어요.",
+   "text_source": "e2e",
+   "masked": false,
+   "fired_without_rule": true,
+   "fired_with_rule": true,
+   "fired_with_rule_on_script_text": true,
+   "top5_without_rule": [
+    "DASAN-TERM-4.5",
+    "DASAN-TERM-2.9",
+    "DASAN-MANUAL-3.4",
+    "DASAN-TERM-4.3",
+    "DASAN-TERM-2.5"
+   ],
+   "procedure_in_top5": true
+  },
+  {
+   "id": "SYN-013-16",
+   "label": "needed",
+   "text": "네. 신청하면 바로 탈 수 있는 건가요?",
+   "text_source": "e2e",
+   "masked": false,
+   "fired_without_rule": true,
+   "fired_with_rule": true,
+   "fired_with_rule_on_script_text": true,
+   "top5_without_rule": [
+    "DASAN-TERM-3.4",
+    "DASAN-TERM-3.13",
+    "DASAN-TERM-4.17",
+    "DASAN-TERM-2.8",
+    "DASAN-TERM-3.14"
+   ],
+   "procedure_in_top5": false
+  },
+  {
+   "id": "SYN-013-18",
+   "label": "other",
+   "text": "또 기다려야 하는군요... 병원 예약이 다음 주인데.",
+   "text_source": "e2e",
+   "masked": false,
+   "fired_without_rule": true,
+   "fired_with_rule": true,
+   "fired_with_rule_on_script_text": true,
+   "top5_without_rule": [
+    "DASAN-TERM-5.7",
+    "DASAN-TERM-5.4",
+    "DASAN-TERM-3.16",
+    "DASAN-TERM-4.22",
+    "DASAN-MANUAL-4.1"
+   ],
+   "procedure_in_top5": false
+  },
+  {
+   "id": "SYN-013-20",
+   "label": "backchannel",
+   "text": "네, 감사합니다.",
+   "text_source": "e2e",
+   "masked": false,
+   "fired_without_rule": true,
+   "fired_with_rule": false,
+   "fired_with_rule_on_script_text": false,
+   "top5_without_rule": [
+    "DASAN-MANUAL-1.4",
+    "DASAN-TERM-6.12",
+    "DASAN-MANUAL-4.1",
+    "DASAN-TERM-4.21",
+    "DASAN-TERM-6.1"
+   ],
+   "procedure_in_top5": false
+  },
+  {
+   "id": "SYN-013-22",
+   "label": "other",
+   "text": "**************에요.",
+   "text_source": "e2e",
+   "masked": true,
+   "fired_without_rule": true,
+   "fired_with_rule": true,
+   "fired_with_rule_on_script_text": true,
+   "top5_without_rule": [
+    "DASAN-TERM-6.12",
+    "DASAN-TERM-3.13",
+    "DASAN-TERM-4.22",
+    "DASAN-TERM-3.5",
+    "DASAN-TERM-3.4"
+   ],
+   "procedure_in_top5": false
+  },
+  {
+   "id": "SYN-013-24",
+   "label": "backchannel",
+   "text": "네, 부탁드려요.",
+   "text_source": "e2e",
+   "masked": false,
+   "fired_without_rule": true,
+   "fired_with_rule": true,
+   "fired_with_rule_on_script_text": true,
+   "top5_without_rule": [
+    "DASAN-MANUAL-3.1",
+    "DASAN-MANUAL-1.4",
+    "DASAN-MANUAL-1.2",
+    "DASAN-MANUAL-3.4",
+    "DASAN-TERM-6.12"
+   ],
+   "procedure_in_top5": true
+  },
+  {
+   "id": "SYN-013-26",
+   "label": "backchannel",
+   "text": "수고하세요.",
+   "text_source": "e2e",
+   "masked": false,
+   "fired_without_rule": true,
+   "fired_with_rule": false,
+   "fired_with_rule_on_script_text": false,
+   "top5_without_rule": [
+    "DASAN-MANUAL-4.1",
+    "DASAN-TERM-6.12",
+    "DASAN-MANUAL-1.4",
+    "DASAN-TERM-3.5",
+    "DASAN-TERM-2.11"
+   ],
+   "procedure_in_top5": false
+  },
+  {
+   "id": "SYN-014-02",
+   "label": "needed",
+   "text": "지방세 감면을 받을 수 있는지 문의드리려고요.",
+   "text_source": "e2e",
+   "masked": false,
+   "fired_without_rule": true,
+   "fired_with_rule": true,
+   "fired_with_rule_on_script_text": true,
+   "top5_without_rule": [
+    "DASAN-TERM-4.12",
+    "DASAN-TERM-3.6",
+    "DASAN-TERM-6.8",
+    "DASAN-TERM-4.9",
+    "DASAN-TERM-3.7"
+   ],
+   "procedure_in_top5": true
+  },
+  {
+   "id": "SYN-014-04",
+   "label": "needed",
+   "text": "다자녀 가정이라서 받을 수 있는지 궁금해요.",
+   "text_source": "e2e",
+   "masked": false,
+   "fired_without_rule": true,
+   "fired_with_rule": true,
+   "fired_with_rule_on_script_text": true,
+   "top5_without_rule": [
+    "DASAN-TERM-4.14",
+    "DASAN-TERM-3.6",
+    "DASAN-TERM-5.8",
+    "DASAN-TERM-4.13",
+    "DASAN-TERM-3.8"
+   ],
+   "procedure_in_top5": false
+  },
+  {
+   "id": "SYN-014-06",
+   "label": "needed",
+   "text": "네. 가족관계증명서 같은 거겠죠?",
+   "text_source": "e2e",
+   "masked": false,
+   "fired_without_rule": true,
+   "fired_with_rule": true,
+   "fired_with_rule_on_script_text": true,
+   "top5_without_rule": [
+    "DASAN-TERM-4.3",
+    "DASAN-TERM-4.6",
+    "DASAN-TERM-4.1",
+    "DASAN-TERM-1.4",
+    "DASAN-MANUAL-3.4"
+   ],
+   "procedure_in_top5": false
+  },
+  {
+   "id": "SYN-014-08",
+   "label": "needed",
+   "text": "알겠습니다. 신청 기한이 따로 있나요?",
+   "text_source": "e2e",
+   "masked": false,
+   "fired_without_rule": true,
+   "fired_with_rule": true,
+   "fired_with_rule_on_script_text": true,
+   "top5_without_rule": [
+    "DASAN-TERM-6.10",
+    "DASAN-TERM-3.13",
+    "DASAN-TERM-6.9",
+    "DASAN-TERM-6.3",
+    "DASAN-TERM-4.12"
+   ],
+   "procedure_in_top5": true
+  },
+  {
+   "id": "SYN-014-10",
+   "label": "needed",
+   "text": "작년 것도 신청할 수 있을까요?",
+   "text_source": "e2e",
+   "masked": false,
+   "fired_without_rule": true,
+   "fired_with_rule": true,
+   "fired_with_rule_on_script_text": true,
+   "top5_without_rule": [
+    "DASAN-TERM-4.12",
+    "DASAN-TERM-4.13",
+    "DASAN-TERM-6.4",
+    "DASAN-TERM-6.3",
+    "DASAN-TERM-6.9"
+   ],
+   "procedure_in_top5": true
+  },
+  {
+   "id": "SYN-014-12",
+   "label": "other",
+   "text": "네, 그렇게 해 주세요.",
+   "text_source": "e2e",
+   "masked": false,
+   "fired_without_rule": true,
+   "fired_with_rule": true,
+   "fired_with_rule_on_script_text": true,
+   "top5_without_rule": [
+    "DASAN-MANUAL-1.4",
+    "DASAN-MANUAL-4.1",
+    "DASAN-TERM-1.3",
+    "DASAN-MANUAL-1.1",
+    "DASAN-TERM-6.12"
+   ],
+   "procedure_in_top5": false
+  },
+  {
+   "id": "SYN-014-14",
+   "label": "backchannel",
+   "text": "네, 이해했습니다.",
+   "text_source": "e2e",
+   "masked": false,
+   "fired_without_rule": true,
+   "fired_with_rule": false,
+   "fired_with_rule_on_script_text": false,
+   "top5_without_rule": [
+    "DASAN-MANUAL-1.4",
+    "DASAN-MANUAL-1.1",
+    "DASAN-MANUAL-1.6",
+    "DASAN-MANUAL-4.1",
+    "DASAN-TERM-4.2"
+   ],
+   "procedure_in_top5": false
+  },
+  {
+   "id": "SYN-014-16",
+   "label": "needed",
+   "text": "네, 온라인으로 할 수 있으면 좋겠어요.",
+   "text_source": "e2e",
+   "masked": false,
+   "fired_without_rule": true,
+   "fired_with_rule": true,
+   "fired_with_rule_on_script_text": true,
+   "top5_without_rule": [
+    "DASAN-TERM-3.13",
+    "DASAN-TERM-4.4",
+    "DASAN-MANUAL-3.1",
+    "DASAN-MANUAL-1.4",
+    "DASAN-TERM-1.4"
+   ],
+   "procedure_in_top5": false
+  },
+  {
+   "id": "SYN-014-18",
+   "label": "other",
+   "text": "*************입니다.",
+   "text_source": "e2e",
+   "masked": true,
+   "fired_without_rule": true,
+   "fired_with_rule": true,
+   "fired_with_rule_on_script_text": true,
+   "top5_without_rule": [
+    "DASAN-TERM-6.12",
+    "DASAN-TERM-3.5",
+    "DASAN-TERM-1.5",
+    "DASAN-MANUAL-1.2",
+    "DASAN-TERM-3.13"
+   ],
+   "procedure_in_top5": false
+  },
+  {
+   "id": "SYN-014-20",
+   "label": "backchannel",
+   "text": "알겠습니다. 감사합니다.",
+   "text_source": "e2e",
+   "masked": false,
+   "fired_without_rule": true,
+   "fired_with_rule": false,
+   "fired_with_rule_on_script_text": false,
+   "top5_without_rule": [
+    "DASAN-MANUAL-1.4",
+    "DASAN-TERM-6.1",
+    "DASAN-MANUAL-1.3",
+    "DASAN-TERM-4.22",
+    "DASAN-MANUAL-3.1"
+   ],
+   "procedure_in_top5": false
+  },
+  {
+   "id": "SYN-014-22",
+   "label": "backchannel",
+   "text": "수고하세요.",
+   "text_source": "e2e",
+   "masked": false,
+   "fired_without_rule": true,
+   "fired_with_rule": false,
+   "fired_with_rule_on_script_text": false,
+   "top5_without_rule": [
+    "DASAN-MANUAL-4.1",
+    "DASAN-TERM-6.12",
+    "DASAN-MANUAL-1.4",
+    "DASAN-TERM-3.5",
+    "DASAN-TERM-2.11"
+   ],
+   "procedure_in_top5": false
+  },
+  {
+   "id": "SYN-015-02",
+   "label": "needed",
+   "text": "초본이요, 초본. 제가 지금 회사라 못 가는데 와이프가 대신 떼도 되죠? 빨리요.",
+   "text_source": "e2e",
+   "masked": false,
+   "fired_without_rule": true,
+   "fired_with_rule": true,
+   "fired_with_rule_on_script_text": true,
+   "top5_without_rule": [
+    "DASAN-TERM-4.3",
+    "DASAN-MANUAL-3.4",
+    "DASAN-TERM-3.13",
+    "DASAN-TERM-5.9",
+    "DASAN-TERM-3.4"
+   ],
+   "procedure_in_top5": true
+  },
+  {
+   "id": "SYN-015-04",
+   "label": "needed",
+   "text": "아 그냥 되냐 안 되냐만요. 뭐 가져가면 되는데요?",
+   "text_source": "e2e",
+   "masked": false,
+   "fired_without_rule": true,
+   "fired_with_rule": true,
+   "fired_with_rule_on_script_text": true,
+   "top5_without_rule": [
+    "DASAN-TERM-4.17",
+    "DASAN-TERM-1.4",
+    "DASAN-TERM-2.9",
+    "DASAN-TERM-2.5",
+    "DASAN-TERM-4.18"
+   ],
+   "procedure_in_top5": false
+  },
+  {
+   "id": "SYN-015-06",
+   "label": "needed",
+   "text": "사본이요? 원본 아니고요? 점심시간 안에 끝내야 되는데.",
+   "text_source": "e2e",
+   "masked": false,
+   "fired_without_rule": true,
+   "fired_with_rule": true,
+   "fired_with_rule_on_script_text": true,
+   "top5_without_rule": [
+    "DASAN-TERM-1.4",
+    "DASAN-TERM-4.3",
+    "DASAN-TERM-4.2",
+    "DASAN-TERM-3.13",
+    "DASAN-TERM-4.5"
+   ],
+   "procedure_in_top5": true
+  },
+  {
+   "id": "SYN-015-08",
+   "label": "other",
+   "text": "*************요. 빨리 좀 부탁드립니다.",
+   "text_source": "e2e",
+   "masked": true,
+   "fired_without_rule": true,
+   "fired_with_rule": true,
+   "fired_with_rule_on_script_text": true,
+   "top5_without_rule": [
+    "DASAN-TERM-6.12",
+    "DASAN-MANUAL-1.6",
+    "DASAN-TERM-1.3",
+    "DASAN-MANUAL-1.2",
+    "DASAN-MANUAL-3.2"
+   ],
+   "procedure_in_top5": false
+  },
+  {
+   "id": "SYN-016-02",
+   "label": "needed",
+   "text": "자동차세를 미리 내면 깎아 준다는 게 있다고 들었는데, 그게 맞나요?",
+   "text_source": "e2e",
+   "masked": false,
+   "fired_without_rule": true,
+   "fired_with_rule": true,
+   "fired_with_rule_on_script_text": true,
+   "top5_without_rule": [
+    "DASAN-TERM-4.8",
+    "DASAN-TERM-4.20",
+    "DASAN-TERM-4.9",
+    "DASAN-TERM-4.10",
+    "DASAN-TERM-4.12"
+   ],
+   "procedure_in_top5": true
+  },
+  {
+   "id": "SYN-016-04",
+   "label": "needed",
+   "text": "무조건이요? 저는 작년에 중고로 산 차인데 그래도요?",
+   "text_source": "e2e",
+   "masked": false,
+   "fired_without_rule": true,
+   "fired_with_rule": true,
+   "fired_with_rule_on_script_text": true,
+   "top5_without_rule": [
+    "DASAN-TERM-4.8",
+    "DASAN-TERM-4.9",
+    "DASAN-MANUAL-1.1",
+    "DASAN-TERM-4.20",
+    "DASAN-TERM-4.15"
+   ],
+   "procedure_in_top5": true
+  },
+  {
+   "id": "SYN-016-06",
+   "label": "needed",
+   "text": "그러니까 저한테도 적용되는 건 맞는 거죠? 다시 한번만요.",
+   "text_source": "e2e",
+   "masked": false,
+   "fired_without_rule": true,
+   "fired_with_rule": true,
+   "fired_with_rule_on_script_text": true,
+   "top5_without_rule": [
+    "DASAN-TERM-5.3",
+    "DASAN-TERM-5.5",
+    "DASAN-TERM-6.1",
+    "DASAN-MANUAL-1.4",
+    "DASAN-MANUAL-4.1"
+   ],
+   "procedure_in_top5": false
+  },
+  {
+   "id": "SYN-016-08",
+   "label": "needed",
+   "text": "음... 방금은 조회를 해 봐야 안다고 하셨잖아요. 확실히 깎인다는 건 어디서 나온 말이에요?",
+   "text_source": "e2e",
+   "masked": false,
+   "fired_without_rule": true,
+   "fired_with_rule": true,
+   "fired_with_rule_on_script_text": true,
+   "top5_without_rule": [
+    "DASAN-TERM-3.16",
+    "DASAN-MANUAL-1.6",
+    "DASAN-MANUAL-1.3",
+    "DASAN-MANUAL-2.1",
+    "DASAN-MANUAL-1.4"
+   ],
+   "procedure_in_top5": true
+  },
+  {
+   "id": "SYN-016-10",
+   "label": "needed",
+   "text": "네, 그럼 세 번째로 묻는 건데요. 신청은 어디서 하고, 언제까지 해야 해요?",
+   "text_source": "e2e",
+   "masked": false,
+   "fired_without_rule": true,
+   "fired_with_rule": true,
+   "fired_with_rule_on_script_text": true,
+   "top5_without_rule": [
+    "DASAN-TERM-4.13",
+    "DASAN-MANUAL-3.1",
+    "DASAN-TERM-3.13",
+    "DASAN-TERM-3.12",
+    "DASAN-TERM-6.3"
+   ],
+   "procedure_in_top5": false
+  },
+  {
+   "id": "SYN-016-12",
+   "label": "other",
+   "text": "**************에요. 문자로 주시면 좋겠어요.",
+   "text_source": "e2e",
+   "masked": true,
+   "fired_without_rule": true,
+   "fired_with_rule": true,
+   "fired_with_rule_on_script_text": true,
+   "top5_without_rule": [
+    "DASAN-TERM-6.12",
+    "DASAN-TERM-3.13",
+    "DASAN-MANUAL-1.2",
+    "DASAN-TERM-3.4",
+    "DASAN-TERM-4.13"
+   ],
+   "procedure_in_top5": false
+  },
+  {
+   "id": "SYN-016-14",
+   "label": "backchannel",
+   "text": "네, 이번엔 알겠습니다.",
+   "text_source": "e2e",
+   "masked": false,
+   "fired_without_rule": true,
+   "fired_with_rule": true,
+   "fired_with_rule_on_script_text": true,
+   "top5_without_rule": [
+    "DASAN-MANUAL-1.4",
+    "DASAN-MANUAL-1.6",
+    "DASAN-TERM-4.22",
+    "DASAN-TERM-6.1",
+    "DASAN-MANUAL-1.3"
+   ],
+   "procedure_in_top5": true
+  },
+  {
+   "id": "SYN-017-02",
+   "label": "needed",
+   "text": "すみません... 저, 일본 사람이에요. 한국어 조금. としょかん, 도서관, 아이 카드 만들고 싶어요.",
+   "text_source": "e2e",
+   "masked": false,
+   "fired_without_rule": true,
+   "fired_with_rule": true,
+   "fired_with_rule_on_script_text": true,
+   "top5_without_rule": [
+    "DASAN-TERM-4.18",
+    "DASAN-TERM-2.7",
+    "DASAN-TERM-1.5",
+    "DASAN-TERM-4.14",
+    "DASAN-TERM-4.13"
+   ],
+   "procedure_in_top5": true
+  },
+  {
+   "id": "SYN-017-04",
+   "label": "needed",
+   "text": "아, 지금은 괜찮아요. 천천히 말해 주세요.",
+   "text_source": "e2e",
+   "masked": false,
+   "fired_without_rule": true,
+   "fired_with_rule": true,
+   "fired_with_rule_on_script_text": true,
+   "top5_without_rule": [
+    "DASAN-MANUAL-4.1",
+    "DASAN-MANUAL-2.1",
+    "DASAN-MANUAL-1.4",
+    "DASAN-TERM-4.2",
+    "DASAN-MANUAL-1.1"
+   ],
+   "procedure_in_top5": false
+  },
+  {
+   "id": "SYN-017-06",
+   "label": "needed",
+   "text": "こども... 아이요. 아이 여덟 살. 초등학교.",
+   "text_source": "e2e",
+   "masked": false,
+   "fired_without_rule": true,
+   "fired_with_rule": true,
+   "fired_with_rule_on_script_text": true,
+   "top5_without_rule": [
+    "DASAN-TERM-6.7",
+    "DASAN-TERM-4.6",
+    "DASAN-TERM-4.14",
+    "DASAN-TERM-6.6",
+    "DASAN-TERM-4.18"
+   ],
+   "procedure_in_top5": true
+  },
+  {
+   "id": "SYN-017-08",
+   "label": "needed",
+   "text": "가족... 관계? 무슨 서류예요? 잘 몰라요.",
+   "text_source": "e2e",
+   "masked": false,
+   "fired_without_rule": true,
+   "fired_with_rule": true,
+   "fired_with_rule_on_script_text": true,
+   "top5_without_rule": [
+    "DASAN-MANUAL-3.4",
+    "DASAN-TERM-4.6",
+    "DASAN-TERM-4.14",
+    "DASAN-TERM-4.13",
+    "DASAN-TERM-4.3"
+   ],
+   "procedure_in_top5": false
+  },
+  {
+   "id": "SYN-017-10",
+   "label": "needed",
+   "text": "네. 제 신분증은 외국인등록증 있어요. 괜찮아요?",
+   "text_source": "e2e",
+   "masked": false,
+   "fired_without_rule": true,
+   "fired_with_rule": true,
+   "fired_with_rule_on_script_text": true,
+   "top5_without_rule": [
+    "DASAN-TERM-1.5",
+    "DASAN-TERM-1.4",
+    "DASAN-TERM-4.4",
+    "DASAN-TERM-4.3",
+    "DASAN-TERM-4.18"
+   ],
+   "procedure_in_top5": true
+  },
+  {
+   "id": "SYN-017-12",
+   "label": "needed",
+   "text": "원본, 네. 알겠어요. 연락 주세요. 저 이름 *** *이. 전화 *************.",
+   "text_source": "e2e",
+   "masked": true,
+   "fired_without_rule": true,
+   "fired_with_rule": true,
+   "fired_with_rule_on_script_text": true,
+   "top5_without_rule": [
+    "DASAN-TERM-6.12",
+    "DASAN-MANUAL-1.2",
+    "DASAN-TERM-3.5",
+    "DASAN-TERM-3.13",
+    "DASAN-TERM-1.4"
+   ],
+   "procedure_in_top5": true
+  },
+  {
+   "id": "SYN-017-14",
+   "label": "needed",
+   "text": "세 개. ありがとうございます, 감사합니다.",
+   "text_source": "e2e",
+   "masked": false,
+   "fired_without_rule": true,
+   "fired_with_rule": true,
+   "fired_with_rule_on_script_text": true,
+   "top5_without_rule": [
+    "DASAN-TERM-3.13",
+    "DASAN-TERM-4.14",
+    "DASAN-MANUAL-3.1",
+    "DASAN-TERM-1.3",
+    "DASAN-TERM-6.12"
+   ],
+   "procedure_in_top5": false
+  },
+  {
+   "id": "SYN-018-02",
+   "label": "needed",
+   "text": "여보세요? 아이고 들리네. 저기, 수도 고지서가 아직도 우리 영감 이름으로 나오는데, 이걸 내 이름으로 바꾸려면 어떻게 하나 해서요.",
+   "text_source": "e2e",
+   "masked": false,
+   "fired_without_rule": true,
+   "fired_with_rule": true,
+   "fired_with_rule_on_script_text": true,
+   "top5_without_rule": [
+    "DASAN-TERM-3.5",
+    "DASAN-TERM-3.13",
+    "DASAN-TERM-3.4",
+    "DASAN-TERM-3.14",
+    "DASAN-TERM-3.9"
+   ],
+   "procedure_in_top5": true
+  },
+  {
+   "id": "SYN-018-04",
+   "label": "needed",
+   "text": "밀린 거는 없어요. 우리 손주가 꼬박꼬박 내 줘요. 그 녀석이 이번에 취직을 했는데 회사가 저 멀리 있어서 주말에만 와요.",
+   "text_source": "e2e",
+   "masked": false,
+   "fired_without_rule": true,
+   "fired_with_rule": true,
+   "fired_with_rule_on_script_text": true,
+   "top5_without_rule": [
+    "DASAN-TERM-6.10",
+    "DASAN-TERM-4.4",
+    "DASAN-TERM-6.3",
+    "DASAN-TERM-4.13",
+    "DASAN-TERM-6.1"
+   ],
+   "procedure_in_top5": false
+  },
+  {
+   "id": "SYN-018-06",
+   "label": "other",
+   "text": "그렇지요. 근데 이 집이 오래됐어요. 영감이랑 결혼하고 들어왔으니까 한 사십 년은 됐지. 그때는 여기가 다 논이었어요.",
+   "text_source": "e2e",
+   "masked": false,
+   "fired_without_rule": true,
+   "fired_with_rule": true,
+   "fired_with_rule_on_script_text": true,
+   "top5_without_rule": [
+    "DASAN-TERM-4.4",
+    "DASAN-TERM-4.15",
+    "DASAN-TERM-3.10",
+    "DASAN-TERM-4.9",
+    "DASAN-TERM-3.14"
+   ],
+   "procedure_in_top5": false
+  },
+  {
+   "id": "SYN-018-08",
+   "label": "needed",
+   "text": "등기... 그건 영감 이름으로 돼 있을 텐데. 아직 상속을 안 했어요. 애들이 바쁘다고 해서.",
+   "text_source": "e2e",
+   "masked": false,
+   "fired_without_rule": true,
+   "fired_with_rule": true,
+   "fired_with_rule_on_script_text": true,
+   "top5_without_rule": [
+    "DASAN-TERM-4.15",
+    "DASAN-TERM-4.9",
+    "DASAN-TERM-4.5",
+    "DASAN-TERM-3.8",
+    "DASAN-TERM-3.5"
+   ],
+   "procedure_in_top5": true
+  },
+  {
+   "id": "SYN-018-10",
+   "label": "other",
+   "text": "아이고, 복잡하네. 요즘 날씨가 추워서 나가기도 싫은데. 우리 때는 동사무소 가면 다 해 줬어요.",
+   "text_source": "e2e",
+   "masked": false,
+   "fired_without_rule": true,
+   "fired_with_rule": true,
+   "fired_with_rule_on_script_text": true,
+   "top5_without_rule": [
+    "DASAN-TERM-1.3",
+    "DASAN-MANUAL-3.3",
+    "DASAN-MANUAL-2.2",
+    "DASAN-TERM-1.5",
+    "DASAN-MANUAL-3.2"
+   ],
+   "procedure_in_top5": true
+  },
+  {
+   "id": "SYN-018-12",
+   "label": "needed",
+   "text": "손주한테 시키면 되겠네. 그 녀석 이름이 ***예요. 착해요.",
+   "text_source": "e2e",
+   "masked": true,
+   "fired_without_rule": true,
+   "fired_with_rule": true,
+   "fired_with_rule_on_script_text": true,
+   "top5_without_rule": [
+    "DASAN-MANUAL-3.4",
+    "DASAN-MANUAL-3.1",
+    "DASAN-MANUAL-1.4",
+    "DASAN-TERM-6.12",
+    "DASAN-TERM-4.5"
+   ],
+   "procedure_in_top5": false
+  },
+  {
+   "id": "SYN-018-14",
+   "label": "other",
+   "text": "근데 요금이 요새 많이 올랐어요. 옛날에는 몇 천 원이었는데 지금은 만 원이 넘어요.",
+   "text_source": "e2e",
+   "masked": false,
+   "fired_without_rule": true,
+   "fired_with_rule": true,
+   "fired_with_rule_on_script_text": true,
+   "top5_without_rule": [
+    "DASAN-TERM-2.4",
+    "DASAN-TERM-3.16",
+    "DASAN-TERM-3.3",
+    "DASAN-TERM-3.7",
+    "DASAN-TERM-3.9"
+   ],
+   "procedure_in_top5": true
+  },
+  {
+   "id": "SYN-018-16",
+   "label": "needed",
+   "text": "수용가 번호... 고지서에 있어요? 돋보기 껴야 보이는데.",
+   "text_source": "e2e",
+   "masked": false,
+   "fired_without_rule": true,
+   "fired_with_rule": true,
+   "fired_with_rule_on_script_text": true,
+   "top5_without_rule": [
+    "DASAN-TERM-3.3",
+    "DASAN-TERM-3.13",
+    "DASAN-TERM-2.9",
+    "DASAN-TERM-1.4",
+    "DASAN-TERM-3.5"
+   ],
+   "procedure_in_top5": true
+  },
+  {
+   "id": "SYN-018-18",
+   "label": "other",
+   "text": "전화는 **************고, 집은 **************이에요.",
+   "text_source": "e2e",
+   "masked": true,
+   "fired_without_rule": true,
+   "fired_with_rule": true,
+   "fired_with_rule_on_script_text": true,
+   "top5_without_rule": [
+    "DASAN-MANUAL-1.2",
+    "DASAN-TERM-3.12",
+    "DASAN-TERM-6.12",
+    "DASAN-TERM-3.5",
+    "DASAN-TERM-4.15"
+   ],
+   "procedure_in_top5": true
+  },
+  {
+   "id": "SYN-018-20",
+   "label": "needed",
+   "text": "신청서, 내 신분증, 집 서류. 손주가 가면 위임장. 알았어요. 우리 영감이 살아 있었으면 이런 거 다 했을 텐데.",
+   "text_source": "e2e",
+   "masked": false,
+   "fired_without_rule": true,
+   "fired_with_rule": true,
+   "fired_with_rule_on_script_text": true,
+   "top5_without_rule": [
+    "DASAN-TERM-6.2",
+    "DASAN-TERM-2.5",
+    "DASAN-MANUAL-3.4",
+    "DASAN-TERM-4.5",
+    "DASAN-TERM-4.3"
+   ],
+   "procedure_in_top5": false
+  },
+  {
+   "id": "SYN-018-22",
+   "label": "backchannel",
+   "text": "고마워요. 젊은 사람이 친절하네.",
+   "text_source": "e2e",
+   "masked": false,
+   "fired_without_rule": true,
+   "fired_with_rule": true,
+   "fired_with_rule_on_script_text": true,
+   "top5_without_rule": [
+    "DASAN-TERM-6.6",
+    "DASAN-TERM-1.5",
+    "DASAN-MANUAL-5.1",
+    "DASAN-TERM-2.7",
+    "DASAN-TERM-2.10"
+   ],
+   "procedure_in_top5": false
+  },
+  {
+   "id": "SYN-018-24",
+   "label": "backchannel",
+   "text": "네, 수고해요.",
+   "text_source": "e2e",
+   "masked": false,
+   "fired_without_rule": true,
+   "fired_with_rule": true,
+   "fired_with_rule_on_script_text": true,
+   "top5_without_rule": [
+    "DASAN-MANUAL-1.4",
+    "DASAN-MANUAL-4.1",
+    "DASAN-TERM-6.12",
+    "DASAN-TERM-4.15",
+    "DASAN-MANUAL-2.2"
+   ],
+   "procedure_in_top5": false
+  },
+  {
+   "id": "SYN-019-02",
+   "label": "needed",
+   "text": "지방세를 두 번 냈다는데요. 돌려받으려면 뭘 해야 하나요. 역시 시청답네요, 받을 땐 빠르고 돌려줄 땐 전화를 하게 만드시고.",
+   "text_source": "e2e",
+   "masked": false,
+   "fired_without_rule": true,
+   "fired_with_rule": true,
+   "fired_with_rule_on_script_text": true,
+   "top5_without_rule": [
+    "DASAN-TERM-4.11",
+    "DASAN-TERM-2.8",
+    "DASAN-TERM-6.11",
+    "DASAN-TERM-4.7",
+    "DASAN-TERM-4.12"
+   ],
+   "procedure_in_top5": true
+  },
+  {
+   "id": "SYN-019-04",
+   "label": "needed",
+   "text": "아니요, 남편 계좌로 받으려고요. 그것도 안 된다고 하시려나.",
+   "text_source": "e2e",
+   "masked": false,
+   "fired_without_rule": true,
+   "fired_with_rule": true,
+   "fired_with_rule_on_script_text": true,
+   "top5_without_rule": [
+    "DASAN-TERM-6.12",
+    "DASAN-TERM-3.4",
+    "DASAN-TERM-4.13",
+    "DASAN-TERM-5.8",
+    "DASAN-TERM-4.11"
+   ],
+   "procedure_in_top5": true
+  },
+  {
+   "id": "SYN-019-06",
+   "label": "needed",
+   "text": "서류가 하나 늘었네요. 예상은 했어요.",
+   "text_source": "e2e",
+   "masked": false,
+   "fired_without_rule": true,
+   "fired_with_rule": true,
+   "fired_with_rule_on_script_text": true,
+   "top5_without_rule": [
+    "DASAN-TERM-1.3",
+    "DASAN-MANUAL-3.3",
+    "DASAN-MANUAL-3.2",
+    "DASAN-TERM-4.3",
+    "DASAN-TERM-3.7"
+   ],
+   "procedure_in_top5": true
+  },
+  {
+   "id": "SYN-019-08",
+   "label": "needed",
+   "text": "돈 돌려받는 데 다섯 가지. 대단하네요. 그래서 언제 들어오나요?",
+   "text_source": "e2e",
+   "masked": false,
+   "fired_without_rule": true,
+   "fired_with_rule": true,
+   "fired_with_rule_on_script_text": true,
+   "top5_without_rule": [
+    "DASAN-TERM-6.10",
+    "DASAN-TERM-4.11",
+    "DASAN-TERM-6.11",
+    "DASAN-TERM-6.12",
+    "DASAN-TERM-5.9"
+   ],
+   "procedure_in_top5": true
+  },
+  {
+   "id": "SYN-019-10",
+   "label": "other",
+   "text": "그것도 모르시는군요. 뭐, 그럴 줄 알았어요. 계좌는 남편 거 ************이에요. 적어 두세요.",
+   "text_source": "e2e",
+   "masked": true,
+   "fired_without_rule": true,
+   "fired_with_rule": true,
+   "fired_with_rule_on_script_text": true,
+   "top5_without_rule": [
+    "DASAN-TERM-3.5",
+    "DASAN-TERM-3.4",
+    "DASAN-TERM-6.2",
+    "DASAN-TERM-6.5",
+    "DASAN-MANUAL-3.4"
+   ],
+   "procedure_in_top5": false
+  },
+  {
+   "id": "SYN-019-12",
+   "label": "needed",
+   "text": "전화로 받지도 않으면서 전화는 왜 받으시는지. 알겠어요. 접수는 어디서 하죠?",
+   "text_source": "e2e",
+   "masked": false,
+   "fired_without_rule": true,
+   "fired_with_rule": true,
+   "fired_with_rule_on_script_text": true,
+   "top5_without_rule": [
+    "DASAN-MANUAL-1.2",
+    "DASAN-TERM-6.12",
+    "DASAN-TERM-3.13",
+    "DASAN-MANUAL-2.2",
+    "DASAN-TERM-3.4"
+   ],
+   "procedure_in_top5": false
+  },
+  {
+   "id": "SYN-019-14",
+   "label": "other",
+   "text": "*************요. 이름은 ****요. 꼭 연락 주세요, 안 오실 것 같지만.",
+   "text_source": "e2e",
+   "masked": true,
+   "fired_without_rule": true,
+   "fired_with_rule": true,
+   "fired_with_rule_on_script_text": true,
+   "top5_without_rule": [
+    "DASAN-TERM-6.12",
+    "DASAN-MANUAL-1.2",
+    "DASAN-MANUAL-3.1",
+    "DASAN-TERM-1.5",
+    "DASAN-TERM-3.5"
+   ],
+   "procedure_in_top5": false
+  },
+  {
+   "id": "SYN-019-16",
+   "label": "backchannel",
+   "text": "네, 수고하세요.",
+   "text_source": "e2e",
+   "masked": false,
+   "fired_without_rule": true,
+   "fired_with_rule": false,
+   "fired_with_rule_on_script_text": false,
+   "top5_without_rule": [
+    "DASAN-MANUAL-1.4",
+    "DASAN-MANUAL-4.1",
+    "DASAN-TERM-6.12",
+    "DASAN-TERM-4.15",
+    "DASAN-TERM-4.21"
+   ],
+   "procedure_in_top5": false
+  },
+  {
+   "id": "SYN-020-02",
+   "label": "needed",
+   "text": "아버지 교통카드요, 어르신들 지하철 무료로 타는 그 카드. 아버지가 다리가 안 좋으셔서 제가 대신 만들어 드리려고요.",
+   "text_source": "e2e",
+   "masked": false,
+   "fired_without_rule": true,
+   "fired_with_rule": true,
+   "fired_with_rule_on_script_text": true,
+   "top5_without_rule": [
+    "DASAN-TERM-2.6",
+    "DASAN-TERM-2.7",
+    "DASAN-TERM-2.4",
+    "DASAN-TERM-2.5",
+    "DASAN-TERM-2.9"
+   ],
+   "procedure_in_top5": true
+  },
+  {
+   "id": "SYN-020-04",
+   "label": "needed",
+   "text": "네, 제가요. 아버지 주민번호는 *************이고요, 필요하시죠?",
+   "text_source": "e2e",
+   "masked": true,
+   "fired_without_rule": true,
+   "fired_with_rule": true,
+   "fired_with_rule_on_script_text": true,
+   "top5_without_rule": [
+    "DASAN-MANUAL-1.2",
+    "DASAN-TERM-4.3",
+    "DASAN-TERM-4.6",
+    "DASAN-TERM-4.1",
+    "DASAN-TERM-3.5"
+   ],
+   "procedure_in_top5": true
+  },
+  {
+   "id": "SYN-020-06",
+   "label": "needed",
+   "text": "아 그래요? 그럼 뭐가 필요해요?",
+   "text_source": "e2e",
+   "masked": false,
+   "fired_without_rule": true,
+   "fired_with_rule": true,
+   "fired_with_rule_on_script_text": true,
+   "top5_without_rule": [
+    "DASAN-TERM-4.16",
+    "DASAN-TERM-2.5",
+    "DASAN-TERM-6.3",
+    "DASAN-TERM-6.6",
+    "DASAN-TERM-4.5"
+   ],
+   "procedure_in_top5": false
+  },
+  {
+   "id": "SYN-020-08",
+   "label": "needed",
+   "text": "*, 편하네요. 그럼 아버지 신분증만 들고 가면 되는 거죠?",
+   "text_source": "e2e",
+   "masked": true,
+   "fired_without_rule": true,
+   "fired_with_rule": true,
+   "fired_with_rule_on_script_text": true,
+   "top5_without_rule": [
+    "DASAN-TERM-1.4",
+    "DASAN-TERM-4.6",
+    "DASAN-TERM-4.4",
+    "DASAN-TERM-4.18",
+    "DASAN-TERM-4.14"
+   ],
+   "procedure_in_top5": false
+  },
+  {
+   "id": "SYN-020-10",
+   "label": "needed",
+   "text": "아 위임장이 필요하구나. 알겠어요. 발급 수수료는 제 카드로 내면 되죠? 카드번호 *******************이에요.",
+   "text_source": "e2e",
+   "masked": true,
+   "fired_without_rule": true,
+   "fired_with_rule": true,
+   "fired_with_rule_on_script_text": true,
+   "top5_without_rule": [
+    "DASAN-TERM-2.6",
+    "DASAN-MANUAL-3.4",
+    "DASAN-TERM-4.5",
+    "DASAN-TERM-4.3",
+    "DASAN-TERM-4.1"
+   ],
+   "procedure_in_top5": true
+  },
+  {
+   "id": "SYN-020-12",
+   "label": "needed",
+   "text": "아 네네. 혹시 환급 같은 거 있으면 제 계좌 ************으로 넣어 주시면 되고요.",
+   "text_source": "e2e",
+   "masked": true,
+   "fired_without_rule": true,
+   "fired_with_rule": true,
+   "fired_with_rule_on_script_text": true,
+   "top5_without_rule": [
+    "DASAN-TERM-4.11",
+    "DASAN-TERM-6.12",
+    "DASAN-TERM-6.11",
+    "DASAN-TERM-4.13",
+    "DASAN-TERM-3.13"
+   ],
+   "procedure_in_top5": false
+  },
+  {
+   "id": "SYN-020-14",
+   "label": "needed",
+   "text": "아, 그렇군요. 제가 너무 다 말씀드렸네요. 습관이 돼서.",
+   "text_source": "e2e",
+   "masked": false,
+   "fired_without_rule": true,
+   "fired_with_rule": true,
+   "fired_with_rule_on_script_text": true,
+   "top5_without_rule": [
+    "DASAN-MANUAL-4.1",
+    "DASAN-MANUAL-1.4",
+    "DASAN-MANUAL-1.1",
+    "DASAN-MANUAL-5.2",
+    "DASAN-MANUAL-5.3"
+   ],
+   "procedure_in_top5": false
+  },
+  {
+   "id": "SYN-020-16",
+   "label": "other",
+   "text": "저는 ****요, 아버지는 ***이에요. 연락처는 *************입니다.",
+   "text_source": "e2e",
+   "masked": true,
+   "fired_without_rule": true,
+   "fired_with_rule": true,
+   "fired_with_rule_on_script_text": true,
+   "top5_without_rule": [
+    "DASAN-TERM-6.12",
+    "DASAN-MANUAL-1.2",
+    "DASAN-TERM-3.5",
+    "DASAN-TERM-4.6",
+    "DASAN-TERM-3.4"
+   ],
+   "procedure_in_top5": true
+  },
+  {
+   "id": "SYN-020-18",
+   "label": "needed",
+   "text": "네. 그리고 아버지가 장애 등급도 있으신데 그건 상관없죠?",
+   "text_source": "e2e",
+   "masked": false,
+   "fired_without_rule": true,
+   "fired_with_rule": true,
+   "fired_with_rule_on_script_text": true,
+   "top5_without_rule": [
+    "DASAN-TERM-2.5",
+    "DASAN-TERM-4.15",
+    "DASAN-MANUAL-3.4",
+    "DASAN-TERM-6.8",
+    "DASAN-TERM-2.2"
+   ],
+   "procedure_in_top5": true
+  },
+  {
+   "id": "SYN-020-20",
+   "label": "needed",
+   "text": "아, 그럼 장애인 쪽으로 할 수도 있겠네요. 일단 알겠습니다.",
+   "text_source": "e2e",
+   "masked": false,
+   "fired_without_rule": true,
+   "fired_with_rule": true,
+   "fired_with_rule_on_script_text": true,
+   "top5_without_rule": [
+    "DASAN-TERM-2.11",
+    "DASAN-TERM-2.2",
+    "DASAN-TERM-2.5",
+    "DASAN-TERM-2.4",
+    "DASAN-TERM-6.8"
+   ],
+   "procedure_in_top5": false
+  },
+  {
+   "id": "SYN-020-22",
+   "label": "backchannel",
+   "text": "네, 감사합니다.",
+   "text_source": "e2e",
+   "masked": false,
+   "fired_without_rule": true,
+   "fired_with_rule": false,
+   "fired_with_rule_on_script_text": false,
+   "top5_without_rule": [
+    "DASAN-MANUAL-1.4",
+    "DASAN-TERM-6.12",
+    "DASAN-MANUAL-4.1",
+    "DASAN-TERM-4.21",
+    "DASAN-TERM-6.1"
+   ],
+   "procedure_in_top5": false
+  },
+  {
+   "id": "SYN-021-02",
+   "label": "needed",
+   "text": "버스에 가방을 두고 내렸어요. 노트북 들어 있어서 급해요. 어디로 찾으러 가면 돼요?",
+   "text_source": "e2e",
+   "masked": false,
+   "fired_without_rule": true,
+   "fired_with_rule": true,
+   "fired_with_rule_on_script_text": true,
+   "top5_without_rule": [
+    "DASAN-TERM-2.9",
+    "DASAN-TERM-4.19",
+    "DASAN-TERM-2.12",
+    "DASAN-TERM-2.10",
+    "DASAN-MANUAL-3.2"
+   ],
+   "procedure_in_top5": true
+  },
+  {
+   "id": "SYN-021-04",
+   "label": "needed",
+   "text": "틀림없이요? 그걸 어떻게 알아요. 아무튼 1120번, 8시 반쯤, 한별역에서 내렸어요.",
+   "text_source": "e2e",
+   "masked": false,
+   "fired_without_rule": true,
+   "fired_with_rule": true,
+   "fired_with_rule_on_script_text": true,
+   "top5_without_rule": [
+    "DASAN-TERM-2.3",
+    "DASAN-TERM-2.4",
+    "DASAN-TERM-2.1",
+    "DASAN-TERM-2.12",
+    "DASAN-TERM-2.11"
+   ],
+   "procedure_in_top5": false
+  },
+  {
+   "id": "SYN-021-06",
+   "label": "needed",
+   "text": "네네, 빨리요. 찾으면 그냥 가서 받으면 되죠?",
+   "text_source": "e2e",
+   "masked": false,
+   "fired_without_rule": true,
+   "fired_with_rule": true,
+   "fired_with_rule_on_script_text": true,
+   "top5_without_rule": [
+    "DASAN-TERM-2.9",
+    "DASAN-MANUAL-3.2",
+    "DASAN-TERM-1.3",
+    "DASAN-MANUAL-1.6",
+    "DASAN-MANUAL-3.1"
+   ],
+   "procedure_in_top5": true
+  },
+  {
+   "id": "SYN-021-08",
+   "label": "other",
+   "text": "**************요.",
+   "text_source": "e2e",
+   "masked": true,
+   "fired_without_rule": true,
+   "fired_with_rule": true,
+   "fired_with_rule_on_script_text": true,
+   "top5_without_rule": [
+    "DASAN-TERM-6.12",
+    "DASAN-TERM-3.4",
+    "DASAN-MANUAL-1.2",
+    "DASAN-TERM-3.5",
+    "DASAN-TERM-4.22"
+   ],
+   "procedure_in_top5": false
+  },
+  {
+   "id": "SYN-022-02",
+   "label": "needed",
+   "text": "Hello, 안녕하세요. 저번에 아동수당 전화했어요. 이번에는 다른 거. 돌봄? child care... 돈 준다고 들었어요.",
+   "text_source": "e2e",
+   "masked": false,
+   "fired_without_rule": true,
+   "fired_with_rule": true,
+   "fired_with_rule_on_script_text": true,
+   "top5_without_rule": [
+    "DASAN-TERM-4.13",
+    "DASAN-TERM-6.7",
+    "DASAN-TERM-6.12",
+    "DASAN-TERM-6.10",
+    "DASAN-TERM-5.8"
+   ],
+   "procedure_in_top5": true
+  },
+  {
+   "id": "SYN-022-04",
+   "label": "needed",
+   "text": "음... 지금은 괜찮아요. 천천히 해 주세요.",
+   "text_source": "e2e",
+   "masked": false,
+   "fired_without_rule": true,
+   "fired_with_rule": true,
+   "fired_with_rule_on_script_text": true,
+   "top5_without_rule": [
+    "DASAN-MANUAL-4.1",
+    "DASAN-MANUAL-1.4",
+    "DASAN-TERM-4.2",
+    "DASAN-TERM-2.11",
+    "DASAN-MANUAL-2.1"
+   ],
+   "procedure_in_top5": false
+  },
+  {
+   "id": "SYN-022-06",
+   "label": "needed",
+   "text": "아동수당 때랑 같아요? 그때도 네 개였어요.",
+   "text_source": "e2e",
+   "masked": false,
+   "fired_without_rule": true,
+   "fired_with_rule": true,
+   "fired_with_rule_on_script_text": true,
+   "top5_without_rule": [
+    "DASAN-TERM-4.13",
+    "DASAN-TERM-4.14",
+    "DASAN-TERM-6.7",
+    "DASAN-TERM-5.9",
+    "DASAN-TERM-5.8"
+   ],
+   "procedure_in_top5": true
+  },
+  {
+   "id": "SYN-022-08",
+   "label": "needed",
+   "text": "Oh... okay. 그럼 신청은 해도 돼요?",
+   "text_source": "e2e",
+   "masked": false,
+   "fired_without_rule": true,
+   "fired_with_rule": true,
+   "fired_with_rule_on_script_text": true,
+   "top5_without_rule": [
+    "DASAN-TERM-6.9",
+    "DASAN-TERM-6.6",
+    "DASAN-TERM-4.16",
+    "DASAN-TERM-6.4",
+    "DASAN-TERM-6.3"
+   ],
+   "procedure_in_top5": false
+  },
+  {
+   "id": "SYN-022-10",
+   "label": "needed",
+   "text": "네. 아 그리고 어제 문자 왔어요. 돌봄 돈 준다고, 링크 누르고 인증번호 ****** 넣으래요. 넣었어요. 괜찮아요?",
+   "text_source": "e2e",
+   "masked": true,
+   "fired_without_rule": true,
+   "fired_with_rule": true,
+   "fired_with_rule_on_script_text": true,
+   "top5_without_rule": [
+    "DASAN-TERM-6.12",
+    "DASAN-TERM-6.7",
+    "DASAN-TERM-4.13",
+    "DASAN-TERM-3.13",
+    "DASAN-TERM-6.10"
+   ],
+   "procedure_in_top5": true
+  },
+  {
+   "id": "SYN-022-12",
+   "label": "needed",
+   "text": "Oh no... 알겠어요. 신고할게요. 연락처는 *************, 이름 *** ***예요.",
+   "text_source": "e2e",
+   "masked": true,
+   "fired_without_rule": true,
+   "fired_with_rule": true,
+   "fired_with_rule_on_script_text": true,
+   "top5_without_rule": [
+    "DASAN-TERM-4.21",
+    "DASAN-TERM-6.12",
+    "DASAN-MANUAL-1.2",
+    "DASAN-TERM-4.4",
+    "DASAN-TERM-2.10"
+   ],
+   "procedure_in_top5": true
+  },
+  {
+   "id": "SYN-022-14",
+   "label": "needed",
+   "text": "네 개. Thank you, 감사합니다.",
+   "text_source": "e2e",
+   "masked": false,
+   "fired_without_rule": true,
+   "fired_with_rule": true,
+   "fired_with_rule_on_script_text": true,
+   "top5_without_rule": [
+    "DASAN-TERM-4.14",
+    "DASAN-MANUAL-1.4",
+    "DASAN-TERM-4.21",
+    "DASAN-TERM-4.12",
+    "DASAN-MANUAL-3.4"
+   ],
+   "procedure_in_top5": false
+  },
+  {
+   "id": "SYN-023-02",
+   "label": "needed",
+   "text": "싱크대 밑 수도관에서 물이 새요. 시에서 고쳐 주는 거죠? 세금은 꼬박꼬박 냈는데.",
+   "text_source": "e2e",
+   "masked": false,
+   "fired_without_rule": true,
+   "fired_with_rule": true,
+   "fired_with_rule_on_script_text": true,
+   "top5_without_rule": [
+    "DASAN-TERM-3.15",
+    "DASAN-TERM-3.9",
+    "DASAN-TERM-3.7",
+    "DASAN-TERM-2.12",
+    "DASAN-TERM-3.4"
+   ],
+   "procedure_in_top5": true
+  },
+  {
+   "id": "SYN-023-04",
+   "label": "needed",
+   "text": "역시 그렇겠죠. 그럼 어느 업체가 괜찮은지라도 알려 주시죠. 그건 되죠?",
+   "text_source": "e2e",
+   "masked": false,
+   "fired_without_rule": true,
+   "fired_with_rule": true,
+   "fired_with_rule_on_script_text": true,
+   "top5_without_rule": [
+    "DASAN-MANUAL-4.1",
+    "DASAN-MANUAL-1.4",
+    "DASAN-TERM-3.2",
+    "DASAN-TERM-5.4",
+    "DASAN-MANUAL-2.2"
+   ],
+   "procedure_in_top5": true
+  },
+  {
+   "id": "SYN-023-06",
+   "label": "other",
+   "text": "그것도 확인이군요. 네, 그럼 그거라도 부탁드리죠.",
+   "text_source": "e2e",
+   "masked": false,
+   "fired_without_rule": true,
+   "fired_with_rule": true,
+   "fired_with_rule_on_script_text": true,
+   "top5_without_rule": [
+    "DASAN-MANUAL-3.1",
+    "DASAN-MANUAL-3.2",
+    "DASAN-MANUAL-1.4",
+    "DASAN-MANUAL-3.4",
+    "DASAN-TERM-3.16"
+   ],
+   "procedure_in_top5": false
+  },
+  {
+   "id": "SYN-023-08",
+   "label": "needed",
+   "text": "네, 알겠습니다. 감면 쪽은 나중에 또 전화하죠. 수고하세요.",
+   "text_source": "e2e",
+   "masked": false,
+   "fired_without_rule": true,
+   "fired_with_rule": true,
+   "fired_with_rule_on_script_text": true,
+   "top5_without_rule": [
+    "DASAN-TERM-4.12",
+    "DASAN-TERM-3.6",
+    "DASAN-TERM-3.7",
+    "DASAN-TERM-6.8",
+    "DASAN-TERM-6.12"
+   ],
+   "procedure_in_top5": true
+  },
+  {
+   "id": "SYN-024-02",
+   "label": "needed",
+   "text": "처음으로 집을 샀는데요, 취득세 신고할 때 뭘 내야 하는지랑, 생애최초 감면이라는 게 있다던데 그것도 같이 여쭤보려고요.",
+   "text_source": "e2e",
+   "masked": false,
+   "fired_without_rule": true,
+   "fired_with_rule": true,
+   "fired_with_rule_on_script_text": true,
+   "top5_without_rule": [
+    "DASAN-TERM-4.9",
+    "DASAN-TERM-3.6",
+    "DASAN-TERM-4.10",
+    "DASAN-TERM-4.12",
+    "DASAN-TERM-3.7"
+   ],
+   "procedure_in_top5": true
+  },
+  {
+   "id": "SYN-024-04",
+   "label": "needed",
+   "text": "세 가지요. 그럼 감면은요? 따로 뭐 내야 해요?",
+   "text_source": "e2e",
+   "masked": false,
+   "fired_without_rule": true,
+   "fired_with_rule": true,
+   "fired_with_rule_on_script_text": true,
+   "top5_without_rule": [
+    "DASAN-TERM-3.6",
+    "DASAN-TERM-4.12",
+    "DASAN-TERM-3.7",
+    "DASAN-TERM-6.8",
+    "DASAN-TERM-4.9"
+   ],
+   "procedure_in_top5": true
+  },
+  {
+   "id": "SYN-024-06",
+   "label": "needed",
+   "text": "자동이요? 그건 어디에 나와 있는 거예요? 확실한 근거가 있는 건가요?",
+   "text_source": "e2e",
+   "masked": false,
+   "fired_without_rule": true,
+   "fired_with_rule": true,
+   "fired_with_rule_on_script_text": true,
+   "top5_without_rule": [
+    "DASAN-TERM-3.4",
+    "DASAN-MANUAL-2.1",
+    "DASAN-MANUAL-1.6",
+    "DASAN-MANUAL-1.1",
+    "DASAN-MANUAL-1.5"
+   ],
+   "procedure_in_top5": false
+  },
+  {
+   "id": "SYN-024-08",
+   "label": "needed",
+   "text": "그러니까 신고서, 계약서, 신분증에 감면 서류 하나 더. 네 가지 맞죠? 한 번 더 확인할게요.",
+   "text_source": "e2e",
+   "masked": false,
+   "fired_without_rule": true,
+   "fired_with_rule": true,
+   "fired_with_rule_on_script_text": true,
+   "top5_without_rule": [
+    "DASAN-TERM-4.9",
+    "DASAN-TERM-4.12",
+    "DASAN-TERM-4.14",
+    "DASAN-TERM-3.6",
+    "DASAN-TERM-3.7"
+   ],
+   "procedure_in_top5": true
+  },
+  {
+   "id": "SYN-024-10",
+   "label": "needed",
+   "text": "신고 기한은요? 그것도 확실하게 알고 싶어요.",
+   "text_source": "e2e",
+   "masked": false,
+   "fired_without_rule": true,
+   "fired_with_rule": true,
+   "fired_with_rule_on_script_text": true,
+   "top5_without_rule": [
+    "DASAN-TERM-4.21",
+    "DASAN-TERM-4.9",
+    "DASAN-TERM-4.4",
+    "DASAN-TERM-3.13",
+    "DASAN-TERM-6.10"
+   ],
+   "procedure_in_top5": true
+  },
+  {
+   "id": "SYN-024-12",
+   "label": "needed",
+   "text": "네. 마지막으로 한 번만 *요. 신고서, 계약서, 신분증, 감면 서류. 이 넷이면 되는 거죠?",
+   "text_source": "e2e",
+   "masked": true,
+   "fired_without_rule": true,
+   "fired_with_rule": true,
+   "fired_with_rule_on_script_text": true,
+   "top5_without_rule": [
+    "DASAN-TERM-4.9",
+    "DASAN-TERM-4.12",
+    "DASAN-TERM-4.14",
+    "DASAN-TERM-4.4",
+    "DASAN-TERM-1.4"
+   ],
+   "procedure_in_top5": true
+  },
+  {
+   "id": "SYN-024-14",
+   "label": "other",
+   "text": "***************. 문자로 주세요.",
+   "text_source": "e2e",
+   "masked": true,
+   "fired_without_rule": true,
+   "fired_with_rule": true,
+   "fired_with_rule_on_script_text": true,
+   "top5_without_rule": [
+    "DASAN-TERM-6.12",
+    "DASAN-TERM-3.13",
+    "DASAN-MANUAL-1.2",
+    "DASAN-TERM-3.4",
+    "DASAN-TERM-4.13"
+   ],
+   "procedure_in_top5": false
+  }
+ ]
+}
