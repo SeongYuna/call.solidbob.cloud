@@ -39,6 +39,30 @@ paths:
 - [ ] 엔드포인트별 단위 테스트 + `.importlinter` 계약 3종 KEPT
 - [ ] 로컬에서 서버 원격 어댑터([w6-server-remote-model-adapter](/backlog/w6-server-remote-model-adapter/))와 왕복 1건
 
+## 2026-09-22 — `ai/` 쪽 표면 구현 (류준)
+
+범위는 **`ai/` 만**이다(사용자 결정). `server/`·`infra/`·`.github/` 는 건드리지 않았다.
+
+- 결정 기록: `_project/decisions/213` — 위치 `ai/apps/model_serving/`(inbound 어댑터) + 합성 루트 `ai/model_server.py` · FastAPI/uvicorn(서버와 같은 버전) · `MODEL_SERVICE_TOKEN` Bearer **fail-closed** · 오류 계약(401 · 503 `auth_not_configured`/`model_not_loaded`/`model_unavailable` · 500 · 422)
+- 엔드포인트: `GET /health` · `POST /v1/ner/spans`(구간만 — 마스킹 판정 아님) · `/v1/embeddings` · `/v1/rerank` · `/v1/generation/cards`
+- NER 구간 규칙을 `pii_ner` 한 함수(`detect_entities_with_rejoin`)로 모아 `LayeredMaskingAdapter` 와 표면이 같이 쓴다
+- 테스트: 엔드포인트별 가짜 모델 단위 테스트 35 · 실제 소켓 왕복(uvicorn + `urllib`) · `server/` 가 표면을 import 하지 않는다는 AST 검사 · 실제 모델 스모크(`-m slow`)
+- `ai/.importlinter` 에 `model_serving` 등록 — 3계약 KEPT
+
+### 완료 조건 상태
+
+- [x] 표면 위치·프레임워크·인증을 결정 기록으로 남긴다 — `decisions/213`
+- [x] 엔드포인트별 단위 테스트 + `.importlinter` 계약 3종 KEPT
+- [ ] 로컬에서 서버 원격 어댑터와 왕복 1건 — **서버 어댑터가 없다**(장민석, `w6-server-remote-model-adapter`). 그 자리는 테스트 안의 `urllib` 클라이언트가 대신 섰다. 그래서 `in-progress` 로 둔다
+
+### 남은 것
+
+- ⚠ CI `ai` job 이 fastapi·httpx·uvicorn 을 설치하지 않아 **표면 테스트는 CI 에서 건너뛴다**(의존 방향 검사만 돈다) — `test.yml` 한 줄
+- `server/.importlinter` 계약 2 금지 목록에 `model_serving` 추가 — `server/` 소관
+- `decisions/121` 질문 2(홉 지연)·3(비용·자동 중지)·5(6주차 기준선)는 열려 있다. **홉 지연은 미측정**이다
+
 ---
 
 > **취소 (2026-09-22, 정성윤).** `_project/decisions/124` 로 모델을 전용 GPU EC2 가 아니라 운영 노드에 CPU 로 싣기로 했다. 전용 인스턴스·HTTP 표면·원격 어댑터가 필요 없어졌다. 이어받는 티켓: [w5-models-on-node](/backlog/w5-models-on-node/).
+
+> **되돌림 (2026-09-22, 류준).** 위 「`ai/` 쪽 표면 구현」은 124 가 머지되기 전 `ai` 브랜치에서 한 일이다. `main` 을 받으며 124 를 보고 **PR 에서 코드를 뺐다**(`decisions/213` 철회). 구현은 커밋 `992b475` 에 남아 있다 — GPU 인스턴스로 다시 가게 되면 되돌림 커밋을 revert 해서 살린다. status 는 124 의 `cancelled` 그대로 둔다.
