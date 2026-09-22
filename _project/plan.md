@@ -25,6 +25,9 @@
 >
 > **⚠ 2026-09-22 수정 (류준)**: 2.4절 **C-4 를 재정의**했다 — 「권장 대체 표현 제시」(기능) → **「근거 없는 안전 보장(의학적 안심 발언 등) 탐지」**(위반 갈래, `DASAN-MANUAL-4.1`).
 > 대체 표현은 C-1~C-4 공통 출력으로 표 아래에 옮겼다. 코드·골든셋·점수는 바뀌지 않는다(이미 이 뜻으로 돌고 있었다). 근거·되돌리는 법: `decisions/211`.
+>
+> **⚠ 2026-09-22 수정 (장민석)**: 7.3절 허브 HTTP 표면의 `POST /hub/routing-decisions` 호출자를 「교환기·콜 미디에이터(인증 없음)」 →
+> **「교환기(연결 전) — 시연에서는 콜 미디에이터가 대리 · 서비스 토큰」**으로 고쳤다. 판정은 연결 전이어야 의미가 있는데(`313`) 콜 미디에이터는 연결 뒤에 부른다. 근거: `decisions/320`.
 
 # 실시간 상담원 어시스트 RAG 시스템
 
@@ -1098,7 +1101,7 @@ F-2(필요서류 체크리스트)가 참조하는 필수 항목 정의도 이 �
 | `GET /hub/blacklist-entries?active_only` · `POST …/{id}/release {reason}` | **관리자 로그인** | 해제는 지우지 않고 기록 |
 | `POST /hub/blacklist-entries/{id}/expiry {expires_in_days, reason}` · `GET …/{id}/expiry-changes` | **관리자 로그인** | 만료를 «지금부터 N일 뒤»(1~365)로 — 연장·단축 모두. **누적 상한 승인일 + 365일**(넘으면 422) · 사유 필수(마스킹) · 이력이 쌓인다 · 해제된 등록 409(`decisions/309`) |
 | `GET /hub/call-guard-flags?call_id&category&limit&offset` | **관리자 로그인** | 콜 가드 로그 |
-| `POST /hub/routing-decisions` `{call_id, candidates[]}` | 교환기·콜 미디에이터(인증 없음) | J-5 인입 전 배정 판정 — 적용 중 블랙리스트 고객이면 근속 기준 이상 후보를 고른다. `{assigned_agent_id, is_blacklisted, fell_back, reason, customer_identified, veteran_years, unknown_candidates}` · `routing_log` 기록 · 통화 없음 404(`decisions/313`) |
+| `POST /hub/routing-decisions` `{call_id, candidates[]}` | 교환기(연결 전) — 시연에서는 콜 미디에이터가 통화 시작 직후 대리(`decisions/320`). 서비스 토큰(`126`) | J-5 인입 전 배정 판정 — 적용 중 블랙리스트 고객이면 근속 기준 이상 후보를 고른다. `{assigned_agent_id, is_blacklisted, fell_back, reason, customer_identified, veteran_years, unknown_candidates}` · `routing_log` 기록 · 통화 없음 404(`decisions/313`) |
 | `GET·PUT /hub/routing-settings` `{veteran_years}` | **관리자 로그인** | 베테랑 근속 기준(0.5~40년). 저장값 없으면 기본 3년 `saved: "false"`(`decisions/313`) |
 | `POST /hub/blacklist-retention/purge` | **관리자 로그인** | 끝난 뒤 180일 지난 만료 변경 사유 · 반려 요청 사유·자막을 표시로 비운다. 행은 남는다 · 멱등 · `{retention_days, cutoff, expiry_change_reasons_purged, rejected_requests_purged}`(`decisions/312`) |
 | `POST /admin/agent-tokens` `{agent_id}` · `GET /admin/agent-tokens?agent_id` · `POST /admin/agent-tokens/{id}/revoke` | **관리자 로그인** | 상담원 토큰 발급·목록·폐기. **원문 `token` 은 발급 응답에만 한 번** — 목록·폐기 응답에는 없다. 만료 없음(폐기로만 끊는다) |

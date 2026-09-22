@@ -976,7 +976,8 @@ libpq 기본값 `prefer` 가 SSL 을 먼저 시도하므로 6-7 의 SSL 강제�
 #### 12-2-b. 쓰기 경로 서비스 토큰 — `CORE_API_TOKEN` / `INGEST_SERVICE_TOKEN` (2026-09-22 추가, `decisions/120`)
 
 `release.yml` 은 `call-mediator-tokens` 를 **없을 때만** 만들고 그때 INGEST·VIEW 두 키만 넣는다. 서비스 토큰은 **사람이 넣는다** —
-새 클러스터를 세우면 이 단계를 빠뜨리기 쉽고, 빠뜨리면 `/health` 가 `"ingest_guard":"open"` 을 낸다(문이 열린 채 돈다).
+새 클러스터를 세우면 이 단계를 빠뜨리기 쉽고, 빠뜨리면 `/health` 가 `"ingest_guard":"unset"` 을 내고 **쓰기 경로가 전부 401 이라 통화가 저장되지 않는다**
+(`w6-ingest-guard-fail-closed` 이전 서버는 `"open"` — 문이 열린 채 돌았다).
 **순서를 어기면 운영 통화가 전부 401 이 된다** — 미디에이터가 먼저, 서버가 나중이다. 2026-09-22 에 이 순서로 실제 잠갔다.
 
 ```bash
@@ -999,7 +1000,8 @@ curl -s -o /dev/null -w '%{http_code}\n' -X POST -H 'Content-Type: application/j
 ```
 
 **되돌리기**: 백업 두 yaml 을 `$K apply -f` 하고 두 deploy 를 `rollout restart`. 서버가 먼저 열려야 하니 **서버 → 미디에이터** 순서다.
-서버 쪽 ④(토큰이 없어도 잠그는 fail-closed)는 코드 변경이라 별도 PR 이다 — 그 뒤엔 이 단계를 빠뜨리면 서버가 아예 안 뜬다(그게 의도다).
+서버 쪽 ④(토큰이 없어도 잠그는 fail-closed)는 `w6-ingest-guard-fail-closed` 로 넣었다 — **없으면 서버는 뜨지만 쓰기 경로가 닫힌다**(401).
+기동 거부가 아닌 이유: 업로드 문(`110`)·`/close`(`315`)와 같은 모양이고, 키 하나 때문에 읽기 경로·관리자 화면까지 죽이지 않는다.
 
 ### 12-3. 영속 볼륨
 
@@ -1702,8 +1704,9 @@ B=https://server.solidbob.cloud
 # 9. 외부 HTTPS
 curl -s $B/health
 
-#    0.1.19 부터 `"ingest_guard": "open"|"locked"` 가 함께 나온다(`decisions/120`) — "open" 이면 쓰기 일곱 경로가
-#    **토큰 없이 열려 있다**는 뜻이다. 이행기에는 "open" 이 정상이고, 전환 3번 뒤에는 "locked" 여야 한다.
+#    0.1.19 부터 `"ingest_guard"` 가 함께 나온다(`decisions/120`) — 기대: "locked".
+#    "unset" 이면 토큰 미설정이라 쓰기 경로가 **전부 401**(통화가 저장되지 않는다 — 12-2-b).
+#    "open" 은 fail-closed 이전 서버(이행기)에서만 나온다 — 쓰기 경로가 토큰 없이 열려 있다는 뜻이다.
 
 # 9-1. 설정이 아니라 «실제로 붙는가» (server 0.1.19+, 2026-09-19 추가)
 #      기대: 200 + {"status":"ok","checks":{"postgres":{"ok":true,...},"elasticsearch":{"ok":true,...}}}

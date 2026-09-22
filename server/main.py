@@ -456,7 +456,7 @@ def health(request: Request) -> dict:
         "postgres_configured": settings.postgres_configured,
         "elasticsearch_configured": settings.elasticsearch_configured,
         "spokes": list(SPOKES),
-        # "open" = 쓰기 경로가 토큰 없이 열려 있다(이행기). 값이 아니라 **상태**만 싣는다(SEC-2)
+        # "unset" = 토큰 미설정이라 쓰기 경로가 전부 401 이다. 값이 아니라 **상태**만 싣는다(SEC-2)
         "ingest_guard": ingest_guard_state(settings),
     }
 

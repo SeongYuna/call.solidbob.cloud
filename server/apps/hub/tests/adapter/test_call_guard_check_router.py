@@ -6,6 +6,7 @@ from fastapi.testclient import TestClient
 from hub.app.dtos.call_guard_dto import CallGuardFlag
 from hub.app.ports.output.call_guard_port import CallGuardPort
 from hub.dependencies.call_guard_provider import get_call_guard_port
+from hub.tests.adapter._ingest_auth import HEADERS as INGEST_HEADERS
 from main import app
 
 BODY = {"call_id": "c_001", "segment_id": 7, "customer_utterance": "이런 병신 같은"}
@@ -22,7 +23,7 @@ def test_스포크가_없으면_501이다(monkeypatch):
 
     monkeypatch.setattr(main, "_wire_call_guard", lambda app: None)
     app.dependency_overrides.pop(get_call_guard_port, None)
-    with TestClient(app) as client:
+    with TestClient(app, headers=INGEST_HEADERS) as client:
         r = client.post("/hub/call-guard-checks", json=BODY)
     assert r.status_code == 501
 
@@ -30,7 +31,7 @@ def test_스포크가_없으면_501이다(monkeypatch):
 def test_잡힌_신호를_문자열_값으로_돌려준다():
     app.dependency_overrides[get_call_guard_port] = lambda: _Stub()
     try:
-        with TestClient(app) as client:
+        with TestClient(app, headers=INGEST_HEADERS) as client:
             r = client.post("/hub/call-guard-checks", json=BODY)
     finally:
         app.dependency_overrides.clear()
@@ -45,7 +46,7 @@ def test_잡힌_신호를_문자열_값으로_돌려준다():
 def test_빈_발화는_422다():
     app.dependency_overrides[get_call_guard_port] = lambda: _Stub()
     try:
-        with TestClient(app) as client:
+        with TestClient(app, headers=INGEST_HEADERS) as client:
             r = client.post("/hub/call-guard-checks", json={**BODY, "customer_utterance": "  "})
     finally:
         app.dependency_overrides.clear()
@@ -66,7 +67,7 @@ def test_없는_전사_구간을_가리키면_404_다():
 
     app.dependency_overrides[get_call_guard_check_use_case] = lambda: _Missing()
     try:
-        with TestClient(app) as client:
+        with TestClient(app, headers=INGEST_HEADERS) as client:
             r = client.post("/hub/call-guard-checks", json=BODY)
     finally:
         app.dependency_overrides.clear()

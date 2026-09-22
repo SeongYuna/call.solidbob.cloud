@@ -20,6 +20,8 @@ import {
   type RawTranscript,
   type RecommendPayload,
   type RecommendRequest,
+  type RoutingDecisionPayload,
+  type RoutingDecisionRequest,
 } from "../app/ports.ts";
 
 export class HttpHub implements HubPort {
@@ -43,6 +45,14 @@ export class HttpHub implements HubPort {
 
   async startCall(request: CallStartRequest): Promise<void> {
     await this.post("/hub/calls", request);
+  }
+
+  async decideRouting(request: RoutingDecisionRequest): Promise<RoutingDecisionPayload> {
+    const body = await this.post("/hub/routing-decisions", request);
+    if (typeof body !== "object" || body === null) {
+      throw new HubError("배정 판정 응답 형식이 계약과 다르다", null);
+    }
+    return body as RoutingDecisionPayload;
   }
 
   async ingestTranscript(raw: RawTranscript): Promise<MaskedTranscript> {

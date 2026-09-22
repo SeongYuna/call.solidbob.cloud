@@ -13,6 +13,7 @@ from hub.app.ports.output.routing_setting_port import RoutingSettingPort
 from hub.app.ports.output.transcript_ingest_record_port import CallNotStartedError
 from hub.dependencies.routing_decision_provider import get_agent_routing_port
 from hub.dependencies.routing_setting_provider import get_routing_setting_port
+from hub.tests.adapter._ingest_auth import HEADERS as INGEST_HEADERS
 from main import app
 
 ADMIN = AdminAccount(id=5, email="a@example.com", name=None, agent_id=None)
@@ -44,14 +45,14 @@ def teardown_function():
 
 def test_DB가_없으면_배정도_설정도_501이다():
     app.dependency_overrides[require_admin] = lambda: ADMIN
-    with TestClient(app) as c:
+    with TestClient(app, headers=INGEST_HEADERS) as c:
         assert c.post("/hub/routing-decisions", json={"call_id": "c1", "candidates": ["a"]}).status_code == 501
         assert c.get("/hub/routing-settings").status_code == 501
 
 
 def test_배정_판정을_문자열로_돌려준다():
     app.dependency_overrides[get_agent_routing_port] = lambda: _Routing()
-    with TestClient(app) as c:
+    with TestClient(app, headers=INGEST_HEADERS) as c:
         r = c.post("/hub/routing-decisions", json={"call_id": "c1", "candidates": ["vet-1", "ghost"]})
     assert r.status_code == 200
     assert r.json() == {"call_id": "c1", "assigned_agent_id": "vet-1", "is_blacklisted": "true", "fell_back": "false",
@@ -61,14 +62,14 @@ def test_배정_판정을_문자열로_돌려준다():
 
 def test_통화가_없으면_404다():
     app.dependency_overrides[get_agent_routing_port] = lambda: _Routing(CallNotStartedError("c1"))
-    with TestClient(app) as c:
+    with TestClient(app, headers=INGEST_HEADERS) as c:
         assert c.post("/hub/routing-decisions", json={"call_id": "c1"}).status_code == 404
 
 
 def test_설정은_관리자만_바꾸고_바꾼_관리자를_남긴다():
     app.dependency_overrides[get_routing_setting_port] = lambda: _Settings()
     app.dependency_overrides[require_admin] = lambda: ADMIN
-    with TestClient(app) as c:
+    with TestClient(app, headers=INGEST_HEADERS) as c:
         assert c.get("/hub/routing-settings").json() == {"veteran_years": "3.0", "saved": "false", "updated_at": None, "updated_by": None}
         r = c.put("/hub/routing-settings", json={"veteran_years": 5})
         assert r.status_code == 200 and r.json()["veteran_years"] == "5.0" and r.json()["updated_by"] == "5"
