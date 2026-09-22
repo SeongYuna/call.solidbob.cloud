@@ -88,3 +88,27 @@ def score_generation(rows: list[dict]) -> dict:
         "forbidden_cards": sum(1 for r in rows if forbidden_hits(r["summary"])),
         "outcomes": {k: sum(1 for r in rows if r.get("outcome") == k) for k in ("generated", "none", "no_grounded_items", "error")},
     }
+
+
+# 포트(`GenerationPort.to_cards`)는 카드만 돌려주고 모델 원출력·결과 갈래(`outcome`)는 돌려주지 않는다.
+# 그 둘 없이 `score_generation` 을 부르면 `raw_hallucinations("")` 가 빈 목록을 내서 **원출력 환각이 0건으로
+# 찍힌다** — 잰 적 없는 0 이다(절대 원칙 2). 그래서 하네스는 아래 함수를 쓰고 그 칸에 사유를 싣는다.
+RAW_NOT_AVAILABLE = "측정 불가 — 포트가 모델 원출력을 돌려주지 않는다(원출력 환각은 scripts/eval_generation.py 가 잰다)"
+
+
+def score_shipped_cards(rows: list[dict]) -> dict:
+    """하네스용(`w6-harness-silent-metrics`) — **화면에 나간 카드만으로** 셀 수 있는 것만 센다.
+
+    행 1건 = 카드 1장. 키: `doc_id` · `summary` · `source_text`. 규칙은 `score_generation` 과 같다
+    (`card_hallucinations` · `forbidden_hits`). 원출력이 필요한 칸은 숫자 대신 `RAW_NOT_AVAILABLE` 이다.
+    카드가 0장이면 출처 표시율은 nan — 0 도 1 도 아니다.
+    """
+    cards = len(rows)
+    return {
+        "cards": cards,
+        "source_rate": sum(1 for r in rows if r.get("doc_id")) / cards if cards else float("nan"),
+        "shipped_hallucinated_cards": sum(1 for r in rows if card_hallucinations(r["summary"], r["source_text"])),
+        "forbidden_cards": sum(1 for r in rows if forbidden_hits(r["summary"])),
+        "raw_hallucinated_cards": RAW_NOT_AVAILABLE,
+        "outcomes": RAW_NOT_AVAILABLE,
+    }
