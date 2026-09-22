@@ -39,3 +39,8 @@ paths:
 - 테스트: `tests/test_main_read_guard.py`(경로마다 — 켜면 없음 401 · 상담원/서비스 토큰 통과 · 이행기에도 틀린 토큰 401) · `test_knowledge_gap_guards.py` · 신고 설명 마스킹(`test_knowledge_gap_interactor`)
 - `e2e_check.py` 가 `INGEST_SERVICE_TOKEN` 이 있으면 읽기에 싣는다
 - ⚠ 「같은 릴리스」 대신 두 단계로 갔다 — 서버를 먼저 내도 화면이 깨지지 않고, 조서희 님(`w6-read-path-token-ui`)이 싣는 즉시 `server-env` 한 줄로 닫는다. 남은 것: 그 한 줄
+
+## 2026-09-22 — 배포
+
+- **`0.1.35` 운영 배포됨** (PR #132 머지 07:57 → release 성공 · `/health` `version: 0.1.35` · `read_guard: open` 확인, 09-22)
+- 남은 것: `w6-read-path-token-ui`(조서희) 뒤 `server-env` 에 `READ_AUTH_REQUIRED=true` → `read_guard: locked`
