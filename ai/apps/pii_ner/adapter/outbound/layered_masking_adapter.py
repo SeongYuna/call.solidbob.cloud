@@ -23,7 +23,7 @@ from typing import Protocol
 from hub.app.dtos.transcript_dto import MaskedSpan
 from hub.app.ports.output.masking_port import MaskingPort
 
-from ...domain.services.spans import detect_entities, join_split_syllables, map_spans_back, merge_spans
+from ...domain.services.spans import detect_entities_with_rejoin, merge_spans
 from ...domain.value_objects.entity import EntitySpan, TokenTag
 
 log = logging.getLogger(__name__)
@@ -59,11 +59,8 @@ class LayeredMaskingAdapter(MaskingPort):
             return masked, rule_spans
 
         try:
-            entities = detect_entities(text, self._tagger.tag(text))
             # 띄어쓰기로 쪼개진 1음절(`"김 민준"`)을 붙인 사본을 한 번 더 본다 — 오류 내성 곡선에서 뚫린 2건이 전부 이것
-            joined, index_map = join_split_syllables(text)
-            if joined != text:
-                entities += map_spans_back(detect_entities(joined, self._tagger.tag(joined)), index_map)
+            entities = detect_entities_with_rejoin(text, self._tagger.tag)
         except Exception as e:  # noqa: BLE001 — 어떤 실패든 규칙 결과로 내려간다
             self.ner_failures += 1
             log.warning("NER 실패 — 규칙 마스킹만 적용: %s", type(e).__name__)
