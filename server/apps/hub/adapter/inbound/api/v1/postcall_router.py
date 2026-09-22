@@ -1,5 +1,6 @@
-# Requirement: D-1, D-2, D-3
+# Requirement: D-1, D-2, D-3, D-6
 """POST /hub/calls/{call_id}/close — 통화 종료 후 요약·유형 제안·후속조치.
+D-6(통화 종료 즉시 핵심 내용 제시, rev.5)은 이 경로다 — `/close` 가 통화가 끝나는 순간 D-1 초안을 돌려준다(2026-09-22 주석 정리, `w6-server-loose-ends` ⑤).
 
 응답은 언제나 초안이다. `confirmed` 를 서버가 true 로 만드는 경로는 없다 — 확정은 상담원 몫이다.
 초안은 저장된다(`call.summary_text`·`inquiry_type`·`follow_up_action`). 통화가 없으면 404, 이미 확정된 요약이면 409 — 덮지 않는다.

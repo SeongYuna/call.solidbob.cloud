@@ -106,6 +106,15 @@ class Settings:
     ollama_url: str | None = None
     generation_model: str | None = None
 
+    # --- 읽기 경로 문 (2026-09-22, `decisions/322`) — 통화 목록·전사·통화 기록·수동 검색 ---
+    # 토큰은 늘 받는다(틀리면 401). true 면 **토큰 없는 요청도 401**. 상담원 화면이 토큰을 싣기 시작한 뒤 켠다 —
+    # 먼저 켜면 운영 상담원 화면이 깨진다. 상태는 `/health` 의 `read_guard` 가 말한다.
+    read_auth_required: bool = False
+
+    # --- 배포 버전 (2026-09-22, `w6-server-loose-ends` ①) — 이미지 빌드 인자로 굽는다(`infra/docker/server.Dockerfile`) ---
+    # `/health` 의 `version`. 밖에서 어느 태그가 떠 있는지 보려고 둔다. 비밀이 아니다. 로컬은 없다 → "unknown"
+    app_version: str | None = None
+
     @property
     def postgres_configured(self) -> bool:
         return bool(self.database_url) or all(
@@ -152,4 +161,6 @@ def load_settings() -> Settings:
         retrieval_rerank_model_dir=_env("RETRIEVAL_RERANK_MODEL_DIR"),
         ollama_url=_env("OLLAMA_URL"),
         generation_model=_env("GENERATION_MODEL"),
+        read_auth_required=(_env("READ_AUTH_REQUIRED") or "").strip().lower() in ("1", "true", "yes"),
+        app_version=_env("APP_VERSION"),
     )

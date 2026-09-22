@@ -1,6 +1,7 @@
 # Requirement: A-1, D-4, SEC-1, QUA-1
 """HTTP 표면: PostgreSQL 미설정이면 501, 설정되면 계약 형태로 응답."""
 
+import pytest
 from fastapi.testclient import TestClient
 
 from hub.app.dtos import MaskedSpan, TranscriptEvent
@@ -56,14 +57,24 @@ def test_전사조회_limit_범위를_벗어나면_422다():
         app.dependency_overrides.clear()
 
 
-def test_공백신고_PostgreSQL_미설정이면_501이다():
+@pytest.fixture
+def _gap_signed_in():
+    """신고의 상담원 문(`decisions/322`)은 `test_knowledge_gap_guards.py` 가 본다 — 여기는 문 뒤의 동작만."""
+    from agent_auth.adapter.inbound.api.agent_guard import require_agent  # noqa: PLC0415
+
+    app.dependency_overrides[require_agent] = lambda: "a_01"
+    yield
+    app.dependency_overrides.pop(require_agent, None)
+
+
+def test_공백신고_PostgreSQL_미설정이면_501이다(_gap_signed_in):
     """접수했다고 응답한 뒤 아무 데도 안 남으면 D-4 목적과 정반대다."""
     with TestClient(app) as client:
         r = client.post("/hub/knowledge-gaps", json={"module": "B", "description": "못 찾음"})
     assert r.status_code == 501
 
 
-def test_공백신고가_접수되면_201과_id를_준다():
+def test_공백신고가_접수되면_201과_id를_준다(_gap_signed_in):
     app.dependency_overrides[get_knowledge_gap_port] = lambda: _Gap()
     try:
         with TestClient(app) as client:
@@ -75,7 +86,7 @@ def test_공백신고가_접수되면_201과_id를_준다():
         app.dependency_overrides.clear()
 
 
-def test_공백신고_모듈은_B_C_F만_받는다():
+def test_공백신고_모듈은_B_C_F만_받는다(_gap_signed_in):
     app.dependency_overrides[get_knowledge_gap_port] = lambda: _Gap()
     try:
         with TestClient(app) as client:

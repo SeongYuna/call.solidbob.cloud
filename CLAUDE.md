@@ -260,7 +260,7 @@ docs/                    구조 하네스(harness.md) · 아키텍처(architectu
                          · AWS 운영 인프라 런북(infra-runbook.md — 배포 정본). 공개, 지킬 밖
 server/                  요청이 흐르는 길 (Python 3.13). 계약(포트·DTO)·파이프라인 배선·클린 아키텍처.
                          main.py(합성 루트) · core/config.py · apps/hub/(7.3절 계약 DTO+포트, 슬라이스 transcript_ingest·myself)
-                         · .importlinter(계약 4종) · requirements.txt · pytest.ini · CLAUDE.md(영역 규칙).
+                         · .importlinter(계약 5종) · requirements.txt · pytest.ini · CLAUDE.md(영역 규칙).
                          배포: server.solidbob.cloud — **프로젝트의 유일한 배포 단위다**(decisions/105)
                          실행: cd server && uvicorn main:app --reload --env-file ../.env
                          검증: cd server && pytest && PYTHONPATH=apps lint-imports --config .importlinter

@@ -88,7 +88,7 @@ def test_잠금_상태를_health_가_말한다(monkeypatch):
     assert TOKEN not in str(body)          # 상태만 싣는다 — 값은 싣지 않는다(SEC-2)
 
 
-@pytest.mark.parametrize("path", ["/health", "/hub/calls", "/hub/knowledge-gaps"])
+@pytest.mark.parametrize("path", ["/health", "/hub/calls"])  # 지식 공백은 관리자 문이 따로 있다(decisions/322)
 def test_읽기_경로는_잠기지_않는다(monkeypatch, path):
     """대시보드가 직접 부르는 GET 은 이 문 밖이다 — `GET /hub/calls`(목록)는 `POST /hub/calls`(통화 시작)와 라우터가 다르다."""
     _env(monkeypatch, TOKEN)

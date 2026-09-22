@@ -25,4 +25,6 @@ async def get_admin_stats(use_case: AdminStatsUseCase = Depends(get_admin_stats_
         pending_requests=s.pending_requests, active_entries=s.active_entries,
         routing_decisions=s.routing_decisions, routing_blacklisted=s.routing_blacklisted,
         routing_fell_back=s.routing_fell_back, counted_at=s.counted_at.isoformat(),
+        calls_today=s.calls_today, call_guard_flags_today=s.call_guard_flags_today, requests_today=s.requests_today,
+        today=s.today.isoformat() if s.today else None,
     )

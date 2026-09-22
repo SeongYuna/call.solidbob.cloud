@@ -2,7 +2,7 @@
 title: "D-2 문의 유형이 24/24 NULL — `/close` 가 요약은 저장하는데 `inquiry_type` 을 비운다"
 assignee: "장민석"
 role: "ai"
-status: "todo"
+status: "done"
 sprint: 6
 priority: 67
 date: 2026-09-22
@@ -20,7 +20,13 @@ paths:
 
 ## 완료 조건
 
-- [ ] `/close` 가 D-2 분류 결과를 `inquiry_type` 에 저장 · 분류 실패면 NULL 이 아니라 「미분류」 값
-- [ ] 계약 테스트 1건 · `e2e_check.py` 가 NULL 을 ❌ 로
+- [x] `/close` 가 D-2 분류 결과를 `inquiry_type` 에 저장 · 분류 실패면 NULL 이 아니라 「미분류」 값
+- [x] 계약 테스트 1건 · `e2e_check.py` 가 NULL 을 ❌ 로
 
 근거: 미결 「D-2 문의 유형」.
+
+## 2026-09-22 — 장민석 착수·완료 (담당 확인)
+
+- `decisions/323` — 지식베이스 장(대중교통·상하수도·일반행정·감염병·재난·생계 지원금) 어휘 규칙표. 고객 확정 발화 · 처음 걸린 발화가 정한다 · **안 걸리면 「미분류」**(이 티켓 조건대로 — NULL 은 「처리 전」이라)
+- 계약 테스트: `test_postcall_router` 가 「카드 분실」 → 「미분류」 · `e2e_check.py` 에 「D-2·문의 유형 저장」 검사(NULL 이면 ❌, cause wiring)
+- **측정 안 됨** — 정답은 `w6-postcall-golden-cases`(류준)가 생기면 잰다

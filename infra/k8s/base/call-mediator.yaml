@@ -55,6 +55,9 @@ spec:
             - { name: CALL_MEDIATOR_PORT, value: "8080" }
             # 같은 네임스페이스의 Service 이름(런북 16-1). localhost 를 기본값으로 굳히지 않는다.
             - { name: CORE_API_URL, value: "http://callguard-server" }
+            # J-5 배정 판정 후보(`decisions/320`·`321`) — 시연 상담원(페르소나 A01~A06). 비밀이 아니다.
+            # 행은 `scripts/persona_sim/seed_demo_agents.py` 가 만든다. 행이 없으면 서버가 모르는 후보로 빼고 기존 배정 규칙으로 떨어뜨린다
+            - { name: ROUTING_CANDIDATES, value: "demo-A01,demo-A02,demo-A03,demo-A04,demo-A05,demo-A06" }
             # COST-1 2차 캡. 1차는 GCP 콘솔 쿼터(Audio seconds per day = 600, w1-stt-billing-quota)이고
             # 로컬 .env 와 같은 값이다. 바꾸면 GCP 쿼터도 같이 본다 — 2차가 1차보다 크면 의미가 없다.
             - { name: STT_MAX_SECONDS_PER_DAY, value: "600" }

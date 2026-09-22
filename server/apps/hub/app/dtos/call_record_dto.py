@@ -67,6 +67,7 @@ class CallRecord:
     follow_up_actions: tuple[SavedFollowUp, ...] = field(default_factory=tuple)
     recommendations: tuple[SavedRecommendation, ...] = field(default_factory=tuple)
     closures: tuple[SavedClosure, ...] = field(default_factory=tuple)
+    customer_id: str | None = None  # 전화번호 HMAC(`decisions/304`). 발신 번호가 없던 통화는 None — 재문의 고객 화면용
 
 
 class CallRecordNotFound(LookupError):

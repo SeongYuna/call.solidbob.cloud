@@ -247,9 +247,11 @@ CREATE TABLE "eval_run" (
     "error_rate" REAL NOT NULL,
     "executed_at" TIMESTAMPTZ NOT NULL,
     "executed_by" VARCHAR(30) NULL,
+    "components" VARCHAR(100) NULL,
     PRIMARY KEY ("run_id")
 );
 COMMENT ON COLUMN "eval_run"."error_rate" IS '4.2절 STT 오류 주입률 0.00~0.20, 팀 교차검증 반영';
+COMMENT ON COLUMN "eval_run"."components" IS '실제로 꽂은 구성 한 줄 — 예: retriever=hybrid; masking=rule+ner; generation=none. 검색기·NER 을 바꿔 잰 실행이 DB 만으로 구분되지 않았다(2026-09-22). 그 전 실행은 NULL';
 
 -- 평가 결과 상세 — 실행 1건이 지표 여러 개를 내므로 분리 (1NF)
 CREATE TABLE "eval_result" (
