@@ -1,6 +1,14 @@
 import { useEffect, useMemo, useState, type ReactElement, type ReactNode } from "react";
 import type { CallWrapUp, SentimentSummary } from "../types/contract";
-import { confirmSummary, getHistoryPlayback, isCoreApiConfigured, reviseSummary, type CallRecord } from "../lib/api/coreClient";
+import {
+  confirmSummary,
+  fetchSummaryRevisions,
+  getHistoryPlayback,
+  isCoreApiConfigured,
+  reviseSummary,
+  type CallRecord,
+  type SummaryRevisionItem,
+} from "../lib/api/coreClient";
 import type { CallMediatorMode } from "../lib/ws";
 import { DEFAULT_LOCAL_RESOURCES } from "../mock/localResources";
 import { cardId, useCallStore, type Utterance } from "../store/callStore";
@@ -496,41 +504,45 @@ function SummaryConfirmationForm({
 
   if (locked) {
     return (
-      <section className="wrapup-card">
-        <div className="wrapup-card-head">
-          <h3>요약 확정</h3>
-        </div>
-        <p className="wrapup-note">
-          {confirmedAt !== null
-            ? `${new Date(confirmedAt).toLocaleString("ko-KR")}에 확정했습니다.`
-            : "이미 확정된 요약입니다."}
-          {lastRevisedAt !== null
-            ? ` 최근 재수정: ${new Date(lastRevisedAt).toLocaleString("ko-KR")}.`
-            : ""}
-        </p>
-        {error !== null ? (
-          <p className="wrapup-error" role="alert">
-            {error}
+      <>
+        <section className="wrapup-card">
+          <div className="wrapup-card-head">
+            <h3>요약 확정</h3>
+          </div>
+          <p className="wrapup-note">
+            {confirmedAt !== null
+              ? `${new Date(confirmedAt).toLocaleString("ko-KR")}에 확정했습니다.`
+              : "이미 확정된 요약입니다."}
+            {lastRevisedAt !== null
+              ? ` 최근 재수정: ${new Date(lastRevisedAt).toLocaleString("ko-KR")}.`
+              : ""}
           </p>
-        ) : null}
-        <button
-          type="button"
-          className="btn-outline"
-          onClick={() => {
-            setError(null);
-            setRevising(true);
-          }}
-        >
-          재수정
-        </button>
-      </section>
+          {error !== null ? (
+            <p className="wrapup-error" role="alert">
+              {error}
+            </p>
+          ) : null}
+          <button
+            type="button"
+            className="btn-outline"
+            onClick={() => {
+              setError(null);
+              setRevising(true);
+            }}
+          >
+            재수정
+          </button>
+        </section>
+        <SummaryRevisionHistory callId={callId} refreshKey={lastRevisedAt} />
+      </>
     );
   }
 
   const isRevision = confirmed;
 
   return (
-    <section className="wrapup-card">
+    <>
+      <section className="wrapup-card">
       <div className="wrapup-card-head">
         <h3>{isRevision ? "요약 재수정" : "요약 확정"}</h3>
       </div>
@@ -616,6 +628,92 @@ function SummaryConfirmationForm({
           </button>
         ) : null}
       </div>
+      </section>
+      {isRevision ? <SummaryRevisionHistory callId={callId} refreshKey={lastRevisedAt} /> : null}
+    </>
+  );
+}
+
+/**
+ * `GET .../summary-revisions` — 확정된 요약을 고친 이력, 오래된 순.
+ *
+ * `lastRevisedAt`(위 잠금 카드의 "최근 재수정: ..." 문구)과 겹치지만 대체하지
+ * 않는다 — 그 문구는 재수정 직후 서버를 다시 부르지 않고도 바로 채워지는
+ * 가벼운 요약이고, 이 목록은 그 아래서 필요할 때만 펼쳐 보는 상세(이전
+ * 요약·이전 유형·사유)다. "카드 사용 현황"이 총계와 채택 목록을 같이 두는
+ * 것과 같은 방식 — 하나가 실패해도(fetch 오류) 다른 하나는 여전히 보인다.
+ *
+ * `refreshKey`에 `lastRevisedAt`을 그대로 받는다 — 재수정이 성공할 때마다
+ * 값이 바뀌어 새로 부른다. 첫 마운트(값이 `null`)에도 한 번 부른다.
+ */
+function SummaryRevisionHistory({
+  callId,
+  refreshKey,
+}: {
+  callId: string;
+  refreshKey: string | null;
+}): ReactElement {
+  const [state, setState] = useState<
+    | { status: "loading" }
+    | { status: "ready"; revisions: SummaryRevisionItem[] }
+    | { status: "error"; message: string }
+  >({ status: "loading" });
+
+  useEffect(() => {
+    let alive = true;
+    setState({ status: "loading" });
+    fetchSummaryRevisions(callId)
+      .then((revisions) => {
+        if (alive) {
+          setState({ status: "ready", revisions });
+        }
+      })
+      .catch((error: unknown) => {
+        if (alive) {
+          setState({
+            status: "error",
+            message: error instanceof Error ? error.message : "재수정 이력을 불러오지 못했습니다.",
+          });
+        }
+      });
+    return () => {
+      alive = false;
+    };
+  }, [callId, refreshKey]);
+
+  return (
+    <section className="wrapup-card">
+      <div className="wrapup-card-head">
+        <h3>재수정 이력</h3>
+      </div>
+      {state.status === "loading" ? (
+        <p className="wrapup-loading">
+          <span className="spinner" aria-hidden="true" />
+          불러오는 중...
+        </p>
+      ) : state.status === "error" ? (
+        <p className="wrapup-error" role="alert">
+          {state.message}
+        </p>
+      ) : state.revisions.length === 0 ? (
+        <p className="wrapup-note">재수정한 적이 없습니다.</p>
+      ) : (
+        <ul className="adopt-titles">
+          {state.revisions.map((rev) => (
+            <li key={rev.revisionId}>
+              <span>
+                <strong>{new Date(rev.revisedAt).toLocaleString("ko-KR")}</strong> · 사유:{" "}
+                {rev.reason}
+                <br />
+                이전 요약: {rev.previousSummaryText}
+                {rev.previousInquiryType !== null
+                  ? ` · 이전 유형: ${rev.previousInquiryType}`
+                  : ""}
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
     </section>
   );
 }

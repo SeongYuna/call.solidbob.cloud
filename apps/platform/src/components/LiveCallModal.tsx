@@ -1,4 +1,5 @@
-import { useEffect, type ReactElement } from "react";
+import { useEffect, useRef, useState, type ReactElement } from "react";
+import { readLiveCallToken } from "../lib/liveCallToken";
 import { useLiveCallSession } from "../lib/useLiveCallSession";
 
 function formatClock(totalSeconds: number): string {
@@ -9,21 +10,62 @@ function formatClock(totalSeconds: number): string {
   return `${m}:${s}`;
 }
 
+const CALL_APP_URL = (import.meta.env.VITE_CALL_APP_URL ?? "https://call.solidbob.cloud").trim();
+
+/**
+ * 상담원 대시보드가 같은 통화에 붙을 링크 — `?call_id=`(이 통화)·`?call_token=`
+ * (이미 있는 team 전용 값, `liveCallToken.ts`)을 싣는다. `call_token` 자체를 새로
+ * 만들거나 다른 방식으로 노출하지 않는다 — 여전히 팀이 따로 공유하는 값이다.
+ */
+function buildAgentLink(callId: string, token: string): string {
+  const url = new URL(CALL_APP_URL);
+  url.searchParams.set("call_id", callId);
+  url.searchParams.set("call_token", token);
+  return url.toString();
+}
+
 /**
  * 히어로의 "통화 받기"를 누르면 뜨는 팝업 — 뒤 배경은 블러, 안에 경과 시간·
  * "상담원과 통화 중" 표시·종료 버튼을 둔다(2026-09-14 사용자 지시).
  */
 export function LiveCallModal({ onClose }: { onClose: () => void }): ReactElement {
-  const { status, elapsedSeconds, turns, errorMessage, start, end } = useLiveCallSession();
+  const { status, elapsedSeconds, turns, errorMessage, callId, start, end } = useLiveCallSession();
+  const [copyState, setCopyState] = useState<"idle" | "copied" | "error">("idle");
+  const copyResetRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // 토큰이 없으면(일반 방문자) 링크를 만들 수 없다 — 버튼 자체를 안 보인다.
+  const liveCallToken = readLiveCallToken();
 
   useEffect(() => {
     start();
     // 모달이 뜨는 순간 한 번만 시작한다.
   }, [start]);
 
+  useEffect(() => {
+    return () => {
+      if (copyResetRef.current !== null) {
+        clearTimeout(copyResetRef.current);
+      }
+    };
+  }, []);
+
   function handleEndCall(): void {
     end("ended");
     onClose();
+  }
+
+  async function handleCopyAgentLink(token: string): Promise<void> {
+    try {
+      await navigator.clipboard.writeText(buildAgentLink(callId, token));
+      setCopyState("copied");
+    } catch {
+      setCopyState("error");
+    }
+    if (copyResetRef.current !== null) {
+      clearTimeout(copyResetRef.current);
+    }
+    copyResetRef.current = setTimeout(() => {
+      setCopyState("idle");
+    }, 2000);
   }
 
   return (
@@ -84,7 +126,22 @@ export function LiveCallModal({ onClose }: { onClose: () => void }): ReactElemen
           않고, 인식된 텍스트만 마스킹을 거쳐 처리됩니다.
         </p>
 
-        <div className="mt-4 flex justify-end gap-2">
+        <div className="mt-4 flex items-center justify-end gap-2">
+          {liveCallToken !== null ? (
+            <button
+              type="button"
+              onClick={() => {
+                void handleCopyAgentLink(liveCallToken);
+              }}
+              className="rounded-full border border-line px-5 py-2.5 text-[14px] font-semibold text-fg"
+            >
+              {copyState === "copied"
+                ? "복사됨"
+                : copyState === "error"
+                  ? "복사 실패"
+                  : "상담원 링크 복사"}
+            </button>
+          ) : null}
           <button
             type="button"
             onClick={handleEndCall}

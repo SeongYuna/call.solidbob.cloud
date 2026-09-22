@@ -546,6 +546,58 @@ export async function reviseSummary(
   };
 }
 
+// ── GET /hub/calls/{call_id}/summary-revisions ────────────────────────────
+
+interface SummaryRevisionItemWire {
+  revision_id: string;
+  call_id: string;
+  previous_summary_text: string;
+  previous_inquiry_type: string | null;
+  reason: string;
+  revised_at: string;
+}
+
+interface SummaryRevisionListResponseWire {
+  revisions: SummaryRevisionItemWire[];
+}
+
+export interface SummaryRevisionItem {
+  revisionId: string;
+  callId: string;
+  previousSummaryText: string;
+  previousInquiryType: string | null;
+  reason: string;
+  revisedAt: string;
+}
+
+/**
+ * `decisions/311` — 확정된 요약을 고친 이력, 오래된 순(서버가 그렇게 준다).
+ * 상담원 토큰 필요(`require_agent`) — `reviseSummary`와 같은 방식(`readAgentToken()`
+ * → 없으면 즉시 던짐 → `Authorization: Bearer`)으로 읽는다. `revision_id`도
+ * `_types.StrField`라 이미 문자열이라 별도 숫자 변환이 필요 없다.
+ */
+export async function fetchSummaryRevisions(callId: string): Promise<SummaryRevisionItem[]> {
+  const token = readAgentToken();
+  if (token === null) {
+    throw new CoreApiError(
+      "상담원 토큰이 없다 — 관리자가 보낸 링크(?agent_token=...)로 다시 접속해야 한다.",
+      null,
+    );
+  }
+  const wire = await get<SummaryRevisionListResponseWire>(
+    `/hub/calls/${encodeURIComponent(callId)}/summary-revisions`,
+    { Authorization: `Bearer ${token}` },
+  );
+  return wire.revisions.map((r) => ({
+    revisionId: r.revision_id,
+    callId: r.call_id,
+    previousSummaryText: r.previous_summary_text,
+    previousInquiryType: r.previous_inquiry_type,
+    reason: r.reason,
+    revisedAt: r.revised_at,
+  }));
+}
+
 // ── GET /hub/calls/{call_id}/record ──────────────────────────────────────
 
 interface SavedCardWire {
