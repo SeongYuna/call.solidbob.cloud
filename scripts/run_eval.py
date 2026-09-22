@@ -269,7 +269,10 @@ def main() -> int:
 
     if args.record:
         # 여러 번 돌렸으면 **최저치**를 남긴다 — 기준선은 평균이 아니다(절대 원칙 4).
-        _record(_worst(reports), golden_path)
+        _record(_worst(reports), golden_path, components_label(
+            retriever=args.retriever if retriever is not None else "none",  # ES 가 없으면 검색을 안 쟀다
+            ner_enabled=masking.ner_enabled,
+            generation_model=(args.generation_model or "default") if generation is not None else None))
     return 0
 
 
@@ -298,7 +301,13 @@ def _git_commit() -> str | None:
     return commit
 
 
-def _record(report: dict, golden_path: Path) -> None:
+def components_label(*, retriever: str, ner_enabled: bool, generation_model: str | None) -> str:
+    """`eval_run.components` 한 줄 — 실제로 꽂은 구성. VARCHAR(100) 에 들어가게 자른다(w6-server-loose-ends ②)."""
+    masking = "rule+ner" if ner_enabled else "rule"
+    return f"retriever={retriever}; masking={masking}; generation={generation_model or 'none'}"[:100]
+
+
+def _record(report: dict, golden_path: Path, components: str | None = None) -> None:
     sys.path.insert(0, str(ROOT / "server"))
     from core.config import load_settings
 
@@ -319,6 +328,7 @@ def _record(report: dict, golden_path: Path) -> None:
         git_commit=_git_commit(),
         error_rate=0.0,                        # STT 오류 주입은 5주차(4.2절) — 지금은 원문 그대로
         executed_by=os.environ.get("USER") or None,
+        components=components,
     )
     run_id = asyncio.run(repo.save(record, report))
     print(f"\n기록됨 — eval_run.run_id = {run_id} "

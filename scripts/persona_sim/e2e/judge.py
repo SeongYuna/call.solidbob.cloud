@@ -324,6 +324,9 @@ def judge_postcall(record: dict[str, Any], call_row: dict[str, Any] | None) -> l
     checks = [
         Check("D-1·요약 초안 저장", bool(str(record.get("summary_text") or "").strip()),
               f"요약 {len(str(record.get('summary_text') or ''))}자 · 유형 {record.get('inquiry_type')}", cause="wiring"),
+        # D-2 — 못 가르면 「미분류」가 와야 한다. NULL 은 `/close` 가 유형을 저장하지 않았다는 뜻이다(w6-d2-inquiry-type-null)
+        Check("D-2·문의 유형 저장", bool(str(record.get("inquiry_type") or "").strip()),
+              f"inquiry_type={record.get('inquiry_type')}", cause="wiring"),
         Check("통화 후·call 행 존재", call_row is not None, "" if call_row else "call 테이블에 행이 없다", cause="wiring"),
     ]
     if call_row is not None:

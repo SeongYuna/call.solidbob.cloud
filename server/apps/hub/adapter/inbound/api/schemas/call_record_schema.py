@@ -53,7 +53,8 @@ class CallRecordResponse(BaseModel):
     started_at: str
     ended_at: str | None = None
     summary_text: str | None = Field(default=None, description="D-1 초안(규칙 발췌, decisions/306). 통화 후 처리 전이면 null")
-    inquiry_type: str | None = Field(default=None, description="D-2 제안. 지금은 늘 null")
+    inquiry_type: str | None = Field(default=None, description="D-2 제안 — 지식베이스 장 이름 또는 「미분류」(decisions/323). 통화 후 처리 전이면 null")
+    customer_id: str | None = Field(default=None, description="전화번호 HMAC-SHA256 hex 64자(decisions/304) — 원본 번호가 아니다. 발신 번호가 없던 통화는 null")
     summary_confirmed: StrField = Field(description="상담원이 확정했는가. false 면 초안이거나 아직 없다")
     follow_up_actions: list[SavedFollowUpSchema]
     recommendations: list[SavedRecommendationSchema] = Field(description="발동한 추천만, 만든 순서. 추천 저장 이전(0.1.9 전) 통화는 비어 있다")

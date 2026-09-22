@@ -7,6 +7,7 @@
 
 from __future__ import annotations
 
+from admin_auth.adapter.inbound.api.admin_guard import require_admin
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from hub.adapter.inbound.api.schemas.knowledge_gap_query_schema import (
@@ -26,7 +27,8 @@ from hub.app.dtos.knowledge_gap_query_dto import (
 from hub.app.ports.input.knowledge_gap_query_use_case import KnowledgeGapQueryUseCase
 from hub.dependencies.knowledge_gap_query_provider import get_knowledge_gap_query_use_case
 
-knowledge_gap_query_router = APIRouter(prefix="/hub", tags=["hub"])
+# 관리자 화면(`apps/admin`)만 부르고 이미 관리자 토큰을 싣는다 — 이행기 없이 닫는다(`decisions/322`)
+knowledge_gap_query_router = APIRouter(prefix="/hub", tags=["hub"], dependencies=[Depends(require_admin)])
 
 
 def _count(c) -> GapCountSchema:

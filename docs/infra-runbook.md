@@ -1000,6 +1000,19 @@ curl -s -o /dev/null -w '%{http_code}\n' -X POST -H 'Content-Type: application/j
 ```
 
 **되돌리기**: 백업 두 yaml 을 `$K apply -f` 하고 두 deploy 를 `rollout restart`. 서버가 먼저 열려야 하니 **서버 → 미디에이터** 순서다.
+
+#### 12-2-c. J-5 시연 상담원 — `seed_demo_agents.py` (2026-09-22 추가, `decisions/320`·`321`)
+
+콜 미디에이터 매니페스트의 `ROUTING_CANDIDATES`(`demo-A01`~`demo-A06`)는 **운영 `agent` 에 그 행이 있어야** 판정에 쓰인다.
+없으면 서버가 모르는 후보로 빼고 기존 배정 규칙으로 떨어뜨린다(통화는 막지 않는다). 새 클러스터·DB 를 세우면 한 번 돌린다.
+
+```bash
+# 관리자 화면(admin.solidbob.cloud)에 구글로 로그인해 access token 을 얻는다 — 명령줄 인자로 주지 않는다
+ADMIN_ACCESS_TOKEN=… .venv/bin/python scripts/persona_sim/seed_demo_agents.py --core-url https://server.solidbob.cloud
+#   → demo-A01~A06 행 생성(발급한 토큰은 찍지 않고 곧바로 폐기) · 입사일 = 오늘 − 페르소나 근속(시연용 값)
+```
+
+확인: 관리자 로그인으로 `GET /admin/agents` 에 `demo-A03` 의 `hired_on` 이 7년 전 날짜로 보인다.
 서버 쪽 ④(토큰이 없어도 잠그는 fail-closed)는 `w6-ingest-guard-fail-closed` 로 넣었다 — **없으면 서버는 뜨지만 쓰기 경로가 닫힌다**(401).
 기동 거부가 아닌 이유: 업로드 문(`110`)·`/close`(`315`)와 같은 모양이고, 키 하나 때문에 읽기 경로·관리자 화면까지 죽이지 않는다.
 
@@ -1707,6 +1720,10 @@ curl -s $B/health
 #    0.1.19 부터 `"ingest_guard"` 가 함께 나온다(`decisions/120`) — 기대: "locked".
 #    "unset" 이면 토큰 미설정이라 쓰기 경로가 **전부 401**(통화가 저장되지 않는다 — 12-2-b).
 #    "open" 은 fail-closed 이전 서버(이행기)에서만 나온다 — 쓰기 경로가 토큰 없이 열려 있다는 뜻이다.
+#    0.1.35 부터 `"read_guard"` 도 나온다(`decisions/322`) — "open" 이면 통화 목록·전사·기록·수동 검색이 토큰 없이 읽힌다.
+#    상담원 화면이 상담원 토큰을 싣기 시작하면(`w6-read-path-token-ui`) server-env 에 READ_AUTH_REQUIRED=true → "locked".
+#    0.1.35 부터 `"version"` 도 나온다 — 떠 있는 이미지 태그(빌드 인자 APP_VERSION). kustomization 의 newTag 와 같아야 한다.
+#    "unknown" 이면 태그 없이 구운 이미지다(로컬 빌드) — 운영에서 나오면 release.yml 의 build-args 를 본다.
 
 # 9-1. 설정이 아니라 «실제로 붙는가» (server 0.1.19+, 2026-09-19 추가)
 #      기대: 200 + {"status":"ok","checks":{"postgres":{"ok":true,...},"elasticsearch":{"ok":true,...}}}
@@ -1715,15 +1732,22 @@ curl -s $B/health
 #      ⚠ 접속 정보가 새지 않게 예외 «타입 이름만» 싣는다(SEC-2) — 원인은 파드 로그에서 본다.
 curl -s $B/health/ready
 
+# 10·11 은 서비스 토큰이 필요하다 — 쓰기는 0.1.34 부터 토큰 없으면 401(`decisions/120` 4번),
+#    읽기는 0.1.35 부터 토큰을 받고 READ_AUTH_REQUIRED 를 켜면 없을 때 401(`decisions/322`). 노드에서 읽는다 — 값을 찍지 않는다
+T=$(sudo k3s kubectl -n callguard get secret server-env -o jsonpath='{.data.INGEST_SERVICE_TOKEN}' | base64 -d)
+AUTH="Authorization: Bearer $T"
+
 # 10. DB 읽기 — 기대: 200
-curl -s -o /dev/null -w '%{http_code}\n' $B/hub/knowledge-gaps
+#     ⚠ 0.1.35 부터 `GET /hub/knowledge-gaps` 는 관리자 로그인 전용이라(`decisions/322`) 여기서 쓰지 않는다 — 전에는 이것이 10번이었다
+curl -s -o /dev/null -w '%{http_code}\n' -H "$AUTH" "$B/hub/calls?limit=1"
 
 # 11. DB 쓰기 — 통화 → 전사(마스킹 후 저장) → 조회. 이미지 0.1.2 이상에서만(아래 ⚠)
 C=test-deploy-$(date +%Y%m%d%H%M)
-curl -fsS -X POST $B/hub/calls -H 'content-type: application/json' -d "{\"call_id\":\"$C\"}"
-curl -fsS -X POST $B/hub/transcripts -H 'content-type: application/json' \
+curl -fsS -X POST $B/hub/calls -H "$AUTH" -H 'content-type: application/json' -d "{\"call_id\":\"$C\"}"
+curl -fsS -X POST $B/hub/transcripts -H "$AUTH" -H 'content-type: application/json' \
   -d "{\"call_id\":\"$C\",\"segment_id\":1,\"speaker\":\"customer\",\"text\":\"제 번호는 01012345678 입니다\",\"is_final\":true}"
-curl -fsS $B/hub/calls/$C/transcript
+curl -fsS -H "$AUTH" $B/hub/calls/$C/transcript
+unset T AUTH
 ```
 
 9번의 기대 출력 (`0.1.5` 기준 — `0.1.4` 까지는 `call_guard` 가 없는 4종, `0.1.1` 은 `trigger` 도 없는 3종):
@@ -1738,6 +1762,10 @@ curl -fsS $B/hub/calls/$C/transcript
 > ⚠ **같은 이미지는 DB 스키마도 바뀐다**(`decisions/307`) — `agent_token` 신설(25 → 26 테이블). **이미지를 올리기 전에**
 > `db/migrations/2026-09-15-agent-token.sql` 을 넣는다(09-14 마이그레이션이 먼저 들어가 있어야 한다 — 파일이 확인하고 멈춘다).
 > 안 넣으면 `POST /hub/blacklist-requests` 와 `/admin/agent-tokens` 가 500(`42P01`)이다. 6번 기대값도 26 이 된다.
+>
+> ⚠ **`0.1.35` 에 스키마 변경이 하나 있다 — 서버 이미지와는 무관하다**(`w6-server-loose-ends` ②) — `eval_run.components` 신설(29 테이블 그대로).
+> 이 컬럼은 평가 스크립트(`scripts/run_eval.py --record`)만 쓴다. **`--record` 로 운영 DB 에 기록하기 전에** `db/migrations/2026-09-22-eval-run-components.sql` 을 넣는다
+> (`2026-09-22-blacklist-request-note-unmeasured.sql` 이 먼저여야 한다 — 파일이 확인하고 멈춘다). 배포 전 스키마 대조(`decisions/128`)가 붙으면 넣기 전까지 어긋남으로 잡힌다.
 >
 > ⚠ **`0.1.9` 도 스키마가 바뀐다**(`decisions/309`) — `blacklist_entry_expiry_change` 신설(26 → 27). **이미지를 올리기 전에**
 > `db/migrations/2026-09-15-blacklist-expiry-change.sql` 을 넣는다(`agent_token` 마이그레이션이 먼저여야 한다 — 파일이 확인하고 멈춘다).

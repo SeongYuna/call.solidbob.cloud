@@ -26,6 +26,12 @@
 > **⚠ 2026-09-22 수정 (류준)**: 2.4절 **C-4 를 재정의**했다 — 「권장 대체 표현 제시」(기능) → **「근거 없는 안전 보장(의학적 안심 발언 등) 탐지」**(위반 갈래, `DASAN-MANUAL-4.1`).
 > 대체 표현은 C-1~C-4 공통 출력으로 표 아래에 옮겼다. 코드·골든셋·점수는 바뀌지 않는다(이미 이 뜻으로 돌고 있었다). 근거·되돌리는 법: `decisions/211`.
 >
+> **⚠ 2026-09-22 수정 (장민석)**: 7.3절 `GET /hub/calls/{id}/record` 응답에 `customer_id`(전화번호 HMAC, 재문의 고객 화면 — `w6-call-record-customer-id`)를 올렸다. `GET /hub/admin-stats` 에는 오늘(KST) 칸 넷(`calls_today`·`call_guard_flags_today`·`requests_today`·`today`)이 붙었다(`w6-admin-stats-today`).
+>
+> **⚠ 2026-09-22 수정 (장민석)**: 7.3절 허브 HTTP 표면의 인증 칸을 고쳤다 — 통화 목록·전사·통화 기록·수동 검색은 **상담원 토큰 또는 서비스 토큰**(`READ_AUTH_REQUIRED` 로 켤 때까지 토큰 없는 요청도 지나간다), 지식 공백 조회·상태 변경은 **관리자 로그인**, 신고는 **상담원 토큰**(설명은 마스킹 후 저장). 근거: `decisions/322`.
+>
+> **⚠ 2026-09-22 수정 (장민석)**: 7.3절 허브 HTTP 표면에 **상담원 입사일 저장**(`PUT /admin/agents/{agent_id}/hired-on`)을 올렸다 — 입사일을 넣는 길이 없어 모든 상담원이 근속 0년이었다. 근거: `decisions/321`.
+>
 > **⚠ 2026-09-22 수정 (장민석)**: 7.3절 허브 HTTP 표면의 `POST /hub/routing-decisions` 호출자를 「교환기·콜 미디에이터(인증 없음)」 →
 > **「교환기(연결 전) — 시연에서는 콜 미디에이터가 대리 · 서비스 토큰」**으로 고쳤다. 판정은 연결 전이어야 의미가 있는데(`313`) 콜 미디에이터는 연결 뒤에 부른다. 근거: `decisions/320`.
 
@@ -1087,10 +1093,10 @@ F-2(필요서류 체크리스트)가 참조하는 필수 항목 정의도 이 �
 
 | 경로 | 누가 | 무엇 |
 |---|---|---|
-| `POST /hub/search` `{utterance, top_k}` | 상담원 수동 검색 | `{query, docs: [{doc_id, title, snippet, score}]}` — 카드 모양 변환(`summary` ← `snippet`, `source_type: "manual"`)은 화면 몫 |
-| `GET /hub/calls?limit&offset&customer_id` | 상담기록 | 최근 시작순 통화 목록. `customer_id` 는 HMAC — 재상담 이력 |
-| `GET /hub/calls/{id}/transcript` | 상담기록 | 마스킹된 자막 재조회 |
-| `GET /hub/calls/{id}/record` | 상담기록 재생 | `{call_id, status, started_at, ended_at, summary_text, inquiry_type, summary_confirmed, follow_up_actions[{action_text, status}], recommendations[{recommendation_id, trigger_at_ms, internal_latency_ms, created_at, cards[{card_id, rank, title, summary, source_doc_id, similarity_score}]}], closures[{closure_id, procedure, verdict, detected, reason, source_doc_id, decided_at, items[{rank, document_name, informed}]}]}` — 저장된 것만. 감정분석·통번역은 저장되지 않아 없다. 없는 통화 404 |
+| `POST /hub/search` `{utterance, top_k}` | 상담원 수동 검색 · **상담원/서비스 토큰**(`322`) | `{query, docs: [{doc_id, title, snippet, score}]}` — 카드 모양 변환(`summary` ← `snippet`, `source_type: "manual"`)은 화면 몫 |
+| `GET /hub/calls?limit&offset&customer_id` | 상담기록 · **상담원/서비스 토큰**(`322`) | 최근 시작순 통화 목록. `customer_id` 는 HMAC — 재상담 이력 |
+| `GET /hub/calls/{id}/transcript` | 상담기록 · **상담원/서비스 토큰**(`322`) | 마스킹된 자막 재조회 |
+| `GET /hub/calls/{id}/record` | 상담기록 재생 · **상담원/서비스 토큰**(`322`) | `{call_id, status, started_at, ended_at, customer_id(HMAC·null), summary_text, inquiry_type, summary_confirmed, follow_up_actions[{action_text, status}], recommendations[{recommendation_id, trigger_at_ms, internal_latency_ms, created_at, cards[{card_id, rank, title, summary, source_doc_id, similarity_score}]}], closures[{closure_id, procedure, verdict, detected, reason, source_doc_id, decided_at, items[{rank, document_name, informed}]}]}` — 저장된 것만. 감정분석·통번역은 저장되지 않아 없다. 없는 통화 404 |
 | `POST /hub/closure-checks` `{call_id, procedure, evidence, reason}` | 체크리스트를 사람이 채울 때 | 위 판정 JSON(`detected: "false"`) |
 | `POST /hub/calls/{id}/close` `{call_id, segments: [{segment_id, speaker, text}]}` | 통화 후 화면 | `{call_id, summary_text, inquiry_type, follow_up_actions: [{action_text}], confirmed: "false"}` — **규칙 발췌 초안**(`decisions/306`). `inquiry_type` 은 늘 `null`, 저장하지 않는다(아직) |
 | `POST /hub/calls/{id}/summary-confirmation` `{summary_text, inquiry_type?, follow_up_actions[]}` + **`Authorization: Bearer cga_…`** | **상담원 토큰** | 상담원이 고친 요약으로 확정 — 마스킹 후 저장 · `summary_confirmed_at` · 후속조치 draft → confirmed. 확정은 한 번(409) · 누가 했는지는 저장 안 함(`decisions/310`) |
@@ -1103,6 +1109,7 @@ F-2(필요서류 체크리스트)가 참조하는 필수 항목 정의도 이 �
 | `GET /hub/call-guard-flags?call_id&category&limit&offset` | **관리자 로그인** | 콜 가드 로그 |
 | `POST /hub/routing-decisions` `{call_id, candidates[]}` | 교환기(연결 전) — 시연에서는 콜 미디에이터가 통화 시작 직후 대리(`decisions/320`). 서비스 토큰(`126`) | J-5 인입 전 배정 판정 — 적용 중 블랙리스트 고객이면 근속 기준 이상 후보를 고른다. `{assigned_agent_id, is_blacklisted, fell_back, reason, customer_identified, veteran_years, unknown_candidates}` · `routing_log` 기록 · 통화 없음 404(`decisions/313`) |
 | `GET·PUT /hub/routing-settings` `{veteran_years}` | **관리자 로그인** | 베테랑 근속 기준(0.5~40년). 저장값 없으면 기본 3년 `saved: "false"`(`decisions/313`) |
+| `GET /admin/agents` · `PUT /admin/agents/{agent_id}/hired-on` `{hired_on: "YYYY-MM-DD"|null}` | **관리자 로그인** | 상담원 목록(`hired_on` 포함) · **입사일 저장** — J-5 근속이 여기서 나온다. 없는 상담원·관리자 행 404 · 오늘보다 뒤 422 · null 이면 지운다(근속 0년, `decisions/321`) |
 | `POST /hub/blacklist-retention/purge` | **관리자 로그인** | 끝난 뒤 180일 지난 만료 변경 사유 · 반려 요청 사유·자막을 표시로 비운다. 행은 남는다 · 멱등 · `{retention_days, cutoff, expiry_change_reasons_purged, rejected_requests_purged}`(`decisions/312`) |
 | `POST /admin/agent-tokens` `{agent_id}` · `GET /admin/agent-tokens?agent_id` · `POST /admin/agent-tokens/{id}/revoke` | **관리자 로그인** | 상담원 토큰 발급·목록·폐기. **원문 `token` 은 발급 응답에만 한 번** — 목록·폐기 응답에는 없다. 만료 없음(폐기로만 끊는다) |
 

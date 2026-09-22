@@ -147,6 +147,8 @@ jobs:
           context: . # ⚠ 저장소 루트. main.py 가 ../ai/apps 를 참조한다
           file: infra/docker/server.Dockerfile
           platforms: linux/amd64 # EC2 가 x86_64 다. arm64 로 구우면 exec format error
+          build-args: |
+            APP_VERSION=${{ needs.plan.outputs.tag }}
           push: true
           tags: |
             ${{ env.SERVER_IMAGE }}:${{ needs.plan.outputs.tag }}

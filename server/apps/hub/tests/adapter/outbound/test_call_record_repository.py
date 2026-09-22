@@ -48,6 +48,7 @@ def test_실제_DB에서_저장_어댑터들이_남긴_기록을_한_번에_읽�
             repo = PostgresCallRecordRepository(connect)
             empty = await repo.get(CALL)
             assert empty.summary_text is None and empty.recommendations == () and empty.closures == ()
+            assert empty.customer_id is None  # 발신 번호 없이 연 통화 — 컬럼을 실제로 읽는지(w6-call-record-customer-id)
 
             ids = await PostgresRecommendationRepository(connect).record(RecommendationCards(
                 call_id=CALL, trigger_at_ms=3150, internal_latency_ms=9, cards=(

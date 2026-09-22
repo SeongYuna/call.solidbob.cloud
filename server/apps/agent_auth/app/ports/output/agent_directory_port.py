@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+from datetime import date
 
 from agent_auth.app.dtos.agent_directory_dto import AgentSummary
 
@@ -25,6 +26,14 @@ class AgentDirectoryPort(ABC):
 
         상담원 목록 관리 화면이 아직 없다(테스트 단계, `decisions/406`) — 관리자가 토큰 발급
         화면에 이름을 치면 그 자리에서 만들어진다.
+        """
+        ...
+
+    @abstractmethod
+    async def set_hired_on(self, agent_id: str, hired_on: date | None) -> AgentSummary | None:
+        """상담원(`role='agent'`)의 입사일을 바꾼다 — J-5 근속이 이 값에서 나온다(`decisions/321`).
+
+        없는 상담원·관리자 행이면 `None`. 관리자 행은 배정 후보가 아니다(`decisions/314`).
         """
         ...
 

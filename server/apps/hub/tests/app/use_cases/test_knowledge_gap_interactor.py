@@ -75,3 +75,18 @@ def test_컬럼_길이를_넘으면_거부한다():
     with pytest.raises(ValueError):
         _run(port, description="가" * (MAX_DESCRIPTION + 1))
     assert port.saved == []
+
+
+def test_설명은_마스킹한_뒤_저장한다():
+    """C-5·SEC-1 — 상담원이 자유롭게 쓰는 칸이라 번호가 들어올 수 있다. 전에는 마스킹 없이 저장됐다(미결 09-22)."""
+    from hub.app.dtos import MaskedSpan  # noqa: PLC0415
+    from hub.app.ports.output import MaskingPort  # noqa: PLC0415
+
+    class _Digits(MaskingPort):
+        def mask(self, text):
+            return "".join("*" if ch.isdigit() else ch for ch in text), (MaskedSpan(type="P4", span=(0, 1)),)
+
+    port = _Spy()
+    asyncio.run(KnowledgeGapInteractor(gaps=port, masking=_Digits()).report(
+        KnowledgeGapReport(module="B", description="고객 01012345678 번호로 문의한 서류")))
+    assert port.saved[0].description == "고객 *********** 번호로 문의한 서류"

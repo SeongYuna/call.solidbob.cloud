@@ -326,6 +326,7 @@ TABLES: list[Table] = [
             Column("error_rate", "FLOAT", nullable=False, note="4.2절 STT 오류 주입률 0.00~0.20, 팀 교차검증 반영"),
             Column("executed_at", "DATETIME", nullable=False),
             Column("executed_by", "VARCHAR(30)"),
+            Column("components", "VARCHAR(100)", note="실제로 꽂은 구성 한 줄 — 예: retriever=hybrid; masking=rule+ner; generation=none. 검색기·NER 을 바꿔 잰 실행이 DB 만으로 구분되지 않았다(2026-09-22). 그 전 실행은 NULL"),
         ],
     ),
     Table(

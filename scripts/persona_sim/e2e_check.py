@@ -77,9 +77,15 @@ def load_script(script_id: str) -> dict[str, Any]:
     return json.loads((SCRIPTS_DIR / f"{script_id}.json").read_text(encoding="utf-8"))
 
 
+def _read_headers() -> dict[str, str]:
+    """서버 읽기 경로의 문(`decisions/322`) — 서비스 토큰이 있으면 싣는다. `READ_AUTH_REQUIRED` 가 켜지면 없을 때 401 이다."""
+    token = os.environ.get("INGEST_SERVICE_TOKEN", "").strip()
+    return {"Authorization": f"Bearer {token}"} if token else {}
+
+
 def http_get(url: str) -> Any:
     try:
-        with urllib.request.urlopen(url, timeout=15) as res:
+        with urllib.request.urlopen(urllib.request.Request(url, headers=_read_headers()), timeout=15) as res:
             return json.loads(res.read().decode("utf-8"))
     except urllib.error.HTTPError as exc:
         return {"_http_status": exc.code, "_body": exc.read().decode("utf-8", "ignore")[:300]}

@@ -60,6 +60,11 @@ USER callguard
 WORKDIR /app/server
 EXPOSE 8000
 
+# 배포 태그를 이미지에 굽는다 — `/health` 의 `version`(`w6-server-loose-ends` ①). `release.yml` 이 `newTag` 를 넘긴다.
+# 캐시를 깨지 않게 맨 끝에 둔다(태그가 바뀌어도 이 한 층만 다시 굽는다). 로컬 빌드는 "unknown".
+ARG APP_VERSION=unknown
+ENV APP_VERSION=${APP_VERSION}
+
 # `--host 0.0.0.0` 이 아니면 컨테이너 밖에서 붙지 못한다 — 쿠버네티스 프로브부터 실패한다.
 # `--reload` 는 개발 전용이라 넣지 않는다.
 CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]

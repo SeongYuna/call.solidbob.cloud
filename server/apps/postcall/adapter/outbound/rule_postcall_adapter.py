@@ -1,4 +1,4 @@
-# Requirement: D-1, D-2, D-3, SEC-1
+# Requirement: D-1, D-2, D-3, D-6, SEC-1
 """PostcallPort 구현 — 허브 계약과 postcall 도메인 규칙을 잇는다 (`decisions/306`).
 
 허브 DTO → 도메인 발화로 옮기고, 결과를 `CallSummaryDraft` 로 되돌리는 것이 전부다.

@@ -2,7 +2,7 @@
 title: "통화 기록 응답에 `customer_id` 를 싣는다 — 조서희 님 요청"
 assignee: "장민석"
 role: "ai"
-status: "todo"
+status: "done"
 sprint: 6
 priority: 72
 date: 2026-09-22
@@ -17,7 +17,13 @@ paths:
 
 ## 완료 조건
 
-- [ ] 응답 DTO 에 `customer_id` · 계약 테스트 · OpenAPI 반영
-- [ ] 화면 쪽(조서희)에 필드명을 알린다
+- [x] 응답 DTO 에 `customer_id` · 계약 테스트 · OpenAPI 반영
+- [x] 화면 쪽(조서희)에 필드명을 알린다
 
 근거: 정성윤 11번 기록 「남은 것 ③」.
+
+## 2026-09-22 — 장민석 착수·완료 (담당 확인)
+
+- `GET /hub/calls/{id}/record` 응답에 **`customer_id`** — 전화번호 HMAC-SHA256 hex 64자(`decisions/304`), 발신 번호가 없던 통화는 `null`. OpenAPI 는 응답 스키마 설명으로 나간다
+- 테스트: 라우터(HMAC 그대로 · 없으면 null) · 통합(실제 컬럼을 읽는다 — 로컬 도커 PostgreSQL 17)
+- **조서희 님께**: 필드 이름은 `customer_id`, 값은 번호가 아니라 해시다 — 화면에 그대로 보이지 말고 `GET /hub/calls?customer_id=` 재문의 조회 키로만 쓴다. `apps/call/src/types/contract.ts:381` 주석(「조회·배정은 `customer_ref` 로만」)과 같은 뜻이다
