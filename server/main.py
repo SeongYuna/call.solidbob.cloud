@@ -38,6 +38,7 @@ from hub.adapter.inbound.api.v1.blacklist_retention_purge_router import blacklis
 from hub.adapter.inbound.api.v1.blacklist_request_create_router import blacklist_request_create_router  # noqa: E402
 from hub.adapter.inbound.api.v1.blacklist_request_list_router import blacklist_request_list_router  # noqa: E402
 from hub.adapter.inbound.api.v1.call_guard_check_router import call_guard_check_router  # noqa: E402
+from hub.adapter.inbound.api.v1.admin_stats_router import admin_stats_router  # noqa: E402
 from hub.adapter.inbound.api.v1.call_guard_flag_list_router import call_guard_flag_list_router  # noqa: E402
 from hub.adapter.inbound.api.v1.call_list_router import call_list_router  # noqa: E402
 from hub.adapter.inbound.api.v1.call_record_router import call_record_router  # noqa: E402
@@ -398,9 +399,12 @@ _install_missing_index_handler(app)
 # 대시보드가 직접 부르는 쓰기(`/close`·요약 확정·카드 피드백)는 **사람 토큰(`require_agent`) 몫**이라 여기 넣지 않는다 —
 # 각 라우터가 자기 문을 단다(`/close` 는 상담원 토큰 또는 서비스 토큰, 카드 피드백은 신원을 버리는 상담원 토큰 — `decisions/315`).
 # 일곱 라우터 모두 라우트가 하나뿐이라 합성 루트에서 한 번에 건다 — GET `/hub/calls`(목록)는 다른 라우터라 영향이 없다.
+# 여덟째 `/hub/routing-decisions`(J-5 배정 판정)는 2026-09-22 에 더했다 — 콜 미디에이터가 통화 시작 직후 부른다(`decisions/126`).
+# 부르는 곳이 생기기 **전에** 잠갔다(프론트는 부르지 않는다, 전수 grep).
 _INGEST_ONLY = [Depends(require_ingest_service)]
 
 app.include_router(auth_router)
+app.include_router(admin_stats_router)
 app.include_router(agent_directory_router)
 app.include_router(agent_me_router)
 app.include_router(agent_token_router)
@@ -429,7 +433,7 @@ app.include_router(summary_revision_router)
 app.include_router(summary_revision_list_router)
 app.include_router(recommendation_router, dependencies=_INGEST_ONLY)
 app.include_router(required_docs_detection_router, dependencies=_INGEST_ONLY)
-app.include_router(routing_decision_router)
+app.include_router(routing_decision_router, dependencies=_INGEST_ONLY)
 app.include_router(routing_setting_router)
 app.include_router(routing_setting_query_router)
 app.include_router(search_router)
