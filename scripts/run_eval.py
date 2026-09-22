@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Requirement: E-1, E-2, B-2, B-4, B-5
+# Requirement: E-1, E-2, B-2, B-4, B-5, D-1, D-2
 """평가 하네스 실행 — 구현된 스포크를 포트에 꽂아 골든셋으로 채점한다 (w2-naive-rag).
 
     cd infra && docker compose up -d && cd ..
@@ -41,7 +41,7 @@ from compliance.adapter.outbound.rule_compliance_adapter import RuleComplianceAd
 from closure_gate.adapter.outbound.rule_closure_gate_adapter import (  # noqa: E402
     RuleClosureGateAdapter,
 )
-from evaluation.golden_set import load_golden_set  # noqa: E402
+from evaluation.golden_set import DEFAULT_POSTCALL_SET_PATH, load_golden_set, load_postcall_set  # noqa: E402
 from evaluation.harness import Ports, run_eval  # noqa: E402
 from evaluation.report import print_report  # noqa: E402
 from hub.adapter.outbound.postgres.eval_run_repository import (  # noqa: E402
@@ -57,6 +57,7 @@ from pii_ner.adapter.outbound.layered_masking_adapter import (  # noqa: E402
     NER_PATTERNS,
     LayeredMaskingAdapter,
 )
+from postcall.adapter.outbound.rule_postcall_adapter import RulePostcallAdapter  # noqa: E402
 from retrieval.adapter.outbound.es_bm25_retriever import EsBm25Retriever  # noqa: E402
 from retrieval.adapter.outbound.es_index import SINGLE_INDEX  # noqa: E402
 from voice_signal.adapter.outbound.wav_voice_outlier_adapter import (  # noqa: E402
@@ -188,6 +189,7 @@ def build_ports(client, *, index: str, masking=None, retriever=None, generation=
             voice_outlier=WavVoiceOutlierAdapter(),  # D-5 (ai/apps/voice_signal) — 규칙 판정, 외부 의존 없음
             # B-4 — 꽂아도 검색이 없으면 하네스가 「근거 조항이 없다」로 찍는다(생성의 입력이 검색 결과다)
             generation=generation,
+            postcall=RulePostcallAdapter(),  # D-1·D-2 — 운영과 같은 규칙 발췌 초안(아래 설명)
         )
 
     retriever = retriever or EsBm25Retriever(client, index=index)
@@ -205,14 +207,17 @@ def build_ports(client, *, index: str, masking=None, retriever=None, generation=
         # B-4·B-5 (ai/apps/generation) — `--ollama-url` 을 줬을 때만. 모델 서버가 필요하고 한 문항에 모델 호출 1회라
         # 기본값으로 켜지 않는다. 안 꽂으면 하네스가 사유를 붙여 「측정 불가」로 찍는다(`w6-harness-silent-metrics`).
         generation=generation,
+        # D-1·D-2 (server/apps/postcall) — **운영 `/close` 가 실제로 쓰는 요약기**다. 운영에는 OLLAMA_URL·GENERATION_MODEL 이 없어
+        # `server/main.py::_wire_postcall_model` 이 모델 요약(ai/apps/postcall_summary)을 꽂지 않고 이 규칙 발췌 초안(`decisions/306`)만
+        # 돈다 — 그래서 유형은 늘 None 이고 하네스가 「측정 불가 — 유형이 null」로 찍는다(`w6-d2-inquiry-type-null`).
+        # 정답은 `golden-set/postcall-v1.json`(통화 단위, `decisions/218`). masking 과 같은 이유로 합성 루트인 여기서 꽂는다.
+        postcall=RulePostcallAdapter(),
         # ⚠ trigger 는 **구현이 있는데도 일부러 꽂지 않는다**(IsFinalTrigger, B-1).
         #   TranscriptEvent 에 이벤트 도착 시각이 없어서 발동 시각을 "발화 종료 + STT 지연
         #   상수(346ms)"로 모형화하고 있다. 그대로 채점하면 지연 분포가 상수 하나로 수렴해
         #   p50 = p95 = 346, 적절 발동률 1.0 이 나온다 — **숫자는 나오지만 측정이 아니다.**
         #   측정할 수 없는 것을 측정한 것처럼 쓰지 않는다(절대 원칙 10). 콜 미디에이터가 도착
         #   시각을 실어 보내게 되면 그때 꽂는다. 서버 경로에는 꽂는다(발동 여부는 진짜 판정이다).
-        #
-        # 아직 구현이 없는 것: postcall D-1~D-3(7주차)
         #
         # B-0 도메인 라우팅은 2026-08-28 단일 도메인 전환으로 사라졌다(`decisions/201`).
         # 허브 포트는 계약으로 남아 있고 구현체가 없어 계속 "측정 불가"로 보고된다.
@@ -235,6 +240,8 @@ def main() -> int:
     ap.add_argument("--ollama-url", default=None,
                     help="B-4 카드 생성을 꽂는다 (없으면 생성은 '측정 불가'). 검색(ES)도 있어야 채점된다")
     ap.add_argument("--generation-model", default=None, help="생성 모델 (기본: generation 어댑터의 DEFAULT_MODEL)")
+    ap.add_argument("--postcall-set", type=Path, default=DEFAULT_POSTCALL_SET_PATH,
+                    help="D-1·D-2 통화 단위 정답 (기본 golden-set/postcall-v1.json, decisions/218)")
     args = ap.parse_args()
 
     golden_path = args.golden_set or (ROOT / "golden-set" / "v1-150.json")
@@ -249,7 +256,8 @@ def main() -> int:
         print(f"검색 구성: {args.retriever}")
     generation = build_generation(args.ollama_url, args.generation_model)
     ports = build_ports(client, index=args.index, masking=masking, retriever=retriever, generation=generation)
-    reports = [run_eval(items, ports) for _ in range(args.runs)]
+    postcall_cases = load_postcall_set(args.postcall_set) if args.postcall_set.exists() else []
+    reports = [run_eval(items, ports, postcall_cases) for _ in range(args.runs)]
     print_report(
         reports[0],
         golden_set_path=golden_path,

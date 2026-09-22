@@ -42,3 +42,11 @@ GS-205 가 틀린 원인은 분석기에 `nori_part_of_speech` 가 없어 조사
   `index_knowledge_base.py --to-es --recreate --embed-model /models/koe5` — 청크 100 · KoE5 1024차원 · `callguard-kb-single` 100건.
 - 확인: 인덱스 `korean` 분석기 필터 `['nori_part_of_speech', 'nori_readingform', 'lowercase']` · `_analyze("여권에서는 신분증을 가져가야 합니다")`
   → `여권 · 신분증 · 신분 · 증 · 가져가 · 합니다 · 하` (「에서는」·「을」 사라짐) · `embedding` 벡터 있는 문서 100/100 · `/health` spokes 에 `retrieval_dense` 그대로.
+
+## 2026-09-22 (저녁) — 운영 재적재 완료, 닫는다 (류준)
+
+정성윤 님이 새 이미지 배포 뒤 운영 인덱스를 재적재했다(16:05 전후로 전달받음 — **16:05 확인은 재적재 전 인덱스였다**). 재적재 뒤 16:21 에 다시 흘렸다(`syn-prod-syn-010-20260922-v3`).
+분석기는 밖에서 볼 수 없어 위 정성윤 님의 파드 안 `_analyze` 확인을 따른다. 밖에서 본 것:
+- **벡터는 살아 있다** — dense 1순위·순서가 재적재 전(16:05)과 **완전히 같다**(`2.12 → 2.8 → 2.10 → 2.1 → 2.9`, 둘째 추천 `MANUAL-1.4 …` 도 동일). `--embed-model` 이 빠졌다면 dense 가 0건 → BM25 로 내려가 순서가 달라졌을 것
+- 품사 필터가 영향을 주는 **BM25 경로는 이 통화에서 타지 않았다**(dense 가 결과를 냈다) — 필터 효과는 운영에서 보이지 않는 것이 정상이다
+- 저장 5/5 · 필요서류 판정 0 · `retrieval_ms` 603 · 542 · `/health` `ok`

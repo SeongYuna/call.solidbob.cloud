@@ -44,6 +44,7 @@ _MODULE_ID = {
     "asr": "A-5",
     # 2026-09-22 하네스 `generation` 섹션(`w6-harness-silent-metrics`). 10자라 우연히 맞지만 `call_guard` 처럼 기능 ID 로 맞춘다.
     "generation": "B-4",
+    "postcall": "D-1",
 }
 
 # 절대 규칙이 걸린 모듈만 `passed_absolute_rule` 을 채운다 — 그 외는 NULL 이다.
