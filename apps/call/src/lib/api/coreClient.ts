@@ -396,21 +396,34 @@ export interface CallSummaryDraft {
 /**
  * `decisions/306` — 통화가 끝난 뒤 규칙 기반 초안을 만든다(생성 모델 아님, 유형은 늘 null).
  * ⚠ SEC-1 — `segments`에는 마스킹된 자막만 싣는다(원문 필드가 서버 스키마에 아예 없다).
+ * 상담원 토큰을 싣는다 — 서버는 아직 이 헤더를 검증하지 않지만 `confirmSummary`·
+ * `reviseSummary`와 같은 방식으로 맞춰 둔다. 토큰이 없으면 서버를 부르지 않고 바로 던진다.
  */
 export async function closeCall(
   callId: string,
   segments: ClosureSegmentInput[],
 ): Promise<CallSummaryDraft> {
-  const wire = await post<CallSummaryResponseWire>(`/hub/calls/${encodeURIComponent(callId)}/close`, {
-    call_id: callId,
-    segments: segments.map((s) => ({
-      segment_id: Number(s.segmentId),
-      speaker: s.speaker,
-      text: s.text,
-      is_final: s.isFinal,
-      utterance_end_ms: s.utteranceEndMs,
-    })),
-  });
+  const token = readAgentToken();
+  if (token === null) {
+    throw new CoreApiError(
+      "상담원 토큰이 없다 — 관리자가 보낸 링크(?agent_token=...)로 다시 접속해야 한다.",
+      null,
+    );
+  }
+  const wire = await post<CallSummaryResponseWire>(
+    `/hub/calls/${encodeURIComponent(callId)}/close`,
+    {
+      call_id: callId,
+      segments: segments.map((s) => ({
+        segment_id: Number(s.segmentId),
+        speaker: s.speaker,
+        text: s.text,
+        is_final: s.isFinal,
+        utterance_end_ms: s.utteranceEndMs,
+      })),
+    },
+    { Authorization: `Bearer ${token}` },
+  );
   return {
     callId: wire.call_id,
     summaryText: wire.summary_text,
