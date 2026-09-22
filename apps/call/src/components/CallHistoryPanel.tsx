@@ -105,6 +105,23 @@ function LiveCallHistoryList({
   const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
   const [error, setError] = useState<string | null>(null);
 
+  /**
+   * `customer_ref`는 발신 번호의 HMAC이다(`decisions/304`) — 화면에 원본을 그대로
+   * 내지 않는다(`decisions/205` ③과 같은 원칙). 지금 받은 목록(최대 50건) 안에서
+   * 같은 값이 몇 번 나오는지만 세어 "재문의 고객" 여부만 알린다 — 해시 자체는
+   * 절대 렌더하지 않는다.
+   */
+  const repeatCounts = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const row of rows) {
+      if (row.customer_ref.length === 0) {
+        continue;
+      }
+      counts.set(row.customer_ref, (counts.get(row.customer_ref) ?? 0) + 1);
+    }
+    return counts;
+  }, [rows]);
+
   useEffect(() => {
     let alive = true;
     setStatus("loading");
@@ -154,7 +171,9 @@ function LiveCallHistoryList({
                   {DEMO_DOMAIN_LABELS[item.domain]}
                 </span>
                 <span className="call-history-type">{item.inquiry_type}</span>
-                <span className="call-history-ref">{item.customer_ref}</span>
+                {(repeatCounts.get(item.customer_ref) ?? 0) > 1 ? (
+                  <span className="call-history-ref">재문의 고객</span>
+                ) : null}
               </button>
             </li>
           ))}
