@@ -889,6 +889,7 @@ Environment Variables → **Production 만** → Deployments → Redeploy(`VITE_
 - [ ] **Chirp 3 재측정에 IAM 역할이 필요하다 — 정성윤 님** — 서비스 계정(`callguard-506606` 프로젝트)에 **「Cloud Speech 클라이언트」(`roles/speech.client`)** 를 붙여 주시면 된다. v1(지금 쓰는 것)은 역할 없이 되지만 v2(Chirp)는 `speech.recognizers.recognize` 권한을 따로 본다. 스크립트는 준비돼 있다(`w3-a5-translation-spike` 09-21 「Chirp 3」 절). 운영 콜 미디에이터의 STT 경로와는 무관하다(측정 전용)
 - [ ] **시연 전에 합성 음성을 사람 귀로 한 번 듣는다 — 류준** — 톤 음량은 측정으로 고쳤다(평온 대비 격앙 +3.8 · 고함 +7.1 dB). 전체가 8 dB 작아졌으니 시연 스피커 음량을 올린다. 대본 AI 검토의 「사람이 꼭 볼 항목」 8개도 같은 자리에서(`scripts/persona_sim/REVIEW-2026-09-21.md`)
 - [ ] **AI Hub 71479 원본 20 GB 의 S3 경로 — 정성윤 님** — `decisions/210` 대로 경로·접근은 정성윤 님이 정한다. 제안 `s3://assist-apne2/datasets/aihub-71479/validation/`(zip 그대로, 비공개·팀 IAM 한정). md5 는 `data/raw/aihub-foreign-proficiency-71479/validation/CHECKSUMS.md5`. 정해지면 류준이 이 맥에서 `aws s3 sync` 로 올리고 티켓에 S3 키를 적는다.
+  > **2026-09-22 갱신 — 올리는 사람이 바뀐다.** 학원이 AWS 계정 관리자로 지정돼 있어 **팀 안에서 자격증명(SSO·IAM 사용자 둘 다)을 만들 수 없다.** 그래서 류준이 올리는 경로를 접고 **성윤님이 AI Hub 에서 직접 받아 EC2 에서 올리는 방식**으로 바꿨다 — 링크·절차는 `_project/handoff/2026-09-22-ryujun-to-seongyun-dataset-download.md`. **덤으로 AI Hub 이용정책 5번(승인받지 않은 제3자에게 제공 금지)에도 이 편이 맞는다** — 파일을 넘기는 게 아니라 각자 본인 계정으로 신청·수령한다.
 
 ### 재측정에서 새로 나온 것 (신규, 2026-09-21)
 
