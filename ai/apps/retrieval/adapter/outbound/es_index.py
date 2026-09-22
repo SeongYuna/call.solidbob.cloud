@@ -94,6 +94,13 @@ def build_settings() -> dict[str, Any]:
     사전에 **없는** 도메인 용어는 `USER_DICTIONARY_RULES` 로 알려 준다 — 안 그러면 명사가
     용언으로 오분석돼 `하`·`ᆯ` 같은 흔한 토큰이 섞이고, 그 토큰들이 관계없는 문서와 매칭된다.
 
+    **품사 필터(`nori_part_of_speech`)를 토크나이저 바로 뒤에 둔다**(2026-09-22, `decisions/214`).
+    없으면 조사·어미·접사가 토큰으로 남아 BM25 순위를 정한다 — `해지` 를 쪼갠 `해` 가 `해주시는` 의
+    `해` 와 맞는 식이다(GS-205). **제외 품사는 nori 기본값 그대로다**(E·IC·J·MAG·MAJ·MM·SP·SSC·SSO·SC·
+    SE·XPN·XSA·XSN·XSV·UNA·NA·VSV) — `stoptags` 를 따로 주지 않는다. 골든셋을 보며 목록을 고르면
+    그 골든셋에 맞춘 것이 되므로, 목록은 미리 정해 둔 기본값에서 움직이지 않는다.
+    ⚠ **바꾸면 재적재다** — 분석기는 색인 시점에 적용되므로 기존 인덱스에는 먹지 않는다.
+
     ⚠ nori 는 `analysis-nori` 플러그인이다. 기본 이미지에 없으면 인덱스 생성이 실패한다
     (`infra/docker-compose.yml` 주석 참고).
     """
@@ -112,7 +119,7 @@ def build_settings() -> dict[str, Any]:
                 "korean": {
                     "type": "custom",
                     "tokenizer": "kb_nori",
-                    "filter": ["nori_readingform", "lowercase"],
+                    "filter": ["nori_part_of_speech", "nori_readingform", "lowercase"],
                 },
             },
         },

@@ -2,7 +2,7 @@
 title: "nori 품사 필터를 넣을지 — 조사·어미가 검색 순위를 정하는 문제"
 assignee: "류준"
 role: "ai"
-status: "todo"
+status: "in-progress"
 sprint: 6
 priority: 63
 date: 2026-09-22
@@ -21,3 +21,17 @@ GS-205 가 틀린 원인은 분석기에 `nori_part_of_speech` 가 없어 조사
 
 - [ ] 결정 기록 — 넣는다 / 안 넣는다 + 근거. 넣으면 제외 품사 목록
 - [ ] 넣으면 로컬 재적재 → 하네스 BM25·dense 값 전후 비교(표본 수 같이) · 운영 재적재는 정성윤(모델 벡터 재적재와 같은 절차)
+
+## 2026-09-22 — 채택 · 코드 반영 · 로컬 전후 실측 (류준)
+
+- **결정: 넣는다**(류준) — `_project/decisions/214`. 제외 품사는 **nori 기본값 그대로**(`stoptags` 를 주지 않는다 — 골든셋을 보며 목록을 고르지 않는다). 분석기 `korean` 필터 = `nori_part_of_speech` → `nori_readingform` → `lowercase`. 테스트가 순서와 「사용자 정의 필터 없음」을 고정한다.
+- **전후 실측** — 커밋 `f7a2dd1` + 이 변경 · 로컬 ES · 골든셋 `v1-150.1` · 임시 인덱스 `qa-nori-base`/`qa-nori-pos`(같은 청크 100 · 같은 KoE5 벡터, 측정 뒤 **삭제**) · `scripts/compare_retrievers.py --index <임시> --only bm25,dense`:
+
+  | 구성 | 이전 | 품사 필터 | n |
+  |---|---|---|---|
+  | BM25 Recall@5 / MRR | 0.812 / 0.635 | **0.844 / 0.682** | 96 |
+  | dense Recall@5 / MRR | 0.969 / 0.868 | 0.969 / 0.868 (상위 5 순서까지 전부 같음) | 96 |
+
+  BM25 얻음 GS-205·219·225·226·290 · 잃음 GS-206·241. B-6(n 24) BM25 1순위 점수 중앙 7.62→6.36, 정답 있음과 겹침은 그대로(문턱 하나로 못 가름). GS-723 은 필터 뒤 BM25 0건.
+- ⚠ **같은 골든셋으로 채택을 정했다** — 수치는 독립 검증이 아니라 부작용 확인이다. 운영은 `124` 로 dense 가 주 경로라 **이 필터는 BM25 대체 경로(dense 0건일 때 · 임베딩을 끌 때)를 단단하게 한다.**
+- **남은 것 → `in-progress` 로 둔 이유**: 운영 재적재(정성윤). ① 이 변경이 든 서버 이미지 배포(분석기는 이미지 안 `es_index.py` 에서 읽는다 · 태그 올림은 중앙) ② 런북 「② 벡터 재적재」와 같은 `index_knowledge_base.py --to-es --recreate --embed-model /models/koe5` — **`--embed-model` 을 빼면 dense 가 전부 0건이 된다** ③ `_analyze` 로 `에서`·`는` 이 사라졌는지 확인. 끝나면 `done`.
