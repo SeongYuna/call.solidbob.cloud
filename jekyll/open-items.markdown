@@ -955,4 +955,5 @@ Environment Variables → **Production 만** → Deployments → Redeploy(`VITE_
 - [ ] **상담원이 반려 사유를 볼 경로가 없다** — 사유는 저장되지만 상담원용 「내 요청」 조회 API·화면이 없다(`decisions/316` ⚠)
 - [ ] **조서희 님 — 현황판을 `GET /hub/admin-stats` 하나로** (2026-09-22 추가, [w6-admin-stats-api](/backlog/w6-admin-stats-api/)) — 관리자 토큰으로 부르면 여덟 칸(통화 전체·종료·콜 가드·승인 대기·활성 등록·배정 판정 셋)이 문자열로 온다. 「완료 통화 누적」을 `calls_total` 과 `calls_closed` 중 무엇으로 보일지는 화면 결정. 배정 셋은 부르는 곳(`w7-j5-routing-caller`)이 붙기 전엔 0
 - [ ] **09-22 운영 확인 — PR #111(`0.1.25`)이 프론트보다 먼저 나갔다** — 운영 마이그레이션은 정성윤 님이 넣었다. #116 으로 `closeCall` 토큰은 들어갔고, **남은 셋이 운영에서 깨져 있다**: 카드 「사용 표시」(토큰 없음 → 조용히 401) · 관리자 반려(사유 없음 → 422) · 온도 이상 null 이 「0건」으로 보임(`toNum(null)`). 고칠 곳은 위 「조서희 님」 넷 중 셋
+- [ ] **정성윤 님 — 관리자 블랙리스트 승인·해제 운영 확인** (2026-09-22 추가, [w6-admin-agent-mapping](/backlog/w6-admin-agent-mapping/)) — `0.1.25` 부터 관리자가 처음 결정할 때 서버가 전용 `agent` 행(`admin-<id>`)을 붙인다(`decisions/314`, 운영자 SQL 불필요). 관리자 화면(`admin.solidbob.cloud`)에서 **승인 1건 · 해제 1건**이 오류 없이 되고 결정자가 `admin-<숫자>` 로 남는지 본다. 반려는 프론트 수정 전이라 422 다. 확인되면 티켓을 done 으로
 
