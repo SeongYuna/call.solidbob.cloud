@@ -42,6 +42,8 @@ _MODULE_ID = {
     # 2026-09-21 B-6 「관련 문서 없음」 — 하네스 `no_answer` 섹션(`w5-b6-no-answer-threshold`). 9자라 넘치진 않지만 기능 ID 로 맞춘다.
     "no_answer": "B-6",
     "asr": "A-5",
+    # 2026-09-22 하네스 `generation` 섹션(`w6-harness-silent-metrics`). 10자라 우연히 맞지만 `call_guard` 처럼 기능 ID 로 맞춘다.
+    "generation": "B-4",
 }
 
 # 절대 규칙이 걸린 모듈만 `passed_absolute_rule` 을 채운다 — 그 외는 NULL 이다.
