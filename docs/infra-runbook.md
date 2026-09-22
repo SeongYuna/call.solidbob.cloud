@@ -928,6 +928,34 @@ libpq 기본값 `prefer` 가 SSL 을 먼저 시도하므로 6-7 의 SSL 강제�
 
 > ⚠ **이 값은 인스턴스가 사라지면 같이 사라집니다.** 암호와 엔드포인트를 별도로 안전한 곳에 보관하시거나, SSM Parameter Store 에 넣어 두십시오.
 
+#### 12-2-b. 쓰기 경로 서비스 토큰 — `CORE_API_TOKEN` / `INGEST_SERVICE_TOKEN` (2026-09-22 추가, `decisions/120`)
+
+`release.yml` 은 `call-mediator-tokens` 를 **없을 때만** 만들고 그때 INGEST·VIEW 두 키만 넣는다. 서비스 토큰은 **사람이 넣는다** —
+새 클러스터를 세우면 이 단계를 빠뜨리기 쉽고, 빠뜨리면 `/health` 가 `"ingest_guard":"open"` 을 낸다(문이 열린 채 돈다).
+**순서를 어기면 운영 통화가 전부 401 이 된다** — 미디에이터가 먼저, 서버가 나중이다. 2026-09-22 에 이 순서로 실제 잠갔다.
+
+```bash
+K="sudo k3s kubectl -n callguard"
+TS=$(date +%Y%m%d-%H%M%S); sudo mkdir -p /root/secret-backups/$TS
+$K get secret call-mediator-tokens -o yaml | sudo tee /root/secret-backups/$TS/call-mediator-tokens.yaml >/dev/null
+$K get secret server-env            -o yaml | sudo tee /root/secret-backups/$TS/server-env.yaml            >/dev/null
+TOKEN=$(openssl rand -hex 32)                                     # 값을 찍지 않는다
+# ① 미디에이터 먼저 — optional 키라 있으면 Authorization 헤더로 보내기 시작한다
+$K patch secret call-mediator-tokens --type merge -p "{\"stringData\":{\"CORE_API_TOKEN\":\"$TOKEN\"}}"
+$K rollout restart deploy/callguard-call-mediator && $K rollout status deploy/callguard-call-mediator --timeout=180s
+POD=$($K get pod -l app=callguard-call-mediator -o jsonpath={.items[0].metadata.name})
+$K exec $POD -- sh -c 'printf %s "$CORE_API_TOKEN" | wc -c'        # 64 여야 한다
+# ② 서버 — 이 순간부터 잠긴다
+$K patch secret server-env --type merge -p "{\"stringData\":{\"INGEST_SERVICE_TOKEN\":\"$TOKEN\"}}"
+$K rollout restart deploy/callguard-server && $K rollout status deploy/callguard-server --timeout=180s
+# ③ 확인
+curl -s https://server.solidbob.cloud/health | grep -o '"ingest_guard":"[a-z]*"'                     # locked
+curl -s -o /dev/null -w '%{http_code}\n' -X POST -H 'Content-Type: application/json' -d '{}' https://server.solidbob.cloud/hub/calls   # 401
+```
+
+**되돌리기**: 백업 두 yaml 을 `$K apply -f` 하고 두 deploy 를 `rollout restart`. 서버가 먼저 열려야 하니 **서버 → 미디에이터** 순서다.
+서버 쪽 ④(토큰이 없어도 잠그는 fail-closed)는 코드 변경이라 별도 PR 이다 — 그 뒤엔 이 단계를 빠뜨리면 서버가 아예 안 뜬다(그게 의도다).
+
 ### 12-3. 영속 볼륨
 
 k3s 는 `local-path` 프로비저너를 기본 내장하고 있습니다. **EBS 루트(150GiB)에 저장되므로 인스턴스를 중지해도 살아남습니다.**
@@ -1549,6 +1577,15 @@ PR #94 에서 `admin`·`kxu6` 가 `Deployment rate limited — retry in 24 hours
 > **항상 비어** 빌드가 **영원히 건너뛰어진다** — 빨간불이 아니라 조용한 초록이라 늦게 발견된다.
 > 폴더를 옮기거나 이름을 바꿀 때(09-14 `apps/dashboard` → `apps/call` 같은 일) **위 표를 함께 고친다.**
 >
+> ⚠ **2026-09-22 실제로 났다.** 랜딩(`call-solidbob-cloud`)의 Command 가 `-- ./` 가 아니라 `-- apps/admin` 으로
+> 들어가 있었다(09-15 03:51, 세 프로젝트에 같은 설정을 걸며 관리자 값을 복사한 것으로 보인다). 랜딩 기준으로
+> 그 경로는 없어 늘 「변경 없음」이 되고, **09-15 이후 랜딩은 한 번도 빌드되지 않았다** — 09-17 개명·09-21
+> `?call_id=` 커밋이 전부 `Canceled` 였고 PR 화면엔 초록으로 떠 있었다. 09-22 에 API 로 값을 고치고
+> 강제 배포했다. **설정은 콘솔 화면이 아니라 `vercel project inspect` 나 API 로 읽어 대조한다** — 화면은 세 프로젝트를
+> 오가며 보다 놓친다. **강제 배포는 저장소 루트에서** `vercel link --project call-solidbob-cloud` → `vercel deploy --prod` —
+> `apps/platform` 안에서 올리면 「Root Directory 가 없다」로 실패한다(올린 트리 기준으로 경로를 찾는다).
+> 랜딩 프로젝트엔 `VITE_CALL_MEDIATOR_WS_URL` 이 없어 홍보 페이지의 라이브 통화는 「주소 미설정」이다 — 처음부터 없었다.
+>
 > **확인은 다음 PR 에서 저절로 된다** — `server/`·CI 만 고친 PR 이면 Vercel 체크 **셋 다**
 > `Canceled by Ignored Build Step` 이어야 한다. 하나라도 빌드가 돌면 그 프로젝트의 Root Directory 가 어긋난 것이다.
 
@@ -1661,6 +1698,12 @@ curl -fsS $B/hub/calls/$C/transcript
 > ⚠ **`0.1.10` 도 스키마가 바뀐다**(`decisions/311`·`313`) — `call_summary_revision` · `app_setting` 신설(27 → 29). **이미지를 올리기 전에**
 > `db/migrations/2026-09-15-summary-revision-app-setting.sql` 을 넣는다(`blacklist_entry_expiry_change` 가 먼저여야 한다 — 파일이 확인하고 멈춘다).
 > 안 넣으면 요약 재수정(`…/summary-revision(s)`)·배정(`/hub/routing-decisions`·`/hub/routing-settings`)만 500. 6번 기대값은 29. `0.1.10` 은 콜 미디에이터 `0.1.4` 와 같이 나간다.
+>
+> ⚠ **2026-09-22 `server` 브랜치 변경(다음 태그)도 스키마가 바뀐다**(`decisions/316`) — `blacklist_request.temperature_outliers` NULL 허용 ·
+> `decision_note` 신설(테이블 수는 29 그대로). **이미지를 올리기 전에** `db/migrations/2026-09-22-blacklist-request-note-unmeasured.sql` 을 넣는다
+> (`app_setting` 이 먼저여야 한다 — 파일이 확인하고 멈춘다. 순증이라 지금 떠 있는 이미지에는 영향이 없다).
+> 안 넣으면 블랙리스트 요청 생성·목록·결정이 500. ⚠ 같은 변경이 `/close`·카드 피드백에 상담원 토큰 문을 단다(`315`) —
+> **프론트(`apps/call`)가 토큰을 싣도록 바뀐 뒤에** 배포한다. 먼저 나가면 통화 후 처리·카드 「사용 표시」가 401 이다.
 
 > ⚠ **`0.1.5` 는 DB 스키마가 바뀐다**(2026-09-14, `decisions/304`·`305`) — `customer_id` 길이 64 · `admin_account.agent_id` ·
 > `closure` 재정의 + `closure_item`. 17장대로 **이미지를 올리기 전에** 스키마를 넣는다. **데이터가 있는 운영 DB 에는 `schema.sql` 이 아니라

@@ -27,4 +27,6 @@ def get_blacklist_port(request: Request) -> BlacklistPort:
 
 
 def get_blacklist_evidence_port(request: Request) -> BlacklistEvidencePort:
-    return PostgresBlacklistEvidenceRepository(_connect(request))
+    # D-5 판정이 서버 요청 경로에 없다 — 온도 이상은 「미측정」으로 나간다(`decisions/316`, `w7-d5-server-wiring`).
+    # 콜 미디에이터가 오디오로 판정해 `voice_outlier` 를 채우게 되면 여기를 True 로 바꾼다
+    return PostgresBlacklistEvidenceRepository(_connect(request), voice_outliers_wired=False)

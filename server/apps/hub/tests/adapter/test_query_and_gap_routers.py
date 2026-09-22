@@ -87,8 +87,19 @@ def test_공백신고_모듈은_B_C_F만_받는다():
 
 # ── 카드 피드백 (E-1) ─────────────────────────────────────────────────────────
 
+import pytest  # noqa: E402
+from agent_auth.adapter.inbound.api.agent_guard import require_agent  # noqa: E402
+
 from hub.app.ports.output import CardFeedbackPort  # noqa: E402
 from hub.dependencies.card_feedback_provider import get_card_feedback_port  # noqa: E402
+
+
+@pytest.fixture
+def _signed_in():
+    """상담원 토큰 문(`decisions/315`)은 `test_close_and_feedback_guards.py` 가 본다 — 여기는 문 뒤의 동작만."""
+    app.dependency_overrides[require_agent] = lambda: "a_01"
+    yield
+    app.dependency_overrides.pop(require_agent, None)
 
 
 class _Feedback(CardFeedbackPort):
@@ -96,13 +107,13 @@ class _Feedback(CardFeedbackPort):
         return 501234
 
 
-def test_카드피드백_PostgreSQL_미설정이면_501이다():
+def test_카드피드백_PostgreSQL_미설정이면_501이다(_signed_in):
     with TestClient(app) as client:
         r = client.post("/hub/cards/42/feedback", json={"action": "adopted"})
     assert r.status_code == 501
 
 
-def test_카드피드백이_접수되면_201이다():
+def test_카드피드백이_접수되면_201이다(_signed_in):
     app.dependency_overrides[get_card_feedback_port] = lambda: _Feedback()
     try:
         with TestClient(app) as client:
@@ -113,7 +124,7 @@ def test_카드피드백이_접수되면_201이다():
         app.dependency_overrides.clear()
 
 
-def test_카드피드백_요청에_상담원_필드를_넣어도_무시된다():
+def test_카드피드백_요청에_상담원_필드를_넣어도_무시된다(_signed_in):
     """부록 A-1 — 스키마에 agent_id 가 없어 상담원 단위 집계를 만들 수 없다."""
     app.dependency_overrides[get_card_feedback_port] = lambda: _Feedback()
     try:
@@ -125,7 +136,7 @@ def test_카드피드백_요청에_상담원_필드를_넣어도_무시된다():
         app.dependency_overrides.clear()
 
 
-def test_카드피드백_action은_두_값만_받는다():
+def test_카드피드백_action은_두_값만_받는다(_signed_in):
     app.dependency_overrides[get_card_feedback_port] = lambda: _Feedback()
     try:
         with TestClient(app) as client:

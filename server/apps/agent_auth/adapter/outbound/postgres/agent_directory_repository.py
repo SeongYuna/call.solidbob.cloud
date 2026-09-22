@@ -6,16 +6,28 @@ from __future__ import annotations
 import secrets
 
 from agent_auth.app.dtos.agent_directory_dto import AgentSummary
+from agent_auth.app.dtos.agent_token_dto import UnknownAgentError
 from agent_auth.app.ports.output.agent_directory_port import AgentDirectoryPort
 from hub.adapter.outbound.postgres.connection import ConnectionFactory
 
-_LIST = 'SELECT "agent_id", "display_name" FROM "agent" ORDER BY "display_name"'
+# 목록·이름 찾기는 상담원(`role='agent'`)만 본다 — 관리자에게 붙은 행(`decisions/314`)이 토큰 발급 후보로 섞이지 않게
+_LIST = 'SELECT "agent_id", "display_name" FROM "agent" WHERE "role" = \'agent\' ORDER BY "display_name"'
 _GET = 'SELECT "agent_id", "display_name" FROM "agent" WHERE "agent_id" = %s'
-_FIND = 'SELECT "agent_id", "display_name" FROM "agent" WHERE "agent_id" = %s OR "display_name" = %s'
+_FIND = """
+SELECT "agent_id", "display_name" FROM "agent"
+WHERE "role" = 'agent' AND ("agent_id" = %s OR "display_name" = %s)
+"""
 _INSERT = """
 INSERT INTO "agent" ("agent_id", "display_name", "role")
 VALUES (%s, %s, 'agent')
+ON CONFLICT ("agent_id") DO NOTHING
 RETURNING "agent_id", "display_name"
+"""
+# 같은 관리자가 동시에 두 번 눌러도 행은 하나 — 충돌이면 넣지 않고 아래 _GET 으로 읽는다
+_INSERT_ADMIN = """
+INSERT INTO "agent" ("agent_id", "display_name", "role")
+VALUES (%s, %s, 'admin')
+ON CONFLICT ("agent_id") DO NOTHING
 """
 
 
@@ -50,4 +62,20 @@ class PostgresAgentDirectoryRepository(AgentDirectoryPort):
                     await cur.execute(_INSERT, (new_agent_id, identifier))
                     row = await cur.fetchone()
                     await conn.commit()
+                    if row is None:
+                        # 두 발급이 동시에 같은 이름을 만들었다 — 먼저 넣은 쪽을 쓴다(전엔 PK 위반 500).
+                        # 그래도 없으면 그 ID 가 관리자 행(`decisions/314`)이다 — 관리자 행을 상담원으로 빌려주지 않는다
+                        await cur.execute(_FIND, (identifier, identifier))
+                        row = await cur.fetchone()
+                        if row is None:
+                            raise UnknownAgentError(identifier)
+        return AgentSummary(agent_id=row[0], display_name=row[1])
+
+    async def ensure_admin(self, agent_id: str, display_name: str) -> AgentSummary:
+        async with self._connect() as conn:
+            async with conn.cursor() as cur:
+                await cur.execute(_INSERT_ADMIN, (agent_id, display_name))
+                await cur.execute(_GET, (agent_id,))
+                row = await cur.fetchone()
+            await conn.commit()
         return AgentSummary(agent_id=row[0], display_name=row[1])

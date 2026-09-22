@@ -2,7 +2,7 @@
 title: "ai/ 모델 HTTP 표면 — GPU 인스턴스에서 도는 추론 서비스"
 assignee: "류준"
 role: "ai"
-status: "in-progress"
+status: "cancelled"
 sprint: 6
 priority: 68
 date: 2026-09-21
@@ -61,3 +61,6 @@ paths:
 - `server/.importlinter` 계약 2 금지 목록에 `model_serving` 추가 — `server/` 소관
 - `decisions/121` 질문 2(홉 지연)·3(비용·자동 중지)·5(6주차 기준선)는 열려 있다. **홉 지연은 미측정**이다
 
+---
+
+> **취소 (2026-09-22, 정성윤).** `_project/decisions/124` 로 모델을 전용 GPU EC2 가 아니라 운영 노드에 CPU 로 싣기로 했다. 전용 인스턴스·HTTP 표면·원격 어댑터가 필요 없어졌다. 이어받는 티켓: [w5-models-on-node](/backlog/w5-models-on-node/).

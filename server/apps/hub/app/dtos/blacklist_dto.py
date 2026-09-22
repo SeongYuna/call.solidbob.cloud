@@ -45,7 +45,9 @@ class RequestEvidence:
     # 무기한 남기면 「이 사람이 자해를 N회 암시했다」는 레코드가 된다.
     # 화면에 필요한 것은 `has_distress` 불리언 하나다.
     distress_count: int = 0
-    temperature_outliers: int = 0    # D-5 통화 온도 이상 구간 수(`decisions/203`)
+    # D-5 통화 온도 이상 구간 수(`decisions/203`). **None 은 「미측정」** — 0(「이상 없음」)과 다르다(`decisions/316`).
+    # 서버 요청 경로에 D-5 판정이 붙기 전까지는 늘 None 이다(`w7-d5-server-wiring`, 절대 원칙 10)
+    temperature_outliers: int | None = None
 
     @property
     def abuse_total(self) -> int:
@@ -78,6 +80,8 @@ class BlacklistRequest:
     decided_at: datetime | None = None
     # 근거 건수를 집계한 시각 — 관리자가 본 값이 «그때» 의 스냅샷이라는 표시(`blacklist_request.evidence_snapshot_at`)
     evidence_snapshot_at: datetime | None = None
+    # 반려 사유(관리자, 마스킹본 — `decisions/316`). 승인 메모는 등록(`BlacklistEntry.note`) 쪽이다
+    decision_note: str | None = None
 
     def __post_init__(self) -> None:
         if self.status not in STATUSES:

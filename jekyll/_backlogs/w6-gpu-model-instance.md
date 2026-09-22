@@ -2,7 +2,7 @@
 title: "모델 전용 GPU EC2 — 인스턴스 · 자동 중지 · 비용 캡"
 assignee: "정성윤"
 role: "infra"
-status: "todo"
+status: "cancelled"
 sprint: 6
 priority: 67
 date: 2026-09-21
@@ -40,3 +40,7 @@ paths:
 - [ ] 인스턴스 + 자동 중지(EventBridge 등) + 모델 파일 경로(S3 `models/`)
 - [ ] 서버 파드에서 그 인스턴스로 닿는 보안 그룹 — **내부 포트를 밖으로 열지 않는다**
 - [ ] 못 세웠으면 **「못 세웠다」를 그대로 적고** 발표는 운영 구성 + 로컬 참고치로 간다
+
+---
+
+> **취소 (2026-09-22, 정성윤).** `_project/decisions/124` 로 모델을 전용 GPU EC2 가 아니라 운영 노드에 CPU 로 싣기로 했다. 전용 인스턴스·HTTP 표면·원격 어댑터가 필요 없어졌다. 이어받는 티켓: [w5-models-on-node](/backlog/w5-models-on-node/).

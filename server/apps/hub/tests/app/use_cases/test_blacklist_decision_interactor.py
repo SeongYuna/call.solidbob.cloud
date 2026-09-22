@@ -29,5 +29,17 @@ def test_승인에_만료_일수가_없거나_범위_밖이면_거부한다(days
         _run(expires_in_days=days)
 
 
-def test_반려는_만료도_메모도_넘기지_않는다():
-    assert _run(approve=False, expires_in_days=30, note="메모") == [("decide", "7", False, "admin-1", None, None)]
+def test_반려는_만료를_넘기지_않고_사유를_마스킹해_넘긴다():
+    """`decisions/316` — 전엔 반려 메모를 버렸다. 이제 사유가 요청 행(`decision_note`)에 남는다."""
+    calls = _run(approve=False, expires_in_days=30, note="010-1111-2222 로 재확인 결과 오인")
+    assert calls == [("decide", "7", False, "admin-1", None, "***-****-**** 로 재확인 결과 오인")]
+
+
+@pytest.mark.parametrize("note", [None, "", "   "])
+def test_반려에_사유가_없으면_거부한다(note):
+    with pytest.raises(ValueError, match="반려에는 사유"):
+        _run(approve=False, note=note)
+
+
+def test_승인_메모는_여전히_선택이다():
+    assert _run(expires_in_days=30)[0][-1] is None
