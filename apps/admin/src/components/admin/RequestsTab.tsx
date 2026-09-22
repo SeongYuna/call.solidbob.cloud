@@ -120,7 +120,11 @@ function RequestCard({
         </div>
         <div>
           <dt>통화 온도 이상 구간</dt>
-          <dd>{request.evidence.temperature_outliers}건</dd>
+          <dd>
+            {request.evidence.temperature_outliers === null
+              ? "미측정"
+              : `${request.evidence.temperature_outliers}건`}
+          </dd>
         </div>
         <div>
           <dt>통화 시간</dt>

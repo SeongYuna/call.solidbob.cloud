@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState, type ReactElement, type ReactNode } from "react";
 import type { CallWrapUp, SentimentSummary } from "../types/contract";
 import { confirmSummary, getHistoryPlayback, isCoreApiConfigured, reviseSummary, type CallRecord } from "../lib/api/coreClient";
+import type { CallMediatorMode } from "../lib/ws";
 import { DEFAULT_LOCAL_RESOURCES } from "../mock/localResources";
 import { cardId, useCallStore, type Utterance } from "../store/callStore";
 import { BlackConsumerAction } from "./BlackConsumerAction";
@@ -25,7 +26,18 @@ interface CallSummaryPanelProps {
   historyConfirmed?: boolean;
 }
 
-export function callSummaryFromWrapUp(wrapUp: CallWrapUp): CallSummaryModel {
+/**
+ * G-2 미구현 — 서버(`closeCall`·`fetchCallRecord`)는 `local_resources`를 아직
+ * 채우지 않는다. **`mode === "mock"`일 때만** mock 목록으로 대신 채운다(mock
+ * WS·mock 상담기록 재생은 이미 자기 쪽에서 `DEFAULT_LOCAL_RESOURCES`를 채워
+ * 들어오므로 — `mock/mockCallMediator.ts`·`mock/callHistory.ts` — 이 폴백은
+ * 주로 방어적이다). 실서버 모드에서 비어 있으면 `undefined`로 그대로 둔다 —
+ * "안내할 지역자원이 없다"를 mock 지역자원으로 덮지 않는다(2026-09-22).
+ */
+export function callSummaryFromWrapUp(
+  wrapUp: CallWrapUp,
+  mode: CallMediatorMode,
+): CallSummaryModel {
   return {
     callId: wrapUp.call_id,
     summary: wrapUp.summary.join(" "),
@@ -41,7 +53,9 @@ export function callSummaryFromWrapUp(wrapUp: CallWrapUp): CallSummaryModel {
     resources:
       wrapUp.local_resources !== undefined && wrapUp.local_resources.length > 0
         ? wrapUp.local_resources
-        : [...DEFAULT_LOCAL_RESOURCES],
+        : mode === "mock"
+          ? [...DEFAULT_LOCAL_RESOURCES]
+          : undefined,
     sentiment: wrapUp.sentiment,
   };
 }
@@ -75,6 +89,7 @@ export function CallSummaryHost({
   const viewMode = useCallStore((state) => state.viewMode);
   const historyCallId = useCallStore((state) => state.historyCallId);
   const historyRecord = useCallStore((state) => state.historyRecord);
+  const mode = useCallStore((state) => state.mode);
   const [live, setLive] = useState<CallWrapUp | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -129,7 +144,7 @@ export function CallSummaryHost({
       }
       return (
         <CallSummaryPanel
-          call={callSummaryFromWrapUp(wrapUpFromRecord(historyRecord))}
+          call={callSummaryFromWrapUp(wrapUpFromRecord(historyRecord), mode)}
           onClose={onClose}
           onStartNewCall={onStartNewCall}
           historyConfirmed={historyRecord.summaryConfirmed}
@@ -149,7 +164,7 @@ export function CallSummaryHost({
     }
     return (
       <CallSummaryPanel
-        call={callSummaryFromWrapUp(playback.wrapUp)}
+        call={callSummaryFromWrapUp(playback.wrapUp, mode)}
         onClose={onClose}
         onStartNewCall={onStartNewCall}
       />
@@ -181,7 +196,7 @@ export function CallSummaryHost({
 
   return (
     <CallSummaryPanel
-      call={callSummaryFromWrapUp(live)}
+      call={callSummaryFromWrapUp(live, mode)}
       onClose={onClose}
       onStartNewCall={onStartNewCall}
     />
@@ -208,7 +223,6 @@ export function CallSummaryPanel({
     [cards, adoptions],
   );
   const failed = manualSearches.filter((entry) => !entry.found);
-  const resources = call.resources ?? [];
 
   return (
     <CallSummaryShell onClose={onClose} onStartNewCall={onStartNewCall}>
@@ -247,22 +261,27 @@ export function CallSummaryPanel({
 
       <FollowUpChecklist title="후속 조치" items={call.followUps} />
 
-      <section className="wrapup-card">
-        <div className="wrapup-card-head">
-          <h3>연계 가능한 지역자원</h3>
-        </div>
-        <ul className="resource-list">
-          {resources.map((item) => (
-            <li key={`${item.orgName}-${item.phone}`}>
-              <LocalResourceCard
-                orgName={item.orgName}
-                address={item.address}
-                phone={item.phone}
-              />
-            </li>
-          ))}
-        </ul>
-      </section>
+      {/* G-2 미구현 — 실서버 모드에서 안내할 지역자원이 없으면 섹션째 렌더하지
+          않는다("카드 사용 현황"·"지식베이스 공백"과 같은 패턴). mock 목록으로
+          덮지 않는다(2026-09-22). */}
+      {call.resources !== undefined && call.resources.length > 0 ? (
+        <section className="wrapup-card">
+          <div className="wrapup-card-head">
+            <h3>연계 가능한 지역자원</h3>
+          </div>
+          <ul className="resource-list">
+            {call.resources.map((item) => (
+              <li key={`${item.orgName}-${item.phone}`}>
+                <LocalResourceCard
+                  orgName={item.orgName}
+                  address={item.address}
+                  phone={item.phone}
+                />
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
 
       {showLiveExtras && cards.length > 0 ? (
         <section className="wrapup-card">
