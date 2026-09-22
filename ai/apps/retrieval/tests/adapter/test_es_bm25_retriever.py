@@ -2,14 +2,17 @@
 """BM25 검색 어댑터 (w2-naive-rag).
 
 ES 없이 도는 절반은 **가짜 클라이언트**로 질의 모양과 응답 변환을 고정한다. CI 가 이걸 돌린다.
-`@pytest.mark.integration` 은 실제 ES 가 있을 때만 — 색인이 적재돼 있어야 한다
-(`scripts/index_knowledge_base.py --to-es --recreate`).
+`@pytest.mark.integration` 은 실제 ES 가 있을 때만 돈다. **공유 인덱스(`callguard-kb-single`)를
+건드리지 않는다** — 모듈마다 `callguard-test-<uuid>` 접두어의 임시 인덱스를 만들어 지식베이스를
+BM25 로 적재하고, 끝나면 지운다(2026-09-22, `w6-test-hygiene-eval-wiring`). 전에는 여기서 공유
+인덱스를 `recreate=True` 로 다시 만들어 **개발 인덱스의 dense 벡터를 조용히 0건으로** 만들었다.
 """
 
 from __future__ import annotations
 
 import asyncio
 import os
+import uuid
 from pathlib import Path
 
 import pytest
@@ -117,64 +120,100 @@ def test_빈_발화는_검색하지_않는다(utterance):
 
 # ─────────────────────────────────────── 실제 ES 가 있을 때만
 
+# 임시 인덱스 접두어. `callguard-kb-` 로 시작하지 않게 한다 — 운영 레이아웃 와일드카드
+# (`callguard-kb-*`)에 섞이지 않도록(`es_index.create_named_index` 가 실험 인덱스에 거는 것과 같은 규칙).
+TEST_PREFIX_HEAD = "callguard-test-"
+
+
 @pytest.fixture(scope="module")
-def client():
+def es():
     url = os.environ.get("ELASTICSEARCH_URL")
     if not url:
         pytest.skip("ELASTICSEARCH_URL 이 없다")
-    es = pytest.importorskip("elasticsearch")
-    c = es.Elasticsearch(url)
+    elasticsearch = pytest.importorskip("elasticsearch")
+    c = elasticsearch.Elasticsearch(url)
     if not c.ping():
         pytest.skip(f"ES 에 붙지 못했다: {url}")
-    es_index.create_indices(c, "single", recreate=True)
-    es_index.index_chunks(c, load_chunks(KB_ROOT), "single")
     return c
 
 
+@pytest.fixture(scope="module")
+def temp_index(es):
+    """이 모듈만 쓰는 임시 인덱스. 끝나면 지운다 — 실패해도 teardown 은 돈다."""
+    prefix = f"{TEST_PREFIX_HEAD}{uuid.uuid4().hex[:12]}"
+    (name,) = es_index.index_names("single", prefix=prefix)
+    assert name != es_index.SINGLE_INDEX and not name.startswith(es_index.INDEX_PREFIX + "-")
+    print(f"\n[integration] 임시 인덱스: {name}")
+    try:
+        es_index.create_indices(es, "single", prefix=prefix)
+        es_index.index_chunks(es, load_chunks(KB_ROOT), "single", prefix=prefix)
+        yield name
+    finally:
+        es.indices.delete(index=name, ignore_unavailable=True)
+
+
+@pytest.fixture(scope="module")
+def client(es, temp_index):
+    return es
+
+
+def _retriever(client, temp_index, **kwargs):
+    return EsBm25Retriever(client, index=temp_index, **kwargs)
+
+
 @pytest.mark.integration
-def test_색인이_살아있고_알려진_발화가_정답을_1위로_찾는다(client):
+def test_색인이_살아있고_알려진_발화가_정답을_1위로_찾는다(client, temp_index):
     """연기 감지용. 색인이 비었거나 nori 가 빠지면 여기서 걸린다.
 
-    발화는 골든셋 GS-003 원문 그대로다. **검색 품질을 여기서 단언하지 않는다** — 어떤 발화가
-    정답을 찾느냐는 평가 하네스가 잴 일이고, 못 찾는 것도 베이스라인의 사실이다.
-    실제로 GS-001·GS-019 는 top-5 에 못 든다(2026-08-27 실측, 티켓 참고). 그걸 테스트
-    실패로 만들면 "숫자를 좋게 만들려고 테스트를 고치는" 압력이 생긴다.
+    발화는 골든셋 GS-259 원문 그대로다(정답 `DASAN-TERM-4.15` 「신혼부부 특별공급」).
+    2026-09-22 실측에서 1위 점수가 2위의 **4.37배**로 골든셋 B 항목 중 격차가 가장 컸다 —
+    조항이 몇 개 늘어도 뒤집히지 않을 만큼 벌어진 것을 골랐다. 전에는 GS-003 의
+    `SHOP-TERM-4.2` 를 기대했는데, 쇼핑 도메인이 2026-08-28 삭제돼(`decisions/201`) 늘 실패했다.
+
+    **검색 품질을 여기서 단언하지 않는다** — 어떤 발화가 정답을 찾느냐는 평가 하네스가 잴 일이고,
+    못 찾는 것도 베이스라인의 사실이다. 그걸 테스트 실패로 만들면 "숫자를 좋게 만들려고 테스트를
+    고치는" 압력이 생긴다. 여기서 보는 것은 «색인·분석기·질의가 이어져 있는가» 하나다.
     """
-    utterance = "이거 그냥 마음에 안 들어서 반품하려는데 배송비는 제가 내야 하나요"
-    docs = asyncio.run(EsBm25Retriever(client).retrieve(utterance, top_k=5))
-    assert [d.doc_id for d in docs][0] == "SHOP-TERM-4.2"
+    utterance = "신혼부부 특별공급 자격이 어떻게 되나요"
+    docs = asyncio.run(_retriever(client, temp_index).retrieve(utterance, top_k=5))
+    assert docs, "결과가 비었다 — 색인이 비었거나 분석기가 빠졌다"
+    assert docs[0].doc_id == "DASAN-TERM-4.15", [d.doc_id for d in docs]
 
 
 @pytest.mark.integration
-def test_점수가_내림차순이다(client):
-    docs = asyncio.run(EsBm25Retriever(client).retrieve("환불 기간", top_k=5))
+def test_점수가_내림차순이다(client, temp_index):
+    docs = asyncio.run(_retriever(client, temp_index).retrieve("환불 기간", top_k=5))
     assert docs, "결과가 비었다"
     assert [d.score for d in docs] == sorted((d.score for d in docs), reverse=True)
 
 
 @pytest.mark.integration
-def test_결과에_중복_조항이_없다(client):
-    docs = asyncio.run(EsBm25Retriever(client).retrieve("해지 수수료", top_k=5))
+def test_결과에_중복_조항이_없다(client, temp_index):
+    docs = asyncio.run(_retriever(client, temp_index).retrieve("해지 수수료", top_k=5))
     ids = [d.doc_id for d in docs]
     assert len(ids) == len(set(ids))
 
 
 @pytest.mark.integration
-def test_도메인_필터가_그_도메인만_돌려준다(client):
-    """필터를 안 걸면 다른 도메인이 섞인다 — 2026-08-27 실측으로 확인된 실제 현상이다.
+def test_도메인_필터가_실제로_질의에_걸린다(client, temp_index):
+    """지식베이스가 다산 하나라(`decisions/201`) «다른 도메인이 섞이는가» 는 더 볼 수 없다.
+    대신 필터가 **ES 질의에 실제로 먹는지**를 양쪽에서 본다 —
 
-    금융 질의(GS-001)의 top-3 에 `DASAN-MANUAL-4.1`·`HLT-MANUAL-1.4` 가 들어왔다.
-    B-0 라우팅을 포트에 태우면 이게 줄어든다.
+    - `dasan` 으로 좁히면 필터 없는 결과와 같다(전부 다산이므로). 필터가 결과를 망가뜨리지 않는다.
+    - 색인에 없는 도메인(`finance` — 08-28 삭제)으로 좁히면 **0건**이다. 필터가 무시되고 있다면
+      여기서 필터 없는 결과가 그대로 나온다 — 첫 단언만으로는 이 둘을 구분할 수 없다.
+
+    전에는 GS-020(병원) 을 `health` 로 좁혀 `HLT-` 만 나오는지 봤는데, 그 도메인이 삭제돼 늘 실패했다.
     """
-    utterance = "지금 이 시간에 문 연 병원이 근처에 있는지 알 수 있을까요"  # 골든셋 GS-020
-    unfiltered = asyncio.run(EsBm25Retriever(client).retrieve(utterance, top_k=5))
-    filtered = asyncio.run(EsBm25Retriever(client, domain="health").retrieve(utterance, top_k=5))
+    utterance = "장애인콜택시 등록하려면 뭘 준비해야 하나요"  # 골든셋 GS-209
+    unfiltered = asyncio.run(_retriever(client, temp_index).retrieve(utterance, top_k=5))
+    dasan = asyncio.run(_retriever(client, temp_index, domain="dasan").retrieve(utterance, top_k=5))
+    absent = asyncio.run(_retriever(client, temp_index, domain="finance").retrieve(utterance, top_k=5))
 
-    assert filtered, "결과가 비었다"
-    assert all(d.doc_id.startswith("HLT-") for d in filtered)
-    assert any(not d.doc_id.startswith("HLT-") for d in unfiltered), (
-        "필터 없이도 전부 health 라면 이 테스트가 필터를 검증하지 못한다"
-    )
+    assert unfiltered, "필터 없이도 결과가 비었다 — 이 테스트가 필터를 검증하지 못한다"
+    assert all(d.doc_id.startswith("DASAN-") for d in dasan)
+    assert [d.doc_id for d in dasan] == [d.doc_id for d in unfiltered]
+    assert absent == [], f"색인에 없는 도메인으로 좁혔는데 결과가 나왔다 — 필터가 안 걸린다: {absent}"
 
 
 # 하네스 배선 테스트(`Ports(retrieval=...)` 에 꽂으면 숫자가 나오는가)는 여기 두지 않는다.
