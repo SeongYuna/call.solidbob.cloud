@@ -126,3 +126,20 @@ source_modules =
 forbidden_modules =
     pydantic
     fastapi
+
+# 허브의 계약 계층은 스포크를 모른다 (2026-09-22, `w6-server-loose-ends` ⑤).
+# 「허브는 스포크를 import 하지 않는다」를 통째로 걸면 성립하지 않는다 — `hub.dependencies` 는 스포크 구현을 꽂는 자리(합성)이고,
+# `hub.adapter` 라우터는 인증 가드(`admin_auth`·`agent_auth`)를 쓴다. 그래서 **`hub.app`(DTO·포트·인터랙터)만** 막는다 —
+# 포트가 스포크 타입을 알면 스포크를 갈아 끼울 수 없다.
+[importlinter:contract:hub-app-knows-no-spoke]
+name = 허브 계약 계층 → 스포크 import 금지 (hub.app 은 포트만 안다)
+type = forbidden
+source_modules =
+    hub.app
+forbidden_modules =
+    masking
+    closure_gate
+    postcall
+    blacklist
+    admin_auth
+    agent_auth

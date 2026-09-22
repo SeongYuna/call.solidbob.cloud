@@ -18,6 +18,8 @@ import {
   type RawTranscript,
   type RecommendPayload,
   type RecommendRequest,
+  type RoutingDecisionPayload,
+  type RoutingDecisionRequest,
   type SttEngine,
   type SttHandlers,
   type SttOpenOptions,
@@ -98,10 +100,21 @@ export class FakeHub implements HubPort {
   /** 추천 응답 1순위 카드의 근거 조항 — 주면 cards 에 한 장 싣는다. */
   topDocId: string | null = null;
   readonly docsChecked: RequiredDocsCheckRequest[] = [];
+  /** 필요서류 판정을 **물은** 조항을 순서대로 — 422 로 돌려보낸 것까지. `docsChecked` 는 판정이 돌아간 것만 담는다. */
+  readonly docsAsked: string[] = [];
   /** 규칙이 없는 조항 — 서버처럼 422 를 낸다. */
   readonly notProcedures = new Set<string>();
   failIngest: number | null = null;
+  /**
+   * 전사 요청을 **앞에서부터 한 번씩** 실패시킨다 — 값은 상태 코드, `null` 은 연결 실패·시간 초과(`HubError.status === null`).
+   * 비면 정상 응답. 일시 장애(운영 SYN-010 마지막 턴, `w6-replay-last-turn`)를 흉내 낸다.
+   */
+  readonly ingestFailQueue: Array<number | null> = [];
+  /** 전사 요청을 **받은** 횟수 — 실패한 것까지. `ingested` 는 성공한 것만 담는다. */
+  readonly ingestAttempts: RawTranscript[] = [];
   failStart: number | null = null;
+  readonly routed: RoutingDecisionRequest[] = [];
+  failRouting: number | null = null;
   ingestDelayMs = 0;
   fired = true;
 
@@ -112,9 +125,21 @@ export class FakeHub implements HubPort {
     this.calls.push(request);
   }
 
+  async decideRouting(request: RoutingDecisionRequest): Promise<RoutingDecisionPayload> {
+    if (this.failRouting !== null) {
+      throw new HubError("routing", this.failRouting);
+    }
+    this.routed.push(request);
+    return { call_id: request.call_id, assigned_agent_id: null, is_blacklisted: "false", fell_back: "false" };
+  }
+
   async ingestTranscript(raw: RawTranscript): Promise<MaskedTranscript> {
     if (this.ingestDelayMs > 0) {
       await new Promise((resolve) => setTimeout(resolve, this.ingestDelayMs));
+    }
+    this.ingestAttempts.push(raw);
+    if (this.ingestFailQueue.length > 0) {
+      throw new HubError("ingest", this.ingestFailQueue.shift() ?? null);
     }
     if (this.failIngest !== null) {
       throw new HubError("ingest", this.failIngest);
@@ -151,6 +176,7 @@ export class FakeHub implements HubPort {
   }
 
   async checkRequiredDocs(request: RequiredDocsCheckRequest): Promise<ClosurePayload> {
+    this.docsAsked.push(request.procedure);
     if (this.notProcedures.has(request.procedure)) {
       throw new HubError("unknown procedure", 422);
     }

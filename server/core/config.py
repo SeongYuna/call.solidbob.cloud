@@ -69,9 +69,8 @@ class Settings:
     # --- 쓰기 경로 서비스 토큰 (2026-09-20, `_project/decisions/120`) ---
     # 콜 미디에이터 → 서버의 쓰기 6+1 경로(`POST /hub/calls`·`/transcripts`·`/recommendations`·`/call-guard-checks`·
     # `/compliance-checks`·`/required-docs-checks`·`/closure-checks`)를 잠근다. 09-20 운영 왕복에서 **토큰 없이 200** 이었다.
-    # ⚠ **없으면 열린다**(업로드 토큰과 반대다) — 서버를 먼저 배포하는 순간 돌고 있는 미디에이터가 401 이 되지 않게
-    #    하려는 **이행기 동작**이다. 열려 있는지는 `/health` 의 `ingest_guard` 가 말한다. 미디에이터가 토큰을 보내기 시작하면
-    #    fail-closed 로 바꾼다(120 「전환 순서」 4번).
+    # **없으면 닫힌다**(업로드 토큰과 같다) — 미설정이면 일곱 경로가 전부 401 이고 `/health` 의 `ingest_guard` 가 "unset" 이다.
+    #    2026-09-22 까지는 「없으면 연다」 이행기였다(120 「전환 순서」 4번에서 닫음). 콜 미디에이터의 `CORE_API_TOKEN` 과 같은 값.
     ingest_service_token: str | None
 
     # --- 관리자 로그인(구글, 2026-09-14) — apps/admin. 회원가입 없음, 허용 목록은 admin_account ---
@@ -106,6 +105,15 @@ class Settings:
     # 붙어 추천 지연이 늘어난다 — 그래서 모델 이름을 따로 넣어야 켠다.
     ollama_url: str | None = None
     generation_model: str | None = None
+
+    # --- 읽기 경로 문 (2026-09-22, `decisions/322`) — 통화 목록·전사·통화 기록·수동 검색 ---
+    # 토큰은 늘 받는다(틀리면 401). true 면 **토큰 없는 요청도 401**. 상담원 화면이 토큰을 싣기 시작한 뒤 켠다 —
+    # 먼저 켜면 운영 상담원 화면이 깨진다. 상태는 `/health` 의 `read_guard` 가 말한다.
+    read_auth_required: bool = False
+
+    # --- 배포 버전 (2026-09-22, `w6-server-loose-ends` ①) — 이미지 빌드 인자로 굽는다(`infra/docker/server.Dockerfile`) ---
+    # `/health` 의 `version`. 밖에서 어느 태그가 떠 있는지 보려고 둔다. 비밀이 아니다. 로컬은 없다 → "unknown"
+    app_version: str | None = None
 
     @property
     def postgres_configured(self) -> bool:
@@ -153,4 +161,6 @@ def load_settings() -> Settings:
         retrieval_rerank_model_dir=_env("RETRIEVAL_RERANK_MODEL_DIR"),
         ollama_url=_env("OLLAMA_URL"),
         generation_model=_env("GENERATION_MODEL"),
+        read_auth_required=(_env("READ_AUTH_REQUIRED") or "").strip().lower() in ("1", "true", "yes"),
+        app_version=_env("APP_VERSION"),
     )

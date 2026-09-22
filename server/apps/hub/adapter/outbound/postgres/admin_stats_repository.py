@@ -2,6 +2,7 @@
 """AdminStatsPort 의 PostgreSQL 구현 — 문장 하나로 센다(같은 스냅샷). 상담원 컬럼으로 묶지 않는다(부록 A-1).
 
 「적용 중 등록」은 블랙리스트 저장소의 `_ACTIVE` 와 같은 조건이다 — 해제되지 않았고 만료 전.
+「오늘」은 **KST 자정부터**다(`w6-admin-stats-today`) — 서버·DB 시간대가 UTC 라 `AT TIME ZONE` 으로 자른다. 기준 시각은 DB `NOW()` 하나.
 """
 
 from __future__ import annotations
@@ -21,7 +22,13 @@ SELECT
     (SELECT COUNT(*) FROM "routing_log"),
     (SELECT COUNT(*) FROM "routing_log" WHERE "is_blacklisted"),
     (SELECT COUNT(*) FROM "routing_log" WHERE "fell_back"),
-    NOW()
+    NOW(),
+    (SELECT COUNT(*) FROM "call" WHERE "started_at" >= t.kst_midnight),
+    (SELECT COUNT(*) FROM "call_guard_flag" WHERE "detected_at" >= t.kst_midnight),
+    (SELECT COUNT(*) FROM "blacklist_request" WHERE "requested_at" >= t.kst_midnight),
+    t.kst_today
+FROM (SELECT (date_trunc('day', NOW() AT TIME ZONE 'Asia/Seoul') AT TIME ZONE 'Asia/Seoul') AS kst_midnight,
+             (NOW() AT TIME ZONE 'Asia/Seoul')::date AS kst_today) AS t
 """
 
 
@@ -34,4 +41,5 @@ class PostgresAdminStatsRepository(AdminStatsPort):
             async with conn.cursor() as cur:
                 await cur.execute(_COUNT)
                 row = await cur.fetchone()
-        return AdminStats(*(int(v) for v in row[:8]), counted_at=row[8])
+        return AdminStats(*(int(v) for v in row[:8]), counted_at=row[8],
+                          calls_today=int(row[9]), call_guard_flags_today=int(row[10]), requests_today=int(row[11]), today=row[12])

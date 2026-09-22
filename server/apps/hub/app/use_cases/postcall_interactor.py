@@ -1,4 +1,4 @@
-# Requirement: D-1, D-2, D-3, SEC-1
+# Requirement: D-1, D-2, D-3, D-6, SEC-1
 """통화 후 처리 인터랙터. PostcallPort 를 부르고 초안 성격을 지킨 채 기록 포트에 남기는 것이 전부다.
 
 **여기서 하지 않는 것**:

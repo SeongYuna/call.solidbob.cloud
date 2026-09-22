@@ -26,6 +26,7 @@ from fastapi.responses import JSONResponse  # noqa: E402
 
 from admin_auth.adapter.inbound.api.v1.auth_router import auth_router  # noqa: E402
 from agent_auth.adapter.inbound.api.v1.agent_directory_router import agent_directory_router  # noqa: E402
+from agent_auth.adapter.inbound.api.v1.agent_hired_on_router import agent_hired_on_router  # noqa: E402
 from agent_auth.adapter.inbound.api.v1.agent_me_router import agent_me_router  # noqa: E402
 from agent_auth.adapter.inbound.api.v1.agent_token_router import agent_token_router  # noqa: E402
 from core.config import Settings, load_settings  # noqa: E402
@@ -66,6 +67,7 @@ from hub.adapter.inbound.api.v1.transcript_ingest_router import transcript_inges
 from hub.adapter.inbound.api.v1.transcript_query_router import transcript_query_router  # noqa: E402
 from hub.adapter.inbound.api.v1.upload_router import upload_router  # noqa: E402
 from hub.dependencies.ingest_guard import ingest_guard_state, require_ingest_service  # noqa: E402
+from hub.dependencies.read_guard import read_guard_state, require_reader  # noqa: E402
 
 SPOKES: list[str] = []  # 스포크를 꽂을 때 이름을 추가한다 — /health 가 그대로 보고한다
 
@@ -403,10 +405,14 @@ _install_missing_index_handler(app)
 # 여덟째 `/hub/routing-decisions`(J-5 배정 판정)는 2026-09-22 에 더했다 — 콜 미디에이터가 통화 시작 직후 부른다(`decisions/126`).
 # 부르는 곳이 생기기 **전에** 잠갔다(프론트는 부르지 않는다, 전수 grep).
 _INGEST_ONLY = [Depends(require_ingest_service)]
+# 읽기 넷(통화 목록·전사·통화 기록·수동 검색)의 문 — 상담원 토큰 또는 서비스 토큰(`decisions/322`). 토큰 없는 요청은
+# `READ_AUTH_REQUIRED` 를 켜야 막힌다(상담원 화면이 토큰을 싣기 전 이행기). 관리자 쪽 지식 공백은 각 라우터가 관리자 문을 단다.
+_READERS = [Depends(require_reader)]
 
 app.include_router(auth_router)
 app.include_router(admin_stats_router)
 app.include_router(agent_directory_router)
+app.include_router(agent_hired_on_router)
 app.include_router(agent_me_router)
 app.include_router(agent_token_router)
 app.include_router(blacklist_decision_router)
@@ -419,8 +425,8 @@ app.include_router(blacklist_request_create_router)
 app.include_router(blacklist_request_list_router)
 app.include_router(call_guard_check_router, dependencies=_INGEST_ONLY)
 app.include_router(call_guard_flag_list_router)
-app.include_router(call_list_router)
-app.include_router(call_record_router)
+app.include_router(call_list_router, dependencies=_READERS)
+app.include_router(call_record_router, dependencies=_READERS)
 app.include_router(call_start_router, dependencies=_INGEST_ONLY)
 app.include_router(card_feedback_router)
 app.include_router(closure_router, dependencies=_INGEST_ONLY)
@@ -438,9 +444,9 @@ app.include_router(required_docs_detection_router, dependencies=_INGEST_ONLY)
 app.include_router(routing_decision_router, dependencies=_INGEST_ONLY)
 app.include_router(routing_setting_router)
 app.include_router(routing_setting_query_router)
-app.include_router(search_router)
+app.include_router(search_router, dependencies=_READERS)
 app.include_router(transcript_ingest_router, dependencies=_INGEST_ONLY)
-app.include_router(transcript_query_router)
+app.include_router(transcript_query_router, dependencies=_READERS)
 app.include_router(upload_router)
 
 
@@ -456,8 +462,12 @@ def health(request: Request) -> dict:
         "postgres_configured": settings.postgres_configured,
         "elasticsearch_configured": settings.elasticsearch_configured,
         "spokes": list(SPOKES),
-        # "open" = 쓰기 경로가 토큰 없이 열려 있다(이행기). 값이 아니라 **상태**만 싣는다(SEC-2)
+        # "unset" = 토큰 미설정이라 쓰기 경로가 전부 401 이다. 값이 아니라 **상태**만 싣는다(SEC-2)
         "ingest_guard": ingest_guard_state(settings),
+        # "open" = 토큰 없는 읽기가 지나간다(이행기, decisions/322). "locked" = READ_AUTH_REQUIRED
+        "read_guard": read_guard_state(settings),
+        # 배포된 이미지 태그(빌드 인자 APP_VERSION). 로컬은 "unknown" — 지어내지 않는다
+        "version": settings.app_version or "unknown",
     }
 
 

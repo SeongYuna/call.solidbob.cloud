@@ -46,6 +46,8 @@ const registry = new CallRegistry({
   broadcaster: dashboards,
   log,
   nowMs: () => Date.now(),
+  // J-5 배정 판정 후보 — 통화 시작 직후 서버에 넘긴다(decisions/126). 비면 빈 목록
+  routingCandidates: config.routingCandidates,
   // 세 메시지 모두 2026-09-15 켰다 — apps/call 실서버 파서가 main 에 들어왔다(PR #88 에 실린 frontend 69508ae,
   // realCallMediatorClient.ts 의 parseRecommendationPending·parseCallGuard·새 parseClosure). 끄려면 false 로 되돌린다
   // 「검색 중」 신호(w4-recommendation-pending-contract)

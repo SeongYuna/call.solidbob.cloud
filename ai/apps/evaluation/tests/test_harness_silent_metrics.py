@@ -170,7 +170,8 @@ def test_A5_는_어떤_포트를_꽂아도_사유가_붙은_측정_불가다():
 
 def test_새_섹션은_맨_뒤에만_붙고_기존_섹션_순서는_그대로다():
     report = run_eval(load_golden_set(), Ports())
-    assert list(report) == EXISTING_SECTIONS + NEW_SECTIONS
+    # 2026-09-22 D-1·D-2 `postcall` 이 그 뒤에 붙었다(`w6-postcall-golden-cases`) — 앞 순서는 그대로다
+    assert list(report) == EXISTING_SECTIONS + NEW_SECTIONS + ["postcall"]
 
 
 def test_생성_포트를_꽂아도_기존_섹션_값은_한_글자도_안_바뀐다():

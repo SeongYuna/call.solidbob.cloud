@@ -5,6 +5,7 @@ DB 는 원래 타입, 내부 DTO 도 원래 타입 — 변환은 스키마 계�
 
 from fastapi.testclient import TestClient
 
+from hub.tests.adapter._ingest_auth import HEADERS as INGEST_HEADERS
 from main import app
 
 BODY = {"call_id": "c_001", "segment_id": 7, "speaker": "customer", "text": "여권 재발급 서류가 뭐예요",
@@ -24,7 +25,7 @@ def _leaves(value):
 
 
 def test_전사_응답은_말단_값이_전부_문자열이다():
-    with TestClient(app) as client:
+    with TestClient(app, headers=INGEST_HEADERS) as client:
         body = client.post("/hub/transcripts", json={**BODY, "text": "제 번호는 01012345678 이에요"}).json()
     assert body["segment_id"] == "7" and body["is_final"] == "true" and body["utterance_end_ms"] == "1000"
     assert body["masked"][0]["span"] == ["6", "17"]
@@ -33,13 +34,13 @@ def test_전사_응답은_말단_값이_전부_문자열이다():
 
 def test_요청은_숫자_문자열도_받는다():
     """프론트가 계약대로 문자열을 보내도 422 가 아니다."""
-    with TestClient(app) as client:
+    with TestClient(app, headers=INGEST_HEADERS) as client:
         r = client.post("/hub/transcripts", json={**BODY, "segment_id": "7", "utterance_end_ms": "1000", "is_final": "true"})
     assert r.status_code == 200 and r.json()["segment_id"] == "7"
 
 
 def test_통화_시작_응답도_문자열이다():
-    with TestClient(app) as client:
+    with TestClient(app, headers=INGEST_HEADERS) as client:
         body = client.post("/hub/calls", json={"call_id": "test-c001"}).json()
     assert body["created"] == "true" and body["channel_count"] == "1"
 
@@ -47,7 +48,7 @@ def test_통화_시작_응답도_문자열이다():
 def test_OpenAPI_응답_스키마에_숫자_불리언_타입이_없다():
     """조서희가 붙일 때 읽는 것은 /openapi.json 이다 — 응답 스키마가 전부 string 이어야 한다.
     `/health` 는 스키마가 없는 dict 라 대상이 아니다(런북 19장 배포 검증 항목 — 불리언 유지)."""
-    with TestClient(app) as client:
+    with TestClient(app, headers=INGEST_HEADERS) as client:
         spec = client.get("/openapi.json").json()
     schemas = spec["components"]["schemas"]
     response_names = set()

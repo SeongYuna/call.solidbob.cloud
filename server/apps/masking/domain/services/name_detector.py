@@ -59,14 +59,17 @@ _SURNAMES_1 = set(
     "김이박최정강조윤장임한오서신권황안송류유전홍고문양손배백허남심노하곽성차주우구민진지엄채원천방공현함변염여추도소석선설마길연위표명기반왕금옥육인맹제모탁국어은편용예경봉사부"
 )
 _SURNAMES_2 = ("남궁", "황보", "제갈", "선우", "독고", "사공", "서문")
+# 한 음절 외국 성(중국·베트남). 띄어 쓴 이름의 **첫 어절**로만 쓴다 — 한국 성씨(`_SURNAMES_1`)에 없는 것만 적는다
+_FOREIGN_SURNAMES_1 = frozenset(("첸", "리", "레", "쩐", "팜", "응", "린", "탄", "쑨", "량", "쉬", "후", "뤄", "쟝"))
 
-_AFTER_HONORIFIC = r"(?:께서|에게|께|이|가|은|는|을|를|의|도)?(?=$|[\s,.?!])"
+_AFTER_HONORIFIC = r"(?:께서|에게|께|이|가|은|는|을|를|의|도)?(?=$|[\s,.?!)])"  # 「)」 — `"(한가람 고객님)"`(2026-09-22)
 # 띄어 쓴 호칭(`"김도윤 고객님"`·`"그 김민준 씨가"`)과 붙여 쓴 「님」(`"홍길동님"`)을 나눠 본다 — 한 정규식에 합치면
 # `"김도윤 고객님"` 을 「김도윤 고객」+「님」 두 어절 이름으로 읽는다(실제로 그랬다)
+# 앞 경계에 여는 괄호도 넣는다 — `"요청 (한가람 고객님)"` 의 이름을 「(」 뒤라서 못 봤다(2026-09-22, 운영 블랙리스트 사유 재현 중 발견)
 _HONORIFIC_SPACED = re.compile(
-    r"(?:^|(?<=[\s,.?!]))(?P<name>[가-힣]{2,4}(?:\s[가-힣]{2,4})?)\s(?:고객님|선생님|씨)" + _AFTER_HONORIFIC
+    r"(?:^|(?<=[\s,.?!(]))(?P<name>[가-힣]{2,4}(?:\s[가-힣]{2,4})?)\s(?:고객님|선생님|씨)" + _AFTER_HONORIFIC
 )
-_HONORIFIC_ATTACHED = re.compile(r"(?:^|(?<=[\s,.?!]))(?P<name>[가-힣]{3})(?:씨|님)" + _AFTER_HONORIFIC)
+_HONORIFIC_ATTACHED = re.compile(r"(?:^|(?<=[\s,.?!(]))(?P<name>[가-힣]{3})(?:씨|님)" + _AFTER_HONORIFIC)
 # 「이예요」 는 맞춤법이 틀린 모양이지만 실제 발화(STT·채팅)에 흔하다 — `"인천이예요"` 를 「인천이」+「예요」 로 읽던 것을 막는다
 _SHORT_ANSWER_ENDINGS = ("이에요", "이예요", "이고요", "인데요", "입니다", "이요", "예요", "요")
 _SENTENCE_START = re.compile(r"(?:^|(?<=[.?!]\s))(?P<tok>[가-힣]{3,8})(?=[.?!,]?(?:\s|$))")
@@ -132,6 +135,50 @@ def _span(start: int, length: int) -> PiiSpan:
     return PiiSpan(pattern="P6", start=start, end=start + length)
 
 
+def _name_length(text: str, start: int, raw: str, name: str, *, continued: bool) -> int:
+    """조사를 벗긴 뒤 **가릴 길이**. 벗긴 조사가 이름의 끝 글자일 수 있으면 그 글자까지 가린다(애매하면 가린다).
+
+    2026-09-22 E2E SYN-017 #12 `"저 이름 다나카 유이."` → `"저 이름 *** *이."` — 「유이」 의 「이」 를 주격 조사로 보고 벗겨
+    이름 끝 글자가 확정 자막·DB 에 남았다(SEC-1). 조사 「이」 와 이름 끝 「이」(유이·아이·사쿠라이·김서이)는 글자로 갈리지 않는다.
+
+    - 벗긴 조사가 「이」 로 시작하면 **그 「이」 까지** 가린다 — 이어진 어절(`continued` — 띄어 쓴 외국인 이름의 둘째·셋째
+      어절, `"유이요"`·`"아이에요"`·`"란이에요"`)이거나, 성씨로 시작하는 두 글자만 남을 때(`"김서이에요"` → 「김서」 — 한국 이름은
+      대개 세 글자다), 또는 홑 「이」 뒤가 문장 끝일 때(`"유이."` — 주격 조사는 문장을 끝내지 않는다). 「에요」·「요」 는 남긴다
+    - 이어진 어절에서 「이」 가 아닌 조사를 벗겨 **한 글자만 남으면** 어절째 가린다 — 한 글자만 남는 모양은 벗긴 쪽이 이름 글자일 수 있다
+    - 그 밖에는 벗긴 그대로 — `"박서연이고 번호는"` 의 「이고」 는 가리지 않는다
+
+    가려지는 것은 조사 한두 글자뿐이다(과잉). 이름 끝 글자를 흘리는 것(누락)보다 낫다 — 절대 원칙 3.
+    """
+    particle = raw[len(name):]
+    if not particle:
+        return len(name)
+    if particle.startswith("이"):
+        after = start + len(raw)
+        at_end = after >= len(text) or text[after] in ".,?!"
+        two_syllable_korean = len(name) == 2 and _starts_with_surname(name)
+        if continued or two_syllable_korean or (particle == "이" and at_end):
+            return len(name) + 1
+    if continued and len(name) == 1:
+        return len(raw)
+    return len(name)
+
+
+# 이어진 어절 끝의 서술격 조사. 이 모양이면 동사 어미 검사(`_VERBAL_TAILS`)를 건너뛴다 — `"마리아 소피아요"`(「아요」)·
+# `"사토 유우입니다"`(「니다」)를 동사로 보고 이름 끝 어절을 통째로 흘렸다(2026-09-22, SYN-017 계열을 골든셋으로 넓히다 발견).
+# 「세요·해요·어요」 로 끝나면 여전히 동사다(`"홍길동 맞으세요"`), `"맞아요"` 는 `_NOT_NAMES` 가 막는다.
+_COPULA_PARTICLES = frozenset(("요", "예요", "이요", "이에요", "입니다"))
+_VERB_ONLY_TAILS = ("세요", "해요", "어요")
+
+
+def _verbal_continuation(raw: str, name: str) -> bool:
+    """이어진 어절이 이름이 아니라 서술어인가. 이름 뒤 서술격 조사(`"소피아요"`)는 서술어로 보지 않는다."""
+    if not raw.endswith(_VERBAL_TAILS):
+        return False
+    if _is_not_name(raw) or raw.endswith(_VERB_ONLY_TAILS):
+        return True
+    return raw[len(name):] not in _COPULA_PARTICLES
+
+
 def _after_context(text: str, pos: int) -> list[PiiSpan]:
     """문맥 뒤 최대 세 어절. 조사가 붙은 어절에서 멈춘다(`"박서연이고 번호는"`)."""
     # 공백 하나로만 이어진 한글 어절 최대 세 개 — 쉼표·마침표에서 끊는다
@@ -146,17 +193,24 @@ def _after_context(text: str, pos: int) -> list[PiiSpan]:
     found: list[PiiSpan] = []
     for i, (start, raw) in enumerate(tokens):
         name = _strip_particles(raw)
-        if _is_not_name(name) or (i > 0 and raw.endswith(_VERBAL_TAILS)):
+        if _is_not_name(name) or (i > 0 and _verbal_continuation(raw, name)):
             break
         if i == 0 and len(name) >= 5 and (raw.endswith(_VERBAL_TAILS) or len(name) > 8):
             break  # 긴 덩어리는 어절째 가리되(GS-037) 동사 어미면 이름이 아니다
-        found.append(_span(start, len(name)))
+        found.append(_span(start, _name_length(text, start, raw, name, continued=i > 0)))
         if name != raw:
             break  # 조사가 붙은 어절에서 이름이 끝난다(`"박서연이고 번호는"`)
     # 첫 어절이 한 글자면 이름이 아니다(`"이름이나 나이는"` 의 「나」 · `"이름은 잘 기억"` 의 「잘」) — 한 글자 조각(`"티"`)은
-    # 여러 어절 외국인 이름의 **가운데**에서만 나온다
-    if not found or found[0].length < 2:
+    # 여러 어절 외국인 이름의 **가운데**에서만 나온다.
+    # **예외(2026-09-22)**: 한 글자가 성씨이고 뒤에 두 글자 이상 어절이 이어지면 띄어 쓴 이름이다 — `"성함이 박 지우요"`(STT 띄어쓰기
+    # 오류) · `"제 이름은 첸 메이예요"`(한 음절 외국 성). 전에는 통째로 버려 이름 전체가 남았다(누락 0건 > 과잉 억제)
+    if not found:
         return []
+    if found[0].length < 2:
+        first = text[found[0].start:found[0].end]
+        spaced_surname = first in _SURNAMES_1 or first in _FOREIGN_SURNAMES_1
+        if not (spaced_surname and len(found) >= 2 and found[1].length >= 2):
+            return []
     return found
 
 

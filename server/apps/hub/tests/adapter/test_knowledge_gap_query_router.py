@@ -50,6 +50,11 @@ class _Fake(KnowledgeGapQueryPort):
 
 
 def _client(fake=None):
+    # 관리자 문(`decisions/322`)은 `test_knowledge_gap_guards.py` 가 본다 — 여기는 문 뒤의 동작만
+    from admin_auth.adapter.inbound.api.admin_guard import require_admin  # noqa: PLC0415
+    from admin_auth.app.dtos.admin_identity_dto import AdminAccount  # noqa: PLC0415
+
+    app.dependency_overrides[require_admin] = lambda: AdminAccount(id=3, email="a@example.com", name="관리자", agent_id=None)
     app.dependency_overrides[get_knowledge_gap_query_port] = lambda: (fake or _Fake())
     return TestClient(app)
 

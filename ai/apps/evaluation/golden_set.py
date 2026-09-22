@@ -168,3 +168,60 @@ def load_golden_set(path: Path | str = DEFAULT_GOLDEN_SET_PATH) -> list[GoldenIt
             )
         )
     return items
+
+
+# ── D-1·D-2 통화 후 처리 — 별도 파일 `golden-set/postcall-v1.json` (`w6-postcall-golden-cases`, `decisions/218`) ──
+#
+# `v1-150.json` 은 **발화 한 줄** 단위라 통화 하나를 담을 자리가 없다. 그래서 통화 단위 정답은 따로 두고, 발화는
+# 합성 대본(`scripts/persona_sim/dasan-v0/SYN-*.json`)을 **경로로 가리킨다** — 대본을 복사해 두면 대본이 고쳐질 때
+# 정답과 발화가 조용히 갈라진다. 대신 `turn_count` 를 함께 적어 대본이 바뀌면 로드에서 멈춘다.
+
+DEFAULT_POSTCALL_SET_PATH = DEFAULT_GOLDEN_SET_PATH.parent / "postcall-v1.json"
+
+
+@dataclass(frozen=True)
+class PostcallGold:
+    id: str
+    script_id: str
+    turns: list[tuple[int, str, str]]  # (seq, speaker, text) — 대본 순서 그대로
+    inquiry_type: str
+    key_items: tuple  # tuple[metrics.postcall.KeyItem, ...]
+
+
+def load_postcall_set(path: Path | str = DEFAULT_POSTCALL_SET_PATH) -> list[PostcallGold]:
+    """통화 후 처리 정답을 읽고, 가리키는 대본에서 발화를 채운다. 대본 경로는 **저장소 루트 기준**이다."""
+    from .metrics.postcall import KeyItem
+
+    path = Path(path)
+    raw = json.loads(path.read_text(encoding="utf-8"))
+    repo_root = path.resolve().parent.parent
+    catalogue = set(raw["type_catalogue"]["types"])
+    out: list[PostcallGold] = []
+    for entry in raw["items"]:
+        script = json.loads((repo_root / entry["script"]).read_text(encoding="utf-8"))
+        if script["id"] != entry["script_id"]:
+            raise ValueError(f"{entry['id']}: 대본 id {script['id']} ≠ {entry['script_id']}")
+        if len(script["turns"]) != entry["turn_count"]:
+            raise ValueError(
+                f"{entry['id']}: 대본 {entry['script_id']} 의 턴 수가 {len(script['turns'])} 로 바뀌었다"
+                f"(라벨 당시 {entry['turn_count']}) — 정답을 다시 확인한다"
+            )
+        if entry["inquiry_type"] not in catalogue:
+            raise ValueError(f"{entry['id']}: 유형 {entry['inquiry_type']!r} 이 유형표에 없다")
+        items = tuple(
+            KeyItem(id=f"{entry['id']}.{k['id']}", kind=k["kind"], label=k["label"], forms=tuple(k["forms"]))
+            for k in entry["key_items"]
+        )
+        ids = [k.id for k in items]
+        if len(ids) != len(set(ids)):
+            raise ValueError(f"{entry['id']}: 핵심 항목 id 가 겹친다")
+        out.append(
+            PostcallGold(
+                id=entry["id"],
+                script_id=entry["script_id"],
+                turns=[(int(t["seq"]), t["speaker"], t["text"]) for t in script["turns"]],
+                inquiry_type=entry["inquiry_type"],
+                key_items=items,
+            )
+        )
+    return out

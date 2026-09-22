@@ -12,7 +12,7 @@ from hub.adapter.outbound.postgres.admin_stats_repository import PostgresAdminSt
 from hub.adapter.outbound.postgres.connection import build_connection_factory
 
 REF = "e" * 64
-CALLS = ("it_stats_a", "it_stats_b")
+CALLS = ("it_stats_old", "it_stats_a", "it_stats_b")
 
 
 @pytest.mark.integration
@@ -45,7 +45,8 @@ def test_실제_DB에서_현황판_건수(integration_settings):
             await sql('INSERT INTO "customer" VALUES (%s, NOW(), %s) ON CONFLICT DO NOTHING', (REF, "active"))
             await sql("""INSERT INTO "call" (call_id, domain, customer_id, started_at, channel_count, stt_engine, status)
                          VALUES ('it_stats_a','dasan',%s,NOW(),1,'mock','closed'),
-                                ('it_stats_b','dasan',%s,NOW(),1,'mock','in_progress')""", (REF, REF))
+                                ('it_stats_b','dasan',%s,NOW(),1,'mock','in_progress'),
+                                ('it_stats_old','dasan',%s,NOW() - INTERVAL '2 days',1,'mock','closed')""", (REF, REF, REF))
             await sql("""INSERT INTO "transcript_segment" (segment_id, call_id, speaker, text, is_final, created_at)
                          VALUES (1,'it_stats_a','customer','*** 같은',TRUE,NOW())""")
             await sql("""INSERT INTO "call_guard_flag" (call_id, segment_id, category, phrase, span_start, span_end, detected_at)
@@ -71,9 +72,13 @@ def test_실제_DB에서_현황판_건수(integration_settings):
             diff = {k: getattr(after, k) - getattr(before, k) for k in (
                 "calls_total", "calls_closed", "call_guard_flags", "pending_requests", "active_entries",
                 "routing_decisions", "routing_blacklisted", "routing_fell_back")}
-            assert diff == {"calls_total": 2, "calls_closed": 1, "call_guard_flags": 1, "pending_requests": 1,
+            assert diff == {"calls_total": 3, "calls_closed": 2, "call_guard_flags": 1, "pending_requests": 1,
                             "active_entries": 1, "routing_decisions": 2, "routing_blacklisted": 1, "routing_fell_back": 1}
             assert after.counted_at is not None
+            # 오늘(KST) — 이틀 전 통화는 누적에만, 오늘 칸에는 없다(w6-admin-stats-today)
+            today = {k: getattr(after, k) - getattr(before, k) for k in ("calls_today", "call_guard_flags_today", "requests_today")}
+            assert today == {"calls_today": 2, "call_guard_flags_today": 1, "requests_today": 4}
+            assert after.today is not None
         finally:
             await reset()
 

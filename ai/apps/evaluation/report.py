@@ -25,6 +25,12 @@ def print_report(
             print(f"  {result}")
             continue
         for key, value in result.items():
+            # D-1 통화별 값은 한 줄에 몰면 읽을 수 없다 — postcall 섹션만 펼친다(다른 섹션 출력은 그대로)
+            if section == "postcall" and isinstance(value, dict) and key in ("per_call", "missed"):
+                print(f"  {key}:")
+                for sub, v in value.items():
+                    print(f"    {sub}: {v}")
+                continue
             print(f"  {key}: {value}")
         if section == "masking" and masking_coverage:
             _print_masking_coverage(masking_coverage)

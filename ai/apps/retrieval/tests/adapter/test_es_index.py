@@ -6,11 +6,16 @@
     `elasticsearch` 패키지도 설치하지 않는다.
   - `@pytest.mark.integration` 은 실제 ES 가 있을 때만 (`pytest.ini` 가 기본 제외).
     `ELASTICSEARCH_URL` 이 없으면 skip 한다.
+    **공유 인덱스(`callguard-kb-*`)를 건드리지 않는다** — 모듈마다 `callguard-test-<uuid>` 접두어로
+    두 레이아웃의 인덱스를 만들고 끝나면 지운다(2026-09-22, `w6-test-hygiene-eval-wiring`).
+    전에는 `callguard-kb-single` 을 `recreate=True` 로 지우고 벡터 없이 다시 채워 개발 인덱스의
+    dense 벡터를 조용히 0건으로 만들었다.
 """
 
 from __future__ import annotations
 
 import os
+import uuid
 from pathlib import Path
 
 import pytest
@@ -37,6 +42,49 @@ def _chunk(chunk_id="FIN-TERM-1.1", domain="finance"):
 
 def test_single_은_인덱스_하나다():
     assert es_index.index_names("single") == ("callguard-kb-single",)
+
+
+def test_접두어를_주면_운영_이름과_겹치지_않는다():
+    """통합 테스트가 임시 인덱스를 쓰는 근거. 기본값(운영 이름)은 그대로여야 한다."""
+    assert es_index.index_names("single", prefix="callguard-test-x") == ("callguard-test-x-single",)
+    assert es_index.index_names("per-domain", prefix="callguard-test-x") == tuple(
+        f"callguard-test-x-{d}" for d in DOMAINS
+    )
+    assert es_index.index_name_for(_chunk(domain=DOMAINS[0]), "per-domain", prefix="callguard-test-x") == (
+        f"callguard-test-x-{DOMAINS[0]}"
+    )
+
+
+def test_접두어가_create_indices_와_index_chunks_까지_간다():
+    """이름을 얻는 함수만 접두어를 받고 실제로 만드는·쓰는 함수가 운영 이름을 쓰면 소용이 없다."""
+
+    class Recorder:
+        def __init__(self):
+            self.touched: list[str] = []
+            self.indices = self
+
+        def delete(self, index, **kw):
+            self.touched.append(index)
+
+        def exists(self, index):
+            self.touched.append(index)
+            return False
+
+        def create(self, index, **kw):
+            self.touched.append(index)
+
+        def bulk(self, operations, **kw):
+            self.touched += [op["index"]["_index"] for op in operations if "index" in op]
+            return {"errors": False}
+
+        def count(self, index):
+            self.touched.append(index)
+            return {"count": 1}
+
+    r = Recorder()
+    es_index.create_indices(r, "single", recreate=True, prefix="callguard-test-x")
+    es_index.index_chunks(r, [_chunk(domain=DOMAINS[0])], "single", prefix="callguard-test-x")
+    assert r.touched and set(r.touched) == {"callguard-test-x-single"}
 
 
 def test_per_domain_은_도메인마다_인덱스가_하나씩이다():
@@ -78,6 +126,22 @@ def test_본문은_nori_로_분석한다():
     analysis = es_index.build_settings()["analysis"]
     assert analysis["tokenizer"]["kb_nori"]["type"] == "nori_tokenizer"
     assert analysis["analyzer"]["korean"]["tokenizer"] == "kb_nori"
+
+
+def test_품사_필터를_토크나이저_바로_뒤에_기본_목록으로_둔다():
+    """조사·어미가 BM25 순위를 정하던 문제(GS-205, `decisions/214`).
+
+    순서가 뜻을 가진다 — 품사 정보는 토크나이저가 붙이므로 다른 필터보다 먼저 와야 한다.
+    제외 품사는 nori 기본값이다: 사용자 정의 필터(`stoptags`)를 두지 않는다 — 골든셋에 맞춰
+    목록을 고르지 않는다는 결정이 코드에 남도록 여기서 막는다.
+    """
+    analysis = es_index.build_settings()["analysis"]
+    assert analysis["analyzer"]["korean"]["filter"] == [
+        "nori_part_of_speech",
+        "nori_readingform",
+        "lowercase",
+    ]
+    assert "filter" not in analysis, "품사 필터를 사용자 정의(stoptags)로 바꾸면 decisions/214 를 먼저 고친다"
 
 
 def test_사전에_없는_도메인_용어를_사용자_사전에_등록한다():
@@ -129,33 +193,47 @@ def client():
 
 
 @pytest.fixture(scope="module")
+def prefix(client):
+    """이 모듈만 쓰는 임시 접두어. 두 레이아웃의 인덱스를 전부 teardown 에서 지운다."""
+    p = f"callguard-test-{uuid.uuid4().hex[:12]}"
+    names = [n for layout in es_index.LAYOUTS for n in es_index.index_names(layout, prefix=p)]
+    assert not any(n.startswith(es_index.INDEX_PREFIX + "-") for n in names), names
+    print(f"\n[integration] 임시 인덱스: {', '.join(names)}")
+    try:
+        yield p
+    finally:
+        for n in names:
+            client.indices.delete(index=n, ignore_unavailable=True)
+
+
+@pytest.fixture(scope="module")
 def chunks():
     return load_chunks(KB_ROOT)
 
 
 @pytest.mark.integration
 @pytest.mark.parametrize("layout", es_index.LAYOUTS)
-def test_적재하면_청크_수만큼_들어간다(client, chunks, layout):
-    es_index.create_indices(client, layout, recreate=True)
-    counts = es_index.index_chunks(client, chunks, layout)
+def test_적재하면_청크_수만큼_들어간다(client, prefix, chunks, layout):
+    es_index.create_indices(client, layout, recreate=True, prefix=prefix)
+    counts = es_index.index_chunks(client, chunks, layout, prefix=prefix)
     assert sum(counts.values()) == len(chunks)
     if layout == "per-domain":
         for d in DOMAINS:
             expected = sum(1 for c in chunks if c.domain == d)
-            assert counts[f"callguard-kb-{d}"] == expected
+            assert counts[f"{prefix}-{d}"] == expected
 
 
 @pytest.mark.integration
 @pytest.mark.parametrize("layout", es_index.LAYOUTS)
-def test_같은_명령으로_재적재가_재현된다(client, chunks, layout):
+def test_같은_명령으로_재적재가_재현된다(client, prefix, chunks, layout):
     """w2-kb-index 의 완료 조건. `_id` 를 chunk_id 로 고정한 upsert 라 몇 번을 돌려도 같다."""
-    es_index.create_indices(client, layout, recreate=True)
-    first = es_index.index_chunks(client, chunks, layout)
-    ids_first = _all_ids(client, layout)
+    es_index.create_indices(client, layout, recreate=True, prefix=prefix)
+    first = es_index.index_chunks(client, chunks, layout, prefix=prefix)
+    ids_first = _all_ids(client, layout, prefix)
 
-    second = es_index.index_chunks(client, chunks, layout)  # recreate 없이 그대로 다시
+    second = es_index.index_chunks(client, chunks, layout, prefix=prefix)  # recreate 없이 그대로 다시
     assert second == first
-    assert _all_ids(client, layout) == ids_first
+    assert _all_ids(client, layout, prefix) == ids_first
 
 
 @pytest.mark.integration
@@ -167,36 +245,35 @@ def test_같은_명령으로_재적재가_재현된다(client, chunks, layout):
         ("에스컬레이션", "에스컬레이션"),
     ],
 )
-def test_사용자_사전이_실제로_먹는다(client, term, expected_head):
+def test_사용자_사전이_실제로_먹는다(client, prefix, term, expected_head):
     """사전이 빠지면 "중도해지수수료" 가 `중도·해·하·아·지수·수료` 로 깨진다.
 
     `하`·`ᆯ` 같은 흔한 토큰이 섞이면 관계없는 문서와 매칭되고 IDF 도 오염된다.
     """
-    es_index.create_indices(client, "single", recreate=True)
-    resp = client.indices.analyze(
-        index=es_index.SINGLE_INDEX, analyzer="korean", text=term
-    )
+    es_index.create_indices(client, "single", prefix=prefix)  # 없을 때만 만든다
+    (name,) = es_index.index_names("single", prefix=prefix)
+    resp = client.indices.analyze(index=name, analyzer="korean", text=term)
     tokens = [t["token"] for t in resp["tokens"]]
     assert tokens[0] == expected_head, f"원형이 남지 않았다: {tokens}"
     assert not any(len(t) == 1 for t in tokens), f"1글자 오분석 토큰이 있다: {tokens}"
 
 
 @pytest.mark.integration
-def test_두_레이아웃의_문서_내용이_같다(client, chunks):
+def test_두_레이아웃의_문서_내용이_같다(client, prefix, chunks):
     """토폴로지만 다르고 문서는 같아야 비교가 공정하다."""
     for layout in es_index.LAYOUTS:
-        es_index.create_indices(client, layout, recreate=True)
-        es_index.index_chunks(client, chunks, layout)
-    assert _all_sources(client, "single") == _all_sources(client, "per-domain")
+        es_index.create_indices(client, layout, recreate=True, prefix=prefix)
+        es_index.index_chunks(client, chunks, layout, prefix=prefix)
+    assert _all_sources(client, "single", prefix) == _all_sources(client, "per-domain", prefix)
 
 
-def _all_ids(client, layout) -> set[str]:
-    return set(_all_sources(client, layout))
+def _all_ids(client, layout, prefix) -> set[str]:
+    return set(_all_sources(client, layout, prefix))
 
 
-def _all_sources(client, layout) -> dict[str, dict]:
+def _all_sources(client, layout, prefix) -> dict[str, dict]:
     out: dict[str, dict] = {}
-    for name in es_index.index_names(layout):
+    for name in es_index.index_names(layout, prefix=prefix):
         resp = client.search(index=name, query={"match_all": {}}, size=1000)
         for hit in resp["hits"]["hits"]:
             out[hit["_id"]] = hit["_source"]

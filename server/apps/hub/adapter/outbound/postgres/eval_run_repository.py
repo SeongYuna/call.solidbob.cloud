@@ -44,6 +44,7 @@ _MODULE_ID = {
     "asr": "A-5",
     # 2026-09-22 하네스 `generation` 섹션(`w6-harness-silent-metrics`). 10자라 우연히 맞지만 `call_guard` 처럼 기능 ID 로 맞춘다.
     "generation": "B-4",
+    "postcall": "D-1",
 }
 
 # 절대 규칙이 걸린 모듈만 `passed_absolute_rule` 을 채운다 — 그 외는 NULL 이다.
@@ -52,8 +53,8 @@ _ABSOLUTE_RULE_MODULES = ("masking", "closure_gate")
 
 _INSERT_RUN = """
 INSERT INTO "eval_run"
-    ("golden_set_version", "git_commit", "error_rate", "executed_at", "executed_by")
-VALUES (%s, %s, %s, %s, %s)
+    ("golden_set_version", "git_commit", "error_rate", "executed_at", "executed_by", "components")
+VALUES (%s, %s, %s, %s, %s, %s)
 RETURNING "run_id"
 """
 
@@ -76,6 +77,8 @@ class EvalRunRecord:
     error_rate: float = 0.0          # 4.2절 STT 오류 주입률. 지금은 주입 없음 → 0.0
     executed_by: str | None = None
     executed_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+    # 실제로 꽂은 구성 한 줄(검색기·마스킹·생성) — 구성을 바꿔 잰 실행이 DB 만으로 구분되게(2026-09-22)
+    components: str | None = None
 
 
 def flatten_report(report: dict) -> list[tuple[str, str, float, bool | None]]:
@@ -120,7 +123,7 @@ class PostgresEvalRunRepository:
                 await cur.execute(
                     _INSERT_RUN,
                     (record.golden_set_version, record.git_commit, record.error_rate,
-                     record.executed_at, record.executed_by),
+                     record.executed_at, record.executed_by, record.components),
                 )
                 run_id = (await cur.fetchone())[0]   # PostgreSQL 에는 lastrowid 가 없다
                 await cur.executemany(
