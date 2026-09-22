@@ -1,4 +1,6 @@
 import { useState, type ReactElement } from "react";
+import { useAuthStore } from "../../lib/auth/authStore";
+import { fetchBlacklistExpiryChanges, type ExpiryChangeItem } from "../../lib/api/hubClient";
 import type { BlacklistEntryItem, BlacklistRequestItem } from "../../types/blacklist";
 
 /**
@@ -168,6 +170,39 @@ function EntryRow({
   const [reason, setReason] = useState("");
   const reasonFilled = reason.trim().length > 0;
 
+  const accessToken = useAuthStore((s) => s.accessToken);
+  const [history, setHistory] = useState<
+    | { status: "collapsed" }
+    | { status: "loading" }
+    | { status: "ready"; changes: ExpiryChangeItem[] }
+    | { status: "error"; message: string }
+  >({ status: "collapsed" });
+
+  async function loadHistory(): Promise<void> {
+    if (accessToken === null) {
+      setHistory({ status: "error", message: "로그인이 필요합니다." });
+      return;
+    }
+    setHistory({ status: "loading" });
+    try {
+      const changes = await fetchBlacklistExpiryChanges(accessToken, entry.entry_id);
+      setHistory({ status: "ready", changes });
+    } catch (error) {
+      setHistory({
+        status: "error",
+        message: error instanceof Error ? error.message : "변경 이력을 불러오지 못했습니다.",
+      });
+    }
+  }
+
+  function toggleHistory(): void {
+    if (history.status === "collapsed" || history.status === "error") {
+      void loadHistory();
+      return;
+    }
+    setHistory({ status: "collapsed" });
+  }
+
   return (
     <li className="admin-entry-row">
       <div className="admin-entry-row-main">
@@ -183,6 +218,16 @@ function EntryRow({
         <span className="admin-meta">
           {new Date(entry.expires_at).toLocaleDateString("ko-KR")} 만료
         </span>
+        <button
+          type="button"
+          className="btn-outline"
+          aria-expanded={history.status === "loading" || history.status === "ready"}
+          onClick={toggleHistory}
+        >
+          {history.status === "loading" || history.status === "ready"
+            ? "변경 이력 숨기기"
+            : "변경 이력 보기"}
+        </button>
       </div>
       <div className="admin-entry-row-actions">
         <input
@@ -232,6 +277,32 @@ function EntryRow({
           해제
         </button>
       </div>
+      {history.status === "loading" ? (
+        <p className="admin-meta">변경 이력을 불러오는 중...</p>
+      ) : null}
+      {history.status === "error" ? (
+        <p className="header-error" role="alert">
+          {history.message}
+        </p>
+      ) : null}
+      {history.status === "ready" ? (
+        history.changes.length === 0 ? (
+          <p className="admin-empty">변경 이력 없음</p>
+        ) : (
+          <ul className="admin-list is-muted">
+            {history.changes.map((change) => (
+              <li key={change.change_id}>
+                <span className="admin-meta">
+                  {new Date(change.previous_expires_at).toLocaleDateString("ko-KR")} →{" "}
+                  {new Date(change.new_expires_at).toLocaleDateString("ko-KR")} ·{" "}
+                  {change.changed_by} · {change.reason} ·{" "}
+                  {new Date(change.changed_at).toLocaleString("ko-KR")}
+                </span>
+              </li>
+            ))}
+          </ul>
+        )
+      ) : null}
     </li>
   );
 }
