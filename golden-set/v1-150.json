@@ -2,7 +2,7 @@
   "version": "v1-150.1",
   "created": "2026-09-09",
   "revised": "2026-09-22",
-  "size": 279,
+  "size": 284,
   "domain": "dasan",
   "note": "3주차 공식 골든셋. `w3-golden-set-dasan` — 다산 단일 도메인 기준 150건. 기존 13건(GS-002~GS-102)은 v1-50.json 에서 **한 글자도 고치지 않고** 이어받았고 137건을 더했다(절대 원칙 8). 지식베이스도 함께 98조항으로 늘렸다 (`w3-kb-dasan-expand`) — 20조항으로는 상위 5건이 코퍼스의 25%라 Recall@5 가 성립하지 않았고, 필요서류를 다루는 조항이 둘뿐이라 서류 케이스의 정답이 몰렸다.",
   "fields": {
@@ -5533,19 +5533,24 @@
     },
     {
       "id": "GS-701",
-      "module": "B-6",
+      "module": "B",
       "domain": "dasan",
       "customer_utterance": "여권 유효기간이 지났는데 재발급 받으려면 어디로 가야 하나요",
+      "utterance_end_ms": 3800,
       "context_utterances": [],
-      "expected_doc_ids": [],
-      "distractor_doc_ids": [],
+      "expected_doc_ids": [
+        "DASAN-TERM-4.23"
+      ],
+      "distractor_doc_ids": [
+        "DASAN-TERM-1.4",
+        "DASAN-TERM-1.5"
+      ],
       "compliance_violation": null,
       "pii_patterns": [],
       "f2_case": null,
       "call_guard": null,
-      "no_answer_category": "other_agency",
       "source": "authored",
-      "notes": "타 기관 소관 — 외교부(구·군 여권민원실). 지식베이스에서 「여권」은 1.4·1.5 에 신분증 종류로만 나온다. 재발급 절차 조항 없음."
+      "notes": "타 기관 소관 — 외교부(구·군 여권민원실). 지식베이스에서 「여권」은 1.4·1.5 에 신분증 종류로만 나온다. 재발급 절차 조항 없음. ⚠ 2026-09-22 재라벨(`decisions/217`, `w6-passport-clause`): B-6(`no_answer_category: other_agency`, 정답 없음) → **B**(정답 `DASAN-TERM-4.23`). 지식베이스에 여권 발급·재발급 조항 4.23 이 생겨 이 문의에 답이 생겼다 — 시험지를 고친 것이 아니라 지식베이스(사실)가 바뀐 것이다. 위 「재발급 절차 조항 없음」은 09-21 시점의 기록으로 둔다. utterance_end_ms 는 B 항목이 되며 새로 붙인 어림 라벨(글자당 약 115ms)이다. id 는 바꾸지 않았다(GS-7xx 번호대지만 module 은 B)."
     },
     {
       "id": "GS-702",
@@ -5914,9 +5919,115 @@
       "no_answer_category": "kb_gap",
       "source": "authored",
       "notes": "지식베이스 공백 — 구 가족관계등록 담당. 「혼인」은 4.15 의 혼인 기간뿐. 4.4 전입신고·4.1 증명서 발급과 「신고·서류」 문형이 겹치는 하드 네거티브."
+    },
+    {
+      "id": "GS-291",
+      "module": "B",
+      "domain": "dasan",
+      "expected_doc_ids": [
+        "DASAN-TERM-4.23"
+      ],
+      "distractor_doc_ids": [
+        "DASAN-TERM-1.4",
+        "DASAN-TERM-4.6"
+      ],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": null,
+      "call_guard": null,
+      "customer_utterance": "여권 기간이 끝나서 새로 만들려고 하는데 뭘 챙겨 가야 돼요",
+      "utterance_end_ms": 3800,
+      "context_utterances": [],
+      "source": "authored",
+      "notes": "여권 재발급 필요서류(4.23). 1.4 는 여권을 신분증 종류로만 다루고, 4.6 청소년증은 「사진·신분 확인」 어휘가 겹친다. 2026-09-22 추가(`w6-passport-clause`, `decisions/217`). utterance_end_ms 는 기존 B 항목의 글자당 길이(약 115ms)로 어림한 라벨이다 — 잰 값이 아니다."
+    },
+    {
+      "id": "GS-292",
+      "module": "B",
+      "domain": "dasan",
+      "expected_doc_ids": [
+        "DASAN-TERM-4.23"
+      ],
+      "distractor_doc_ids": [
+        "DASAN-TERM-1.5",
+        "DASAN-TERM-1.4"
+      ],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": null,
+      "call_guard": null,
+      "customer_utterance": "저 한국 사람인데 외국에서 오래 살았어요. 여권 날짜 지났어요, 다시 만들고 싶어요. 어디 가요?",
+      "utterance_end_ms": 6200,
+      "context_utterances": [],
+      "source": "authored",
+      "notes": "외국인 화자 문체(재외국민·교포, 짧은 문장·조사 생략). 신청처는 구청 여권민원실(4.23). 1.5 는 재외국민 신분 확인(여권)만 다룬다. 2026-09-22 추가(`w6-passport-clause`, `decisions/217`). utterance_end_ms 는 기존 B 항목의 글자당 길이(약 115ms)로 어림한 라벨이다 — 잰 값이 아니다."
+    },
+    {
+      "id": "GS-293",
+      "module": "B",
+      "domain": "dasan",
+      "expected_doc_ids": [
+        "DASAN-TERM-4.23"
+      ],
+      "distractor_doc_ids": [
+        "DASAN-TERM-4.6",
+        "DASAN-TERM-4.1"
+      ],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": null,
+      "call_guard": null,
+      "customer_utterance": "애 여권을 처음 만들어 주려는데 엄마가 대신 가서 신청해도 되나요",
+      "utterance_end_ms": 4100,
+      "context_utterances": [],
+      "source": "authored",
+      "notes": "18세 미만 대리 신청·법정대리인 동의서(4.23). 4.6 청소년증 보호자 대리 신청 · 4.1 증명서 대리 발급과 문형이 겹친다. 2026-09-22 추가(`w6-passport-clause`, `decisions/217`). utterance_end_ms 는 기존 B 항목의 글자당 길이(약 115ms)로 어림한 라벨이다 — 잰 값이 아니다."
+    },
+    {
+      "id": "GS-294",
+      "module": "B",
+      "domain": "dasan",
+      "expected_doc_ids": [
+        "DASAN-TERM-4.23"
+      ],
+      "distractor_doc_ids": [
+        "DASAN-TERM-2.9",
+        "DASAN-TERM-1.4"
+      ],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": null,
+      "call_guard": null,
+      "customer_utterance": "여권을 잃어버렸는데 인터넷으로 재발급 신청이 되나요",
+      "utterance_end_ms": 3200,
+      "context_utterances": [],
+      "source": "authored",
+      "notes": "분실 재발급은 방문 신청만(4.23). 2.9 대중교통 분실물은 「잃어버렸는데」 어휘가 겹치는 하드 네거티브. 2026-09-22 추가(`w6-passport-clause`, `decisions/217`). utterance_end_ms 는 기존 B 항목의 글자당 길이(약 115ms)로 어림한 라벨이다 — 잰 값이 아니다."
+    },
+    {
+      "id": "GS-295",
+      "module": "B",
+      "domain": "dasan",
+      "expected_doc_ids": [
+        "DASAN-TERM-4.23"
+      ],
+      "distractor_doc_ids": [
+        "DASAN-TERM-1.5",
+        "DASAN-TERM-2.9"
+      ],
+      "compliance_violation": null,
+      "pii_patterns": [],
+      "f2_case": null,
+      "call_guard": null,
+      "customer_utterance": "나 베트남 사람이에요. 여권 잃어버렸어요. 어디서 다시 받아요?",
+      "utterance_end_ms": 4000,
+      "context_utterances": [],
+      "source": "authored",
+      "notes": "외국인 화자 문체(외국 국적자). 외국 국적자의 여권은 자국 대사관 소관이라는 안내가 4.23 에 있다 — 한국 여권 절차가 아니라 소관 안내가 답이다. 1.5 외국인 응대는 통역·신분 확인만 다룬다. 2026-09-22 추가(`w6-passport-clause`, `decisions/217`). utterance_end_ms 는 기존 B 항목의 글자당 길이(약 115ms)로 어림한 라벨이다 — 잰 값이 아니다."
     }
   ],
   "note_2026_09_21": "F-2 필요서류 체크리스트 케이스 99건(GS-601~GS-699, module F-2)을 더했다 — `w5-f2-golden-cases`. 규칙표(`server/apps/closure_gate/domain/value_objects/closure_rule.py`) 29조항마다 ① 전부 안내 → complete ② 하나 빠짐 → incomplete ③ 아무것도 안내 안 됨 → 전부 missing 의 3건(87건) + 경계 12건(조건부만 안내·키 이름 불일치·규칙표에 없는 키·복수 누락 순서). 기대값은 규칙표를 읽고 사람이 정한 뒤 코드와 대조했다(어긋남 0건). `EXCLUDED` 6조항(1.3·1.4·3.4·3.6·6.5·6.8)은 규칙이 없어 채점 대상이 아니다. ⚠ 규칙표 작성자(장민석)와 케이스 작성자(류준)는 다르지만, 기대값을 규칙표 자체에서 정했으므로 이 수치는 「규칙표를 코드가 그대로 따르는가」의 상한이지 「안내가 실제로 충분했는가」의 측정이 아니다. 기존 156건은 한 글자도 고치지 않았다.",
   "note_2026_09_21_b6": "B-6 「관련 문서 없음」 케이스 24건(GS-701~GS-724, module B-6)을 더했다 — `w5-b6-no-answer-threshold`. 전부 `expected_doc_ids: []` 이고 지식베이스(98조항)를 grep 으로 대조해 관련 조항이 정말 없는 것만 골랐다. **`module: \"B\"` 가 아니다** — `metrics/retrieval.py` 의 `hit_at_k` 는 정답이 빈 항목을 True 로 치고 `aggregate_recall_mrr` 은 분모에서 빼므로, B 로 넣으면 기존 96건 수치가 흔들리거나 부풀려진다(6주차 판정 직전, `decisions/123` 과 같은 이유). 하네스는 이 항목을 `no_answer` 섹션으로 따로 센다. 일부만 겹치는 후보(청약·층간소음·항공권·휴대폰 분실·등기부등본 등)는 넣지 않았다 — 목록은 golden-set/README.md. 기존 255건은 한 글자도 고치지 않았다.",
-  "note_2026_09_22": "2026-09-22 — `_project/decisions/212`: AI Hub 다산 전사 원문이 그대로 실려 있던 14건(`source: \"aihub\"` 12건 + `notes` 로만 원문이라 적힌 GS-101·GS-102)의 `customer_utterance`·`context_utterances` 를 같은 민원 의도·같은 정답 조항을 가리키는 **새로 쓴 문장**으로 바꿨다. `source` 는 14건 모두 `aihub_rewritten`. 표본 수는 그대로 279건이고 채점 라벨(`expected_doc_ids`·`distractor_doc_ids`·`pii_patterns`·`module`·`utterance_end_ms` 등)은 한 글자도 고치지 않았다. ⚠ 14건의 질의 문장이 바뀌었으므로 **이 판 이전에 잰 검색 수치와 항목 단위로는 비교할 수 없다**(집계 수치도 이 14건만큼 달라질 수 있다 — 재측정 전까지 이전 수치를 이 판의 값으로 인용하지 않는다). ⚠ 파일 이름은 그대로라 `scripts/run_eval.py` 가 `eval_run.golden_set_version` 에 적는 값(파일 stem `v1-150`)도 그대로다 — 이 판 전후는 `git_commit` 으로 가른다. ⚠ 원문은 git 이력에 남아 있다 — 이력은 다시 쓰지 않았다."
+  "note_2026_09_22": "2026-09-22 — `_project/decisions/212`: AI Hub 다산 전사 원문이 그대로 실려 있던 14건(`source: \"aihub\"` 12건 + `notes` 로만 원문이라 적힌 GS-101·GS-102)의 `customer_utterance`·`context_utterances` 를 같은 민원 의도·같은 정답 조항을 가리키는 **새로 쓴 문장**으로 바꿨다. `source` 는 14건 모두 `aihub_rewritten`. 표본 수는 그대로 279건이고 채점 라벨(`expected_doc_ids`·`distractor_doc_ids`·`pii_patterns`·`module`·`utterance_end_ms` 등)은 한 글자도 고치지 않았다. ⚠ 14건의 질의 문장이 바뀌었으므로 **이 판 이전에 잰 검색 수치와 항목 단위로는 비교할 수 없다**(집계 수치도 이 14건만큼 달라질 수 있다 — 재측정 전까지 이전 수치를 이 판의 값으로 인용하지 않는다). ⚠ 파일 이름은 그대로라 `scripts/run_eval.py` 가 `eval_run.golden_set_version` 에 적는 값(파일 stem `v1-150`)도 그대로다 — 이 판 전후는 `git_commit` 으로 가른다. ⚠ 원문은 git 이력에 남아 있다 — 이력은 다시 쓰지 않았다.",
+  "note_2026_09_22_passport": "2026-09-22 — `_project/decisions/217`, `w6-passport-clause`: 지식베이스에 `DASAN-TERM-4.23 여권 발급·재발급` 을 더하면서 ① B 항목 5건(GS-291~GS-295, 정답 4.23 — 외국인 화자 문체 2건 포함)을 파일 끝에 붙였고 ② GS-701(「여권 유효기간이 지났는데 재발급…」)을 B-6(정답 없음) → B(정답 4.23)로 재라벨했다(항목 `notes` 에 사유). 그래서 B 는 96 → 102건, B-6 은 24 → 23건이다. ⚠ 6주차 판정(09-30) 전에 공식 골든셋을 바꾼 것이다 — 점수를 올리려고 기준을 고친 것이 아니라 지식베이스가 바뀌어 정답이 생긴 것이다. ⚠ 이 판 이전의 B·B-6 수치와 항목 단위로 비교할 수 없다(n 이 다르다). GS-690(F-2, 증거 키에 「여권」)은 규칙표에 없는 키라 영향이 없다. 나머지 항목은 한 글자도 고치지 않았다."
 }
