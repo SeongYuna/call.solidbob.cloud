@@ -119,3 +119,8 @@ def test_맞장구_억제를_끄면_지금처럼_발동한다():
 
 def test_맞장구_억제는_상담원_발화_판정을_바꾸지_않는다():
     assert IsFinalTrigger(suppress_backchannel=True).decide(event(speaker="agent", text="네, 그런데 초본은요?")).fire is False
+
+
+def test_맞장구_억제는_기본_꺼짐이다():
+    """`decisions/216` — 사전 등록 규칙을 못 넘어(손실 1 · 억제 16/22) 넣지 않았다. 운영(`server/main.py`)은 기본값으로 부른다."""
+    assert IsFinalTrigger().decide(event(text="아 네, 알겠습니다.")).fire is True

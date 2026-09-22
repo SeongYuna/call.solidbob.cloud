@@ -437,6 +437,9 @@ dense `t = 0.671` 에서 유형별로 걸러지는 것: 잡담 **4/4** · 시 �
   라벨러는 어휘를 이미 알았다 — 라벨을 어휘에 맞추지 않으려고 `backchannel` 은 **뜻**으로 붙였다(어휘에 없는 「Thank you!」·「부탁드려요」도 backchannel).
 - 대본 24건의 턴별 dense 점수는 `decisions/215` 에서 **이미 봤다** — 그래서 이 표본으로는 **숫자 문턱을 고르지 않는다.**
 
+측정(1회, 2026-09-22, `41c62bd`): 맞장구 억제 규칙 **넣지 않음** — (A) 위험 집합 145턴 중 발동이 꺼진 턴 **1**(SYN-008-16 「네.」 — `needed` 가 아니라 top-5 에 절차 문서 MANUAL-1.4 가 우연히 든 backchannel) · (B) backchannel 억제 **16/22**(기준 90 %).
+`needed` 132턴 · `other` 35턴 · 가림 턴 35건에서 잘못 꺼진 것은 0. 원자료 `jekyll/assets/backchannel-trigger-2026-09-22.json`, 해석은 `decisions/216`.
+
 ### 한계
 
 - `source: synthetic` — Claude 가 쓴 대본이고 STT 를 거치지 않았다. 실제 통화의 맞장구 분포와 다를 수 있다.
