@@ -11,11 +11,6 @@
 > 2026-09-03 정성윤이 고쳤다 — 옛 `ai.solidbob.cloud` 서술이 `decisions/024` 보다 낡아 있었다.
 > 운영 배포는 인프라 소관이라 이 한 줄만 손댔다.
 
-> ⚠ **2026-09-22 — 「HTTP 표면도 웹 프레임워크 의존성도 없다」는 더 이상 사실이 아니다**(`_project/decisions/213`).
-> 모델을 전용 GPU 인스턴스에서 원격으로 부르게(`decisions/121`) **`apps/model_serving/`(FastAPI 표면) + `model_server.py`(합성 루트)** 가 생겼고
-> `requirements.txt` 에 fastapi·uvicorn 이 들어왔다. 배포 도메인은 여전히 없다(인스턴스가 없다). 같은 프로세스 구성(`provider.py`)도 그대로 산다.
-> **`server/` 는 표면을 import 하지 않는다 — HTTP 로만 닿는다**(`tests/test_dependency_direction.py`).
-
 ---
 
 ## 0. 이 디렉터리가 하는 일 / 하지 않는 일
@@ -83,7 +78,6 @@ ai/
 | `compliance` | 상담원 발화 규칙 v1(명세는 분류기 — 학습 데이터 없음) | C-1~C-4 | |
 | `pii_ner` | 규칙 마스킹 위에 얹는 NER 겹 | C-5 P6·P7 | `server/apps/masking` 과 경로가 겹쳐 `masking` 이 아니다 |
 | `postcall_summary` | 규칙 발췌 초안 위에 모델 요약·유형 제안 | D-1·D-2 | `server/apps/postcall` 과 같은 이유 |
-| `model_serving` | 모델 HTTP 표면(NER 구간·임베딩·리랭크·카드 생성) — 2026-09-22 `decisions/213`. 모델은 합성 루트 `model_server.py` 가 꽂는다 | B-2·B-3·B-4·C-5 | inbound 어댑터 + 포트만. 다른 ai 모듈을 import 하지 않는다 |
 
 **이 표에 빠져 있던 둘 (2026-09-21 보탬)** — 2026-09-09 스키마 QA 때 생겼고 `.importlinter` 에는 처음부터 등록돼 있었다. 이 파일에만 없었다.
 

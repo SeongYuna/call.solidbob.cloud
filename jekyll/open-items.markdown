@@ -924,11 +924,11 @@ Environment Variables → **Production 만** → Deployments → Redeploy(`VITE_
 
 ### 2026-09-22 류준 — 남은 일을 돌리며 새로 생긴 것
 
-- [ ] **server 이미지 태그를 올려야 PR 이 통과한다 — 류준·정성윤** — 09-22 `ai` 브랜치가 서버 이미지에 들어가는 코드를 바꿨는데 `newTag` 가 `0.1.24` 그대로다(`scripts/check_release_tags.py` 로 확인). `0.1.25` 는 **이미 레지스트리에 있다**(다른 브랜치가 구움) — 같은 번호로 올리면 우리 코드가 빠진 옛 이미지가 돈다. **비어 있는 다음 번호를 골라 같은 PR 안에서 올린다**
+- [x] **server 이미지 태그를 올려야 PR 이 통과한다 — 류준·정성윤** — 09-22 `ai` 브랜치가 서버 이미지에 들어가는 코드를 바꿨는데 `newTag` 가 `0.1.24` 그대로다(`scripts/check_release_tags.py` 로 확인). `0.1.25` 는 **이미 레지스트리에 있다**(다른 브랜치가 구움) — 같은 번호로 올리면 우리 코드가 빠진 옛 이미지가 돈다. **비어 있는 다음 번호를 골라 같은 PR 안에서 올린다** → **09-22 풀렸다**: `0.1.25` 는 `main` 이 구운 것이었다. `0.1.26` 은 `PM` 브랜치가 먼저 잡아 `ai` 는 `0.1.27` 로 올렸다
 - [ ] **nori 품사 필터를 넣을지 — 류준·팀** — GS-205 가 틀린 원인은 분석기에 `nori_part_of_speech` 가 없어 조사·어미(`해지`의 `해`, `발생 시`의 `시`)가 순위를 정하는 것이다(BM25 상위 5 전부 내용어 매칭 0, 정답 26위). 임시 인덱스로 넣어 보니 GS-205 2위 · BM25 Recall@5 0.823→0.854(96건, 1회, **14건 바꿔 쓰기 전 판**) — 대신 GS-206·241 을 잃는다. **골든셋 한 번으로 고르면 골든셋에 맞추는 것**이라 채택하지 않았다. 고른 데 쓰지 않은 항목으로 다시 재고 결정 기록 `2xx` 로 남길 것
 - [ ] **완료 티켓에 AI Hub 원문 한 건이 남아 있다 — 팀** — `jekyll/_backlogs/w2-golden-set-50.md` 57행이 GS-102 원문(18자)을 통째로 인용한다. 조각이 아니라 발화 한 건이다(`decisions/212` 에서 손대지 않음). 바꿀지 정한다
 - [ ] **AI Hub 이용정책 1번 — 출처 표기 — 팀** — 이용 시 한국지능정보사회진흥원 사업결과임을 밝혀야 하고 2차 저작물도 같다. 발표 자료·README 에 표기가 필요하다
-- [ ] **모델 HTTP 표면이 CI 에서 돌지 않는다 — 정성윤** — `ai/apps/model_serving`(`decisions/213`) 테스트는 fastapi·httpx·uvicorn 이 필요한데 `test.yml` 의 `ai` job 이 설치하지 않아 **skip** 된다(의존 방향 스캔만 돈다). 그리고 `server/.importlinter` 계약 2 의 금지 목록에 `model_serving`·`compliance`·`generation`·`pii_ner`·`postcall_summary` 가 없다 — 장민석
+- [x] **모델 HTTP 표면이 CI 에서 돌지 않는다 — 정성윤** — `ai/apps/model_serving`(`decisions/213`) 테스트는 fastapi·httpx·uvicorn 이 필요한데 `test.yml` 의 `ai` job 이 설치하지 않아 **skip** 된다(의존 방향 스캔만 돈다). 그리고 `server/.importlinter` 계약 2 의 금지 목록에 `model_serving`·`compliance`·`generation`·`pii_ner`·`postcall_summary` 가 없다 — 장민석 → **09-22 해당 없음**: 표면을 `decisions/124` 로 철회하고 PR 에서 뺐다(`213`). `server/.importlinter` 금지 목록에 `compliance`·`generation`·`pii_ner`·`postcall_summary` 가 없는 것은 그대로 남는다 — 장민석
 - [ ] **`decisions/203` 의 「민원인 5,549건」 → 5,570건 — 류준** — 위 다산콜DB 셈에서 나왔다. 결정 자체(음성 톤 이상치)는 바뀌지 않는다. 203 에 정정 한 줄을 붙인다
 - [ ] **A-5 를 하네스 안에서 잴지 — 팀** — 지금은 늘 「측정 불가」다. 재려면 hub 에 STT 포트 + 음성 골든셋이 필요한데 STT 는 콜 미디에이터(Node)에 있다. 아니면 `scripts/measure_a5_proficiency.py` 로만 재는 지금 방식을 유지한다
 
