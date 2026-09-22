@@ -163,19 +163,21 @@ def _git(*args: str) -> str | None:
     return r.stdout if r.returncode == 0 else None
 
 
-def warn_tag_taken_elsewhere(tags: dict[str, str]) -> None:
+def tag_taken_elsewhere(tags: dict[str, str]) -> list[str]:
     """**아직 레지스트리에 없는** 태그를 다른 브랜치가 이미 집었는지 본다.
 
     레지스트리 검사로는 이걸 못 잡는다 — 두 브랜치가 같은 새 태그를 집으면 **양쪽 다
     `exists=false`** 라 통과하고, 나중에 머지하는 쪽이 릴리스에서 터진다.
     2026-09-14 하루에 두 번 났다(`0.1.4` · `0.1.5`).
 
-    **경고로만 낸다.** 실패시키지 않는 이유: 저쪽 브랜치가 머지되지 않을 수도 있고,
-    먼저 머지하는 쪽은 아무 잘못이 없다. 두 번째가 되는 순간은 레지스트리 검사가 잡는다.
+    **오류로 낸다 (2026-09-22, `decisions/131`).** 09-22 하루에 세 번 겹쳤고 세 번 다 경고를 아무도
+    읽지 않아 머지 단계에서 되돌아왔다. 규칙은 한 줄 — 새 태그는 레지스트리에도, 열린 브랜치 어디에도
+    없는 번호여야 한다. 물려받은 값(merge-base 와 같은 값)은 걸리지 않는다.
+    반환값은 이미지별 오류 문장 목록이다 — `main()` 이 `failed` 에 합친다.
     """
     branches = _git("for-each-ref", "--format=%(refname:short)", "refs/remotes/origin")
     if not branches:
-        return
+        return []
     here = _git("rev-parse", "HEAD")
     # 이미지별로 모아서 한 번만 알린다 — 머지를 타고 여러 브랜치에 같은 값이 퍼져 있으면
     # 브랜치마다 경고가 나서 읽기 나쁘다(오늘 server 의 값이 frontend 에도 있었다).
@@ -213,14 +215,13 @@ def warn_tag_taken_elsewhere(tags: dict[str, str]) -> None:
             ).strip()
             hits.setdefault(key, []).append(f"{branch}{' (' + who + ')' if who else ''}")
 
-    for key, where in hits.items():
-        print(
-            f"::warning::{IMAGES[key]['image']} 의 태그 '{tags[key]}' 를 다른 브랜치도 쓰고 있다 — "
-            + " · ".join(where)
-            + ". 레지스트리엔 아직 없어 지금은 양쪽 다 통과하지만, 나중에 머지하는 쪽이 "
-            "릴리스에서 막힌다. 먼저 손댄 쪽이 살고 뒤가 물러난다(`CLAUDE.md` §4).",
-            file=sys.stderr,
-        )
+    return [
+        f"::error::{IMAGES[key]['image']} 의 태그 '{tags[key]}' 를 다른 브랜치가 이미 집었다 — "
+        + " · ".join(where)
+        + ". 레지스트리엔 아직 없지만 나중에 머지하는 쪽이 릴리스에서 막히므로 여기서 멈춘다. "
+        "겹친 번호보다 하나 더 올린다(`decisions/131`, `CLAUDE.md` §4 「먼저 손댄 쪽이 산다」)."
+        for key, where in hits.items()
+    ]
 
 
 def main() -> int:
@@ -262,10 +263,8 @@ def main() -> int:
         print("변경된 파일이 없다 — 판정할 것이 없다.")
         return 0
 
-    # 레지스트리 검사가 못 보는 구멍 하나를 경고로 덮는다(아래 함수 설명 참조).
-    warn_tag_taken_elsewhere(tags)
-
-    failed = []
+    # 레지스트리 검사가 못 보는 구멍 하나 — 다른 브랜치가 같은 새 태그를 집은 경우(위 함수 설명).
+    failed = tag_taken_elsewhere(tags)
     decisions = []
 
     for key, spec in IMAGES.items():

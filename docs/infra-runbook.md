@@ -1144,6 +1144,8 @@ kubectl rollout status deploy/ollama -n assist
 
 ### 14-2. EXAONE 내려받기
 
+> ⚠ **2026-09-22 정정.** 생성 기본 모델은 **`kanana-1.5-2.1b-instruct`(Q4_K_M GGUF, Apache-2.0)** 다 — `decisions/207`(09-15) 이 `010` 의 EXAONE 행을 뒤집었다. EXAONE 은 대조 재측정용 이름(`EXAONE_MODEL`)으로만 남는다. 그리고 **운영에는 생성 모델을 싣지 않는다** — `decisions/124` 로 CPU 노드에 NER·임베딩만 실었고 카드는 스니펫 폴백이다(21장 표). 아래 명령은 로컬·측정 인스턴스(22장)에서 대조군을 받을 때의 원안이다.
+
 ```bash
 kubectl exec -n assist deploy/ollama -- \
   ollama pull hf.co/LGAI-EXAONE/EXAONE-4.0-1.2B-GGUF
@@ -1657,6 +1659,44 @@ PR #94 에서 `admin`·`kxu6` 가 `Deployment rate limited — retry in 24 hours
 같은 날 `branch-protection.json`·`ruleset-main.json` 이 어긋나 있던 것과 같은 구조다.
 코드로 옮기려면 `apps/<앱>/vercel.json` 의 `ignoreCommand` 인데, `apps/` 는 조서희 전담이라
 [미결](/open-items/)로 올려 두고 함께 정한다.
+
+> ⚠ **2026-09-22 다시 걸렸다 — Ignored Build Step 은 한도를 막지 못한다.** 이 설정은 **빌드**를 취소할 뿐
+> **배포 생성은 그대로 일어난다** — 목록에 `Canceled` 로 남는 한 건 한 건이 전부 생성된 배포다. 한도는 생성 기준이다:
+> API 가 돌려준 코드 `api-deployments-free-per-day`, `total 100 · remaining 0`. 실측(09-21 13:39 ~ 09-22 13:39 KST, 24시간):
+> 세 프로젝트 합쳐 **147건** 생성(main 44 · frontend 32 · PM 29 · ai 27 · server 15), 빌드된 것은 24건, 나머지 123건이 `Canceled`.
+> 다섯 브랜치 × 세 프로젝트라 **push 한 번이 배포 3건**이고 머지 한 번은 6건(브랜치 push + main push)이다.
+> 상담원(`kxu6`)은 12:38 KST, 관리자는 12:18 KST 이후 배포가 하나도 안 만들어졌다 — PR #121·#122·#123·#124 의 main 커밋
+> 넷 다 GitHub 체크가 `Deployment rate limited — retry in 24 hours`. **운영 `call.solidbob.cloud`·`admin.solidbob.cloud` 는
+> `a5450d8`(PR #120, 12:15 KST) 빌드에 멈춰 있다** — 그 뒤 프론트 커밋이 14:20 KST 기준 9건(PR #121·#124·#126) 안 나갔다:
+> `9c2f90d` 온도 null 표시 · `6bff18a` 지역자원 mock 게이팅 · `421f0d6` 합성 통화 모달 · `86a3c27` 고객 해시 라벨 ·
+> `3e90883` 요약 재수정 이력 · `15aaa4d` 블랙리스트 만료 이력 · `a9e9642` 홍보 페이지 통화 ID 공유(+ `apps/call` 공유 모듈) ·
+> `063d13c`·`f16580c` 주석. 랜딩(`www`)도 `a9e9642` 로 어긋났다(오전 강제 배포 `d61c66d` 뒤 첫 `apps/platform` 변경).
+> 한도는 **24시간 롤링**이다 — 14:16 KST 에 `PM` 미리보기 3건이 빈 자리로 슬쩍 들어갔지만 14:20 에 운영 생성 셋은 다시 거부됐고,
+> **15:14 KST 에 셋 다 받아들여졌다**(API 가 말한 「24시간 뒤」보다 훨씬 빨랐다 — 전날 같은 시각의 배포가 창 밖으로 나가는 대로 자리가 난다).
+>
+> ⚠ **git 소스로 강제 배포할 때 sha 를 고르는 법.** `POST /v13/deployments` 에 `gitSource.sha` 를 주면 그 커밋에도 **Ignored Build Step 이
+> 그대로 돈다** — `main` 머리(`f7a2dd1`, 문서만 고친 PR #128 머지)로 만든 셋은 전부 `Canceled` 로 끝났고 그 3건도 한도에서 빠져나갔다.
+> **그 앱 폴더를 건드린 마지막 main 머지 커밋**(첫 부모 diff 기준)을 sha 로 준다 — 09-22 는 `68f749a`(PR #126) 였고 `apps/` 트리가
+> main 머리와 같음을 `git diff 68f749a..origin/main -- apps/` 가 비는 것으로 확인한 뒤 올렸다. 셋 다 `READY · PROMOTED`, 번들
+> `call index-4X0vR1JI` · `admin index-BHChBzPJ` · `www index-De7Koey7` 에 새 문자열(「재문의 고객」·「변경 이력 보기」·「상담원 링크 복사」) 확인.
+>
+> **강제 배포도 같은 한도에 걸린다.** `POST /v13/deployments`(git 소스, `main` sha 지정)가 위 오류로 거부됐다. CLI
+> `vercel deploy --prod` 는 같은 생성 경로라 멈췄다 — 게다가 루트에서 올리면 작업 트리 **2.5GB** 를 통째로 올린다(09-22 오전엔
+> 됐지만 오래 걸리고 중간에 `Upload aborted` 가 났다). 해제 시각은 API 가 준 값으로 **2026-09-23 13:38 KST** — 그때 실행할 것:
+>
+> ```bash
+> # 저장소 루트에서. 프로젝트마다 link 를 바꿔 가며 한 번씩
+> vercel link --yes --project call-solidbob-cloud-kxu6 && vercel deploy --prod --yes
+> vercel link --yes --project call-solidbob-cloud-admin && vercel deploy --prod --yes
+> ```
+>
+> `vercel link` 는 루트에 `.env.local`(OIDC 토큰)과 `.vercel/` 을 만들고 `.gitignore` 끝에 `.env*` 를 붙인다 — 셋 다 커밋 대상이
+> 아니지만(`.env.local` 은 원래 규칙으로 이미 무시된다) `.gitignore` 변경은 되돌린다.
+>
+> **막으려면 생성을 줄여야 한다.** 문서상 레버는 Root Directory 안의 `vercel.json` 에
+> `{"git": {"deploymentEnabled": {"PM": false, "ai": false, "server": false}}}` 를 두는 것 하나다 — 그러면 생성이
+> main·frontend 둘로 줄어 오늘 기준 147 → 76 이다. 세 앱 모두에 같은 파일이 들어가야 하고 `apps/` 는 조서희 전담이라
+> [미결](/open-items/)에 올렸다. 콘솔에 브랜치별로 배포를 끄는 항목이 있는지는 확인하지 않았다.
 
 ---
 
