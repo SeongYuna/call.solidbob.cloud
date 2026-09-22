@@ -139,7 +139,7 @@ permalink: /kanban/
                     {% when "C-1" %}{% assign nm = "실시간 경고" %}
                     {% when "C-2" %}{% assign nm = "실시간 경고" %}
                     {% when "C-3" %}{% assign nm = "실시간 경고" %}
-                    {% when "C-4" %}{% assign nm = "대체 표현" %}
+                    {% when "C-4" %}{% assign nm = "안심 발언" %}
                     {% when "C-5" %}{% assign nm = "개인정보 마스킹" %}
                     {% when "D-1" %}{% assign nm = "통화 후 요약" %}
                     {% when "D-2" %}{% assign nm = "통화 후 요약" %}
