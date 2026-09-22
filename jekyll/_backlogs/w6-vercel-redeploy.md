@@ -2,7 +2,7 @@
 title: "프론트 재배포 — Vercel 하루 배포 한도에 걸린 09-22 변경분"
 assignee: "정성윤"
 role: "infra"
-status: "todo"
+status: "done"
 sprint: 5
 priority: 55
 date: 2026-09-22
@@ -23,4 +23,4 @@ date: 2026-09-22
 
 ## 완료 조건
 
-- [ ] 셋 다 배포 성공 · `call.solidbob.cloud` 번들에 09-22 변경이 들어 있다(예: 재수정 이력 문구)
+- [x] 셋 다 배포 성공 · `call.solidbob.cloud` 번들에 09-22 변경이 들어 있다(예: 재수정 이력 문구) — **09-22 15:14 KST 완료.** 한도가 「24시간 뒤」가 아니라 롤링으로 풀려 API(`POST /v13/deployments`, git 소스 `68f749a`)로 셋 다 `READY · PROMOTED`. `main` 머리로 올리면 Ignored Build Step 에 걸려 `Canceled` 된다 — 앱을 건드린 마지막 머지 커밋을 sha 로 줘야 한다(런북 18-4). 번들 `call index-4X0vR1JI`·`admin index-BHChBzPJ`·`www index-De7Koey7` 에서 새 문자열 확인

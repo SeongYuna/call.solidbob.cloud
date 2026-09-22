@@ -2,7 +2,7 @@
 title: "컴플라이언스 방송 켜기 — compliance + 검사 실패 신호"
 assignee: "정성윤"
 role: "infra"
-status: "in-progress"
+status: "done"
 sprint: 6
 priority: 64
 date: 2026-09-22
@@ -36,3 +36,7 @@ main 에 들어와(`349b18b`, 조서희 09-21) 켤 조건이 찼다 — **파서
 - [x] `main.ts` `announceCompliance: true` · `kustomization.yaml` call-mediator `0.2.3`
 - [ ] 릴리스 뒤 운영 `/call-mediator/health` ok · 실통화(또는 재생기)에서 상담원 「무조건 됩니다」 에 `compliance` 도착 확인
 - [ ] 조서희 님 파서에 `compliance_unavailable` 타입 추가(그전까지는 `onError` 로 떨어져 배너만 뜨고 화면은 안 깨진다)
+
+## 결과 (2026-09-22)
+
+call-mediator `0.2.3` 으로 운영에 나갔다 — `announceCompliance` 켬 + `compliance_unavailable` 신호. 화면이 그 값을 그리는 것은 `w6-compliance-alert-ui`(조서희).

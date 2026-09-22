@@ -2,7 +2,7 @@
 title: "쓰기 경로 인증 3·4단계 — 시크릿 주입 → 서버 fail-closed"
 assignee: "정성윤"
 role: "infra"
-status: "in-progress"
+status: "done"
 sprint: 5
 priority: 60
 date: 2026-09-21
@@ -49,3 +49,7 @@ PR #106 까지 성공했고(저장소 `newTag` server `0.1.23` · call-mediator 
 - 시크릿 백업: 노드 `/root/secret-backups/20260921-183422/`(UTC 시각). 되돌리기는 그 두 yaml `apply` + 두 deploy 재시작.
 - **아직 안 본 것**: 미디에이터를 거친 실제 통화가 그대로 저장되는지 — 류준 님의 SYN-010 운영 투입(사용자 허용 09-22)이 그 확인이다. 토큰은 정성윤이 SSM 으로 읽어 파일 아닌 방법으로 건넨다.
 - 남은 것: ④ 서버 fail-closed 코드(별도 PR, 장민석 님 검토 대상) · 런북 12장에 `CORE_API_TOKEN` 단계(같은 날 추가).
+
+## 결과 (2026-09-22)
+
+③ 시크릿 주입은 끝났다 — 운영 `/health` `ingest_guard: locked`. ④ 서버 fail-closed 코드는 **`w6-ingest-guard-fail-closed`(장민석)** 로 쪼개 넘겼으므로 이 티켓은 닫는다. 「없으면 연다」 분기가 남아 있는 동안 잠금은 시크릿 덕분이지 코드가 지키는 것이 아니다 — 그 티켓이 닫혀야 새 클러스터에서도 안전하다.
