@@ -305,7 +305,7 @@ Google STT → 로컬 server 마스킹 → 대시보드 WS 까지 관통했다. 
   → **닫힘 (2026-09-15)** — 운영 `server-env` 에 **이미 있었다**(2026-09-15 키 이름 조회로 확인). `.env.example:81`·`secret.example.yaml:110` 도 되어 있다. ⚠ **있는 키를 새로 만들지 않는다** — HMAC 이라 바뀌면 기존 식별자를 못 찾는다(`decisions/304`).
   편집을 막아 사람이 넣는다(키 이름만). 운영 시크릿에는 값을 넣고 **보관한다** — 잃으면 기존 고객 식별자·블랙리스트 등록을 다시 찾을 수 없다.
   없으면 통화는 열리고 고객 연결만 꺼진다(`decisions/304`). `secret.example.yaml` 에는 적었다
-- [ ] **`admin_account.agent_id` 를 채워야 블랙리스트 승인·해제가 된다 (신규, 2026-09-14)** — 비어 있으면 409. 회원가입 화면이 없어 운영자가 SQL 로 넣는다
+- [x] ✅ **2026-09-22 ①로 정했다**(`_project/decisions/314`, 장민석 — 코드, **운영 배포 전**). 처음 결정할 때 서버가 그 관리자 전용 `agent` 행(`admin-<id>`, `role='admin'`)을 만들어 `agent_id` 가 비어 있을 때만 채운다. 운영자 SQL 불필요. 원문 — **`admin_account.agent_id` 를 채워야 블랙리스트 승인·해제가 된다 (신규, 2026-09-14)** — 비어 있으면 409. 회원가입 화면이 없어 운영자가 SQL 로 넣는다
   **막히는 범위를 코드로 확인했다 (2026-09-15, 정성윤)** — `hub/dependencies/blacklist_decider_provider.py:16`
   의 `if not admin.agent_id: 409` 하나가 전부다. **쓰기 경로만** 막힌다(승인·해제 · `decisions/309` 만료 연장·단축).
   **조회와 로그인은 멀쩡하다** — 관리자 화면을 열고 둘러보는 데는 지장이 없고, `decisions/113` 의 보존 정리
@@ -327,7 +327,7 @@ Google STT → 로컬 server 마스킹 → 대시보드 WS 까지 관통했다. 
   `F2Case.procedure`(조항 ID)·`expected_verdict: complete/incomplete` 로 케이스를 넣을 수 있다. 키워드 판정은 부정 문맥을 몰라 **누락을 못 잡는 쪽**으로
   틀린다 — 측정 전까지 「F-2 누락 0건」 을 인용하지 않는다. 조건 분기 조항 10개(`EXCLUDED`)도 조건 판정 규칙이 생기면 넣는다
 - [x] ✅ 2026-09-21 고쳤다(류준, `w5-f2-golden-cases` — 「필요서류 체크리스트로 적용, 종결 차단은 미적용」. 골든셋 라벨에 POLICY-1 참조 0건) — **`DASAN-POLICY-1`(「F-2 미적용」)이 `decisions/305` 와 어긋난다 (신규, 2026-09-14)** — 지식베이스 문서라 고치지 않았다. 검색 인덱스에 들어가는 문서라 류준 님과 함께 고친다
-- [ ] **블랙리스트 남은 것 (신규, 2026-09-14)** — ① 상담원 인증이 없어 요청은 `agent` 에 있는 아무 ID 로나 부를 수 있다 ② `display_hint` 를 채우는 경로가 없다(늘 null)
+- [ ] ◐ **2026-09-22** — ①은 09-15 상담원 토큰(`decisions/307`)으로 · ②는 **채우지 않기로 정했다**(`decisions/316` — 전화번호 뒷자리도 P4) · ③은 180일 정리(`decisions/312`)로 닫혔다. **④(배정 판정을 부르는 곳)만 남았다**(`w7-j5-routing-caller`). 원문 — **블랙리스트 남은 것 (신규, 2026-09-14)** — ① 상담원 인증이 없어 요청은 `agent` 에 있는 아무 ID 로나 부를 수 있다 ② `display_hint` 를 채우는 경로가 없다(늘 null)
   ③ 반려 요청 사유·자막을 일정 기간 뒤 비우는 작업이 없다(`decisions/205`) ④ ~~J-5 배정은~~ **2026-09-15 `POST /hub/routing-decisions` 로 열었다(`decisions/313`) — 부르는 곳(교환기)은 아직 없다.** 원문: J-5 배정(`find_entry`)은 인입 경로에 아직 안 붙었다
 - [ ] **재상담 고객 이력 요약(메모)이 없다 (신규, 2026-09-14)** — `GET /hub/calls?customer_id=` 로 같은 고객의 지난 통화·문의 유형은 나온다. 프론트 mock 의 「메모」 는
   대응 컬럼이 없다(`summary_text` 는 D-1 요약이고 채우는 경로도 501)
@@ -598,7 +598,7 @@ Environment Variables → **Production 만** → Deployments → Redeploy(`VITE_
   → **2026-09-15 조서희가 처리** — ① `apps/call`은 기존 `liveCallToken.ts`(`apps/platform`)와 같은 패턴으로
   `?agent_token=` URL 쿼리 한 번 → sessionStorage(`lib/agentToken.ts`) ② `apps/admin`의 `SettingsTab.tsx`에
   발급·목록·폐기 화면을 새로 뒀다(원문 1회 노출 + 복사 버튼)
-- [ ] **상담원 토큰을 어디까지 걸지** — 지금 가드가 달린 곳은 블랙리스트 요청 하나다. 카드 피드백·수동 검색·통화 목록·전사 조회 등은 인증이 없다.
+- [ ] ◐ **2026-09-22 쓰기 둘은 걸었다**(`_project/decisions/315`, 코드, 운영 배포 전) — `/close` 는 상담원 토큰 또는 서비스 토큰, 카드 피드백은 **상담원 토큰을 확인하되 신원을 버린다**(가드 반환값이 라우트 함수에 들어오지 않는다 — 아래 ⚠ 의 제약을 이렇게 풀었다). 상담원 토큰은 PC 에 남긴다(`localStorage`, PC 한 대당 한 번). **남은 것은 읽기 경로**(수동 검색·통화 목록·전사 조회). 원문 — **상담원 토큰을 어디까지 걸지** — 지금 가드가 달린 곳은 블랙리스트 요청 하나다. 카드 피드백·수동 검색·통화 목록·전사 조회 등은 인증이 없다.
   모두 걸면 콜 미디에이터(`services/call-mediator`)가 부르는 허브 API 와 겹치는 것부터 갈라야 한다. **토큰 만료도 없다** — 폐기로만 끊는다
   ⚠ **카드 피드백(`POST /hub/cards/{id}/feedback`)은 걸면 안 된다** — 상담원 ID 를 **일부러** 받지 않는 API 다(부록 A-1, 상담원 단위 집계 금지).
   토큰을 달면 요청마다 상담원이 식별돼 그 설계를 뒷문으로 무너뜨린다
@@ -902,14 +902,14 @@ Environment Variables → **Production 만** → Deployments → Redeploy(`VITE_
 
 - [ ] **팀 — 개발기간과 스프린트 수가 안 맞는다** — 개발기간은 **10-27** 까지인데 1주 1스프린트 × 8 은 **10-14** 에 끝난다(`STATE.md` 가 8주차를 10-08~10-14 로 적는다).
   남는 약 2주가 무엇인지(발표 준비·버퍼·마감 정리) 어디에도 적혀 있지 않다. `w8-*` 티켓의 마감일이 여기에 걸린다
-- [ ] **장민석 님 — `POST /hub/calls/{id}/close` 와 카드 피드백에 상담원 토큰 가드가 없다** — `server/main.py` 주석은 「대시보드가 직접 부르는 쓰기(`/close`·요약 확정·카드 피드백)는
+- [x] ✅ **2026-09-22 달았다**(`_project/decisions/315`, 코드, 운영 배포 전 — 프론트가 토큰을 싣게 바뀐 뒤 머지). 원문 — **장민석 님 — `POST /hub/calls/{id}/close` 와 카드 피드백에 상담원 토큰 가드가 없다** — `server/main.py` 주석은 「대시보드가 직접 부르는 쓰기(`/close`·요약 확정·카드 피드백)는
   사람 토큰(`require_agent`) 몫」이라고 적는데, **실제로 걸린 것은 요약 확정·재수정뿐**이다(`postcall_router.py`·`card_feedback_router.py` 에 `require_agent` 0회, 2026-09-21 grep).
   서비스 토큰 문(`decisions/120`)도 이 둘은 비껴간다 → **두 경로는 어느 토큰도 요구하지 않는다.** 읽기 경로(통화 목록·전사·기록)가 무인증인 것은 기존 미결과 같은 건이다
 - [ ] **정성윤 — 새 클러스터에서 `CORE_API_TOKEN` 이 조용히 비는가(추정 — 확인 필요)** — `infra/k8s/base/call-mediator.yaml` 은 `call-mediator-tokens` 에서 그 키를 **optional** 로 읽는데,
   `release.yml` 의 시크릿 생성은 INGEST·VIEW 두 키만 만든다. 사람이 손으로 넣는 전제라면 런북 12장에 그 단계를 적고, 아니면 워크플로에 넣는다. 비면 쓰기 문이 `open` 으로 남는다
 - [ ] **류준 님 — 하네스가 부르지 않는 지표가 셋 있다** — `ai/apps/evaluation/metrics/` 의 `generation`(B-4·B-5)·`asr`(A-5)·`call_temperature`(D-5)는 `harness.py`·`run_eval.py` 어디서도 import 하지 않는다.
   별도 스크립트로만 돌아서 **`run_eval` 리포트에 「측정 불가」로도 나타나지 않는다**(침묵 누락). 절대 원칙 10 의 취지로는 「측정 불가」 줄이라도 찍는 쪽이 맞다
-- [ ] **류준·장민석 님 — D-5 음성 이상치 저장이 서버에서 배선되지 않는다** — 포트·DTO·`voice_outlier_repository.py` 까지 있는데 `server/` 프로덕션 코드에서 한 번도 참조되지 않는다.
+- [ ] ◐ **2026-09-22 추정 확인: 맞다 — 늘 0 이었다**(`voice_outlier` 에 쓰는 곳이 `ai/` 평가 쪽뿐). 이제 0 대신 **「미측정」(null)** 이 나간다(`_project/decisions/316`, 스키마 마이그레이션 동반). **실제 배선은 남았다** — 오디오를 가진 콜 미디에이터가 판정해야 하고, 음성 골든셋이 없어 붙여도 판정 품질은 측정 불가다. 원문 — **류준·장민석 님 — D-5 음성 이상치 저장이 서버에서 배선되지 않는다** — 포트·DTO·`voice_outlier_repository.py` 까지 있는데 `server/` 프로덕션 코드에서 한 번도 참조되지 않는다.
   그래서 `blacklist_evidence_repository.py` 의 `voice_outlier` 집계는 서버 요청 경로에서 **늘 0 일 것으로 보인다(추정)** — J-4 근거의 한 축이 비어 있는 셈이다
 - [ ] **팀 — 「허브는 스포크를 import 하지 않는다」를 계약으로 걸지** — 서버 주석 세 곳이 인용하던 「계약 5」는 **`.importlinter` 에 없었다**(주석은 사실대로 고쳤다).
   지금은 `hub/dependencies/` 가 `masking`·`closure_gate`·`postcall`·`blacklist` 의 기본 구현을 직접 import 하고 허브 라우터 12개가 `admin_auth`·`agent_auth` 가드를 import 한다.
@@ -927,3 +927,16 @@ Environment Variables → **Production 만** → Deployments → Redeploy(`VITE_
 - [ ] **09-21 셋째 판 「남은 일 목록」의 미커밋 파일 회수** — 결정 125~128(일정 공백·배정 호출·공개 데모·스키마 대조)·09-30 판정문 초안·티켓 절차. 저장소 이력 어디에도 없다. 그 세션을 돌린 머신의 `git status` 를 볼 것. ⚠ 오늘 `124`·`125` 를 새로 썼으니 거기 남은 파일은 번호를 옮겨야 한다
 - [ ] **쓰기 경로 ④ 서버 fail-closed** — 시크릿은 09-22 에 들어가 잠겼고, 「없으면 연다」를 걷는 코드 변경만 남았다(`w5-ingest-auth-fail-closed`, 장민석 님 검토 대상)
 - [ ] **랜딩 라이브 통화 실제 동작** — 09-22 에 `VITE_CALL_MEDIATOR_WS_URL` 을 넣고 재배포했지만 브라우저로 통화를 걸어 본 적은 없다. 조서희 님 `w6-shared-call-entry` 운영 확인과 같이
+
+## 2026-09-22 에 남긴 것 (장민석)
+
+코드는 `server` 브랜치에 있고 **커밋·배포 전**이다. 넷은 **조서희 님 화면이 먼저 바뀌어야** 서버를 내보낼 수 있다(사용자 결정 — 서버만 하고 넘긴다).
+
+- [ ] **조서희 님 — 상담원 토큰을 PC 에 남긴다** — `apps/call/src/lib/agentToken.ts` 의 `sessionStorage` 네 곳을 `localStorage` 로(`decisions/315` ③). 관리자는 PC 한 대당 한 번만 토큰을 준다. 교대 PC 는 로그아웃이 전제
+- [ ] **조서희 님 — `closeCall`·`submitCardFeedback` 에 상담원 토큰** — `apps/call/src/lib/api/coreClient.ts` 에서 `confirmSummary` 와 같이 `Authorization: Bearer ${readAgentToken()}`. 안 싣으면 서버 배포 뒤 통화 후 처리·카드 「사용 표시」가 401
+- [ ] **조서희 님 — 반려에 사유 입력** — `apps/admin` 반려 버튼이 사유를 받아 `note` 로 보낸다(`decideBlacklistRequestApi` 는 이미 `note` 를 싣는다). 비면 422. 응답 요청 항목에 `decision_note`(반려 사유)가 생겼다
+- [ ] **조서희 님 — 온도 이상 `null` = 「미측정」** — `temperature_outliers` 가 `null` 로 온다(`decisions/316`). `toNum(null)` 이 0 이 되어 「0건」으로 보이면 안 된다(`apps/admin` `hubClient.ts:133` · `apps/call` `coreClient.ts:301`)
+- [ ] **팀 — 쓰기 일곱 경로를 ingress 에서 외부 차단할지** — 콜 미디에이터는 서버를 클러스터 안(`http://callguard-server`)으로 부른다. 인터넷에 열려 있을 이유가 없어 토큰이 새도 밖에서는 못 쓰게 된다(가장 효과 큰 개선). 대가: 런북 19-11 과 재생기 `--close` 를 클러스터 안에서 돌린다. 인프라 변경이라 정성윤 님과 — 티켓 미작성
+- [ ] **장민석·조서희 — 동명이인이 한 상담원으로 합쳐진다** — `resolve_or_create`(`decisions/406`)가 이름으로도 찾아서, 같은 이름의 두 번째 사람에게 토큰을 발급하면 첫 사람의 `agent_id` 로 발급된다(09-22 리뷰). 동시 발급의 PK 위반 500 은 고쳤다(`ON CONFLICT`)
+- [ ] **팀 — 저장 실패 정책이 경로마다 다르다** — 콜 가드·컴플라이언스는 「200 + 로그」, 추천·필요서류 판정·전사 저장은 500(09-22 리뷰). 경고 화면이 저장보다 먼저라는 이유가 추천 카드에도 해당하는지 정해 문서에 적는다
+- [ ] **상담원이 반려 사유를 볼 경로가 없다** — 사유는 저장되지만 상담원용 「내 요청」 조회 API·화면이 없다(`decisions/316` ⚠)

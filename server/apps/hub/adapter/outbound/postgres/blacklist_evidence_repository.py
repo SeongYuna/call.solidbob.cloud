@@ -5,6 +5,9 @@
   없으면 마지막 고객 발화 몇 개를 싣는다. 길이를 제한한다 — 요청 1건에 통화 전체를 옮겨 적지 않는다
 - 통화 길이는 `ended_at - started_at`, 아직 안 끝났으면 마지막 발화 종료 시각이다
 - `distress` 건수는 **돌려주되 저장하지 않는다**(`decisions/205` ④) — 저장 여부는 요청 리포지토리가 정한다
+- **온도 이상(`voice_outlier`)은 판정이 붙어 있을 때만 센다**(`decisions/316`). 서버 요청 경로에는 D-5 판정이 없어
+  (`voice_outlier` 에 쓰는 곳이 평가 하네스뿐 — 09-22 확인) 세면 늘 0 이고, 관리자는 그 0 을 「이상 없음」으로 읽는다.
+  붙지 않았으면 None(「미측정」)을 돌려준다
 """
 
 from __future__ import annotations
@@ -41,8 +44,9 @@ _FALLBACK_SEGMENTS = 3
 
 
 class PostgresBlacklistEvidenceRepository(BlacklistEvidencePort):
-    def __init__(self, connect: ConnectionFactory) -> None:
+    def __init__(self, connect: ConnectionFactory, *, voice_outliers_wired: bool = False) -> None:
         self._connect = connect
+        self._voice_outliers_wired = voice_outliers_wired
 
     async def collect(self, call_id: str) -> CallEvidence | None:
         async with self._connect() as conn:
@@ -53,8 +57,10 @@ class PostgresBlacklistEvidenceRepository(BlacklistEvidencePort):
                     return None
                 await cur.execute(_GUARD_COUNTS, (call_id,))
                 counts = {category: int(n) for category, n in await cur.fetchall()}
-                await cur.execute(_OUTLIERS, (call_id,))
-                outliers = int((await cur.fetchone())[0])
+                outliers = None
+                if self._voice_outliers_wired:
+                    await cur.execute(_OUTLIERS, (call_id,))
+                    outliers = int((await cur.fetchone())[0])
                 await cur.execute(_FLAGGED_TEXT, (call_id, call_id))
                 texts = [r[0] for r in await cur.fetchall()]
                 if not texts:

@@ -1698,6 +1698,12 @@ curl -fsS $B/hub/calls/$C/transcript
 > ⚠ **`0.1.10` 도 스키마가 바뀐다**(`decisions/311`·`313`) — `call_summary_revision` · `app_setting` 신설(27 → 29). **이미지를 올리기 전에**
 > `db/migrations/2026-09-15-summary-revision-app-setting.sql` 을 넣는다(`blacklist_entry_expiry_change` 가 먼저여야 한다 — 파일이 확인하고 멈춘다).
 > 안 넣으면 요약 재수정(`…/summary-revision(s)`)·배정(`/hub/routing-decisions`·`/hub/routing-settings`)만 500. 6번 기대값은 29. `0.1.10` 은 콜 미디에이터 `0.1.4` 와 같이 나간다.
+>
+> ⚠ **2026-09-22 `server` 브랜치 변경(다음 태그)도 스키마가 바뀐다**(`decisions/316`) — `blacklist_request.temperature_outliers` NULL 허용 ·
+> `decision_note` 신설(테이블 수는 29 그대로). **이미지를 올리기 전에** `db/migrations/2026-09-22-blacklist-request-note-unmeasured.sql` 을 넣는다
+> (`app_setting` 이 먼저여야 한다 — 파일이 확인하고 멈춘다. 순증이라 지금 떠 있는 이미지에는 영향이 없다).
+> 안 넣으면 블랙리스트 요청 생성·목록·결정이 500. ⚠ 같은 변경이 `/close`·카드 피드백에 상담원 토큰 문을 단다(`315`) —
+> **프론트(`apps/call`)가 토큰을 싣도록 바뀐 뒤에** 배포한다. 먼저 나가면 통화 후 처리·카드 「사용 표시」가 401 이다.
 
 > ⚠ **`0.1.5` 는 DB 스키마가 바뀐다**(2026-09-14, `decisions/304`·`305`) — `customer_id` 길이 64 · `admin_account.agent_id` ·
 > `closure` 재정의 + `closure_item`. 17장대로 **이미지를 올리기 전에** 스키마를 넣는다. **데이터가 있는 운영 DB 에는 `schema.sql` 이 아니라

@@ -3,6 +3,7 @@
 
 응답은 언제나 초안이다. `confirmed` 를 서버가 true 로 만드는 경로는 없다 — 확정은 상담원 몫이다.
 초안은 저장된다(`call.summary_text`·`inquiry_type`·`follow_up_action`). 통화가 없으면 404, 이미 확정된 요약이면 409 — 덮지 않는다.
+상담원 토큰 또는 서비스 토큰이 없으면 401(`decisions/315`, `hub/dependencies/close_guard.py`).
 """
 
 from __future__ import annotations
@@ -19,12 +20,17 @@ from hub.app.dtos.transcript_dto import TranscriptEvent
 from hub.app.ports.input.postcall_use_case import PostcallUseCase
 from hub.app.ports.output.postcall_record_port import SummaryAlreadyConfirmedError
 from hub.app.ports.output.transcript_ingest_record_port import CallNotStartedError
+from hub.dependencies.close_guard import require_close_caller
 from hub.dependencies.postcall_provider import get_postcall_use_case
 
 postcall_router = APIRouter(prefix="/hub", tags=["hub"])
 
 
-@postcall_router.post("/calls/{call_id}/close", response_model=CallSummaryResponse)
+@postcall_router.post(
+    "/calls/{call_id}/close",
+    response_model=CallSummaryResponse,
+    dependencies=[Depends(require_close_caller)],  # 상담원 토큰 또는 서비스 토큰(`decisions/315`)
+)
 async def close_call(
     call_id: str,
     body: PostcallRequest,

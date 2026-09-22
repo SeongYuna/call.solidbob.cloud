@@ -23,14 +23,14 @@ class BlacklistEvidenceSchema(BaseModel):
     insult_count: StrField
     threat_count: StrField
     sexual_count: StrField
-    temperature_outliers: StrField
+    temperature_outliers: StrField | None = Field(default=None, description="null 은 「미측정」 — 0(이상 없음)과 다르다(decisions/316)")
 
 
 class BlacklistRequestItemSchema(BaseModel):
     request_id: str
     call_id: str
     customer_ref: str = Field(description="발신 번호의 HMAC — 평문이 아니다")
-    display_hint: str | None = Field(default=None, description="⚠ 채우는 경로가 아직 없다 — 늘 null")
+    display_hint: str | None = Field(default=None, description="⚠ 채우지 않는다 — 늘 null(decisions/316, 전화번호 뒷자리도 P4)")
     requested_by: str
     reason: str = Field(description="마스킹된 사유")
     context_excerpt: str = Field(description="마스킹된 자막에서 서버가 자른 것")
@@ -40,6 +40,7 @@ class BlacklistRequestItemSchema(BaseModel):
     decided_by: str | None = None
     decided_at: str | None = None
     evidence_snapshot_at: str
+    decision_note: str | None = Field(default=None, description="반려 사유(마스킹본). 승인이면 null — 승인 메모는 등록 쪽 note")
 
     @staticmethod
     def from_dto(r: BlacklistRequest) -> "BlacklistRequestItemSchema":
@@ -56,6 +57,7 @@ class BlacklistRequestItemSchema(BaseModel):
             decided_by=r.decided_by,
             decided_at=r.decided_at.isoformat() if r.decided_at else None,
             evidence_snapshot_at=r.evidence_snapshot_at.isoformat() if r.evidence_snapshot_at else "",
+            decision_note=r.decision_note,
         )
 
 

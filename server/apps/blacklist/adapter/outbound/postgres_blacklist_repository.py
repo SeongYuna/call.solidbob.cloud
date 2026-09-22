@@ -45,7 +45,7 @@ _FOREIGN_KEY_VIOLATION = "23503"
 _REQUEST_COLUMNS = """
 "request_id", "call_id", "customer_ref", "requested_by", "reason", "context_excerpt", "call_duration_s",
 "insult_count", "threat_count", "sexual_count", "temperature_outliers", "status", "requested_at",
-"decided_by", "decided_at", "evidence_snapshot_at"
+"decided_by", "decided_at", "evidence_snapshot_at", "decision_note"
 """
 _INSERT_REQUEST = f"""
 INSERT INTO "blacklist_request"
@@ -57,7 +57,7 @@ RETURNING {_REQUEST_COLUMNS}
 _LIST_REQUESTS = f'SELECT {_REQUEST_COLUMNS} FROM "blacklist_request"'
 _LOCK_REQUEST = f'SELECT {_REQUEST_COLUMNS} FROM "blacklist_request" WHERE "request_id" = %s FOR UPDATE'
 _UPDATE_DECISION = f"""
-UPDATE "blacklist_request" SET "status" = %s, "decided_by" = %s, "decided_at" = %s
+UPDATE "blacklist_request" SET "status" = %s, "decided_by" = %s, "decided_at" = %s, "decision_note" = %s
 WHERE "request_id" = %s RETURNING {_REQUEST_COLUMNS}
 """
 _ENTRY_COLUMNS = """
@@ -96,8 +96,10 @@ WHERE c."entry_id" = e."entry_id" AND c."reason" <> %s AND COALESCE(e."released_
 RETURNING c."change_id"
 """
 _PURGE_REJECTED_REQUESTS = """
-UPDATE "blacklist_request" SET "reason" = %s, "context_excerpt" = %s
-WHERE "status" = 'rejected' AND "decided_at" <= %s AND ("reason" <> %s OR "context_excerpt" <> %s)
+UPDATE "blacklist_request" SET "reason" = %s, "context_excerpt" = %s,
+    "decision_note" = CASE WHEN "decision_note" IS NULL THEN NULL ELSE %s END
+WHERE "status" = 'rejected' AND "decided_at" <= %s
+  AND ("reason" <> %s OR "context_excerpt" <> %s OR "decision_note" <> %s)
 RETURNING "request_id"
 """
 _LIST_CHANGES = f'SELECT {_CHANGE_COLUMNS} FROM "blacklist_entry_expiry_change" WHERE "entry_id" = %s ORDER BY "changed_at", "change_id"'
@@ -112,6 +114,7 @@ def _request(row) -> BlacklistRequest:
             temperature_outliers=row[10],
         ),
         status=row[11], requested_at=row[12], decided_by=row[13], decided_at=row[14], evidence_snapshot_at=row[15],
+        decision_note=row[16],
     )
 
 
@@ -185,7 +188,8 @@ class PostgresBlacklistRepository(BlacklistPort):
                                        role=ROLE_ADMIN, actor=decided_by)
                 except TransitionNotAllowed as exc:
                     raise BlacklistConflict(str(exc)) from exc
-                await cur.execute(_UPDATE_DECISION, (moved.status, decided_by, now, rid))
+                # 메모는 승인이면 등록(`blacklist_entry.note`)에, 반려면 요청(`decision_note`)에 — 한 벌만 남긴다(`decisions/316`)
+                await cur.execute(_UPDATE_DECISION, (moved.status, decided_by, now, None if approve else note, rid))
                 updated = await cur.fetchone()
                 if approve:
                     await cur.execute(_CLOSE_EXPIRED, (EXPIRED_RELEASE_REASON, moved.customer_ref, now))
@@ -274,7 +278,8 @@ class PostgresBlacklistRepository(BlacklistPort):
             async with conn.cursor() as cur:
                 await cur.execute(_PURGE_CHANGE_REASONS, (PURGED_TEXT, PURGED_TEXT, cutoff))
                 changes = len(await cur.fetchall())
-                await cur.execute(_PURGE_REJECTED_REQUESTS, (PURGED_TEXT, PURGED_TEXT, cutoff, PURGED_TEXT, PURGED_TEXT))
+                await cur.execute(_PURGE_REJECTED_REQUESTS, (PURGED_TEXT, PURGED_TEXT, PURGED_TEXT, cutoff,
+                                                             PURGED_TEXT, PURGED_TEXT, PURGED_TEXT))
                 requests = len(await cur.fetchall())
             await conn.commit()
         return RetentionPurgeResult(retention_days=RETENTION_DAYS, cutoff=cutoff,

@@ -54,6 +54,7 @@ class FakeAgentTokens(AgentTokenPort):
 class FakeAgentDirectory(AgentDirectoryPort):
     def __init__(self, agents: dict[str, str] | None = None) -> None:
         self.agents = agents or {}
+        self.admin_rows: dict[str, str] = {}  # `ensure_admin` 이 만든 행 — 목록·이름 찾기에 안 나온다(`decisions/314`)
 
     async def list(self) -> list[AgentSummary]:
         return [AgentSummary(agent_id=aid, display_name=name) for aid, name in sorted(self.agents.items(), key=lambda kv: kv[1])]
@@ -71,3 +72,7 @@ class FakeAgentDirectory(AgentDirectoryPort):
         # 실제 구현과 같다 — agent_id 는 이름 그대로 쓴다(`PostgresAgentDirectoryRepository` 참고).
         self.agents[identifier] = identifier
         return AgentSummary(agent_id=identifier, display_name=identifier)
+
+    async def ensure_admin(self, agent_id: str, display_name: str) -> AgentSummary:
+        self.admin_rows.setdefault(agent_id, display_name)
+        return AgentSummary(agent_id=agent_id, display_name=self.admin_rows[agent_id])

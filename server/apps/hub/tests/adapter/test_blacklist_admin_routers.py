@@ -1,5 +1,5 @@
 # Requirement: J-4, 관리자 로그인(구글), QUA-1
-"""HTTP 표면: 관리자 4개 경로 — 로그인 없으면 401, 결정자 agent_id 없으면 409, 상태 충돌 409."""
+"""HTTP 표면: 관리자 4개 경로 — 로그인 없으면 401, 결정자 agent_id 없으면 그 자리에서 붙인다(`decisions/314`), 상태 충돌 409."""
 
 import pytest
 from fastapi.testclient import TestClient
@@ -8,6 +8,8 @@ from admin_auth.adapter.inbound.api.admin_guard import require_admin
 from admin_auth.app.dtos.admin_identity_dto import AdminAccount
 from admin_auth.app.ports.input.current_admin_use_case import CurrentAdminUseCase
 from admin_auth.dependencies.use_case_providers import get_current_admin_use_case
+from agent_auth.app.ports.input.admin_agent_link_use_case import AdminAgentLinkUseCase
+from agent_auth.dependencies.use_case_providers import get_admin_agent_link_use_case
 from hub.app.ports.output.blacklist_port import BlacklistConflict, BlacklistNotFound, ExpiryBeyondCap
 from hub.dependencies.blacklist_provider import get_blacklist_port
 from hub.tests.app.use_cases._blacklist_stubs import StubBlacklist
@@ -23,9 +25,28 @@ class _NoSession(CurrentAdminUseCase):
         return None
 
 
+class _Link(AdminAgentLinkUseCase):
+    """DB 없이 — 연결이 있으면 그대로, 없으면 `admin-<id>` (실제 인터랙터 규칙은 `agent_auth` 테스트가 본다)."""
+
+    def __init__(self) -> None:
+        self.linked: list[int] = []
+
+    async def resolve(self, admin):
+        if admin.agent_id:
+            return admin.agent_id
+        self.linked.append(admin.id)
+        return f"admin-{admin.id}"
+
+
 @pytest.fixture
-def client():
+def link():
+    return _Link()
+
+
+@pytest.fixture
+def client(link):
     app.dependency_overrides[get_blacklist_port] = lambda: StubBlacklist()
+    app.dependency_overrides[get_admin_agent_link_use_case] = lambda: link
     app.dependency_overrides[get_current_admin_use_case] = lambda: _NoSession()
     try:
         with TestClient(app) as c:
@@ -54,10 +75,12 @@ def test_승인하면_결정자는_로그인한_관리자의_agent_id_다(client
     assert r.status_code == 200 and r.json()["request"]["status"] == "approved"
 
 
-def test_관리자에_agent_id_가_없으면_409이다(client):
+def test_관리자에_agent_id_가_없으면_409가_아니라_그_자리에서_붙여_결정한다(client, link):
+    """09-15 부터 운영의 승인·해제가 전부 409 였다(`decisions/314`)."""
     app.dependency_overrides[require_admin] = lambda: AdminAccount(id=2, email="b@example.com", name=None)
     r = client.post("/hub/blacklist-entries/3/release", json={"reason": "오인"})
-    assert r.status_code == 409
+    assert r.status_code == 200
+    assert link.linked == [2]
 
 
 def test_승인에_만료_일수가_없으면_422_상태_충돌은_409(client):
@@ -69,7 +92,9 @@ def test_승인에_만료_일수가_없으면_422_상태_충돌은_409(client):
             raise BlacklistConflict("이미 결정된 요청")
 
     app.dependency_overrides[get_blacklist_port] = lambda: _Decided()
-    assert client.post("/hub/blacklist-requests/7/decision", json={"approve": False}).status_code == 409
+    assert client.post("/hub/blacklist-requests/7/decision", json={"approve": False, "note": "오인"}).status_code == 409
+    # 반려에 사유가 없으면 상태를 보기 전에 422 다(`decisions/316`)
+    assert client.post("/hub/blacklist-requests/7/decision", json={"approve": False}).status_code == 422
 
 
 def test_목록은_상태_필터와_적용_중_필터를_받는다(client):

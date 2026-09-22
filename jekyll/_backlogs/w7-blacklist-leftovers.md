@@ -2,7 +2,7 @@
 title: "블랙리스트 잔여 — display_hint 채우기 · 반려 사유 · 연장 이력 화면"
 assignee: "장민석"
 role: "ai"
-status: "todo"
+status: "done"
 sprint: 7
 priority: 84
 date: 2026-09-21
@@ -30,3 +30,9 @@ J 블록에 남은 작은 것들을 닫는다([미결 항목](/open-items/) J �
 
 - [ ] 셋 각각 «했다» 또는 «안 한다 + 이유»
 - [ ] `display_hint` 에 들어가는 값이 C-5 패턴에 걸리지 않음을 테스트로 고정한다
+
+---
+
+> **2026-09-22 장민석 — 셋 다 정했다(`_project/decisions/316`).** ① `display_hint` — **안 한다**(전화번호 뒷자리도 P4, 늘 null — 테스트로 고정)
+> ② 반려 사유 — **했다**: 반려면 필수(422), 마스킹해 `blacklist_request.decision_note` 에, 180일 정리에 포함(스키마 마이그레이션)
+> ③ 연장 이력 — 서버 API 는 이미 있다, 화면만 남음. 화면 쪽(반려 사유 입력)은 미결로 조서희 님께. 상담원이 반려 사유를 볼 경로는 없다(미결).
