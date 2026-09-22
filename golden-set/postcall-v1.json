@@ -3,12 +3,13 @@
   "description": "D-1 요약 핵심 항목 · D-2 문의 유형 정답 — 합성 대본 dasan-v0 24건 중 10건 (w6-postcall-golden-cases, decisions/218). 채점은 규칙(허용 표기 포함 여부 · 유형 글자 일치)만 쓴다.",
   "labeled_by": "Claude Code (claude-opus-5) · 2026-09-22 · 대본 글만 보고 붙임(요약기 출력을 보기 전) · 사람 검토 전",
   "type_catalogue": {
-    "source": "ai/apps/postcall_summary/domain/services/rules.py INQUIRY_TYPES (= knowledge-base/dasan/terms 2~5장 = AI Hub 민원(콜센터) 다산콜센터 카테고리)",
+    "source": "server/apps/postcall/domain/services/inquiry_rules.py INQUIRY_RULES (decisions/323 — 운영 D-2 가 DB 에 저장하는 값). 2026-09-22 ai 유형표(postcall_summary CHAPTER_TO_TYPE)에서 옮겼다 — 같은 장을 가리키는데 글자가 달라 정확 일치 채점이 0 이 됐다",
     "types": [
-      "대중교통 안내",
-      "생활하수도 관련 문의",
-      "일반행정 문의",
-      "코로나19 관련 상담"
+      "대중교통",
+      "상하수도",
+      "일반행정",
+      "감염병",
+      "재난·생계 지원금"
     ]
   },
   "items": [
@@ -19,7 +20,7 @@
       "turn_count": 7,
       "length_class": "short",
       "title": "유학생 도서관 회원 가입 문의",
-      "inquiry_type": "일반행정 문의",
+      "inquiry_type": "일반행정",
       "key_items": [
         {
           "id": "inquiry",
@@ -74,7 +75,7 @@
       "turn_count": 19,
       "length_class": "medium",
       "title": "결혼이민자 전입신고 필요서류",
-      "inquiry_type": "일반행정 문의",
+      "inquiry_type": "일반행정",
       "key_items": [
         {
           "id": "inquiry",
@@ -139,7 +140,7 @@
       "turn_count": 25,
       "length_class": "long",
       "title": "누수 요금 감면 — 한 번 폭발하고 진정",
-      "inquiry_type": "생활하수도 관련 문의",
+      "inquiry_type": "상하수도",
       "key_items": [
         {
           "id": "inquiry",
@@ -209,7 +210,7 @@
       "turn_count": 16,
       "length_class": "medium",
       "title": "수도요금 이의신청 재문의 — 욕설 없이 강하게 항의",
-      "inquiry_type": "생활하수도 관련 문의",
+      "inquiry_type": "상하수도",
       "key_items": [
         {
           "id": "inquiry",
@@ -262,7 +263,7 @@
       "turn_count": 5,
       "length_class": "short",
       "title": "고속버스 예매 취소 — 시 소관 아님",
-      "inquiry_type": "대중교통 안내",
+      "inquiry_type": "대중교통",
       "key_items": [
         {
           "id": "inquiry",
@@ -308,7 +309,7 @@
       "turn_count": 24,
       "length_class": "long",
       "title": "과태료 이의신청 — 처음부터 끝까지 화가 난 민원인",
-      "inquiry_type": "일반행정 문의",
+      "inquiry_type": "일반행정",
       "key_items": [
         {
           "id": "inquiry",
@@ -378,7 +379,7 @@
       "turn_count": 26,
       "length_class": "long",
       "title": "장애인콜택시 대리 신청 — 지친 보호자가 두 번 가라앉음",
-      "inquiry_type": "대중교통 안내",
+      "inquiry_type": "대중교통",
       "key_items": [
         {
           "id": "inquiry",
@@ -450,7 +451,7 @@
       "turn_count": 9,
       "length_class": "short",
       "title": "주민등록초본 대리 발급 — 급한 직장인, 무뚝뚝한 상담원",
-      "inquiry_type": "일반행정 문의",
+      "inquiry_type": "일반행정",
       "key_items": [
         {
           "id": "inquiry",
@@ -512,7 +513,7 @@
       "turn_count": 24,
       "length_class": "long",
       "title": "수도 사용자 명의변경 — 이야기가 자꾸 옆길로 새는 고령 민원인",
-      "inquiry_type": "생활하수도 관련 문의",
+      "inquiry_type": "상하수도",
       "key_items": [
         {
           "id": "inquiry",
@@ -577,7 +578,7 @@
       "turn_count": 23,
       "length_class": "long",
       "title": "아버지 경로 우대용 교통카드 대리 신청 — 묻지 않은 개인정보를 부르는 아들",
-      "inquiry_type": "대중교통 안내",
+      "inquiry_type": "대중교통",
       "key_items": [
         {
           "id": "inquiry",
