@@ -54,6 +54,9 @@ const registry = new CallRegistry({
   announceCallGuard: true,
   // F-2 필요서류 판정 메시지 — 판정·저장은 늘 돈다. 새 closure 형식(procedure·complete/incomplete)
   announceClosure: true,
+  // C-1~C-4 컴플라이언스 메시지 — 2026-09-22 켰다. apps/call 파서가 main 에 들어왔다(349b18b, 조서희). 검사·저장은 늘 돈다.
+  // `compliance`(위반) 와 `compliance_unavailable`(검사 실패) 둘 다 이 스위치를 탄다
+  announceCompliance: true,
 });
 
 const server = createCallMediatorServer({

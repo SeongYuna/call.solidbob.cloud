@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Requirement: E-1, E-2, B-2
+# Requirement: E-1, E-2, B-2, B-4, B-5
 """평가 하네스 실행 — 구현된 스포크를 포트에 꽂아 골든셋으로 채점한다 (w2-naive-rag).
 
     cd infra && docker compose up -d && cd ..
@@ -8,6 +8,7 @@
     .venv/bin/python scripts/run_eval.py --golden-set golden-set/v1-50.json
     .venv/bin/python scripts/run_eval.py --runs 3                         # 최저치 확인용
     .venv/bin/python scripts/run_eval.py --record                          # 결과를 DB 에 남긴다
+    .venv/bin/python scripts/run_eval.py --ollama-url http://localhost:11434   # B-4 카드 생성도 꽂는다(ES 필요)
 
 **이 파일이 평가 쪽 합성 루트다.** `evaluation` 이 `retrieval` 을 직접 import 하면
 `ai/.importlinter` 의 module-independence 계약이 깨진다 — 접점은 hub 포트(추상)뿐이어야 하고,
@@ -150,7 +151,21 @@ def build_retriever(client, *, index: str, kind: str, device: str | None = None)
     return HybridRetriever([EsBm25Retriever(client, index=index), dense])
 
 
-def build_ports(client, *, index: str, masking=None, retriever=None) -> Ports:
+def build_generation(ollama_url: str | None, model: str | None):
+    """B-4 — `server/main.py` 와 같은 프로바이더(`provider.build_generation_provider`)로 만든다. URL 이 없으면 None.
+
+    채점은 하네스가 `evaluation.metrics.generation` 의 규칙으로 한다 — 생성기 필터로 자기를 채점하지 않는다.
+    """
+    if not ollama_url:
+        return None
+    sys.path.insert(0, str(ROOT / "ai"))
+    from generation.adapter.outbound.ollama_chat import DEFAULT_MODEL
+    from provider import build_generation_provider
+
+    return build_generation_provider(ollama_url, model=model or DEFAULT_MODEL)()
+
+
+def build_ports(client, *, index: str, masking=None, retriever=None, generation=None) -> Ports:
     """구현된 스포크만 꽂는다. 나머지는 None — 하네스가 "미구현"으로 보고한다.
 
     `masking`·`closure_gate` 는 `server/apps/` 에 산다. 규칙 기반 판정이라 요청 경로에서
@@ -170,6 +185,8 @@ def build_ports(client, *, index: str, masking=None, retriever=None) -> Ports:
             call_guard=RuleCallGuardAdapter(),      # C-6 (ai/apps/call_guard)
             compliance=RuleComplianceAdapter(),     # C-1~C-4 (ai/apps/compliance) — 규칙 v1, 수치는 상한
             voice_outlier=WavVoiceOutlierAdapter(),  # D-5 (ai/apps/voice_signal) — 규칙 판정, 외부 의존 없음
+            # B-4 — 꽂아도 검색이 없으면 하네스가 「근거 조항이 없다」로 찍는다(생성의 입력이 검색 결과다)
+            generation=generation,
         )
 
     retriever = retriever or EsBm25Retriever(client, index=index)
@@ -184,6 +201,9 @@ def build_ports(client, *, index: str, masking=None, retriever=None) -> Ports:
         #   다산콜DB 는 발화 클립이라 통화 단위 기준선을 못 만든다(`w3-call-temperature`). 「미구현」과
         #   「표본 없음」을 갈라 찍으려고 꽂는다(절대 원칙 10). 통화 단위 + 톤 라벨 골든셋이 생기면 코드 변경 없이 채점된다.
         voice_outlier=WavVoiceOutlierAdapter(),
+        # B-4·B-5 (ai/apps/generation) — `--ollama-url` 을 줬을 때만. 모델 서버가 필요하고 한 문항에 모델 호출 1회라
+        # 기본값으로 켜지 않는다. 안 꽂으면 하네스가 사유를 붙여 「측정 불가」로 찍는다(`w6-harness-silent-metrics`).
+        generation=generation,
         # ⚠ trigger 는 **구현이 있는데도 일부러 꽂지 않는다**(IsFinalTrigger, B-1).
         #   TranscriptEvent 에 이벤트 도착 시각이 없어서 발동 시각을 "발화 종료 + STT 지연
         #   상수(346ms)"로 모형화하고 있다. 그대로 채점하면 지연 분포가 상수 하나로 수렴해
@@ -211,6 +231,9 @@ def main() -> int:
     ap.add_argument("--retriever", choices=RETRIEVERS, default="bm25",
                     help="검색 구성 (기본 bm25 = 지금 운영). decisions/206")
     ap.add_argument("--device", default=None, help="임베딩·리랭커 장치 (기본 cpu)")
+    ap.add_argument("--ollama-url", default=None,
+                    help="B-4 카드 생성을 꽂는다 (없으면 생성은 '측정 불가'). 검색(ES)도 있어야 채점된다")
+    ap.add_argument("--generation-model", default=None, help="생성 모델 (기본: generation 어댑터의 DEFAULT_MODEL)")
     args = ap.parse_args()
 
     golden_path = args.golden_set or (ROOT / "golden-set" / "v1-150.json")
@@ -223,7 +246,8 @@ def main() -> int:
     retriever = build_retriever(client, index=args.index, kind=args.retriever, device=args.device) if client else None
     if client is not None:
         print(f"검색 구성: {args.retriever}")
-    ports = build_ports(client, index=args.index, masking=masking, retriever=retriever)
+    generation = build_generation(args.ollama_url, args.generation_model)
+    ports = build_ports(client, index=args.index, masking=masking, retriever=retriever, generation=generation)
     reports = [run_eval(items, ports) for _ in range(args.runs)]
     print_report(
         reports[0],

@@ -459,7 +459,7 @@ test("C-1~C-4 — 상담원 확정 발화만 마스킹본으로 검사한다. �
   assert.equal(broadcaster.ofType("compliance").length, 0);
 });
 
-test("C-1~C-4 — 켜면 잡힌 위반만 compliance 로 보낸다. 서버가 실패해도 통화는 계속되고 경고만 남긴다", async () => {
+test("C-1~C-4 — 켜면 잡힌 위반은 compliance 로, 검사 실패는 compliance_unavailable 로 보낸다. 위반 없음은 침묵. 통화는 계속된다", async () => {
   const { registry, hub, stt, broadcaster, log } = setup({ announceCompliance: true });
   const agent = await openOk(registry, "test-1", "agent");
   stt.last().emit("무조건 됩니다", true, 1000);
@@ -467,15 +467,37 @@ test("C-1~C-4 — 켜면 잡힌 위반만 compliance 로 보낸다. 서버가 �
   await tick(10);
   hub.failCompliance = 503;
   stt.last().emit("무조건 감면돼요", true, 3000);
+  await tick(10);
+  hub.failCompliance = 501; // 스포크 미등록 — 탐지 자체가 없다
+  stt.last().emit("확실히 됩니다", true, 4000);
   await agent.close();
 
   const sent = broadcaster.ofType("compliance");
-  assert.equal(sent.length, 1);
+  assert.equal(sent.length, 1); // 위반 없음(2번)은 아무 메시지도 아니다
   assert.deepEqual(sent[0]!.payload.findings, [
     { rule_code: "C-1", phrase: "무조건", alternative_source: { doc_id: "DASAN-TERM-1.4", title: "권장 대체 표현" } },
   ]);
-  assert.equal(broadcaster.ofType("transcript").length, 3); // 실패한 발화의 자막도 나갔다
+  // 실패한 발화 둘은 「검사 못 함」으로 따로 알린다 — 「위반 없음」과 구분돼야 화면이 탐지 미동작을 초록으로 두지 않는다
+  assert.deepEqual(
+    broadcaster.ofType("compliance_unavailable").map((m) => m.payload),
+    [
+      { call_id: "test-1", segment_id: "3", status: "503" },
+      { call_id: "test-1", segment_id: "4", status: "501" },
+    ],
+  );
+  assert.equal(broadcaster.ofType("transcript").length, 4); // 실패한 발화의 자막도 나갔다
   assert.ok(log.warnings.some((w) => w.includes("컴플라이언스 검사 실패") && w.includes("503")));
+});
+
+test("C-1~C-4 — 꺼져 있으면 검사 실패도 화면에 알리지 않는다(경고 로그만)", async () => {
+  const { registry, hub, stt, broadcaster, log } = setup();
+  hub.failCompliance = 503;
+  const agent = await openOk(registry, "test-1", "agent");
+  stt.last().emit("무조건 됩니다", true, 1000);
+  await agent.close();
+
+  assert.equal(broadcaster.ofType("compliance_unavailable").length, 0);
+  assert.ok(log.warnings.some((w) => w.includes("컴플라이언스 검사 실패")));
 });
 
 test("F-2 — 1순위 카드가 절차가 아니면(422) 다음 카드로 내려가 규칙 있는 첫 조항을 절차로 잡는다", async () => {

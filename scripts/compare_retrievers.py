@@ -17,6 +17,12 @@
 예열 1회는 빼고 잰다. ⚠ **로컬 CPU 값이다** — 운영(g4dn T4, 런북 22장은 측정 인스턴스 분리를 요구한다)과 다르다.
 p95 ≤1,000ms(4.1절) 대조는 «이 머신에서» 의 대조로만 읽는다.
 
+**항목별 상위 k 도 남긴다**(2026-09-22, `w6-golden-set-loose-ends` ③). 집계 파일(`<날짜>.json`)은 그대로 두고
+옆에 `<같은 이름>.items.json` 을 하나 더 쓴다 — 변형마다 항목마다 질의·정답·실제 상위 k(doc_id·score)·
+첫 정답 순위. 전에는 `missed` 목록만 남아 **왜 틀렸는지 알려면 다시 돌려야 했다**(GS-205 가 그 경우였다).
+⚠ 남기는 것은 **채점한 그 상위 k 뿐**이다 — 정답이 k 밖이면 `first_hit_rank` 는 `null` 이고, 몇 위였는지는
+이 파일로 알 수 없다. 깊이를 늘려 따로 조회하면 지연 측정이 달라지므로 여기서 하지 않는다.
+
 ⚠ **k 를 여러 값으로 재는 것은 고르기 위해서가 아니라 민감도를 보려는 것이다.** 표본 96건에서 가장 좋은 k 를
 골라 기본값으로 박으면 골든셋에 맞춘 것이 된다. 결과는 전부 찍고, 기본값은 관례(60)에 둔다.
 """
@@ -60,7 +66,36 @@ def git_commit() -> str:
     return f"{head}-dirty" if dirty else head
 
 
-def measure(retriever, items, *, top_k: int = 5) -> dict:
+def item_row(item, query: str, docs, *, top_k: int = 5) -> dict:
+    """항목 하나의 채점 근거 — 집계만으로는 «왜 틀렸나» 를 볼 수 없어서 남긴다.
+
+    `first_hit_rank` 는 1부터 센 첫 정답 순위이고, 상위 k 안에 정답이 없으면 `None` 이다.
+    `hit` 은 채점과 같은 함수(`hit_at_k`)로 낸다 — 여기서 판정을 따로 쓰면 집계와 어긋날 수 있다.
+    """
+    got = [d.doc_id for d in docs]
+    expected = list(item.expected_doc_ids)
+    first = next((i for i, did in enumerate(got[:top_k], 1) if did in expected), None)
+    return {
+        "id": item.id,
+        "query": query,
+        "expected": expected,
+        "distractors": list(item.distractor_doc_ids),
+        "hit": hit_at_k(item.expected_doc_ids, got, k=top_k),
+        "first_hit_rank": first,
+        "top_k": [
+            {"rank": i, "doc_id": d.doc_id, "title": d.title, "score": round(float(d.score), 6)}
+            for i, d in enumerate(docs[:top_k], 1)
+        ],
+    }
+
+
+def items_path(out: Path) -> Path:
+    """집계 파일 옆의 항목별 파일 경로 — `2026-09-22.json` → `2026-09-22.items.json`."""
+    return out.with_name(f"{out.stem}.items{out.suffix}")
+
+
+def measure(retriever, items, *, top_k: int = 5, rows: list | None = None) -> dict:
+    """집계를 돌려준다. `rows` 를 주면 항목별 상위 k(`item_row`)를 거기 채운다 — 집계 형식은 바꾸지 않는다."""
     queries = [retrieval_query(it) for it in items]
     asyncio.run(retriever.retrieve(queries[0], top_k=top_k))  # 예열 — 첫 호출의 모델·연결 준비를 빼고 잰다
     pairs, latencies, missed = [], [], []
@@ -72,6 +107,8 @@ def measure(retriever, items, *, top_k: int = 5) -> dict:
         pairs.append((it.expected_doc_ids, got))
         if not hit_at_k(it.expected_doc_ids, got, k=top_k):
             missed.append(it.id)
+        if rows is not None:
+            rows.append(item_row(it, q, docs, top_k=top_k))
     scores = aggregate_recall_mrr(pairs)
     lat = summarize_latency(latencies)
     return {
@@ -147,9 +184,10 @@ def main() -> int:
     print(" · ".join(f"{k} {v}" for k, v in meta.items()))
     print(f"{'변형':32} {'Recall@5':>9} {'hits':>7} {'MRR':>7} {'top1':>5} {'p50ms':>7} {'p95ms':>7}")
 
-    results = {}
+    results, per_item = {}, {}
     for name, build in variants:
-        r = measure(build(), items)
+        per_item[name] = []
+        r = measure(build(), items, rows=per_item[name])
         results[name] = r
         print(f"{name:32} {r['recall_at_5']:9.3f} {r['hits']:>3}/{r['n']:<3} {r['mrr']:7.3f} "
               f"{r['top1']:>5} {r['p50_ms']:7.0f} {r['p95_ms']:7.0f}")
@@ -157,7 +195,10 @@ def main() -> int:
     out = args.out or ROOT / "data" / "processed" / "retrieval-compare" / f"{meta['date']}.json"
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps({"meta": meta, "results": results}, ensure_ascii=False, indent=2) + "\n")
+    items_out = items_path(out)
+    items_out.write_text(json.dumps({"meta": meta, "items": per_item}, ensure_ascii=False, indent=2) + "\n")
     print(f"\n저장: {out}")
+    print(f"항목별 상위 k: {items_out}")
     return 0
 
 
