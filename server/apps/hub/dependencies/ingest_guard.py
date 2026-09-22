@@ -24,6 +24,15 @@ def ingest_guard_state(settings: object) -> str:
     return "locked" if getattr(settings, "ingest_service_token", None) else "open"
 
 
+def service_token_matches(expected: str | None, token: str) -> bool:
+    """서비스 토큰과 같은가. 미설정(`expected` 없음)이면 **같지 않다** — 열어 두는 판단은 부르는 쪽 몫이다.
+
+    `compare_digest` 는 비-ASCII **문자열**에 TypeError 를 낸다 — 바이트로 비교해 401 이 500 이 되지 않게 한다
+    (`upload_provider.require_upload_token` 이 같은 함정을 테스트로 잡았다)
+    """
+    return bool(expected) and bool(token) and secrets.compare_digest(token.encode("utf-8"), expected.encode("utf-8"))
+
+
 def require_ingest_service(
     request: Request,
     authorization: str | None = Header(default=None),
@@ -33,13 +42,7 @@ def require_ingest_service(
         return  # 이행기 — 미설정이면 연다. 영구 상태가 아니다(`decisions/120` 4번에서 닫는다)
 
     scheme, _, token = (authorization or "").partition(" ")
-    # `compare_digest` 는 비-ASCII **문자열**에 TypeError 를 낸다 — 바이트로 비교해 401 이 500 이 되지 않게 한다
-    # (`upload_provider.require_upload_token` 이 같은 함정을 테스트로 잡았다)
-    if (
-        scheme.lower() != "bearer"
-        or not token
-        or not secrets.compare_digest(token.encode("utf-8"), expected.encode("utf-8"))
-    ):
+    if scheme.lower() != "bearer" or not service_token_matches(expected, token):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="토큰이 없거나 틀렸다",

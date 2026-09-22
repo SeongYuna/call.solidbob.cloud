@@ -1,6 +1,9 @@
 # Requirement: J-4, SEC-1
 """결정 인터랙터 — 만료 일수를 시각으로 바꾸고 메모를 마스킹해 포트에 넘긴다.
 
+**반려에는 사유가 필요하다**(`decisions/316`) — 전에는 비어 있어도 반려됐고 어디에도 남지 않아, 요청한 상담원도
+나중의 관리자도 왜 반려됐는지 알 수 없었다. 승인 메모는 여전히 선택이다. 입력 검증이지 판정이 아니다(만료 일수와 같은 자리).
+
 상태 전이(누가 무엇을 할 수 있는가)는 **포트 구현이 도메인 규칙으로** 확인한다. 여기서 if 로 다시 판단하지 않는다.
 만료 기본값을 두지 않는다 — 「90일이 옳다」는 근거가 없다(절대 원칙 2, `decisions/304`).
 """
@@ -16,7 +19,7 @@ from hub.app.ports.input.blacklist_decision_use_case import BlacklistDecisionUse
 from hub.app.ports.output.blacklist_port import BlacklistPort
 from hub.app.ports.output.masking_port import MaskingPort
 
-NOTE_MAX_CHARS = 500  # `blacklist_entry.note` VARCHAR(500)
+NOTE_MAX_CHARS = 500  # `blacklist_entry.note` · `blacklist_request.decision_note` 둘 다 VARCHAR(500)
 
 
 class BlacklistDecisionInteractor(BlacklistDecisionUseCase):
@@ -34,9 +37,10 @@ class BlacklistDecisionInteractor(BlacklistDecisionUseCase):
             if days is None or not 1 <= days <= MAX_EXPIRES_IN_DAYS:
                 raise ValueError(f"승인에는 만료 일수(1~{MAX_EXPIRES_IN_DAYS})가 필요합니다")
             expires_at = self._now() + timedelta(days=days)
-        note = None
-        if command.approve and command.note and command.note.strip():
-            note = self._masking.mask(command.note.strip())[0][:NOTE_MAX_CHARS]
+        text = (command.note or "").strip()
+        if not command.approve and not text:
+            raise ValueError("반려에는 사유가 필요합니다 — 요청한 상담원이 왜 반려됐는지 알 수 있게 적습니다")
+        note = self._masking.mask(text)[0][:NOTE_MAX_CHARS] if text else None
         return await self._blacklist.decide(
             command.request_id, approve=command.approve, decided_by=command.decided_by, expires_at=expires_at, note=note
         )

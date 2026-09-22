@@ -415,7 +415,8 @@ TABLES: list[Table] = [
                         "전화번호는 C-5 의 P4 이고, 자막에서 지운 값을 여기 평문으로 두면 "
                         "마스킹을 앞단에 둔 의미가 사라진다. 키는 .env(SEC-2)"),
             Column("display_hint", "VARCHAR(8)",
-                   note="화면 표시 전용(뒤 4자리 등). 조회·배정은 customer_ref 로만 한다"),
+                   note="⚠ **채우지 않는다**(`decisions/316`) — 전화번호 뒷자리도 P4 의 일부라 HMAC 으로 가린 것을 "
+                        "되돌리는 단서가 된다. 관리자는 call_id·마스킹된 자막으로 알아본다. 컬럼은 되돌릴 때를 위해 남긴다"),
             Column("requested_by", "VARCHAR(20)", "FK", "agent.agent_id", nullable=False),
             Column("reason", "VARCHAR(500)", nullable=False, note="상담원이 적은 사유"),
             Column("context_excerpt", "TEXT", nullable=False,
@@ -430,8 +431,10 @@ TABLES: list[Table] = [
             # 화면 경고에 필요한 것은 요청 시점의 불리언 하나이고 프론트가 이미 그렇게 쓴다
             # (`hasDistress()`). MANUAL-5.4 가 위기 신호를 폭언과 **다르게** 다루라고 정한
             # 취지와도 맞는다 — 차단 대상으로 집계하지 않는다.
-            Column("temperature_outliers", "TINYINT", nullable=False,
-                   note="D-5 통화 온도 이상 구간 수(`decisions/203`). 점수가 아니라 건수다 — 부록 A-1"),
+            Column("temperature_outliers", "TINYINT",
+                   note="D-5 통화 온도 이상 구간 수(`decisions/203`). 점수가 아니라 건수다 — 부록 A-1. "
+                        "**NULL 은 「미측정」**이다 — 서버 요청 경로에 D-5 판정이 붙지 않아 셀 수 없었다(`decisions/316`). "
+                        "0(「이상 없음」)과 다르다"),
             Column("status", "ENUM('pending','approved','rejected')", nullable=False,
                    note="**요청의 상태만** 담는다(`decisions/205` ②). 해제(released)는 등록의 상태이지 "
                         "요청의 상태가 아니다 — 두 곳에 두면 한쪽만 갱신돼 어긋난다. "
@@ -442,6 +445,9 @@ TABLES: list[Table] = [
             Column("evidence_snapshot_at", "DATETIME", nullable=False,
                    note="위 *_count 를 집계한 시각. 원천은 call_guard_flag·voice_outlier 이고 "
                         "여기 값은 **관리자가 본 시점의 스냅샷**이다(`decisions/205`)"),
+            Column("decision_note", "VARCHAR(500)",
+                   note="**반려 사유**(관리자, 반려면 필수 — `decisions/316`). 저장 전 마스킹. "
+                        "승인 메모는 여기가 아니라 blacklist_entry.note 다. 반려 180일 뒤 비운다(`decisions/312`)"),
         ],
         indexes=[(('"status"', '"requested_at" DESC'), None)],
     ),
@@ -529,7 +535,8 @@ TABLES: list[Table] = [
             Column("agent_id", "VARCHAR(20)", "FK", "agent.agent_id",
                    note="이 관리자가 J-4 승인·해제를 기록할 때 쓰는 상담원 마스터 ID(`decisions/304`). "
                         "`blacklist_request.decided_by`·`blacklist_entry.released_by` 가 agent 를 참조해서다. "
-                        "NULL 이면 로그인은 되지만 블랙리스트 결정은 못 한다(409) — 누구로 기록할지 지어내지 않는다"),
+                        "비어 있으면 처음 결정할 때 서버가 그 관리자 전용 agent 행(`admin-<id>`, role=admin)을 만들어 채운다"
+                        "(`decisions/314` — 전엔 409). 채운 값은 덮어쓰지 않는다"),
             Column("created_at", "DATETIME", nullable=False),
         ],
     ),

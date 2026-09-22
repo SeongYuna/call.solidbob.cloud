@@ -66,7 +66,7 @@ def test_실제_DB_보존_기간_정리(integration_settings):
             await past.change_expiry(old_entry.entry_id, changed_by="it-ret-admin", expires_at=long_ago + timedelta(days=60), reason="오래된 연장 사유")
             await past.release_entry(old_entry.entry_id, released_by="it-ret-admin", reason="해제")
             r_old = await past.save_request(_request("it_ret_old_r", OLD))
-            await past.decide(r_old.request_id, approve=False, decided_by="it-ret-admin", expires_at=None, note=None)
+            await past.decide(r_old.request_id, approve=False, decided_by="it-ret-admin", expires_at=None, note="오래된 반려 사유")
 
             # 최근: 승인 → 연장(진행 중) · 반려(방금)
             b = await recent.save_request(_request("it_ret_new_a", FRESH))
@@ -74,7 +74,7 @@ def test_실제_DB_보존_기간_정리(integration_settings):
             (new_entry,) = [e for e in await recent.list_entries() if e.customer_ref == FRESH]
             await recent.change_expiry(new_entry.entry_id, changed_by="it-ret-admin", expires_at=datetime.now(timezone.utc) + timedelta(days=60), reason="최근 연장 사유")
             r_new = await recent.save_request(_request("it_ret_new_r", FRESH))
-            await recent.decide(r_new.request_id, approve=False, decided_by="it-ret-admin", expires_at=None, note=None)
+            await recent.decide(r_new.request_id, approve=False, decided_by="it-ret-admin", expires_at=None, note="최근 반려 사유")
 
             first = await recent.purge_retained_texts()
             assert first.retention_days == 180
@@ -82,12 +82,12 @@ def test_실제_DB_보존_기간_정리(integration_settings):
 
             assert [c.reason for c in await recent.list_expiry_changes(old_entry.entry_id)] == [PURGED_TEXT]
             assert [c.reason for c in await recent.list_expiry_changes(new_entry.entry_id)] == ["최근 연장 사유"]  # 끝나지 않았다
-            rows = dict(((rid, (reason, excerpt)) for rid, reason, excerpt in await sql(
-                'SELECT "request_id","reason","context_excerpt" FROM "blacklist_request" WHERE "request_id" = ANY(%s)',
+            rows = dict(((rid, (reason, excerpt, note)) for rid, reason, excerpt, note in await sql(
+                'SELECT "request_id","reason","context_excerpt","decision_note" FROM "blacklist_request" WHERE "request_id" = ANY(%s)',
                 ([int(r_old.request_id), int(r_new.request_id), int(a.request_id)],), fetch=True)))
-            assert rows[int(r_old.request_id)] == (PURGED_TEXT, PURGED_TEXT)  # 반려 400일 전 — 비움
-            assert rows[int(r_new.request_id)] == ("폭언 사유", "자막 발췌")  # 방금 반려 — 남김
-            assert rows[int(a.request_id)] == ("폭언 사유", "자막 발췌")  # 승인된 요청은 이 정리의 대상이 아니다
+            assert rows[int(r_old.request_id)] == (PURGED_TEXT, PURGED_TEXT, PURGED_TEXT)  # 반려 400일 전 — 반려 사유까지 비움(`decisions/316`)
+            assert rows[int(r_new.request_id)] == ("폭언 사유", "자막 발췌", "최근 반려 사유")  # 방금 반려 — 남김
+            assert rows[int(a.request_id)] == ("폭언 사유", "자막 발췌", None)  # 승인된 요청은 대상이 아니고 반려 사유도 없다
 
             again = await recent.purge_retained_texts()  # 멱등
             old_only = [c for c in await recent.list_expiry_changes(old_entry.entry_id)]

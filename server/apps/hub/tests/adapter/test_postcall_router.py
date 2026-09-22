@@ -1,10 +1,12 @@
 # Requirement: D-1, D-2, D-3, QUA-1
 """HTTP 표면: 기본은 규칙 발췌 초안(decisions/306), 스포크를 바꿔 꽂아도 초안 형태로 응답."""
 
+import pytest
 from fastapi.testclient import TestClient
 
 from hub.app.dtos import CallSummaryDraft, FollowUpAction
 from hub.app.ports.output import CallNotStartedError, PostcallPort, PostcallRecordPort, SummaryAlreadyConfirmedError
+from hub.dependencies.close_guard import require_close_caller
 from hub.dependencies.postcall_provider import get_postcall_port
 from hub.dependencies.postcall_record_provider import get_postcall_record_port
 from main import app
@@ -12,6 +14,15 @@ from main import app
 BODY = {"call_id": "c_001", "segments": [
     {"segment_id": 1, "speaker": "customer", "text": "카드를 잃어버렸어요", "is_final": True},
     {"segment_id": 2, "speaker": "agent", "text": "분실 신고 도와드리겠습니다", "is_final": True}]}
+
+
+@pytest.fixture(autouse=True)
+def _signed_in():
+    """문(`decisions/315`)은 `test_close_and_feedback_guards.py` 가 본다 — 여기는 문 뒤의 동작만.
+    각 테스트가 `dependency_overrides.clear()` 로 지우므로 테스트마다 다시 건다."""
+    app.dependency_overrides[require_close_caller] = lambda: None
+    yield
+    app.dependency_overrides.pop(require_close_caller, None)
 
 
 class _Stub(PostcallPort):
