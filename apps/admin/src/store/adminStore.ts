@@ -55,6 +55,8 @@ interface AdminState {
     approve: boolean,
     decidedBy: string,
     expiryMonths?: number,
+    /** 승인 메모는 선택, 반려 사유는 서버 필수(`decisions/316`) — 호출부가 빈 문자열로 부르지 않는다. */
+    note?: string,
   ) => Promise<void>;
   releaseEntry: (entryId: string, releasedBy: string, reason: string) => Promise<void>;
   /** `decisions/309` — 연장·단축 실제 API. "지금부터 (개월) 뒤"로 다시 잡는다. 사유 필수. */
@@ -117,7 +119,7 @@ export const useAdminStore = create<AdminState>((set, get) => ({
   // ⚠ 상담원은 pending 까지만 만들 수 있다. 여기서도 pending 이 아닌 요청은
   // 조용히 무시한다 — 반려된 요청을 되살리려면 새 요청을 올려야 한다
   // (`_project/decisions/204`).
-  decideRequest: async (requestId, approve, _decidedBy, expiryMonths) => {
+  decideRequest: async (requestId, approve, _decidedBy, expiryMonths, note) => {
     const accessToken = useAuthStore.getState().accessToken;
     if (accessToken === null) {
       set({ error: "로그인이 필요합니다." });
@@ -136,6 +138,7 @@ export const useAdminStore = create<AdminState>((set, get) => ({
         requestId,
         approve,
         approve ? Math.round(months * 30) : undefined,
+        note,
       );
       set((state) => ({
         requests: state.requests.map((r) => (r.request_id === requestId ? decided : r)),

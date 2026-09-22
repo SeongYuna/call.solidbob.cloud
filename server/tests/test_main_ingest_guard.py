@@ -17,6 +17,7 @@ TOKEN = "svc-token-for-test-0123456789"
 INGEST_PATHS = [
     "/hub/calls", "/hub/transcripts", "/hub/recommendations", "/hub/call-guard-checks",
     "/hub/compliance-checks", "/hub/required-docs-checks", "/hub/closure-checks",
+    "/hub/routing-decisions",  # decisions/126 — 콜 미디에이터가 통화 시작 직후 부른다
 ]
 
 

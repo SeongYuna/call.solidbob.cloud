@@ -88,6 +88,9 @@ export function useCallMediatorSession(): CallMediatorSession {
         onCompliance: (segmentId, event) => {
           useCallStore.getState().applyCompliance(segmentId, event);
         },
+        onComplianceUnavailable: (segmentId, event) => {
+          useCallStore.getState().applyComplianceUnavailable(segmentId, event);
+        },
         onAccentRecognition: (segmentId) => {
           useCallStore.getState().applyAccentHint(segmentId);
         },
