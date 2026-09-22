@@ -49,9 +49,9 @@ def test_발췌할_발화가_없어도_요약이_비지_않는다():
     assert s == "발화 고객 1건 · 상담원 1건 (규칙 발췌 초안)"
 
 
-def test_유형은_만들지_않는다():
-    """유형을 가를 규칙표가 없다 — 없는 규칙으로 분류하지 않는다(decisions/306)."""
-    assert build_draft(CALL).inquiry_type is None
+def test_유형은_지식베이스_장_어휘로_제안한다():
+    """전에는 규칙표가 없어 늘 None 이었다(decisions/306). 지식베이스 장 어휘 규칙표가 생겼다(decisions/323) — 제안이지 확정이 아니다."""
+    assert build_draft(CALL).inquiry_type == "일반행정"  # 「전입신고」 — TERM 4.4
 
 
 def test_긴_발화는_잘라서_싣는다():

@@ -10,13 +10,16 @@ from __future__ import annotations
 from hub.app.dtos.knowledge_gap_dto import KnowledgeGapReceipt, KnowledgeGapReport
 from hub.app.ports.input.knowledge_gap_use_case import KnowledgeGapUseCase
 from hub.app.ports.output.knowledge_gap_port import KnowledgeGapPort
+from hub.app.ports.output.masking_port import MaskingPort
 
 MAX_DESCRIPTION = 300  # db `knowledge_gap.description` VARCHAR(300)
 
 
 class KnowledgeGapInteractor(KnowledgeGapUseCase):
-    def __init__(self, gaps: KnowledgeGapPort) -> None:
+    def __init__(self, gaps: KnowledgeGapPort, masking: MaskingPort | None = None) -> None:
         self._gaps = gaps
+        # 상담원이 자유롭게 쓰는 칸이라 번호가 들어올 수 있다 — 저장 전에 가린다(C-5·SEC-1, `decisions/322`)
+        self._masking = masking
 
     async def report(self, report: KnowledgeGapReport) -> KnowledgeGapReceipt:
         description = report.description.strip()
@@ -28,7 +31,7 @@ class KnowledgeGapInteractor(KnowledgeGapUseCase):
         gap_id = await self._gaps.save(
             KnowledgeGapReport(
                 module=report.module,
-                description=description,
+                description=self._masking.mask(description)[0] if self._masking else description,
                 call_id=report.call_id,
                 segment_id=report.segment_id,
                 closure_id=report.closure_id,

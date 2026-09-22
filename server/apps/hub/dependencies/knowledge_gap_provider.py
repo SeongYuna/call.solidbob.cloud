@@ -13,7 +13,9 @@ from hub.adapter.outbound.postgres.connection import build_connection_factory
 from hub.adapter.outbound.postgres.knowledge_gap_repository import PostgresKnowledgeGapRepository
 from hub.app.ports.input.knowledge_gap_use_case import KnowledgeGapUseCase
 from hub.app.ports.output.knowledge_gap_port import KnowledgeGapPort
+from hub.app.ports.output.masking_port import MaskingPort
 from hub.app.use_cases.knowledge_gap_interactor import KnowledgeGapInteractor
+from hub.dependencies.masking_provider import get_masking_port
 
 
 def get_knowledge_gap_port(request: Request) -> KnowledgeGapPort:
@@ -28,5 +30,6 @@ def get_knowledge_gap_port(request: Request) -> KnowledgeGapPort:
 
 def get_knowledge_gap_use_case(
     gaps: KnowledgeGapPort = Depends(get_knowledge_gap_port),
+    masking: MaskingPort = Depends(get_masking_port),
 ) -> KnowledgeGapUseCase:
-    return KnowledgeGapInteractor(gaps=gaps)
+    return KnowledgeGapInteractor(gaps=gaps, masking=masking)
