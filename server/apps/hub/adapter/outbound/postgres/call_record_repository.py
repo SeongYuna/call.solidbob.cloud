@@ -21,7 +21,7 @@ from hub.app.ports.output.call_record_port import CallRecordPort
 from .connection import ConnectionFactory
 
 _CALL = """
-SELECT "call_id", "status", "started_at", "ended_at", "summary_text", "inquiry_type", "summary_confirmed_at"
+SELECT "call_id", "status", "started_at", "ended_at", "summary_text", "inquiry_type", "summary_confirmed_at", "customer_id"
 FROM "call" WHERE "call_id" = %s
 """
 _FOLLOW_UPS = 'SELECT "action_text", "status" FROM "follow_up_action" WHERE "call_id" = %s ORDER BY "created_at", "id"'
@@ -76,9 +76,9 @@ class PostgresCallRecordRepository(CallRecordPort):
         for closure_id, rank, name, informed in items:
             items_by_closure[closure_id].append(SavedClosureItem(rank=rank, document_name=name, informed=informed))
 
-        cid, status, started_at, ended_at, summary_text, inquiry_type, confirmed_at = call
+        cid, status, started_at, ended_at, summary_text, inquiry_type, confirmed_at, customer_id = call
         return CallRecord(
-            call_id=cid, status=status, started_at=started_at, ended_at=ended_at,
+            call_id=cid, status=status, started_at=started_at, ended_at=ended_at, customer_id=customer_id,
             summary_text=summary_text, inquiry_type=inquiry_type, summary_confirmed_at=confirmed_at,
             follow_up_actions=tuple(SavedFollowUp(action_text=t, status=s) for t, s in follow_ups),
             recommendations=tuple(

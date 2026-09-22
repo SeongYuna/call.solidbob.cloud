@@ -8,6 +8,7 @@ from fastapi.testclient import TestClient
 from hub.app.dtos.call_list_dto import CallListItem
 from hub.app.ports.output.call_list_port import CallListPort
 from hub.dependencies.call_list_provider import get_call_list_port
+from hub.tests.adapter._ingest_auth import HEADERS as INGEST_HEADERS
 from main import app
 
 
@@ -24,14 +25,14 @@ class _Port(CallListPort):
 
 
 def test_PostgreSQL_미설정이면_501이다():
-    with TestClient(app) as client:
+    with TestClient(app, headers=INGEST_HEADERS) as client:
         assert client.get("/hub/calls").status_code == 501
 
 
 def test_목록을_문자열_값으로_돌려준다():
     app.dependency_overrides[get_call_list_port] = lambda: _Port()
     try:
-        with TestClient(app) as client:
+        with TestClient(app, headers=INGEST_HEADERS) as client:
             r = client.get("/hub/calls?limit=5")
     finally:
         app.dependency_overrides.clear()
@@ -50,7 +51,7 @@ def test_통화_시작_POST_와_경로가_겹쳐도_따로_돈다():
     """같은 `/hub/calls` 에 POST(통화 시작)와 GET(목록)이 있다 — 메서드로 갈린다."""
     app.dependency_overrides[get_call_list_port] = lambda: _Port()
     try:
-        with TestClient(app) as client:
+        with TestClient(app, headers=INGEST_HEADERS) as client:
             assert client.get("/hub/calls").status_code == 200
             assert client.post("/hub/calls", json={}).status_code == 422
     finally:
@@ -61,7 +62,7 @@ def test_고객_필터는_64자_HMAC_식별자를_받는다():
     """E2E 에서 잡혔다 — 필터 길이가 옛 컬럼 길이(40)라 실제 식별자가 422 였다 (decisions/304)."""
     app.dependency_overrides[get_call_list_port] = lambda: _Port()
     try:
-        with TestClient(app) as client:
+        with TestClient(app, headers=INGEST_HEADERS) as client:
             assert client.get("/hub/calls?customer_id=" + "a" * 64).status_code == 200
             assert client.get("/hub/calls?customer_id=" + "a" * 65).status_code == 422
     finally:

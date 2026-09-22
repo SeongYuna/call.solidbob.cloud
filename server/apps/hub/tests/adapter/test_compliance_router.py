@@ -6,6 +6,7 @@ from fastapi.testclient import TestClient
 from hub.app.dtos import ComplianceFinding, Source
 from hub.app.ports.output import CompliancePort
 from hub.dependencies.compliance_provider import get_compliance_port
+from hub.tests.adapter._ingest_auth import HEADERS as INGEST_HEADERS
 from main import app
 
 BODY = {"call_id": "c_001", "segment_id": 7, "agent_utterance": "무조건 보장됩니다"}
@@ -32,7 +33,7 @@ def test_스포크가_없으면_501이다(monkeypatch):
 
     monkeypatch.setattr(main, "_wire_compliance", lambda app: None)
     app.dependency_overrides.pop(get_compliance_port, None)
-    with TestClient(app) as client:
+    with TestClient(app, headers=INGEST_HEADERS) as client:
         r = client.post("/hub/compliance-checks", json=BODY)
     assert r.status_code == 501
 
@@ -40,7 +41,7 @@ def test_스포크가_없으면_501이다(monkeypatch):
 def test_위반을_계약_형태로_돌려준다():
     app.dependency_overrides[get_compliance_port] = lambda: _Stub()
     try:
-        with TestClient(app) as client:
+        with TestClient(app, headers=INGEST_HEADERS) as client:
             r = client.post("/hub/compliance-checks", json=BODY)
         b = r.json()
         assert r.status_code == 200
@@ -54,7 +55,7 @@ def test_응답에_등급이나_안전_필드가_없다():
     """부록 A-1 — '안전합니다'·'위험도 N%' 를 만들 수 있는 필드를 아예 두지 않는다."""
     app.dependency_overrides[get_compliance_port] = lambda: _Clean()
     try:
-        with TestClient(app) as client:
+        with TestClient(app, headers=INGEST_HEADERS) as client:
             r = client.post("/hub/compliance-checks", json=BODY)
         b = r.json()
         assert b["findings"] == []
@@ -66,7 +67,7 @@ def test_응답에_등급이나_안전_필드가_없다():
 def test_빈_발화는_422다():
     app.dependency_overrides[get_compliance_port] = lambda: _Stub()
     try:
-        with TestClient(app) as client:
+        with TestClient(app, headers=INGEST_HEADERS) as client:
             r = client.post("/hub/compliance-checks", json={**BODY, "agent_utterance": ""})
         assert r.status_code == 422
     finally:
@@ -87,7 +88,7 @@ def test_없는_전사_구간을_가리키면_404_다():
 
     app.dependency_overrides[get_compliance_check_use_case] = lambda: _Missing()
     try:
-        with TestClient(app) as client:
+        with TestClient(app, headers=INGEST_HEADERS) as client:
             r = client.post("/hub/compliance-checks", json=BODY)
     finally:
         app.dependency_overrides.clear()

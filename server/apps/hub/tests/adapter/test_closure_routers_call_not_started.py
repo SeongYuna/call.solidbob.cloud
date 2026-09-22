@@ -7,6 +7,7 @@ from fastapi.testclient import TestClient
 from hub.app.ports.output.transcript_ingest_record_port import CallNotStartedError
 from hub.dependencies.closure_provider import get_closure_check_use_case
 from hub.dependencies.required_docs_detection_provider import get_required_docs_detection_use_case
+from hub.tests.adapter._ingest_auth import HEADERS as INGEST_HEADERS
 from main import app
 
 
@@ -22,10 +23,9 @@ class _NoCall:
      {"call_id": "ghost", "procedure": "DASAN-TERM-4.4", "evidence": {"신고서": True}}),
 ], ids=["required_docs", "closure_check"])
 def test_통화가_없으면_404다(monkeypatch, provider, path, body):
-    monkeypatch.delenv("INGEST_SERVICE_TOKEN", raising=False)  # 쓰기 경로 문은 test_main_ingest_guard 가 본다
     app.dependency_overrides[provider] = lambda: _NoCall()
     try:
-        with TestClient(app) as c:
+        with TestClient(app, headers=INGEST_HEADERS) as c:
             r = c.post(path, json=body)
         assert r.status_code == 404 and "ghost" in r.json()["detail"]
     finally:

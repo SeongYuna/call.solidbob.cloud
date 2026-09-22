@@ -65,3 +65,33 @@ def test_20자_넘는_이름은_무작위_agent_id로_만든다(integration_sett
             await _sql(connect, 'DELETE FROM "agent" WHERE "display_name" = %s', (LONG_NAME,))
 
     asyncio.run(scenario())
+
+
+@pytest.mark.integration
+def test_실제_DB에서_입사일을_넣고_지운다_관리자_행은_건드리지_않는다(integration_settings):
+    """J-5 근속은 `agent.hired_on` 에서 센다(`decisions/321`) — 넣는 길이 없어서 모두 0년이었다."""
+    from datetime import date  # noqa: PLC0415
+
+    connect = build_connection_factory(integration_settings)
+    repo = PostgresAgentDirectoryRepository(connect)
+    admin_id = "admin-it-hired"
+
+    async def scenario():
+        await _sql(connect, 'DELETE FROM "agent" WHERE "display_name" = %s OR "agent_id" = %s', (NAME, admin_id))
+        try:
+            created = await repo.resolve_or_create(NAME)
+            saved = await repo.set_hired_on(created.agent_id, date(2019, 3, 2))
+            assert saved is not None and saved.hired_on == date(2019, 3, 2)
+            listed = {a.agent_id: a.hired_on for a in await repo.list()}
+            assert listed[created.agent_id] == date(2019, 3, 2)
+
+            cleared = await repo.set_hired_on(created.agent_id, None)
+            assert cleared is not None and cleared.hired_on is None
+
+            assert await repo.set_hired_on("it-없는상담원", date(2019, 3, 2)) is None
+            await repo.ensure_admin(admin_id, "관리자")
+            assert await repo.set_hired_on(admin_id, date(2019, 3, 2)) is None  # 관리자 행은 배정 후보가 아니다
+        finally:
+            await _sql(connect, 'DELETE FROM "agent" WHERE "display_name" = %s OR "agent_id" = %s', (NAME, admin_id))
+
+    asyncio.run(scenario())

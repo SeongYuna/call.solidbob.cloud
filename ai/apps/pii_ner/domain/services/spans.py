@@ -56,6 +56,21 @@ _ROAD_SUFFIX = re.compile(r"[가-힣]+(?:로|길|대로)\d*$")
 _PLACE_LABELS = frozenset({"LOC", "AFW"})
 
 
+# 모델이 PER 로 주지만 사람 이름이 아닌 보통 명사. **어절 전체(조사를 벗긴 이름 구간)가 이 말일 때만** 뺀다 — 추측으로 늘리지 않고
+# 실제로 걸린 것만 넣는다(누락 0건 > 과잉 억제).
+# - 「요청」: 2026-09-22 운영 블랙리스트 사유 `"운영 점검용 테스트 요청 (정성윤, 09-22)"` 가 `"… 테스트 ** ****, …"` 로 저장됐다.
+#   뒤에 이름이 오면 모델이 앞 어절까지 PER 로 준다(로컬 재현 — 이름이 없으면 태그하지 않는다)
+# - 「테스트」: 같은 문장을 `"테스트 요청 (정성윤, …)"` 으로 줄이면 이번엔 「테스트」 를 PER 로 준다(같은 날 재현)
+_NOT_PERSON_WORDS = frozenset({"요청", "테스트"})
+
+# PER 구간 가장자리에서 떼어 낼 문자 — 한글·영문·숫자가 아닌 것(괄호·쉼표·따옴표 등)
+_EDGE_PUNCT = re.compile(r"[^\w]|_")
+
+
+def _syllables(s: str) -> int:
+    return len(_HANGUL.findall(s))
+
+
 def _strip_tail(tail: str) -> str:
     for p in PARTICLES:
         if tail.endswith(p):
@@ -90,12 +105,24 @@ def person_spans(text: str, tags: Iterable[TokenTag]) -> list[EntitySpan]:
     for start, end in merged:
         if not _HANGUL.search(text[start:end]):
             continue
+        # 괄호·문장부호는 이름이 아니다 — `"요청 (정성윤, 09-22)"` 에서 모델이 「(」 까지 PER 로 줘 괄호가 가려졌다(2026-09-22 운영)
+        while start < end and _EDGE_PUNCT.match(text[start]):
+            start += 1
+        while end > start and _EDGE_PUNCT.match(text[end - 1]):
+            end -= 1
         # 어절 끝 = 한글 음절이 끊기는 곳. 숫자·문장부호·공백에서 멈춘다.
         eojeol_end = end
         while eojeol_end < len(text) and _HANGUL.match(text[eojeol_end]):
             eojeol_end += 1
-        tail = _strip_tail(text[end:eojeol_end])
+        raw_tail = text[end:eojeol_end]
+        tail = _strip_tail(raw_tail)
         name_end = end + len(tail) if len(tail) <= _MAX_NAME_TAIL else eojeol_end
+        if name_end < eojeol_end and text[name_end] == "이" and _syllables(text[start:name_end]) <= 2:
+            # 벗긴 조사가 「이」 로 시작하고 남은 이름이 두 글자 이하면 그 「이」 는 이름 끝 글자일 수 있다 —
+            # `"유이"`·`"아이"`·`"김서이"`(`name_detector._name_length` 와 같은 기준, 2026-09-22 SYN-017 「유이」). 애매하면 가린다
+            name_end += 1
+        if text[start:name_end] in _NOT_PERSON_WORDS:
+            continue
         found.append(EntitySpan("P6", start, name_end))
     return found
 

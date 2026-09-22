@@ -18,3 +18,7 @@ class AdminStatsResponse(BaseModel):
     routing_blacklisted: StrField = Field(description="그중 블랙리스트 고객")
     routing_fell_back: StrField = Field(description="그중 베테랑이 없어 일반 배정으로 떨어진 건")
     counted_at: str = Field(description="DB 가 센 시각(ISO 8601)")
+    calls_today: StrField = Field(description="오늘(KST 자정부터) 시작된 통화")
+    call_guard_flags_today: StrField = Field(description="오늘 잡힌 콜 가드 신호")
+    requests_today: StrField = Field(description="오늘 올라온 블랙리스트 요청(상태 무관)")
+    today: str | None = Field(default=None, description="「오늘」이 어느 날인지 — KST 날짜 YYYY-MM-DD")

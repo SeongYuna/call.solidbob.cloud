@@ -6,6 +6,7 @@ from fastapi.testclient import TestClient
 from hub.app.dtos.call_start_dto import CallStarted
 from hub.app.ports.output.call_start_record_port import CallStartRecordPort
 from hub.dependencies.call_record_provider import get_call_record_port
+from hub.tests.adapter._ingest_auth import HEADERS as INGEST_HEADERS
 from main import app
 
 
@@ -22,7 +23,7 @@ class _SpyRecord(CallStartRecordPort):
 def _post(body: dict, record: CallStartRecordPort):
     app.dependency_overrides[get_call_record_port] = lambda: record
     try:
-        with TestClient(app) as client:
+        with TestClient(app, headers=INGEST_HEADERS) as client:
             return client.post("/hub/calls", json=body)
     finally:
         app.dependency_overrides.clear()
@@ -54,7 +55,7 @@ def test_DB가_없으면_로그_어댑터로_떨어져도_200이다(monkeypatch)
     """전사 기록과 같은 조건이다 — 둘 다 로그로 가야 짝이 맞는다."""
     for k in ("DATABASE_URL", "POSTGRES_HOST", "POSTGRES_DB_NAME", "POSTGRES_USER", "POSTGRES_PASSWORD"):
         monkeypatch.delenv(k, raising=False)
-    with TestClient(app) as client:
+    with TestClient(app, headers=INGEST_HEADERS) as client:
         r = client.post("/hub/calls", json={"call_id": "test-c002"})
     assert r.status_code == 200 and r.json()["created"] == "true"
 

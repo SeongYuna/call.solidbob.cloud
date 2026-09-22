@@ -34,13 +34,14 @@ class _Stub(PostcallPort):
 
 
 def test_기본은_규칙_발췌_초안이다():
-    """501 이 아니다 — 자막에서 고른 문장과 발화 건수가 나가고, 유형은 만들지 않는다(decisions/306)."""
+    """501 이 아니다 — 자막에서 고른 문장과 발화 건수가 나간다. 유형은 지식베이스 장 어휘로 제안하고(decisions/323),
+    「카드 분실」은 다산 지식베이스 어느 장에도 없어 「미분류」다 — NULL 이 아니다(w6-d2-inquiry-type-null)."""
     with TestClient(app) as client:
         r = client.post("/hub/calls/c_001/close", json=BODY)
     b = r.json()
     assert r.status_code == 200
     assert b["summary_text"].startswith("고객 문의: 카드를 잃어버렸어요 / 상담원 안내: 분실 신고 도와드리겠습니다")
-    assert b["inquiry_type"] is None
+    assert b["inquiry_type"] == "미분류"
     assert b["follow_up_actions"] == []  # 통화 안에서 끝나는 약속은 후속조치가 아니다
     assert b["confirmed"] == "false"
 

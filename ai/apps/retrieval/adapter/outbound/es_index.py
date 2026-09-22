@@ -45,22 +45,28 @@ def _check_layout(layout: str) -> None:
         raise ValueError(f"모르는 레이아웃: {layout!r} (가능: {', '.join(LAYOUTS)})")
 
 
-def index_names(layout: Layout) -> tuple[str, ...]:
-    """이 레이아웃이 쓰는 인덱스 이름 전부. 검색·삭제 모두 이걸 거쳐 얻는다."""
+def index_names(layout: Layout, *, prefix: str = INDEX_PREFIX) -> tuple[str, ...]:
+    """이 레이아웃이 쓰는 인덱스 이름 전부. 검색·삭제 모두 이걸 거쳐 얻는다.
+
+    `prefix` 는 **통합 테스트용**이다(2026-09-22, `w6-test-hygiene-eval-wiring`). 기본값이면
+    운영 이름(`callguard-kb-single`)이 그대로 나온다. 테스트가 공유 개발 인덱스를
+    `recreate=True` 로 지우고 BM25 만으로 다시 채워 **dense 벡터를 조용히 0건으로 만들던** 것을
+    막으려고, 테스트는 자기만의 접두어(`callguard-test-<uuid>`)를 넘긴다.
+    """
     _check_layout(layout)
     if layout == "single":
-        return (SINGLE_INDEX,)
-    return tuple(f"{INDEX_PREFIX}-{d}" for d in DOMAINS)
+        return (f"{prefix}-single",)
+    return tuple(f"{prefix}-{d}" for d in DOMAINS)
 
 
-def index_name_for(chunk: Chunk, layout: Layout) -> str:
+def index_name_for(chunk: Chunk, layout: Layout, *, prefix: str = INDEX_PREFIX) -> str:
     """청크 하나가 들어갈 인덱스."""
     _check_layout(layout)
     if layout == "single":
-        return SINGLE_INDEX
+        return f"{prefix}-single"
     if chunk.domain not in DOMAINS:
         raise ValueError(f"모르는 도메인: {chunk.domain!r} ({chunk.chunk_id})")
-    return f"{INDEX_PREFIX}-{chunk.domain}"
+    return f"{prefix}-{chunk.domain}"
 
 
 # 사전에 없어서 nori 가 **명사를 용언으로 오분석**하는 도메인 용어들.
@@ -94,6 +100,13 @@ def build_settings() -> dict[str, Any]:
     사전에 **없는** 도메인 용어는 `USER_DICTIONARY_RULES` 로 알려 준다 — 안 그러면 명사가
     용언으로 오분석돼 `하`·`ᆯ` 같은 흔한 토큰이 섞이고, 그 토큰들이 관계없는 문서와 매칭된다.
 
+    **품사 필터(`nori_part_of_speech`)를 토크나이저 바로 뒤에 둔다**(2026-09-22, `decisions/214`).
+    없으면 조사·어미·접사가 토큰으로 남아 BM25 순위를 정한다 — `해지` 를 쪼갠 `해` 가 `해주시는` 의
+    `해` 와 맞는 식이다(GS-205). **제외 품사는 nori 기본값 그대로다**(E·IC·J·MAG·MAJ·MM·SP·SSC·SSO·SC·
+    SE·XPN·XSA·XSN·XSV·UNA·NA·VSV) — `stoptags` 를 따로 주지 않는다. 골든셋을 보며 목록을 고르면
+    그 골든셋에 맞춘 것이 되므로, 목록은 미리 정해 둔 기본값에서 움직이지 않는다.
+    ⚠ **바꾸면 재적재다** — 분석기는 색인 시점에 적용되므로 기존 인덱스에는 먹지 않는다.
+
     ⚠ nori 는 `analysis-nori` 플러그인이다. 기본 이미지에 없으면 인덱스 생성이 실패한다
     (`infra/docker-compose.yml` 주석 참고).
     """
@@ -112,7 +125,7 @@ def build_settings() -> dict[str, Any]:
                 "korean": {
                     "type": "custom",
                     "tokenizer": "kb_nori",
-                    "filter": ["nori_readingform", "lowercase"],
+                    "filter": ["nori_part_of_speech", "nori_readingform", "lowercase"],
                 },
             },
         },
@@ -169,7 +182,12 @@ def to_source(chunk: Chunk, embedding: list[float] | None = None) -> dict[str, A
 
 
 def create_indices(
-    client: Any, layout: Layout, *, recreate: bool = False, embedding_dims: int | None = None
+    client: Any,
+    layout: Layout,
+    *,
+    recreate: bool = False,
+    embedding_dims: int | None = None,
+    prefix: str = INDEX_PREFIX,
 ) -> list[str]:
     """레이아웃의 인덱스를 만든다. 이미 있으면 건너뛴다(`recreate=True` 면 지우고 다시).
 
@@ -178,7 +196,7 @@ def create_indices(
     """
     _check_layout(layout)
     created = []
-    for name in index_names(layout):
+    for name in index_names(layout, prefix=prefix):
         if recreate:
             client.indices.delete(index=name, ignore_unavailable=True)
         if not client.indices.exists(index=name):
@@ -195,6 +213,7 @@ def index_chunks(
     layout: Layout,
     *,
     embeddings: dict[str, list[float]] | None = None,
+    prefix: str = INDEX_PREFIX,
 ) -> dict[str, int]:
     """청크를 적재하고 인덱스별 문서 수를 돌려준다.
 
@@ -217,7 +236,7 @@ def index_chunks(
 
     operations: list[dict[str, Any]] = []
     for c in chunks:
-        operations.append({"index": {"_index": index_name_for(c, layout), "_id": c.chunk_id}})
+        operations.append({"index": {"_index": index_name_for(c, layout, prefix=prefix), "_id": c.chunk_id}})
         operations.append(to_source(c, embeddings.get(c.chunk_id) if embeddings else None))
 
     resp = client.bulk(operations=operations, refresh=True)
@@ -229,7 +248,7 @@ def index_chunks(
         ]
         raise RuntimeError(f"색인 실패 {len(failed)}건 — 첫 건: {failed[0] if failed else '?'}")
 
-    return {name: client.count(index=name)["count"] for name in index_names(layout)}
+    return {name: client.count(index=name)["count"] for name in index_names(layout, prefix=prefix)}
 
 
 def create_named_index(

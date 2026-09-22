@@ -28,5 +28,5 @@ def test_초안으로_돌려주고_후속조치를_DTO로_옮긴다():
     draft = asyncio.run(RulePostcallAdapter().summarize("c1", [_seg(1, "agent", "결과는 문자로 보내 드리겠습니다")]))
     assert draft.call_id == "c1"
     assert draft.confirmed is False
-    assert draft.inquiry_type is None
+    assert draft.inquiry_type == "미분류"  # 고객 발화가 없다 — 처리했는데 못 가른 것(decisions/323)
     assert [a.action_text for a in draft.follow_up_actions] == ["결과는 문자로 보내 드리겠습니다"]

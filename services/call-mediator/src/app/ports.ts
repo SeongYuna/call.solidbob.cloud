@@ -55,6 +55,19 @@ export interface CallStartRequest {
   caller_phone?: string;
 }
 
+/**
+ * J-5 인입 전 배정 판정(`decisions/126`·`313`). 통화 시작이 성공한 **직후** 부른다 — 서버가 발신 번호로 식별한 고객이
+ * 블랙리스트면 근속 기준 이상 상담사를 고른다. `candidates` 는 「지금 받을 수 있는 상담사」인데 미디에이터는 대기 상태를
+ * 모르므로 시연 설정 목록(`ROUTING_CANDIDATES`)을 넘긴다. 비면 서버가 기존 배정 규칙으로 떨어뜨린다.
+ */
+export interface RoutingDecisionRequest {
+  call_id: string;
+  candidates: string[];
+}
+
+/** `POST /hub/routing-decisions` 응답 그대로 — `{call_id, assigned_agent_id, is_blacklisted, fell_back, reason, …}`(값은 문자열, id 는 null 가능). */
+export type RoutingDecisionPayload = Record<string, unknown>;
+
 /** 마스킹 **전** 원문. 콜 미디에이터 → 서버로만 가고 그 밖으로는 나가지 않는다 (SEC-1). */
 export interface RawTranscript {
   call_id: string;
@@ -139,6 +152,7 @@ export class HubError extends Error {
 
 export interface HubPort {
   startCall(request: CallStartRequest): Promise<void>;
+  decideRouting(request: RoutingDecisionRequest): Promise<RoutingDecisionPayload>;
   ingestTranscript(raw: RawTranscript): Promise<MaskedTranscript>;
   recommend(request: RecommendRequest): Promise<RecommendPayload>;
   checkCallGuard(request: CallGuardCheckRequest): Promise<CallGuardPayload>;

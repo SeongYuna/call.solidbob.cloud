@@ -18,7 +18,8 @@
  *             사람의 말을 받아쓴 것이 아니라는 것을 기록에 남긴다
  *
  * SEC-1 — 원문(`RawTranscript`)은 `hub.ingestTranscript` 에만 들어간다. 대시보드로 가는 것은
- * **서버가 마스킹해 돌려준 응답**뿐이고, 서버가 실패하면 그 결과는 아무 데도 가지 않는다.
+ * **서버가 마스킹해 돌려준 응답**뿐이고, 서버가 실패하면 그 결과는 아무 데도 가지 않는다(확정은 일시 실패면
+ * 몇 번 더 보낸다 — `INGEST_RETRY_DELAYS_MS`).
  * 로그에는 번호·상태 코드만 남긴다.
  */
 import { SegmentCounter, OpenSegment, utteranceEndMs } from "../domain/segments.ts";
@@ -31,6 +32,7 @@ import {
   type Broadcaster,
   type HubPort,
   type Logger,
+  type MaskedTranscript,
   type RawTranscript,
   type RecommendPayload,
   type Speaker,
@@ -98,11 +100,40 @@ export interface RegistryDeps {
    * 받아야 한다. **검사는 끄지 않는다.**
    */
   announceCompliance?: boolean;
+  /** J-5 배정 판정에 넘길 후보 상담사(`decisions/126`). 기본 빈 목록 — 서버가 기존 배정 규칙으로 떨어뜨린다. */
+  routingCandidates?: readonly string[];
   /**
    * F-2 필요서류 판정을 `closure` 메시지로 대시보드에 보낼까. 기본 false — 대시보드 파서가 아직 옛 종결 형식
    * (`closure_type`·`approved/blocked`)만 받는다. **판정·저장은 끄지 않는다.**
    */
   announceClosure?: boolean;
+  /**
+   * **확정** 전사를 서버가 받지 못했을 때(연결 실패·시간 초과·5xx·429) 다시 보내기 전 기다리는 시간들(ms). 길이 = 재시도 횟수.
+   * 기본 `INGEST_RETRY_DELAYS_MS`. 테스트가 줄인다. interim 과 4xx 는 다시 보내지 않는다(`isRetryableIngestError`).
+   */
+  ingestRetryDelaysMs?: readonly number[];
+}
+
+/**
+ * 확정 전사 재시도 간격 — 처음 + 두 번 = 최대 3회. 2026-09-22 운영 SYN-010 에서 마지막 상담원 확정이 콜 미디에이터까지
+ * 왔는데 서버 전사 요청 한 번이 실패해 **DB 에도 /ws 에도 남지 않았다**(`w6-replay-last-turn`). 전에는 한 번 실패로 버렸다.
+ *
+ * 다시 보내도 되는 근거: 서버 저장은 `(call_id, segment_id)` UPSERT 이고 마스킹 구간도 지우고 다시 넣는다(`decisions/205`,
+ * `transcript_segment_repository.py`) — 첫 요청이 늦게라도 서버에서 끝났어도 행은 하나다. `POST /hub/transcripts` 는
+ * 마스킹·저장 말고 다른 부작용이 없다(추천·검사는 이쪽이 응답을 받은 뒤에 따로 부른다).
+ *
+ * 순서: 재시도는 채널 줄(`CoalescingQueue`) **안에서** 한다 — 뒤 결과가 앞지르지 않는다. 대신 그동안 뒤 자막이 늦는다.
+ * 최악(시간 초과 5초 × 3 + 1.3초)은 채널 닫기 기다림 상한(`drainTimeoutMs`, 10초)을 넘는다 — 상한은 기다림만 끊고
+ * 요청은 끝까지 간다. 그 뒤에 성공해도 방송은 된다(대시보드 구독은 채널과 무관하다).
+ */
+export const INGEST_RETRY_DELAYS_MS: readonly number[] = [300, 1_000];
+
+/** 다시 보내면 달라질 수 있는 실패인가. 4xx(401 토큰·409 통화 없음·422 계약)는 다시 보내도 같다. */
+export function isRetryableIngestError(error: unknown): boolean {
+  if (!(error instanceof HubError)) {
+    return true; // 응답 본문 해석 실패 등 — 서버 쪽 일시 문제로 본다(UPSERT 라 다시 보내도 해가 없다)
+  }
+  return error.status === null || error.status === 429 || error.status >= 500;
 }
 
 interface CallState {
@@ -112,7 +143,7 @@ interface CallState {
   readonly channels: Map<ChannelSpeaker, Channel>;
   started: Promise<boolean>;
   /**
-   * F-2 — 이 통화에서 판정 중인 절차(필요서류 조항 ID). 추천 카드를 순서대로 내려가며 서버가 규칙을 아는 첫 조항이다
+   * F-2 — 이 통화에서 판정 중인 절차(필요서류 조항 ID). 추천 **1순위 카드**의 조항 중 서버가 규칙을 아는 것이다
    * (`adoptProcedure`). 서버가 규칙이 없다고 한(422) 조항은 `notProcedures` 로 옮겨 다시 묻지 않는다.
    */
   readonly procedures: Set<string>;
@@ -211,7 +242,22 @@ export class CallRegistry {
           return false;
         },
       );
+    // J-5 — 통화 행이 생긴 직후 배정 판정(`decisions/126`). **시연용 대리다** — 완성본은 교환기가 연결 전에 부른다(`320`).
+    // 교환기가 붙으면 이 호출을 지운다(안 지우면 판정이 두 번 기록된다). `started` 에 묶지 않는다 — 전사를 기다리게 하지 않고,
+    // 실패해도 통화는 막지 않는다(배정은 얇은 필터다, `204`). 결과는 로그에만 — 화면 표시는 조서희 님과 정한 뒤다.
+    void call.started.then((started) => (started ? this.decideRouting(spec.callId) : undefined));
     return call;
+  }
+
+  private async decideRouting(callId: string): Promise<void> {
+    try {
+      const d = await this.deps.hub.decideRouting({ call_id: callId, candidates: [...(this.deps.routingCandidates ?? [])] });
+      this.deps.log.info(
+        `배정 판정 call=${callId} assigned=${String(d.assigned_agent_id ?? "-")} blacklisted=${String(d.is_blacklisted)} fell_back=${String(d.fell_back)}`,
+      );
+    } catch (error: unknown) {
+      this.deps.log.warn(`배정 판정 실패 call=${callId} status=${statusOf(error)}`);
+    }
   }
 
   private dropIfEmpty(call: CallState): void {
@@ -395,14 +441,8 @@ export class Channel {
   }
 
   private async forward(item: QueuedResult): Promise<void> {
-    let masked;
-    try {
-      masked = await this.deps.hub.ingestTranscript(item.raw);
-    } catch (error) {
-      // 마스킹을 못 거친 결과는 어디에도 보내지 않는다 (SEC-1). 원문을 로그에 남기지 않는다.
-      this.deps.log.warn(
-        `전사 전달 실패 call=${this.callId} segment=${item.segmentId} status=${statusOf(error)} — 대시보드로 보내지 않는다`,
-      );
+    const masked = await this.ingest(item);
+    if (masked === null) {
       return;
     }
     this.deps.broadcaster.publish(this.callId, { type: "transcript", payload: masked });
@@ -419,6 +459,36 @@ export class Channel {
         for (const procedure of this.call.procedures) {
           this.track(this.checkRequiredDocs(procedure));
         }
+      }
+    }
+  }
+
+  /**
+   * 서버에 전사를 보내 마스킹본을 받는다. **확정**이 일시 실패하면 `ingestRetryDelaysMs` 만큼 기다려 다시 보낸다
+   * (`INGEST_RETRY_DELAYS_MS` 주석). 끝내 못 받으면 `null` — 마스킹을 못 거친 결과는 어디에도 보내지 않는다(SEC-1).
+   * 로그에는 통화·발화 번호·상태·시도 횟수만 남긴다. 원문은 남기지 않는다.
+   */
+  private async ingest(item: QueuedResult): Promise<MaskedTranscript | null> {
+    const delays = item.isFinal ? (this.deps.ingestRetryDelaysMs ?? INGEST_RETRY_DELAYS_MS) : [];
+    const where = `call=${this.callId} segment=${item.segmentId}`;
+    for (let attempt = 1; ; attempt += 1) {
+      try {
+        return await this.deps.hub.ingestTranscript(item.raw);
+      } catch (error) {
+        const status = statusOf(error);
+        const delay = delays[attempt - 1];
+        if (!item.isFinal) {
+          this.deps.log.warn(`전사 전달 실패 ${where} status=${status} — 대시보드로 보내지 않는다(interim)`);
+          return null;
+        }
+        if (delay === undefined || !isRetryableIngestError(error)) {
+          this.deps.log.warn(
+            `전사 전달 포기 ${where} status=${status} (${attempt}회 시도) — 확정 발화가 저장·대시보드 어디에도 가지 않는다`,
+          );
+          return null;
+        }
+        this.deps.log.warn(`전사 전달 실패 ${where} status=${status} — ${delay}ms 뒤 다시 보낸다 (${attempt}/${delays.length + 1})`);
+        await new Promise((resolve) => setTimeout(resolve, delay));
       }
     }
   }
@@ -512,24 +582,21 @@ export class Channel {
   }
 
   /**
-   * F-2 — 추천 카드를 순서대로 내려가며 서버가 규칙을 아는 첫 조항을 절차로 잡는다(상한 `MAX_PROCEDURE_CANDIDATES` 장).
-   * 「절차 아님」(422)은 건너뛰고 다음 카드를 묻는다 — 절차를 지어내지는 않는다(서버가 규칙을 아는 조항만 절차가 된다).
-   * 이미 판정 중인 절차가 후보에 있으면 거기서 멈춘다. 순위 자체가 틀린 것은 검색 몫이다(`decisions/208`).
+   * F-2 — 추천 **1순위 카드**의 조항만 절차 후보로 본다(`w6-procedure-pick-rule`, 2026-09-22 정성윤·류준 합의).
+   * 서버가 규칙을 알면(판정이 돌아오면) 절차로 잡고, 「절차 아님」(422 — 규칙 없는 조항·`TERM` 이 아닌 조항)이면
+   * **이 추천에서는 아무것도 잡지 않는다.** 2순위 아래로 내려가지 않는다.
+   *
+   * 전에는 422 를 건너뛰고 다음 카드로 내려가 「규칙 있는 첫 조항」을 잡았다. 1순위가 정답인데 규칙이 없으면
+   * 한참 아래 카드의 엉뚱한 절차를 잡아 틀린 「빠진 서류」를 띄웠다 — 09-22 운영 SYN-010(1순위 `TERM-2.12` 규칙 없음 →
+   * 5순위 `TERM-2.9` 채택 → `incomplete`「신분증」), 로컬 E2E 24건 중 23건(오판 75건). 판정 안 함이 틀린 판정보다 낫다.
+   * 판정 중인 절차는 그대로 둔다(누적 — 빼는 것은 화면과 맞춰야 해서 이 티켓 밖이다).
    */
-  private async adoptProcedure(candidates: string[]): Promise<void> {
-    for (const candidate of candidates) {
-      if (this.call.procedures.has(candidate)) {
-        return;
-      }
-      if (this.call.notProcedures.has(candidate)) {
-        continue;
-      }
-      this.call.procedures.add(candidate);
-      await this.checkRequiredDocs(candidate);
-      if (!this.call.notProcedures.has(candidate)) {
-        return; // 규칙이 있는 조항 — 여기서 멈춘다
-      }
+  private async adoptProcedure(candidate: string): Promise<void> {
+    if (this.call.procedures.has(candidate) || this.call.notProcedures.has(candidate)) {
+      return; // 이미 판정 중이거나 규칙이 없다고 들은 조항 — 다시 묻지 않는다
     }
+    this.call.procedures.add(candidate);
+    await this.checkRequiredDocs(candidate); // 422 면 checkRequiredDocs 가 procedures 에서 빼고 notProcedures 로 옮긴다
   }
 
   /**
@@ -562,9 +629,9 @@ export class Channel {
         type: "recommendation",
         payload: withE2eLatency(payload, item.raw.utterance_end_ms, this.callClockMs()),
       });
-      const candidates = sourceDocIds(payload);
-      if (candidates.length > 0) {
-        this.track(this.adoptProcedure(candidates));
+      const candidate = topSourceDocId(payload);
+      if (candidate !== null) {
+        this.track(this.adoptProcedure(candidate));
       }
     } catch (error) {
       this.deps.log.warn(`추천 요청 실패 call=${this.callId} segment=${item.segmentId} status=${statusOf(error)}`);
@@ -593,23 +660,17 @@ export function withE2eLatency(
   return { ...payload, e2e_latency_ms: String(Math.max(0, Math.round(broadcastAtMs - utteranceEndMs))) };
 }
 
-/** 절차 후보로 보는 추천 카드 수 — 서버 추천이 상위 5장을 준다. */
-const MAX_PROCEDURE_CANDIDATES = 5;
-
-/** 추천 응답 카드의 근거 조항 ID 를 순서대로(중복 제거, 상한 5). 카드가 없거나 모양이 다르면 빈 배열 — 절차를 지어내지 않는다. */
-function sourceDocIds(payload: Record<string, unknown>): string[] {
+/**
+ * 추천 응답 **1순위 카드**의 근거 조항 ID. 카드가 없거나 1순위 카드의 모양이 다르면 `null` — 2순위로 내려가지 않는다.
+ * 절차를 지어내지 않는다(`w6-procedure-pick-rule`).
+ */
+function topSourceDocId(payload: Record<string, unknown>): string | null {
   const cards = payload["cards"];
-  if (!Array.isArray(cards)) {
-    return [];
+  if (!Array.isArray(cards) || cards.length === 0) {
+    return null;
   }
-  const ids: string[] = [];
-  for (const card of cards.slice(0, MAX_PROCEDURE_CANDIDATES)) {
-    const source = (card as { source?: { doc_id?: unknown } } | null)?.source;
-    if (typeof source?.doc_id === "string" && source.doc_id.length > 0 && !ids.includes(source.doc_id)) {
-      ids.push(source.doc_id);
-    }
-  }
-  return ids;
+  const source = (cards[0] as { source?: { doc_id?: unknown } } | null)?.source;
+  return typeof source?.doc_id === "string" && source.doc_id.length > 0 ? source.doc_id : null;
 }
 
 function statusOf(error: unknown): string {

@@ -16,6 +16,8 @@ function setup(
     announceCallGuard?: boolean;
     announceCompliance?: boolean;
     announceClosure?: boolean;
+    routingCandidates?: string[];
+    ingestRetryDelaysMs?: number[];
   } = {},
 ) {
   const hub = new FakeHub();
@@ -42,6 +44,9 @@ function setup(
     announceCallGuard: opts.announceCallGuard,
     announceCompliance: opts.announceCompliance,
     announceClosure: opts.announceClosure,
+    routingCandidates: opts.routingCandidates,
+    // 테스트는 재시도 간격을 짧게 — 기본값(운영)은 call_registry.ts 의 INGEST_RETRY_DELAYS_MS
+    ingestRetryDelaysMs: opts.ingestRetryDelaysMs ?? [1, 1],
   });
   return {
     hub,
@@ -500,11 +505,30 @@ test("C-1~C-4 — 꺼져 있으면 검사 실패도 화면에 알리지 않는�
   assert.ok(log.warnings.some((w) => w.includes("컴플라이언스 검사 실패")));
 });
 
-test("F-2 — 1순위 카드가 절차가 아니면(422) 다음 카드로 내려가 규칙 있는 첫 조항을 절차로 잡는다", async () => {
+test("F-2 — 1순위 카드가 규칙 없는 조항(422)이면 아래 카드로 내려가지 않고 아무것도 잡지 않는다 (w6-procedure-pick-rule)", async () => {
   const { registry, hub, stt, broadcaster } = setup({ announceClosure: true });
   hub.cardDocIds = ["DASAN-POLICY-1", "DASAN-TERM-4.4", "DASAN-TERM-6.2", "DASAN-TERM-4.3"];
   hub.notProcedures.add("DASAN-POLICY-1");
-  hub.notProcedures.add("DASAN-TERM-4.4");
+  const agent = await openOk(registry, "test-1", "agent", 2);
+  const customer = await openOk(registry, "test-1", "customer", 2);
+  stt.streams[1]!.emit("재난지원금 뭐 필요해요", true, 1000);
+  await tick(30);
+  stt.streams[0]!.emit("신분증 가져오세요", true, 2000);
+  await tick(30);
+  // 다음 추천도 같은 1순위면 다시 묻지 않는다(422 를 이미 들었다)
+  stt.streams[1]!.emit("그리고요", true, 3000);
+  await agent.close();
+  await customer.close();
+
+  // 1순위만 한 번 묻는다. 규칙 있는 2순위(4.4)·3순위(6.2)는 묻지도 않는다
+  assert.deepEqual(hub.docsAsked, ["DASAN-POLICY-1"]);
+  assert.equal(hub.docsChecked.length, 0);
+  assert.equal(broadcaster.ofType("closure").length, 0);
+});
+
+test("F-2 — 1순위 카드에 규칙이 있으면 그대로 절차로 잡고, 상담원 발화마다 다시 판정한다 (w6-procedure-pick-rule)", async () => {
+  const { registry, hub, stt, broadcaster } = setup({ announceClosure: true });
+  hub.cardDocIds = ["DASAN-TERM-6.2", "DASAN-TERM-4.4", "DASAN-TERM-4.3"];
   const agent = await openOk(registry, "test-1", "agent", 2);
   const customer = await openOk(registry, "test-1", "customer", 2);
   stt.streams[1]!.emit("재난지원금 뭐 필요해요", true, 1000);
@@ -513,16 +537,31 @@ test("F-2 — 1순위 카드가 절차가 아니면(422) 다음 카드로 내려
   await agent.close();
   await customer.close();
 
-  // 422 두 번(순서대로) → 6.2 채택. 4.3 은 묻지 않는다 — 규칙 있는 첫 조항에서 멈춘다
+  assert.deepEqual(hub.docsAsked, ["DASAN-TERM-6.2", "DASAN-TERM-6.2"]);
   assert.deepEqual(
-    hub.docsChecked.map((r) => r.procedure),
-    ["DASAN-TERM-6.2", "DASAN-TERM-6.2"],
+    broadcaster.ofType("closure").map((m) => [m.payload.procedure, m.payload["verdict"]]),
+    [["DASAN-TERM-6.2", "incomplete"], ["DASAN-TERM-6.2", "complete"]],
   );
-  assert.ok(broadcaster.ofType("closure").every((m) => m.payload.procedure === "DASAN-TERM-6.2"));
-  // 다음 추천이 같은 후보를 주면 다시 묻지 않는다(이미 판정 중)
-  stt.streams[1]!.emit("그리고요", true, 3000);
+});
+
+test("F-2 회귀 — SYN-010: 1순위 2.12(규칙 없음)면 5순위 2.9(규칙 있음)를 잡아 「신분증」을 빠졌다고 하지 않는다", async () => {
+  // 09-22 운영: [2.12, 2.8, 2.10, 2.1, 2.9] 에서 규칙 있는 첫 조항 2.9(분실물 수령)를 잡아 incomplete 「신분증」을 띄웠다
+  const { registry, hub, stt, broadcaster } = setup({ announceClosure: true });
+  hub.cardDocIds = ["DASAN-TERM-2.12", "DASAN-TERM-2.8", "DASAN-TERM-2.10", "DASAN-TERM-2.1", "DASAN-TERM-2.9"];
+  for (const id of ["DASAN-TERM-2.12", "DASAN-TERM-2.8", "DASAN-TERM-2.10", "DASAN-TERM-2.1"]) {
+    hub.notProcedures.add(id);
+  }
+  const agent = await openOk(registry, "test-1", "agent", 2);
+  const customer = await openOk(registry, "test-1", "customer", 2);
+  stt.streams[1]!.emit("광역버스 환승 할인 되나요", true, 1000);
   await tick(30);
-  assert.equal(hub.docsChecked.length, 2);
+  stt.streams[0]!.emit("네 확인해 드릴게요", true, 2000);
+  await agent.close();
+  await customer.close();
+
+  assert.deepEqual(hub.docsAsked, ["DASAN-TERM-2.12"]);
+  assert.equal(hub.docsChecked.some((r) => r.procedure === "DASAN-TERM-2.9"), false);
+  assert.equal(broadcaster.ofType("closure").length, 0);
 });
 
 test("추천을 방송할 때 e2e_latency_ms 를 채운다 — 발화 종료 → 방송 직전 (decisions/119)", async () => {
@@ -556,4 +595,122 @@ test("withE2eLatency — 방송 시각에서 발화 종료 시각을 뺀다. 없
   assert.equal("e2e_latency_ms" in withE2eLatency(fired, undefined, 2440), false);
   assert.equal("e2e_latency_ms" in withE2eLatency({ fired: "false" }, 1200, 2440), false, "카드가 없으면 「표시까지」가 없다");
   assert.equal(withE2eLatency(fired, 1200, 2440) === fired, false, "원본을 고치지 않는다");
+});
+
+test("J-5 — 통화 시작이 성공하면 배정 판정을 한 번 부른다 · 후보는 설정 목록 (decisions/126)", async () => {
+  const { registry, hub } = setup({ routingCandidates: ["agent-demo-1", "agent-demo-2"] });
+  await openOk(registry, "test-1", "agent", 2);
+  await openOk(registry, "test-1", "customer", 2); // 두 번째 채널은 같은 통화다 — 다시 부르지 않는다
+  await tick(10);
+  assert.deepEqual(hub.routed, [{ call_id: "test-1", candidates: ["agent-demo-1", "agent-demo-2"] }]);
+});
+
+test("J-5 — 후보 설정이 없으면 빈 목록을 보낸다 (서버가 기존 배정 규칙으로 떨어뜨린다)", async () => {
+  const { registry, hub } = setup();
+  await openOk(registry, "test-1", "agent");
+  await tick(10);
+  assert.deepEqual(hub.routed, [{ call_id: "test-1", candidates: [] }]);
+});
+
+test("J-5 — 통화 시작이 실패하면 배정 판정을 부르지 않는다 (서버가 404 를 낼 뿐이다)", async () => {
+  const { registry, hub } = setup();
+  hub.failStart = 503;
+  await registry.open({ callId: "test-1", speaker: "agent", sampleRate: 16000, channelCount: 1 });
+  await tick(10);
+  assert.equal(hub.routed.length, 0);
+});
+
+test("J-5 — 배정 판정이 실패해도 통화는 그대로 돈다 · 로그에 상태만 남긴다", async () => {
+  const { registry, hub, stt, log } = setup();
+  hub.failRouting = 500;
+  const agent = await openOk(registry, "test-1", "agent");
+  stt.streams[0]!.emit("안녕하세요", true, 1000);
+  await agent.close();
+  assert.equal(hub.ingested.length, 1);
+  assert.ok(log.warnings.some((w) => w.includes("배정 판정 실패") && w.includes("call=test-1") && w.includes("500")));
+});
+
+// ── 확정 전사 재시도 (w6-replay-last-turn, 2026-09-22 운영 SYN-010 마지막 턴 4/5) ─────────────────────────────
+// 운영에서 마지막 상담원 확정이 콜 미디에이터까지 왔는데(재생기 쪽 소켓은 정상 1000 으로 닫혔다) 서버 전사 요청이 한 번
+// 실패해 DB·/ws 어디에도 남지 않았다. 전에는 한 번 실패하면 그대로 버렸다. 서버 저장은 (call_id, segment_id) UPSERT 라
+// 같은 확정을 다시 보내도 행이 하나다(decisions/205) — 확정은 몇 번 더 보낸다.
+
+test("확정 전사가 한 번 503 으로 실패하면 다시 보내 저장·자막·「검색 중」까지 간다", async () => {
+  const { registry, hub, stt, broadcaster, log } = setup({ announcePending: true });
+  const channel = await openOk(registry, "test-1", "agent");
+  hub.ingestFailQueue.push(503);
+  stt.last().emit("네 이용해 주셔서 감사합니다", true, 800);
+  await channel.close();
+
+  assert.equal(hub.ingestAttempts.length, 2, "한 번 더 보냈어야 한다");
+  assert.equal(hub.ingested.length, 1);
+  assert.equal(broadcaster.ofType("transcript").length, 1, "자막이 /ws 로 가야 한다");
+  assert.equal(broadcaster.ofType("recommendation_pending").length, 1);
+  assert.equal(hub.recommended.length, 1);
+  assert.ok(log.warnings.some((line) => line.includes("call=test-1") && line.includes("segment=1") && line.includes("status=503")));
+});
+
+test("연결 실패·시간 초과(상태 없음)가 두 번 나도 세 번째에 보낸다", async () => {
+  const { registry, hub, stt, broadcaster } = setup();
+  const channel = await openOk(registry, "test-1", "customer");
+  hub.ingestFailQueue.push(null, null);
+  stt.last().emit("아 네 알겠습니다", true, 800);
+  await channel.close();
+
+  assert.equal(hub.ingestAttempts.length, 3);
+  assert.equal(broadcaster.ofType("transcript").length, 1);
+});
+
+test("끝내 실패하면 정해진 횟수에서 멈추고, call_id·segment_id·시도 횟수만 경고한다 (원문 없음, SEC-1)", async () => {
+  const { registry, hub, stt, broadcaster, log } = setup();
+  const channel = await openOk(registry, "test-1", "customer");
+  hub.failIngest = 503;
+  stt.last().emit(RAW_PII, true, 800);
+  await channel.close();
+
+  assert.equal(hub.ingestAttempts.length, 3, "세 번(처음 + 재시도 둘)에서 멈춘다");
+  assert.equal(broadcaster.messages.length, 0, "마스킹 안 된 결과는 어디에도 가지 않는다");
+  const gaveUp = log.warnings.filter((line) => line.includes("전사 전달 포기"));
+  assert.equal(gaveUp.length, 1);
+  assert.ok(gaveUp[0]?.includes("call=test-1") && gaveUp[0]?.includes("segment=1") && gaveUp[0]?.includes("3회"));
+  assert.ok(!log.warnings.join("\n").includes("900101"), "원문이 로그에 있다");
+});
+
+test("4xx(계약 위반·통화 없음)는 다시 보내도 같다 — 재시도하지 않는다", async () => {
+  for (const status of [401, 409, 422]) {
+    const { registry, hub, stt } = setup();
+    const channel = await openOk(registry, "test-1", "agent");
+    hub.failIngest = status;
+    stt.last().emit("네", true, 800);
+    await channel.close();
+    assert.equal(hub.ingestAttempts.length, 1, `status ${status}`);
+  }
+});
+
+test("interim 은 재시도하지 않는다 — 같은 발화의 새 결과가 곧 덮는다", async () => {
+  const { registry, hub, stt } = setup();
+  const channel = await openOk(registry, "test-1", "agent");
+  hub.ingestFailQueue.push(503);
+  stt.last().emit("네 이용해", false, 400);
+  await channel.close();
+  assert.equal(hub.ingestAttempts.length, 1);
+  assert.equal(hub.ingested.length, 0);
+});
+
+test("재시도하는 동안 뒤 결과는 기다린다 — 자막 순서가 뒤집히지 않는다", async () => {
+  const { registry, hub, stt, broadcaster } = setup({ ingestRetryDelaysMs: [30, 30] });
+  const channel = await openOk(registry, "test-1", "agent");
+  hub.ingestFailQueue.push(null);
+  stt.last().emit("첫 확정", true, 800);
+  stt.last().emit("둘째 확정", true, 1600);
+  await channel.close();
+
+  assert.deepEqual(
+    broadcaster.ofType("transcript").map((m) => m.payload.segment_id),
+    ["1", "2"],
+  );
+  assert.deepEqual(
+    hub.ingestAttempts.map((raw) => raw.segment_id),
+    [1, 1, 2],
+  );
 });

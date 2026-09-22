@@ -179,10 +179,12 @@ test("HttpHub — 서비스 토큰이 있으면 Authorization 으로 보낸다 (
     await hub.ingestTranscript({ call_id: "test-1", segment_id: 1, speaker: "agent", text: "원문", is_final: true, utterance_end_ms: 10 });
     await hub.checkCallGuard({ call_id: "test-1", segment_id: 1, customer_utterance: "가림" });
     await hub.checkCompliance({ call_id: "test-1", segment_id: 1, agent_utterance: "가림" });
+    await hub.decideRouting({ call_id: "test-1", candidates: [] }); // decisions/126 — 같은 문을 지난다
   } finally {
     server.close();
   }
-  assert.equal(seen.length, 4);
+  assert.equal(seen.length, 5);
+  assert.ok(seen.some((hit) => hit.path === "/hub/routing-decisions"));
   for (const hit of seen) {
     assert.equal(hit.auth, "Bearer svc-token-abc", `${hit.path} 에 토큰이 안 실렸다`);
   }
