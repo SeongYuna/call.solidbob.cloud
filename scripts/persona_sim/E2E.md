@@ -56,6 +56,19 @@ curl -s localhost:8080/health   # active_calls 0
 
 - 대본마다 재생기(`services/call-mediator/scripts/replay_persona_call.ts`)를 `--watch --close` 로 subprocess 실행한다.
   **call_id 는 검사기가 정해 넘긴다**(`syn-e2e-<id>-<시각>`) — 재생기 출력은 파싱하지 않는다.
+- **`--close` 는 상담원 토큰이 있어야 한다** (2026-09-22 정정). `POST /hub/calls/{id}/close` 가 `a866ff4`(`decisions/315`)부터
+  **상담원 토큰 또는 서비스 토큰**을 요구한다(`server/apps/hub/dependencies/close_guard.py`). 로컬 서버는 서비스 토큰
+  (`INGEST_SERVICE_TOKEN`)을 두지 않으니 상담원 토큰만 통한다 — 이 문서의 앞 판은 토큰 없이 `--close` 가 되는 전제였고,
+  09-22 QA 에서 401 로 **D-1·요약 초안 저장** 이 ❌ 였다.
+  - 검사기가 **로컬 검사 DB 에 임시 상담원 토큰을 만든다**(`e2e/agent_token.py`) — 발급 API(`/admin/agent-tokens`)는 관리자
+    구글 로그인이 있어야 해서, 서버가 토큰을 확인하는 방법 그대로(`agent_token.token_hash` = SHA-256 hex, 폐기 안 됨) 행을 넣는다.
+    상담원 행은 `e2e-replayer`(role `agent`) 하나를 재사용한다. 원문은 재생기 환경변수 `CALL_AGENT_TOKEN` 으로만 넘기고
+    (재생기는 헤더로만 싣는다), 검사가 끝나면 `revoked_at` 을 채워 폐기한다. **토큰 값은 화면·보고서·파일 어디에도 없다.**
+  - **DB 와 서버(`--core-url`)가 둘 다 루프백일 때만** 만든다 — 운영 DB 에는 쓰지 않는다. 아니면 경고만 찍고 넘어간다.
+  - 이미 `CALL_AGENT_TOKEN` 이 환경에 있으면 그것을 쓴다. 만들지 않으려면 `--no-agent-token`(그러면 D-1 이 ❌).
+- **재생기는 마지막 턴을 확인하고 닫는다** (`w6-replay-last-turn`). 보낸 확정이 화자별로 전부 `/ws` 로 돌아온 뒤에야
+  `{"type":"end"}` 를 보내고, `--final-timeout`(기본 20초) 안에 안 돌아오면 **경고 + 종료 코드 1** 이다 — 검사기가
+  「재생기 종료 1」과 그 경고 줄을 찍는다. 저장 건수 판정(`왕복·API 확정 자막 수`)은 빠진 턴 번호를 적는다.
 - 출력: `data/processed/persona-e2e/<YYYY-MM-DD-HHMM>.json` + `.md` (gitignore — 커밋하지 않는다). 종료 코드 0 = 전부 ✅.
 - DB 는 `--database-url`(기본 위 ②의 `callguard_e2e`) 로 직접 읽는다. 못 붙으면 DB 판정만 건너뛰고 API 판정은 한다.
 
@@ -63,17 +76,26 @@ curl -s localhost:8080/health   # active_calls 0
 
 | 판정 | 무엇을 보나 | 실패 시 원인 갈래(1차 가설) |
 |---|---|---|
-| 왕복·API 확정 자막 수 · DB 행 수 · 화자 순서 | 대본 턴 수 == `/transcript` 확정 자막 == `transcript_segment` 확정 행 | 배선 |
+| 왕복·API 확정 자막 수 · DB 행 수 · 화자 순서 | 대본 턴 수 == `/transcript` 확정 자막 == `transcript_segment` 확정 행. 모자라면 **빠진 턴 번호**를 적는다 | 배선 |
 | **SEC-1·PII 원문 미잔존** | 턴 라벨의 PII 값(주민번호·전화·계좌·카드·인증번호·이름·주소)이 `/transcript` 본문·DB 본문에 **없다** — 구분자를 뺀 형태(`010 0000 0104` ↔ `01000000104`)도 본다. 라벨 없는 다른 턴에 같은 값이 남아도 잡는다 | 규칙 |
+| **C-5·PII 글자 단위 잔존 0** (2026-09-22) | 라벨 값의 **글자가 하나라도** 가려지지 않고 남았는가 — 위 판정은 값 **전체**가 남을 때만 잡아서 SYN-017#12 「다나카 유이」→`*** *이` 가 ✅ 였다. 원문에서 라벨 자리마다 마스킹본 글자를 대조한다(서버 마스킹은 글자 수를 지키는 `*` 라 자리 그대로. 길이가 다르면 `SequenceMatcher` 로 맞춰 본다). 공백·구분자는 세지 않는다. 같은 값이 다른 턴 원문에 다시 나오면 그 턴도 본다 | 규칙 |
 | C-6·콜 가드 라벨 재현 | `call_guard_flag`(segment, category) 를 «턴 × 갈래» 로 접어 라벨과 대조 — 누락·과잉 건별 | 규칙 |
 | C-1~C-4·컴플라이언스 라벨 재현 | `compliance_flag`(segment, rule_code) 대조. 기대가 있는데 탐지 0 이면 배선(콜 미디에이터가 검사를 안 부름) | 배선 / 규칙 |
 | F-2·절차 판정 존재 · 서류 목록 일치 · 마지막 판정 complete | `/record.closures` 중 대본 절차(`procedure.doc_ids` 의 TERM) 판정. 서류 이름은 괄호 부연을 떼고 대조 | 배선 / 대본 / 규칙 |
-| F-2·필요서류 없음 | 서류 없는 대본(소관 아님 등)은 판정이 0건이어야 한다 | 규칙 |
+| F-2·필요서류 없음 | 서류 없는 대본(소관 아님 등)은 대본 절차의 판정이 0건이어야 한다 | 규칙 |
+| **F-2·엉뚱한 절차 판정 0건** (2026-09-22) | `/record.closures` 중 대본 `procedure.doc_ids` **밖** 절차의 판정 — 1건이라도 있으면 ❌, 절차·판정을 나열한다. 전에는 대본 절차 판정만 골라 봐서 운영 SYN-010(서류 없음)이 `TERM-2.9` `incomplete` 를 냈는데도 ✅ 였다. 서류 없는 대본은 위 판정과 합쳐 «판정이 하나라도 있으면 ❌» 가 된다 | 규칙 |
 | B·필요서류 카드 노출 | 추천 카드에 그 절차 조항이 떴는가. `source_doc_id` 가 비면 제목 앞 번호로 느슨히 본다 | 규칙 |
 | D-1·요약 초안 저장 · call 행 · `stt_engine=synthetic-script` · `customer_id` | `/record.summary_text` · `call` 행 | 배선 |
 | ⚠ 통화 후·ended_at/status · ⚠ B-6·카드 source_doc_id | **알려진 미구현** — ❌ 로 세지 않고 ⚠ 로 남긴다 | 알려진 미구현 |
 
 실패는 지우지 않는다(절대 원칙 8). 보고서 아래에 원인 갈래별 목록이 따로 붙는다 — 대본을 규칙에 맞춰 고치지 않는다(README 「QA 페르소나 검수」와 같은 태도).
+
+### 운영 확인에 쓰는 재생기 옵션 (검사기 밖)
+
+- `--watch` 의 추천 줄에 **지연 구간**이 찍힌다 — `검색 NNNms · 생성 — · 내부 NNNms · e2e NNNms(STT 미경유)`(모양만 — 값은 그때그때 받은 것).
+  콜 미디에이터가 서버 추천 응답을 펼쳐 방송하므로(`withE2eLatency`) `retrieval_ms`·`generation_ms` 가 `/ws` 에 있다.
+  없는 값은 `—` 다(0 으로 적지 않는다). 합성 통화라 `e2e` 는 STT 를 뺀 값이다 — 성능 수치로 인용하지 않는다.
+- `--save-ws <경로>` 는 `/ws` 프레임을 받은 그대로 jsonl 로 남긴다(마스킹본뿐). 운영에서 뜬 파일은 저장소 밖이나 gitignore 인 `data/` 에 둔다.
 
 ## 4. 말할 수 없는 것 (절대 원칙 10)
 

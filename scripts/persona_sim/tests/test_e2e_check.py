@@ -12,12 +12,15 @@ from e2e.judge import (  # noqa: E402
     judge,
     judge_call_guard,
     judge_compliance,
+    judge_foreign_procedures,
+    judge_pii_chars,
     judge_postcall,
     judge_required_docs,
     judge_roundtrip,
     judge_sec1,
     labeled_call_guard,
     labeled_pii,
+    leaked_chars,
     value_leaks,
 )
 from e2e.report import DISCLAIMER, to_json, to_markdown  # noqa: E402
@@ -114,7 +117,7 @@ def _record(items: list[tuple[str, bool]], verdict: str = "complete", procedure:
 
 def test_required_docs_compares_last_closure_and_cards():
     checks = judge_required_docs(_script(), _record([("신청서", True), ("신분증", True)]))
-    assert [c.ok for c in checks] == [True, True, True, True, True]
+    assert [c.ok for c in checks] == [True, True, True, True, True, True]  # 끝의 하나가 「엉뚱한 절차 판정 0건」
     diff = judge_required_docs(_script(), _record([("신청서", True), ("통장 사본", True)]))
     by_name = {c.name: c for c in diff}
     assert not by_name["F-2·서류 목록 일치"].ok and "대본에만 ['신분증']" in by_name["F-2·서류 목록 일치"].detail
@@ -173,3 +176,106 @@ def test_required_docs_strips_parenthetical_and_falls_back_to_title_number():
     assert by_name["B·필요서류 카드 노출"].ok and "제목 번호로 대조" in by_name["B·필요서류 카드 노출"].detail
     gap = by_name["B-6·카드 근거 조항 저장(source_doc_id)"]
     assert not gap.ok and gap.warn_only and gap.cause == "wiring"
+
+
+# ---------------------------------------------------------------- 2026-09-22 QA 가 찾은 사각지대 둘
+
+
+def test_foreign_procedure_closure_fails_even_when_script_has_no_documents():
+    """SYN-010(고속버스, 서류 없음)이 운영에서 `TERM-2.9` 판정을 냈는데 ✅ 였다 — 대본 절차 밖 판정은 ❌."""
+    script = dict(_script(), procedure={"doc_ids": ["DASAN-TERM-2.12", "DASAN-MANUAL-2.2"], "required_documents": []})
+    record = {"closures": [{"closure_id": "1", "procedure": "DASAN-TERM-2.9", "verdict": "incomplete", "items": []},
+                           {"closure_id": "2", "procedure": "DASAN-TERM-2.9", "verdict": "incomplete", "items": []}],
+              "recommendations": []}
+    by_name = {c.name: c for c in judge_required_docs(script, record)}
+    assert by_name["F-2·필요서류 없음(판정 0건)"].ok  # 옛 검사는 그대로 — 대본 절차 안 판정만 센다
+    foreign = by_name["F-2·엉뚱한 절차 판정 0건"]
+    assert not foreign.ok and not foreign.warn_only and foreign.cause == "rule"
+    assert "밖 판정 2건" in foreign.detail and "DASAN-TERM-2.9 incomplete·incomplete" in foreign.detail
+    assert not judge(script, "c", [], record, {}).ok
+
+
+def test_foreign_procedure_alongside_correct_one_is_listed_and_clean_record_passes():
+    record = _record([("신청서", True), ("신분증", True)])
+    record["closures"].append({"closure_id": "3", "procedure": "DASAN-TERM-3.5", "verdict": "incomplete", "items": []})
+    foreign = judge_foreign_procedures(_script(), record)
+    assert not foreign.ok and "밖 판정 1건" in foreign.detail and "DASAN-TERM-3.5 incomplete" in foreign.detail
+    assert judge_foreign_procedures(_script(), _record([("신청서", True), ("신분증", True)])).ok
+    assert judge_foreign_procedures(_script(), {"closures": []}).ok
+
+
+def test_leaked_chars_catches_one_unmasked_character():
+    """SYN-017#12 「다나카 유이」 → `*** *이` 가 전체 일치 검사를 통과했다 — 한 글자라도 남으면 잡는다."""
+    original = "제 이름은 다나카 유이예요."
+    assert leaked_chars("다나카 유이", original, "제 이름은 *** *이예요.") == "이"
+    assert not value_leaks("다나카 유이", "제 이름은 *** *이예요.")  # 옛 검사는 놓친다 — 그래서 새 검사가 필요하다
+    assert leaked_chars("다나카 유이", original, "제 이름은 *** **예요.") == ""
+    assert leaked_chars("010-0000-0104", "번호는 010-0000-0104", "번호는 ***-****-***4") == "4"  # 구분자는 세지 않는다
+    assert leaked_chars("010-0000-0104", "번호는 010-0000-0104", "번호는 ***-****-****") == ""
+    # 길이가 다른 마스킹(자리 표시자)은 맞춰 본다
+    assert leaked_chars("제니 레예스", "이름은 제니 레예스.", "이름은 [이름].") == ""
+    assert leaked_chars("제니 레예스", "이름은 제니 레예스.", "이름은 [이름]레예스.") == "레예스"
+    assert leaked_chars("없는 값", "원문", "원문") == ""
+
+
+def test_pii_chars_check_fails_on_partial_leak_in_api_or_db_and_other_turns():
+    script = {
+        "id": "SYN-T02",
+        "turns": [
+            {"seq": 1, "speaker": "customer", "text": "제 이름은 다나카 유이예요.",
+             "labels": {"pii": [{"pattern": "P6", "span": "다나카 유이"}]}},
+            {"seq": 2, "speaker": "agent", "text": "다나카 유이 님 맞으시죠?"},
+        ],
+    }
+    clean = {1: "제 이름은 *** **예요.", 2: "*** ** 님 맞으시죠?"}
+    api = [{"segment_id": str(k), "speaker": "x", "text": v, "is_final": "true"} for k, v in clean.items()]
+    assert judge_pii_chars(script, {1: clean[1], 2: clean[2]}, clean).ok
+    partial_db = {**clean, 1: "제 이름은 *** *이예요."}
+    bad = judge_pii_chars(script, {1: clean[1], 2: clean[2]}, partial_db)
+    assert not bad.ok and bad.cause == "rule" and "#1 P6" in bad.detail and "DB 에 「이」 남음" in bad.detail
+    assert "*** *이" in bad.detail
+    other_turn = judge_pii_chars(script, {1: clean[1], 2: "다** ** 님 맞으시죠?"}, clean)
+    assert not other_turn.ok and "#2 P6" in other_turn.detail and "라벨은 다른 턴" in other_turn.detail
+    # judge() 에도 실린다 — SEC-1 은 ✅ 인데 글자 단위는 ❌
+    v = judge(script, "c", [{**s, "text": partial_db[int(s["segment_id"])]} for s in api], {}, {})
+    by_name = {c.name: c for c in v.checks}
+    assert by_name["SEC-1·PII 원문 미잔존"].ok and not by_name["C-5·PII 글자 단위 잔존 0"].ok
+
+
+def test_roundtrip_names_the_lost_last_turn():
+    """운영 SYN-010 처럼 마지막 턴만 빠지면 ❌ 이고 어느 턴인지 적는다(`w6-replay-last-turn`)."""
+    lost_last = judge_roundtrip(_script(), _segments({1: "a", 2: "b", 3: "c"}), 3)
+    by_name = {c.name: c for c in lost_last}
+    assert not by_name["왕복·API 확정 자막 수"].ok and "빠진 턴 [4]" in by_name["왕복·API 확정 자막 수"].detail
+    assert not by_name["왕복·DB transcript_segment 행 수"].ok
+
+
+# ---------------------------------------------------------------- 로컬 E2E 상담원 토큰
+
+
+def test_agent_token_matches_server_shape_and_hash():
+    """검사기가 DB 에 넣는 해시가 서버가 조회하는 해시와 같아야 한다 — 서버 모듈(표준 라이브러리뿐)을 경로로 읽어 대조한다."""
+    import importlib.util
+
+    from e2e import agent_token
+
+    server_file = Path(__file__).resolve().parents[3] / "server" / "apps" / "agent_auth" / "domain" / "services" / "agent_token.py"
+    spec = importlib.util.spec_from_file_location("server_agent_token", server_file)
+    assert spec and spec.loader
+    server = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(server)
+    token = agent_token.new_token()
+    assert server.looks_like_token(token)
+    assert agent_token.hash_token(token) == server.hash_token(token)
+    assert len(agent_token.E2E_AGENT_ID) <= 20  # agent.agent_id VARCHAR(20)
+
+
+def test_agent_token_refuses_non_loopback_db_or_server():
+    from e2e import agent_token
+
+    local_db = "postgresql://callguard:callguard-dev@127.0.0.1:5432/callguard_e2e"
+    assert agent_token.refusal_reason(local_db, "http://localhost:8000") == ""
+    assert "운영 DB" in agent_token.refusal_reason("postgresql://u:p@db.internal:5432/callguard", "http://localhost:8000")
+    assert agent_token.refusal_reason(local_db, "https://server.solidbob.cloud") != ""
+    assert not agent_token.is_loopback_url("postgresql:///callguard")  # 유닉스 소켓 — 어디인지 모르니 만들지 않는다
+    assert agent_token.is_loopback_url("http://[::1]:8000")
