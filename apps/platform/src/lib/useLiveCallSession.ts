@@ -13,7 +13,7 @@
  */
 import { useCallback, useEffect, useRef, useState } from "react";
 import { readLiveCallToken } from "./liveCallToken";
-import { readSharedCallId } from "./sharedCallId";
+import { ensureSharedCallId } from "./sharedCallId";
 
 export type LiveCallStatus =
   | "idle"
@@ -39,6 +39,9 @@ export function useLiveCallSession() {
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [turns, setTurns] = useState<LiveCallTurn[]>([]);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  // URL에 없으면 여기서 만들어 `?call_id=`로 반영한다(`ensureSharedCallId`) — 상담원
+  // 대시보드에 보낼 링크(`LiveCallModal`의 "상담원 링크 복사")가 이 값을 쓴다.
+  const [callId] = useState<string>(() => ensureSharedCallId());
 
   const wsRef = useRef<WebSocket | null>(null);
   const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
@@ -117,7 +120,6 @@ export function useLiveCallSession() {
 
     setStatus("connecting");
     // `?call_id=` 로 열렸으면 그 통화에 붙는다 — 상담원 화면과 같은 값이어야 한 통화가 된다(`sharedCallId.ts`)
-    const callId = readSharedCallId() ?? `test-web-platform-${Date.now()}`;
     const query = new URLSearchParams({ call_id: callId, speaker: "customer" });
     const ws = new WebSocket(`${base}/dev/text?${query}`, ["callguard", `bearer.${token}`]);
     wsRef.current = ws;
@@ -178,7 +180,7 @@ export function useLiveCallSession() {
         end("error");
       }
     };
-  }, [end, pushTurn]);
+  }, [callId, end, pushTurn]);
 
   useEffect(() => {
     return () => {
@@ -188,5 +190,5 @@ export function useLiveCallSession() {
     };
   }, [end]);
 
-  return { status, elapsedSeconds, turns, errorMessage, start, end };
+  return { status, elapsedSeconds, turns, errorMessage, callId, start, end };
 }
