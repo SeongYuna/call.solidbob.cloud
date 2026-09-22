@@ -74,6 +74,41 @@ class TestPerson:
         t = "박지민, 맞아요"
         assert covered(t, person_spans(t, tags_for(t, ("박지", "PER")))) == ["박지민"]
 
+    # ── 2026-09-22 `w6-c5-name-tail-leak` — 벗긴 조사 「이」 가 이름 끝 글자일 수 있다 ──
+    def test_short_name_keeps_trailing_i(self):
+        # 모델이 「유」 만 PER 로 주면 꼬리 「이」 를 조사로 벗겨 「이」 가 샌다(SYN-017 「다나카 유이」 모양)
+        t = "저 이름 다나카 유이."
+        tags = tags_for(t, ("다나카", "PER"), ("유", "PER"))
+        assert covered(t, person_spans(t, tags)) == ["다나카", "유이"]
+
+    def test_two_syllable_korean_stem_keeps_i_of_copula(self):
+        # 실측(2026-09-22): "김서이에요" 에서 모델은 「김」 만 PER. 「이에요」 를 벗기면 「김서」 만 남는다
+        t = "제 이름은 김서이에요."
+        assert covered(t, person_spans(t, tags_for(t, ("김", "PER")))) == ["김서이"]
+
+    def test_three_syllable_name_still_strips_copula(self):
+        # 「이」 를 붙이는 것은 두 글자 이하일 때만 — 흔한 세 글자 이름 + 「이고」 는 그대로 벗긴다
+        t = "제 이름은 오세준이고 번호는"
+        assert covered(t, person_spans(t, tags_for(t, ("오세", "PER")))) == ["오세준"]
+
+    # ── 2026-09-22 `w6-c5-overmask-request-word` — 운영 블랙리스트 사유 ──
+    def test_request_word_before_name_is_not_person(self):
+        # 실측 태그 그대로: 뒤에 이름이 오면 모델이 「요청」 과 여는 괄호까지 PER 로 준다
+        t = "운영 점검용 테스트 요청 (정성윤, 09-22) — 블랙리스트 확인"
+        tags = tags_for(t, ("요청", "PER"), ("(", "PER"), ("정성", "PER"), ("윤", "PER"), ("09", "AFW"))
+        assert covered(t, person_spans(t, tags)) == ["정성윤"]
+
+    def test_test_word_before_name_is_not_person(self):
+        # 같은 문장을 줄이면 이번엔 「테스트」 를 PER 로 준다(같은 날 실측)
+        t = "테스트 요청 (정성윤, 09-22) — 반복 폭언 고객 차단 요청"
+        tags = tags_for(t, ("테스트", "PER"), ("(", "PER"), ("정성", "PER"), ("윤", "PER"))
+        assert covered(t, person_spans(t, tags)) == ["정성윤"]
+
+    def test_excluded_word_only_when_whole_span(self):
+        # 목록 단어가 이름 **일부**일 때는 빼지 않는다 — 어절 전체가 그 말일 때만
+        t = "요청희 씨"
+        assert covered(t, person_spans(t, tags_for(t, ("요청희", "PER")))) == ["요청희"]
+
 
 class TestAddress:
     def test_full_address_strips_trailing_copula(self):  # GS-033
