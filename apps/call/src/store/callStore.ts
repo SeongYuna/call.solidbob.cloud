@@ -13,6 +13,7 @@ import type {
   AgentTtsStatus,
   CallGuardFlag,
   ComplianceFinding,
+  ComplianceUnavailable,
   BlacklistEntryItem,
   BlacklistEvidence,
   BlacklistRequestItem,
@@ -145,6 +146,12 @@ export interface CallState {
    * 아직 이 값을 읽지 않는다(파서만 먼저 들어간 상태).
    */
   compliance: Record<string, ComplianceFinding[]>;
+  /**
+   * C-1~C-4 검사 실패 신호(2026-09-22) — 키는 TranscriptEvent.segment_id, 값은 가장
+   * 최근 실패 1건(call_guard와 같은 override 방식 — 검사 실패는 목록으로 쌓을 이유가
+   * 없다). 아직 어떤 컴포넌트도 읽지 않는다 — 이번 범위는 "onError 오탐 제거"까지다.
+   */
+  complianceUnavailable: Record<string, ComplianceUnavailable>;
   /** A-5 ⓑ. 키만. 점수는 없다. */
   accentHints: Record<string, true>;
   /** C-6 확장. 상담원이 통화 종료 시 수동으로 분류한 결과 — 자동 탐지가 아니다. */
@@ -179,6 +186,10 @@ export interface CallState {
   applyAgentTts: (transcriptSegmentId: string, event: AgentTtsStatus) => void;
   applyCallGuard: (transcriptSegmentId: string, event: CallGuardFlag) => void;
   applyCompliance: (transcriptSegmentId: string, event: ComplianceFinding) => void;
+  applyComplianceUnavailable: (
+    transcriptSegmentId: string,
+    event: ComplianceUnavailable,
+  ) => void;
   applyAccentHint: (transcriptSegmentId: string) => void;
   flagBlackConsumer: (callId: string) => void;
   setTargetLanguage: (lang: TargetLanguage | null) => void;
@@ -244,6 +255,7 @@ const emptyCall = {
   agentTts: {} as Record<string, AgentTtsStatus>,
   callGuard: {} as Record<string, CallGuardFlag>,
   compliance: {} as Record<string, ComplianceFinding[]>,
+  complianceUnavailable: {} as Record<string, ComplianceUnavailable>,
   accentHints: {} as Record<string, true>,
   blackConsumerFlag: null as BlackConsumerFlag | null,
 };
@@ -633,6 +645,15 @@ export const useCallStore = create<CallState>((set, get) => ({
         },
       };
     });
+  },
+
+  applyComplianceUnavailable: (transcriptSegmentId, event) => {
+    set((state) => ({
+      complianceUnavailable: {
+        ...state.complianceUnavailable,
+        [transcriptSegmentId]: event,
+      },
+    }));
   },
 
   applyAccentHint: (transcriptSegmentId) => {

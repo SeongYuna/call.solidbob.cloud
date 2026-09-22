@@ -2,6 +2,7 @@ import type {
   CallWrapUp,
   ClosureEvent,
   ComplianceFinding,
+  ComplianceUnavailable,
   ManualSearchRequest,
   RecommendationBatch,
   TranscriptEvent,
@@ -36,6 +37,11 @@ export interface CallMediatorListener {
    * 아직 안 온다(켜지면 이 콜백이 불린다). mock은 안 보낸다. 키는 자막 segment_id.
    */
   onCompliance?: (transcriptSegmentId: string, event: ComplianceFinding) => void;
+  /**
+   * C-1~C-4 검사 실패 신호(2026-09-22 서버가 방송 시작) — `onCompliance`(위반 있음)와
+   * 다른 채널이다. 합치면 "검사가 죽었다"가 "위반 없음"으로 보인다. 키는 자막 segment_id.
+   */
+  onComplianceUnavailable?: (transcriptSegmentId: string, event: ComplianceUnavailable) => void;
   /** A-5 ⓑ. 번역이 아님. 키만 보낸다. 점수는 없다. */
   onAccentRecognition?: (transcriptSegmentId: string) => void;
   /** A-5. 통화 시작 시 대상 언어. 한국어 전용 mock은 null. */
