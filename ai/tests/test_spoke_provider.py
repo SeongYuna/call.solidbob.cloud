@@ -1,4 +1,4 @@
-# Requirement: B-1, B-2
+# Requirement: B-1, B-2, B-6
 """스포크 프로바이더 팩토리 — `server/main.py` 가 쓰는 배선 지점.
 
 **여기가 `apps/` 밖인 이유**: 팩토리(`ai/provider.py`)가 여러 스포크를 동시에 아는
@@ -129,3 +129,56 @@ def test_model_retriever_missing_model_falls_back_to_bm25(tmp_path):
         FakeClient(), embed_model_dir=tmp_path / "없음", rerank_model_dir=tmp_path / "없음"
     )
     assert isinstance(port, EsBm25Retriever) and layers == []
+
+
+def _fake_model_modules(monkeypatch):
+    """KoE5·리랭커 모듈을 가짜로 바꾼다 — 모델·torch 없이 **조립만** 본다."""
+    import sys
+    import types
+
+    emb = types.ModuleType("retrieval.adapter.outbound.koe5_embedder")
+    emb.KoE5Embedder = lambda *a, **k: object()
+    monkeypatch.setitem(sys.modules, "retrieval.adapter.outbound.koe5_embedder", emb)
+    import retrieval.adapter.outbound.cross_encoder_reranker as cer
+
+    monkeypatch.setattr(cer, "BgeRerankerScorer", lambda *a, **k: object())
+
+
+def _fallback_of(port):
+    from retrieval.adapter.outbound.cached_retriever import CachedRetriever
+    from retrieval.adapter.outbound.fallback_retriever import FallbackRetriever
+
+    inner = port._inner if isinstance(port, CachedRetriever) else port
+    assert isinstance(inner, FallbackRetriever)
+    return inner
+
+
+def test_dense_only_gets_no_answer_threshold(monkeypatch, tmp_path):
+    """B-6 기권 문턱은 dense 코사인 눈금으로 잰 값이라 dense 단독 구성에만 건다(decisions/215)."""
+    from provider import build_model_retriever
+    from retrieval.adapter.outbound.es_dense_retriever import NO_ANSWER_MIN_SCORE
+
+    _fake_model_modules(monkeypatch)
+    port, layers = build_model_retriever(FakeClient(), embed_model_dir=tmp_path, cache_size=0)
+    assert layers == ["retrieval_dense"]
+    assert _fallback_of(port)._abstain_below == NO_ANSWER_MIN_SCORE == 0.67
+
+
+def test_rerank_config_gets_no_threshold(monkeypatch, tmp_path):
+    """리랭커가 1순위를 정하면 점수가 로짓이라 0.67 이 의미 없다 — 걸지 않는다."""
+    from provider import build_model_retriever
+
+    _fake_model_modules(monkeypatch)
+    port, layers = build_model_retriever(
+        FakeClient(), embed_model_dir=tmp_path, rerank_model_dir=tmp_path, cache_size=0
+    )
+    assert layers == ["retrieval_dense", "rerank"]
+    assert _fallback_of(port)._abstain_below is None
+
+
+def test_measurement_can_turn_threshold_off(monkeypatch, tmp_path):
+    from provider import build_model_retriever
+
+    _fake_model_modules(monkeypatch)
+    port, _ = build_model_retriever(FakeClient(), embed_model_dir=tmp_path, cache_size=0, no_answer_abstain=False)
+    assert _fallback_of(port)._abstain_below is None

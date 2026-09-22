@@ -1,4 +1,4 @@
-# Requirement: B-1, B-2
+# Requirement: B-1, B-2, B-6
 """스포크를 hub 포트에 꽂기 위한 팩토리. **이 파일은 `server/main.py` 를 위한 것이다.**
 
 `server/` 는 `ai/` 를 import 할 수 없다(`server/.importlinter` 계약 2 — 두 서브도메인을 따로
@@ -95,10 +95,12 @@ def build_model_retriever(
     rerank_candidates: int = 5,
     device: str | None = None,
     cache_size: int = 1024,
+    no_answer_abstain: bool = True,
 ) -> tuple[RetrievalPort, list[str]]:
     """임베딩(+리랭킹) 검색 — **실측으로 고른 구성**을 만든다(`_project/decisions/206`).
 
         KoE5 kNN ─▶ (bge-reranker 후보 5) ─▶ 0건이면 BM25 로 내려감
+                                           └▶ 1순위 < 0.67 이면 기권 — 카드 0장(B-6, decisions/215 · 리랭커 없을 때만)
 
     2026-09-15 실측(골든셋 v1-150, n96): BM25 0.833/0.659 · dense 0.979/0.885 · RRF 하이브리드 0.927/0.828 ·
     dense+리랭킹(후보 5) 0.979/0.919. **RRF 는 BM25 가 dense 를 끌어내려 채택하지 않았다.**
@@ -133,7 +135,14 @@ def build_model_retriever(
             layers.append("rerank")
         except (ModuleNotFoundError, FileNotFoundError, OSError):
             pass  # 리랭커만 못 뜨면 dense 까지는 쓴다
-    port: RetrievalPort = FallbackRetriever(primary, bm25)
+    # B-6 기권 문턱(`decisions/215`)은 dense 코사인 눈금으로 잰 값이라 **dense 가 1순위를 정할 때만** 건다.
+    # 리랭커가 켜지면 1순위 점수가 로짓으로 바뀌어 이 값이 의미를 잃는다 — 그 구성의 문턱은 잰 적이 없으니 걸지 않는다.
+    from retrieval.adapter.outbound.es_dense_retriever import NO_ANSWER_MIN_SCORE
+
+    # `no_answer_abstain=False` 는 **문턱을 재는 스크립트**(`measure_no_answer_threshold.py`)만 쓴다 — 기권한 항목은
+    # 1순위 점수가 안 남아 분포를 못 잰다. 운영(`server/main.py`)과 하네스는 기본값 그대로다.
+    abstain_below = NO_ANSWER_MIN_SCORE if (no_answer_abstain and "rerank" not in layers) else None
+    port: RetrievalPort = FallbackRetriever(primary, bm25, abstain_below=abstain_below)
     if cache_size > 0:
         # 결과 캐시(`w7-lru-cache`) — 키는 발화 해시(SEC-1), 인덱스 UUID 가 바뀌면(--recreate 재적재) 비운다. BM25 단독에는 안 건다(p95 4ms 라 이득이 없다)
         from retrieval.adapter.outbound.cached_retriever import CachedRetriever, es_index_epoch
