@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { fetchAgentMe, isCoreApiConfigured } from "../lib/api/coreClient";
+import { CoreApiError, fetchAgentMe, isCoreApiConfigured } from "../lib/api/coreClient";
 import {
   captureAgentTokenFromUrl,
   clearAgentToken,
@@ -56,7 +56,11 @@ export function useAgentAuth(): AgentAuthState {
         if (cancelled) {
           return;
         }
-        clearAgentToken();
+        // 토큰이 오래 남으므로 서버가 무효(401·403 — 폐기·없는 토큰)라고 답했을 때만 지운다.
+        // 네트워크 끊김·서버 5xx 로 지우면 잠깐의 장애가 재로그인 요구로 번진다.
+        if (err instanceof CoreApiError && (err.status === 401 || err.status === 403)) {
+          clearAgentToken();
+        }
         setError(err instanceof Error ? err.message : "로그인 확인에 실패했다.");
         setStatus("unauthenticated");
       });
