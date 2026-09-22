@@ -5,6 +5,10 @@
 # 의존성(fastapi·uvicorn)은 server/requirements.txt 에 있다.
 # 섞으면 서버 컨테이너가 torch 때문에 수 GB 커진다.
 #
+# ⚠ 2026-09-22 예외 하나 — 모델 HTTP 표면(apps/model_serving, `_project/decisions/213`)이 fastapi·uvicorn 을 쓴다.
+#   `decisions/024` 의 전제(「ai/ 에는 웹 프레임워크가 없다」)가 여기서 깨진다 — 결정 기록이 그 이유다.
+#   방향은 그대로다: 서버 이미지에 torch 를 싣지 않는 것(`decisions/121`)이 목적이지, ai/ 에 웹 의존성을 막는 것이 목적이 아니었다.
+#
 # Python 3.13 (pyenv). 설치 (저장소 루트에서 — .venv 는 루트에 둔다,
 # scripts/check_requirements_updates.py 가 그 경로를 본다):
 #   python3.13 -m venv .venv && source .venv/bin/activate
@@ -36,6 +40,12 @@ pydantic==2.13.4
 # 서버(infra/docker-compose.yml 의 elasticsearch:9.5.1)와 major·minor 를 맞춘다.
 # 어긋나면 클라이언트가 접속 자체를 거부한다.
 elasticsearch==9.5.0
+
+# --- 모델 HTTP 표면 (B-2·B-3·B-4·C-5, `decisions/213`) ---
+# server/requirements.txt 의 고정값과 **같게** 둔다 — 한 venv(저장소 루트 .venv)를 둘이 나눠 쓴다.
+fastapi==0.141.1
+uvicorn==0.52.4
+httpx==0.28.1          # fastapi.testclient 가 요구한다(테스트 전용)
 
 # --- 검증 ---
 pytest==9.1.1

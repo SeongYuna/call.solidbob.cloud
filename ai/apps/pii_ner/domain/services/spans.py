@@ -17,7 +17,7 @@
 from __future__ import annotations
 
 import re
-from typing import Iterable
+from typing import Callable, Iterable
 
 from ..value_objects.entity import EntitySpan, TokenTag
 
@@ -225,3 +225,17 @@ def join_split_syllables(text: str) -> tuple[str, list[int]]:
 def map_spans_back(spans: Iterable[EntitySpan], index_map: list[int]) -> list[EntitySpan]:
     """사본 오프셋 구간을 원문 오프셋으로. 끝은 마지막 글자의 원문 위치 + 1 — 사이에 지운 공백까지 덮는다."""
     return [EntitySpan(s.pattern, index_map[s.start], index_map[s.end - 1] + 1) for s in spans]
+
+
+def detect_entities_with_rejoin(text: str, tag: Callable[[str], list[TokenTag]]) -> list[EntitySpan]:
+    """P6·P7 구간 — 원문 한 번 + 1음절을 붙인 사본 한 번(`join_split_syllables`)의 합집합.
+
+    `LayeredMaskingAdapter`(같은 프로세스)와 모델 HTTP 표면(`model_serving`, `decisions/213`)이 **같은 함수**를 쓴다 —
+    원격으로 옮겼다고 구간 규칙이 달라지면 운영과 측정이 다른 것을 재게 된다. `tag` 가 올린 예외는 그대로 위로 간다
+    (규칙 폴백 여부는 부르는 쪽이 정한다).
+    """
+    entities = detect_entities(text, tag(text))
+    joined, index_map = join_split_syllables(text)
+    if joined != text:
+        entities += map_spans_back(detect_entities(joined, tag(joined)), index_map)
+    return merge_spans(entities)
