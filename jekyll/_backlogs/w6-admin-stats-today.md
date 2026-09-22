@@ -2,7 +2,7 @@
 title: "현황판 집계에 「오늘」 칸 — `admin-stats` 에 날짜 구분이 없어 오늘 통화 수를 못 읽는다"
 assignee: "장민석"
 role: "ai"
-status: "todo"
+status: "in-progress"
 sprint: 6
 priority: 75
 date: 2026-09-22
@@ -22,3 +22,15 @@ paths:
 - [ ] 응답 필드 추가 · 계약 테스트 · 현황판(`w6-admin-stats-wallboard`)에 표시
 
 근거: 정성윤 13번 기록.
+
+## 2026-09-22 — 장민석 서버 몫 (칸 정의는 예측)
+
+- `GET /hub/admin-stats` 에 **`calls_today` · `call_guard_flags_today` · `requests_today` · `today`**(KST 날짜) — 누적 여덟 칸은 그대로. 「오늘」 = KST 자정부터, 기준 시각은 DB `NOW()` 하나(같은 문장)
+- 칸 정의는 이 티켓의 괄호(오늘 통화 · 오늘 콜 가드 · 오늘 요청)를 그대로 썼다 — **조서희 님과 맞춘 것이 아니라 예측이다.** 다르면 칸을 바꾼다
+- 테스트: 라우터 계약(문자열) · 통합(이틀 전 통화는 누적에만, 오늘 칸에는 없다)
+- 남은 것: 조서희 님 확인 + 현황판(`w6-admin-stats-wallboard`) 표시
+
+## 2026-09-22 — 배포
+
+- **`0.1.35` 운영 배포됨** (PR #132 머지 07:57 → release 성공 · `/health` `version: 0.1.35` · `read_guard: open` 확인, 09-22)
+- 남은 것: 조서희 님 칸 정의 확인 · 현황판 표시

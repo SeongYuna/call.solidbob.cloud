@@ -18,7 +18,8 @@
  *             사람의 말을 받아쓴 것이 아니라는 것을 기록에 남긴다
  *
  * SEC-1 — 원문(`RawTranscript`)은 `hub.ingestTranscript` 에만 들어간다. 대시보드로 가는 것은
- * **서버가 마스킹해 돌려준 응답**뿐이고, 서버가 실패하면 그 결과는 아무 데도 가지 않는다.
+ * **서버가 마스킹해 돌려준 응답**뿐이고, 서버가 실패하면 그 결과는 아무 데도 가지 않는다(확정은 일시 실패면
+ * 몇 번 더 보낸다 — `INGEST_RETRY_DELAYS_MS`).
  * 로그에는 번호·상태 코드만 남긴다.
  */
 import { SegmentCounter, OpenSegment, utteranceEndMs } from "../domain/segments.ts";
@@ -31,6 +32,7 @@ import {
   type Broadcaster,
   type HubPort,
   type Logger,
+  type MaskedTranscript,
   type RawTranscript,
   type RecommendPayload,
   type Speaker,
@@ -105,6 +107,33 @@ export interface RegistryDeps {
    * (`closure_type`·`approved/blocked`)만 받는다. **판정·저장은 끄지 않는다.**
    */
   announceClosure?: boolean;
+  /**
+   * **확정** 전사를 서버가 받지 못했을 때(연결 실패·시간 초과·5xx·429) 다시 보내기 전 기다리는 시간들(ms). 길이 = 재시도 횟수.
+   * 기본 `INGEST_RETRY_DELAYS_MS`. 테스트가 줄인다. interim 과 4xx 는 다시 보내지 않는다(`isRetryableIngestError`).
+   */
+  ingestRetryDelaysMs?: readonly number[];
+}
+
+/**
+ * 확정 전사 재시도 간격 — 처음 + 두 번 = 최대 3회. 2026-09-22 운영 SYN-010 에서 마지막 상담원 확정이 콜 미디에이터까지
+ * 왔는데 서버 전사 요청 한 번이 실패해 **DB 에도 /ws 에도 남지 않았다**(`w6-replay-last-turn`). 전에는 한 번 실패로 버렸다.
+ *
+ * 다시 보내도 되는 근거: 서버 저장은 `(call_id, segment_id)` UPSERT 이고 마스킹 구간도 지우고 다시 넣는다(`decisions/205`,
+ * `transcript_segment_repository.py`) — 첫 요청이 늦게라도 서버에서 끝났어도 행은 하나다. `POST /hub/transcripts` 는
+ * 마스킹·저장 말고 다른 부작용이 없다(추천·검사는 이쪽이 응답을 받은 뒤에 따로 부른다).
+ *
+ * 순서: 재시도는 채널 줄(`CoalescingQueue`) **안에서** 한다 — 뒤 결과가 앞지르지 않는다. 대신 그동안 뒤 자막이 늦는다.
+ * 최악(시간 초과 5초 × 3 + 1.3초)은 채널 닫기 기다림 상한(`drainTimeoutMs`, 10초)을 넘는다 — 상한은 기다림만 끊고
+ * 요청은 끝까지 간다. 그 뒤에 성공해도 방송은 된다(대시보드 구독은 채널과 무관하다).
+ */
+export const INGEST_RETRY_DELAYS_MS: readonly number[] = [300, 1_000];
+
+/** 다시 보내면 달라질 수 있는 실패인가. 4xx(401 토큰·409 통화 없음·422 계약)는 다시 보내도 같다. */
+export function isRetryableIngestError(error: unknown): boolean {
+  if (!(error instanceof HubError)) {
+    return true; // 응답 본문 해석 실패 등 — 서버 쪽 일시 문제로 본다(UPSERT 라 다시 보내도 해가 없다)
+  }
+  return error.status === null || error.status === 429 || error.status >= 500;
 }
 
 interface CallState {
@@ -412,14 +441,8 @@ export class Channel {
   }
 
   private async forward(item: QueuedResult): Promise<void> {
-    let masked;
-    try {
-      masked = await this.deps.hub.ingestTranscript(item.raw);
-    } catch (error) {
-      // 마스킹을 못 거친 결과는 어디에도 보내지 않는다 (SEC-1). 원문을 로그에 남기지 않는다.
-      this.deps.log.warn(
-        `전사 전달 실패 call=${this.callId} segment=${item.segmentId} status=${statusOf(error)} — 대시보드로 보내지 않는다`,
-      );
+    const masked = await this.ingest(item);
+    if (masked === null) {
       return;
     }
     this.deps.broadcaster.publish(this.callId, { type: "transcript", payload: masked });
@@ -436,6 +459,36 @@ export class Channel {
         for (const procedure of this.call.procedures) {
           this.track(this.checkRequiredDocs(procedure));
         }
+      }
+    }
+  }
+
+  /**
+   * 서버에 전사를 보내 마스킹본을 받는다. **확정**이 일시 실패하면 `ingestRetryDelaysMs` 만큼 기다려 다시 보낸다
+   * (`INGEST_RETRY_DELAYS_MS` 주석). 끝내 못 받으면 `null` — 마스킹을 못 거친 결과는 어디에도 보내지 않는다(SEC-1).
+   * 로그에는 통화·발화 번호·상태·시도 횟수만 남긴다. 원문은 남기지 않는다.
+   */
+  private async ingest(item: QueuedResult): Promise<MaskedTranscript | null> {
+    const delays = item.isFinal ? (this.deps.ingestRetryDelaysMs ?? INGEST_RETRY_DELAYS_MS) : [];
+    const where = `call=${this.callId} segment=${item.segmentId}`;
+    for (let attempt = 1; ; attempt += 1) {
+      try {
+        return await this.deps.hub.ingestTranscript(item.raw);
+      } catch (error) {
+        const status = statusOf(error);
+        const delay = delays[attempt - 1];
+        if (!item.isFinal) {
+          this.deps.log.warn(`전사 전달 실패 ${where} status=${status} — 대시보드로 보내지 않는다(interim)`);
+          return null;
+        }
+        if (delay === undefined || !isRetryableIngestError(error)) {
+          this.deps.log.warn(
+            `전사 전달 포기 ${where} status=${status} (${attempt}회 시도) — 확정 발화가 저장·대시보드 어디에도 가지 않는다`,
+          );
+          return null;
+        }
+        this.deps.log.warn(`전사 전달 실패 ${where} status=${status} — ${delay}ms 뒤 다시 보낸다 (${attempt}/${delays.length + 1})`);
+        await new Promise((resolve) => setTimeout(resolve, delay));
       }
     }
   }

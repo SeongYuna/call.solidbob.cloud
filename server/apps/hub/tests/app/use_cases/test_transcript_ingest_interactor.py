@@ -45,3 +45,32 @@ def test_ingest_without_pii_passes_through_with_empty_spans():
         call_id="c_001", segment_id=2, speaker="agent", raw_text="네 확인해드릴게요", is_final=False,
     )))
     assert event.text == "네 확인해드릴게요" and event.masked == () and event.utterance_end_ms is None
+
+
+class _Tagging(MaskingPort):
+    """어느 포트를 탔는지만 표시한다."""
+
+    def __init__(self, tag: str):
+        self.tag = tag
+
+    def mask(self, text: str):
+        return f"[{self.tag}]{text}", ()
+
+
+def test_중간_자막은_중간_자막_포트를_확정은_확정_포트를_탄다():
+    """C-5 — 번호가 다 들어오기 전의 중간 자막은 확정 규칙으로 못 잡는다(미결 09-22). 판정은 어댑터가, 여기는 고르기만."""
+    interactor = TranscriptIngestInteractor(masking=_Tagging("final"), record=_SpyRecord(), interim_masking=_Tagging("interim"))
+
+    def run(is_final):
+        return asyncio.run(interactor.ingest(TranscriptIngestCommand(
+            call_id="c_001", segment_id=3, speaker="customer", raw_text="x", is_final=is_final)))
+
+    assert run(False).text == "[interim]x"
+    assert run(True).text == "[final]x"
+
+
+def test_중간_자막_포트가_없으면_확정_포트로_가린다():
+    interactor = TranscriptIngestInteractor(masking=_Tagging("final"), record=_SpyRecord())
+    event = asyncio.run(interactor.ingest(TranscriptIngestCommand(
+        call_id="c_001", segment_id=4, speaker="customer", raw_text="x", is_final=False)))
+    assert event.text == "[final]x"

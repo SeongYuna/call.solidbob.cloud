@@ -96,6 +96,18 @@ def test_재현_정보를_함께_남긴다():
     assert args[3] is not None          # executed_at
 
 
+def test_검색_NER_구성을_함께_남긴다():
+    """run_id 3·4·7 이 DB 만으로 구분되지 않았다 — 검색기·NER 을 바꿔 잰 실행이 같은 모양으로 남았다(류준 님 요청, w6-server-loose-ends ②)."""
+    log = []
+
+    @asynccontextmanager
+    async def connect(): yield _FakeConnection(log)
+
+    record = EvalRunRecord(golden_set_version="v1-150", components="retriever=hybrid; masking=rule+ner; generation=none")
+    asyncio.run(PostgresEvalRunRepository(connect).save(record, REPORT))
+    assert log[0][1][5] == "retriever=hybrid; masking=rule+ner; generation=none"
+
+
 def test_run_id_를_돌려준다():
     """PostgreSQL 에는 lastrowid 가 없다 — RETURNING 으로 받는다."""
     run_id, _ = _run()
@@ -131,7 +143,8 @@ def test_실제_DB에_기록되고_컬럼_길이에_들어간다(integration_set
 
     async def scenario():
         run_id = await repo.save(
-            EvalRunRecord(golden_set_version="it-test", git_commit="0" * 40, executed_by="pytest"),
+            EvalRunRecord(golden_set_version="it-test", git_commit="0" * 40, executed_by="pytest",
+                          components="retriever=rerank-dense; masking=rule; generation=none"),
             REPORT,
         )
         async with connect() as conn:
@@ -141,6 +154,8 @@ def test_실제_DB에_기록되고_컬럼_길이에_들어간다(integration_set
                     ' FROM "eval_result" WHERE "run_id" = %s ORDER BY "module", "metric_name"',
                     (run_id,))
                 rows = await cur.fetchall()
+                await cur.execute('SELECT "components" FROM "eval_run" WHERE "run_id" = %s', (run_id,))
+                assert (await cur.fetchone())[0] == "retriever=rerank-dense; masking=rule; generation=none"
                 assert {r[0] for r in rows} == {"B-2", "C-5", "F-2"}
                 assert any(r[0] == "C-5" and r[3] is True for r in rows)
                 await cur.execute('DELETE FROM "eval_result" WHERE "run_id" = %s', (run_id,))

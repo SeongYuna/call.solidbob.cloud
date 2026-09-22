@@ -112,6 +112,7 @@ def _record(items: list[tuple[str, bool]], verdict: str = "complete", procedure:
                       "items": [{"rank": str(i + 1), "document_name": n, "informed": str(ok).lower()} for i, (n, ok) in enumerate(items)]}],
         "recommendations": [{"cards": [{"source_doc_id": card_doc}]}],
         "summary_text": "요약 초안",
+        "inquiry_type": "일반행정",  # D-2 — 서버는 못 가르면 「미분류」를 싣는다(decisions/323)
     }
 
 
@@ -138,12 +139,20 @@ def test_required_docs_none_expects_no_closure():
 
 def test_postcall_known_gap_is_warning_not_failure():
     call = {"stt_engine": "synthetic-script", "status": "in_progress", "ended_at": None, "customer_id": "abc"}
-    checks = judge_postcall({"summary_text": "초안"}, call)
+    checks = judge_postcall({"summary_text": "초안", "inquiry_type": "일반행정"}, call)
     by_name = {c.name: c for c in checks}
+    assert by_name["D-2·문의 유형 저장"].ok
     assert by_name["D-1·요약 초안 저장"].ok and by_name["통화 후·stt_engine=synthetic-script"].ok
     gap = by_name["통화 후·ended_at/status 갱신"]
     assert not gap.ok and gap.warn_only and gap.cause == "known"
     assert not judge_postcall({"summary_text": ""}, None)[0].ok
+
+
+def test_postcall_inquiry_type_null_fails():
+    """D-2 — `/close` 뒤 `inquiry_type` 이 NULL 이면 배선 결함이다. 못 가르면 「미분류」가 와야 한다(`w6-d2-inquiry-type-null`)."""
+    by_name = {c.name: c for c in judge_postcall({"summary_text": "초안", "inquiry_type": None}, None)}
+    assert not by_name["D-2·문의 유형 저장"].ok and by_name["D-2·문의 유형 저장"].cause == "wiring"
+    assert {c.name: c for c in judge_postcall({"summary_text": "초안", "inquiry_type": "미분류"}, None)}["D-2·문의 유형 저장"].ok
 
 
 def test_judge_verdict_ok_ignores_warnings_and_report_carries_disclaimer():

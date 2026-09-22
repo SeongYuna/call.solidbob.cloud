@@ -10,11 +10,13 @@
 ## 1. 로컬 스택 (이 맥에서)
 
 ```bash
-# ① Elasticsearch — 이미 떠 있으면 건너뛴다 (`callguard-es-local`, 9200). 98조항이 있는지:
-curl -s localhost:9200/_cat/indices            # callguard-kb-single … 98
+# ① Elasticsearch — 이미 떠 있으면 건너뛴다 (`callguard-elasticsearch`, 9200). 101청크(99조항, 여권 4.23 포함 — 2026-09-22)가 있는지:
+curl -s localhost:9200/_cat/indices            # callguard-kb-single … 101
 #    없으면: docker build -t callguard-es:local infra/elasticsearch/ && (infra/README.md 「로컬 개발」 명령) && \
-#            .venv/bin/python scripts/index_knowledge_base.py --to-es --recreate
+#            .venv/bin/python scripts/index_knowledge_base.py --to-es --recreate --embed-model models/koe5   # --embed-model 을 빼면 dense 가 0건
 
+# ⚠ 2026-09-22: 이 맥은 5432 를 다른 프로젝트가 써서 `callguard-postgres` 를 127.0.0.1:**5434** 로 띄웠다 — 아래 5432 를 그 포트로 바꿔 쓴다.
+#    8000·8080 도 다른 컨테이너가 쓰면 서버 :8001 · 콜 미디에이터 :8081 로(`--core-url`·`--mediator-url`).
 # ② PostgreSQL — infra/README.md 의 개발용 컨테이너. 이름 볼륨 `callguard-pg` 는 옛 스키마(22 테이블)일 수 있어
 #    **검사 전용 DB `callguard_e2e` 를 따로 만들고** 현재 `db/schema.sql`(29 테이블)을 넣는다. 볼륨은 지우지 않는다.
 docker run -d --name callguard-postgres -e POSTGRES_DB=callguard -e POSTGRES_USER=callguard -e POSTGRES_PASSWORD=callguard-dev \
@@ -22,7 +24,7 @@ docker run -d --name callguard-postgres -e POSTGRES_DB=callguard -e POSTGRES_USE
 docker exec callguard-postgres psql -U callguard -d callguard -c "CREATE DATABASE callguard_e2e"
 docker exec -i callguard-postgres psql -U callguard -d callguard_e2e -q -v ON_ERROR_STOP=1 < db/schema.sql
 #    그리고 지식베이스 조항을 `document` 테이블에 넣는다 — 없으면 추천 카드·콜 가드의 `source_doc_id` 가 전부 NULL 로 남는다(FK, B-6 출처).
-#    UPSERT 라 여러 번 돌려도 된다. 98조항이어야 한다(2026-09-18 확인)
+#    UPSERT 라 여러 번 돌려도 된다. 99조항이어야 한다(2026-09-22 — 여권 4.23 추가)
 DATABASE_URL=postgresql://callguard:callguard-dev@127.0.0.1:5432/callguard_e2e .venv/bin/python scripts/seed_documents.py
 
 # ③ 로컬 env — 저장소의 .env 를 덮어쓰지 않는다. 검사용 파일을 따로 둔다 (값은 전부 개발용, 비밀 아님)
@@ -31,6 +33,9 @@ DATABASE_URL=postgresql://callguard:callguard-dev@127.0.0.1:5432/callguard_e2e
 ELASTICSEARCH_URL=http://localhost:9200
 CUSTOMER_REF_HMAC_KEY=e2e-local-only-not-a-secret
 CORE_API_URL=http://localhost:8000
+# 쓰기 경로가 fail-closed 다(`decisions/120`) — 서버(INGEST_SERVICE_TOKEN)와 콜 미디에이터(CORE_API_TOKEN)에 **같은 로컬 전용 값**
+INGEST_SERVICE_TOKEN=e2e-local-only-not-a-secret
+CORE_API_TOKEN=e2e-local-only-not-a-secret
 EOF
 
 # ④ 서버 :8000   (.venv 에 uvicorn 이 없으면 .venv/bin/python -m pip install uvicorn==0.52.4 python-dotenv==1.2.3)
@@ -57,8 +62,8 @@ curl -s localhost:8080/health   # active_calls 0
 - 대본마다 재생기(`services/call-mediator/scripts/replay_persona_call.ts`)를 `--watch --close` 로 subprocess 실행한다.
   **call_id 는 검사기가 정해 넘긴다**(`syn-e2e-<id>-<시각>`) — 재생기 출력은 파싱하지 않는다.
 - **`--close` 는 상담원 토큰이 있어야 한다** (2026-09-22 정정). `POST /hub/calls/{id}/close` 가 `a866ff4`(`decisions/315`)부터
-  **상담원 토큰 또는 서비스 토큰**을 요구한다(`server/apps/hub/dependencies/close_guard.py`). 로컬 서버는 서비스 토큰
-  (`INGEST_SERVICE_TOKEN`)을 두지 않으니 상담원 토큰만 통한다 — 이 문서의 앞 판은 토큰 없이 `--close` 가 되는 전제였고,
+  **상담원 토큰 또는 서비스 토큰**을 요구한다(`server/apps/hub/dependencies/close_guard.py`). 로컬 서버에도 이제 서비스 토큰
+  (`INGEST_SERVICE_TOKEN`)을 둔다(③ — fail-closed 라 없으면 쓰기 경로가 401). `--close` 는 그래도 상담원 토큰을 먼저 싣는다 — 이 문서의 앞 판은 토큰 없이 `--close` 가 되는 전제였고,
   09-22 QA 에서 401 로 **D-1·요약 초안 저장** 이 ❌ 였다.
   - 검사기가 **로컬 검사 DB 에 임시 상담원 토큰을 만든다**(`e2e/agent_token.py`) — 발급 API(`/admin/agent-tokens`)는 관리자
     구글 로그인이 있어야 해서, 서버가 토큰을 확인하는 방법 그대로(`agent_token.token_hash` = SHA-256 hex, 폐기 안 됨) 행을 넣는다.

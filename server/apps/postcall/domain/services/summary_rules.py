@@ -1,4 +1,4 @@
-# Requirement: D-1, D-3
+# Requirement: D-1, D-2, D-3
 """통화 후 처리 초안 — **규칙 기반 발췌다. 생성 모델은 여기 없다** (`decisions/306`).
 
 요약을 «쓰는» 것이 아니라 마스킹된 확정 발화에서 **골라 붙인다.** 지어낸 문장이 없으니 환각이 없고,
@@ -6,7 +6,8 @@
 같은 포트 뒤에 갈아 끼운다 — 이 파일은 그때도 폴백으로 남길 수 있다.
 
 - D-1 요약: 고객의 첫 «실질» 발화(문의) + 그 뒤 상담원의 첫 «실질» 발화(안내) + 발화 건수
-- D-2 유형: **만들지 않는다(None).** 유형을 가를 규칙표가 없다 — 없는 규칙으로 분류하면 그게 지어낸 값이다
+- D-2 유형: 지식베이스 장 어휘로 **제안**한다(`inquiry_rules.py`, `decisions/323`). 안 걸리면 「미분류」.
+  ~~만들지 않는다(None) — 유형을 가를 규칙표가 없다~~ 가 09-22 까지의 판단이었다(운영 24/24 NULL)
 - D-3 후속조치: 상담원이 「…해 드리겠습니다」 로 **약속한** 발화 중 연락·발송·접수 류 동사가 있는 것
 
 ⚠ **한계 — 주장 범위를 넘지 않는다.**
@@ -93,8 +94,10 @@ def _follow_ups(utterances: list[Utterance]) -> tuple[str, ...]:
 
 def build_draft(utterances: list[Utterance]) -> DraftParts:
     """발화 순서대로 받은 확정 발화 → 초안 조각. 순서는 호출자가 맞춘다(segment_id 오름차순)."""
+    from .inquiry_rules import classify_inquiry  # noqa: PLC0415 — inquiry_rules 가 Utterance 를 여기서 가져간다
+
     return DraftParts(
         summary_text=_summary(utterances),
-        inquiry_type=None,
+        inquiry_type=classify_inquiry(utterances),
         follow_up_actions=_follow_ups(utterances),
     )

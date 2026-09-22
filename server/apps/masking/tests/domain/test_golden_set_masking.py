@@ -54,7 +54,9 @@ def test_골든셋_정답구간이_한_글자도_빠짐없이_가려진다(case_
     assert start >= 0, f"{case_id}: 정답 구간이 발화에 없다 — 골든셋이 어긋났다"
 
     masked, _ = mask_text(utterance)
-    leaked = [utterance[i] for i in range(start, start + len(raw)) if masked[i] != "*"]
+    # 공백은 개인정보가 아니다 — 띄어 쓴 이름(`"사토 유이"`, GS-421~)은 어절마다 따로 가려 사이 공백이 남는다.
+    # 하네스(`masking_robustness.survives`)도 공백을 빼고 본다(2026-09-22). **글자는 한 개라도 남으면 누락**인 것은 그대로다
+    leaked = [utterance[i] for i in range(start, start + len(raw)) if masked[i] != "*" and not utterance[i].isspace()]
     assert not leaked, (
         f"{case_id} [{expected['pattern']}] 누락 — 절대 규칙 위반\n"
         f"  원문: {utterance}\n  결과: {masked}\n  샌 문자: {''.join(leaked)!r}"

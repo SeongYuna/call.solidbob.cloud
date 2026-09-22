@@ -7,6 +7,7 @@ from fastapi import Depends
 
 from agent_auth.app.ports.input.admin_agent_link_use_case import AdminAgentLinkUseCase
 from agent_auth.app.ports.input.agent_directory_list_use_case import AgentDirectoryListUseCase
+from agent_auth.app.ports.input.agent_hired_on_use_case import AgentHiredOnUseCase
 from agent_auth.app.ports.input.agent_profile_use_case import AgentProfileUseCase
 from agent_auth.app.ports.input.agent_token_list_use_case import AgentTokenListUseCase
 from agent_auth.app.ports.input.current_agent_use_case import CurrentAgentUseCase
@@ -16,6 +17,7 @@ from agent_auth.app.ports.output.agent_directory_port import AgentDirectoryPort
 from agent_auth.app.ports.output.agent_token_port import AgentTokenPort
 from agent_auth.app.use_cases.admin_agent_link_interactor import AdminAgentLinkInteractor
 from agent_auth.app.use_cases.agent_directory_list_interactor import AgentDirectoryListInteractor
+from agent_auth.app.use_cases.agent_hired_on_interactor import AgentHiredOnInteractor
 from agent_auth.app.use_cases.agent_profile_interactor import AgentProfileInteractor
 from agent_auth.app.use_cases.agent_token_list_interactor import AgentTokenListInteractor
 from agent_auth.app.use_cases.current_agent_interactor import CurrentAgentInteractor
@@ -60,3 +62,9 @@ def get_admin_agent_link_use_case(
     admins: AdminAccountPort = Depends(get_admin_account_port),
 ) -> AdminAgentLinkUseCase:
     return AdminAgentLinkInteractor(agents, admins)
+
+
+def get_agent_hired_on_use_case(
+    agents: AgentDirectoryPort = Depends(get_agent_directory_port),
+) -> AgentHiredOnUseCase:
+    return AgentHiredOnInteractor(agents)

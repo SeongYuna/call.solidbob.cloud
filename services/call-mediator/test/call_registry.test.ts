@@ -17,6 +17,7 @@ function setup(
     announceCompliance?: boolean;
     announceClosure?: boolean;
     routingCandidates?: string[];
+    ingestRetryDelaysMs?: number[];
   } = {},
 ) {
   const hub = new FakeHub();
@@ -44,6 +45,8 @@ function setup(
     announceCompliance: opts.announceCompliance,
     announceClosure: opts.announceClosure,
     routingCandidates: opts.routingCandidates,
+    // 테스트는 재시도 간격을 짧게 — 기본값(운영)은 call_registry.ts 의 INGEST_RETRY_DELAYS_MS
+    ingestRetryDelaysMs: opts.ingestRetryDelaysMs ?? [1, 1],
   });
   return {
     hub,
@@ -625,4 +628,89 @@ test("J-5 — 배정 판정이 실패해도 통화는 그대로 돈다 · 로그
   await agent.close();
   assert.equal(hub.ingested.length, 1);
   assert.ok(log.warnings.some((w) => w.includes("배정 판정 실패") && w.includes("call=test-1") && w.includes("500")));
+});
+
+// ── 확정 전사 재시도 (w6-replay-last-turn, 2026-09-22 운영 SYN-010 마지막 턴 4/5) ─────────────────────────────
+// 운영에서 마지막 상담원 확정이 콜 미디에이터까지 왔는데(재생기 쪽 소켓은 정상 1000 으로 닫혔다) 서버 전사 요청이 한 번
+// 실패해 DB·/ws 어디에도 남지 않았다. 전에는 한 번 실패하면 그대로 버렸다. 서버 저장은 (call_id, segment_id) UPSERT 라
+// 같은 확정을 다시 보내도 행이 하나다(decisions/205) — 확정은 몇 번 더 보낸다.
+
+test("확정 전사가 한 번 503 으로 실패하면 다시 보내 저장·자막·「검색 중」까지 간다", async () => {
+  const { registry, hub, stt, broadcaster, log } = setup({ announcePending: true });
+  const channel = await openOk(registry, "test-1", "agent");
+  hub.ingestFailQueue.push(503);
+  stt.last().emit("네 이용해 주셔서 감사합니다", true, 800);
+  await channel.close();
+
+  assert.equal(hub.ingestAttempts.length, 2, "한 번 더 보냈어야 한다");
+  assert.equal(hub.ingested.length, 1);
+  assert.equal(broadcaster.ofType("transcript").length, 1, "자막이 /ws 로 가야 한다");
+  assert.equal(broadcaster.ofType("recommendation_pending").length, 1);
+  assert.equal(hub.recommended.length, 1);
+  assert.ok(log.warnings.some((line) => line.includes("call=test-1") && line.includes("segment=1") && line.includes("status=503")));
+});
+
+test("연결 실패·시간 초과(상태 없음)가 두 번 나도 세 번째에 보낸다", async () => {
+  const { registry, hub, stt, broadcaster } = setup();
+  const channel = await openOk(registry, "test-1", "customer");
+  hub.ingestFailQueue.push(null, null);
+  stt.last().emit("아 네 알겠습니다", true, 800);
+  await channel.close();
+
+  assert.equal(hub.ingestAttempts.length, 3);
+  assert.equal(broadcaster.ofType("transcript").length, 1);
+});
+
+test("끝내 실패하면 정해진 횟수에서 멈추고, call_id·segment_id·시도 횟수만 경고한다 (원문 없음, SEC-1)", async () => {
+  const { registry, hub, stt, broadcaster, log } = setup();
+  const channel = await openOk(registry, "test-1", "customer");
+  hub.failIngest = 503;
+  stt.last().emit(RAW_PII, true, 800);
+  await channel.close();
+
+  assert.equal(hub.ingestAttempts.length, 3, "세 번(처음 + 재시도 둘)에서 멈춘다");
+  assert.equal(broadcaster.messages.length, 0, "마스킹 안 된 결과는 어디에도 가지 않는다");
+  const gaveUp = log.warnings.filter((line) => line.includes("전사 전달 포기"));
+  assert.equal(gaveUp.length, 1);
+  assert.ok(gaveUp[0]?.includes("call=test-1") && gaveUp[0]?.includes("segment=1") && gaveUp[0]?.includes("3회"));
+  assert.ok(!log.warnings.join("\n").includes("900101"), "원문이 로그에 있다");
+});
+
+test("4xx(계약 위반·통화 없음)는 다시 보내도 같다 — 재시도하지 않는다", async () => {
+  for (const status of [401, 409, 422]) {
+    const { registry, hub, stt } = setup();
+    const channel = await openOk(registry, "test-1", "agent");
+    hub.failIngest = status;
+    stt.last().emit("네", true, 800);
+    await channel.close();
+    assert.equal(hub.ingestAttempts.length, 1, `status ${status}`);
+  }
+});
+
+test("interim 은 재시도하지 않는다 — 같은 발화의 새 결과가 곧 덮는다", async () => {
+  const { registry, hub, stt } = setup();
+  const channel = await openOk(registry, "test-1", "agent");
+  hub.ingestFailQueue.push(503);
+  stt.last().emit("네 이용해", false, 400);
+  await channel.close();
+  assert.equal(hub.ingestAttempts.length, 1);
+  assert.equal(hub.ingested.length, 0);
+});
+
+test("재시도하는 동안 뒤 결과는 기다린다 — 자막 순서가 뒤집히지 않는다", async () => {
+  const { registry, hub, stt, broadcaster } = setup({ ingestRetryDelaysMs: [30, 30] });
+  const channel = await openOk(registry, "test-1", "agent");
+  hub.ingestFailQueue.push(null);
+  stt.last().emit("첫 확정", true, 800);
+  stt.last().emit("둘째 확정", true, 1600);
+  await channel.close();
+
+  assert.deepEqual(
+    broadcaster.ofType("transcript").map((m) => m.payload.segment_id),
+    ["1", "2"],
+  );
+  assert.deepEqual(
+    hub.ingestAttempts.map((raw) => raw.segment_id),
+    [1, 1, 2],
+  );
 });

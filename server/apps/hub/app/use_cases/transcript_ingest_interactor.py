@@ -11,12 +11,16 @@ from hub.app.ports.output.transcript_ingest_record_port import TranscriptIngestR
 
 
 class TranscriptIngestInteractor(TranscriptIngestUseCase):
-    def __init__(self, masking: MaskingPort, record: TranscriptIngestRecordPort) -> None:
+    def __init__(self, masking: MaskingPort, record: TranscriptIngestRecordPort,
+                 interim_masking: MaskingPort | None = None) -> None:
         self._masking = masking
         self._record = record
+        # 중간 자막은 번호가 다 들어오기 전이라 확정 규칙으로 못 잡는다(C-5, 09-22) — 무엇을 가릴지는 어댑터가 정한다
+        self._interim_masking = interim_masking or masking
 
     async def ingest(self, command: TranscriptIngestCommand) -> TranscriptEvent:
-        masked_text, spans = self._masking.mask(command.raw_text)
+        masking = self._masking if command.is_final else self._interim_masking
+        masked_text, spans = masking.mask(command.raw_text)
         event = TranscriptEvent(
             call_id=command.call_id,
             segment_id=command.segment_id,
