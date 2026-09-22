@@ -64,9 +64,12 @@ export function EntriesTab({
 
   return (
     <section aria-label="블랙리스트">
+      {/* ⚠ "바뀌는 것은 근속 3년 이상 상담사에게 배정된다는 점"이라고 썼던 문장을
+          뺐다 — J-5 배정 판정을 실제로 부르는 곳이 아직 없어(콜 미디에이터 미배선,
+          `w7-j5-routing-caller`) 사실이 아니었다. `decisions/407` 참고. 구현되면
+          다시 채운다. */}
       <p className="admin-help">
-        등록된 고객의 전화도 <strong>정상적으로 받습니다.</strong> 바뀌는 것은
-        근속 3년 이상 상담사에게 배정된다는 점 하나입니다.
+        등록된 고객의 전화도 <strong>정상적으로 받습니다</strong> — 차단이 아닙니다.
       </p>
       <div className="admin-tabs admin-subfilter" role="tablist" aria-label="신규·기존 분류">
         <FilterChip label="전체" count={active.length} active={filter === "all"} onClick={() => setFilter("all")} />
