@@ -6,6 +6,8 @@ status: "todo"
 sprint: 7
 priority: 79
 date: 2026-09-21
+depends_on:
+  - "w5-manual-qa-full-stack"
 requirement:
   - "COST-1"
   - "A-2"

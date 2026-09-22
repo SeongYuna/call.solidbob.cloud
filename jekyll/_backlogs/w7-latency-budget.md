@@ -6,6 +6,8 @@ status: "in-progress"
 sprint: 7
 priority: 71
 date: 2026-09-15
+depends_on:
+  - "w5-manual-qa-full-stack"
 requirement:
   - "B-1"
   - "A-1"
