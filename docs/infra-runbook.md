@@ -31,6 +31,10 @@
 > 인스턴스는 아직 없다) 그때 11·14·21장과 0장의 비용 경고가 **그 인스턴스에** 다시 살아난다. ES 힙도 실물은 1GiB 다.
 > 원안 장의 명령에 남은 `-n assist` · `deploy/caddy` 는 실물에서 `-n callguard` · Traefik + cert-manager 다.
 >
+> **인스턴스 정정 (2026-09-22, 다섯 번째).** 위 「모델은 전용 GPU EC2 를 따로 세워」는 **`decisions/124` 로 대체됐다** —
+> 모델(NER · KoE5 임베딩)은 **지금의 `t3.large` 에 CPU 로** 싣는다. 리랭커·생성 모델은 싣지 않는다. GPU 인스턴스는 만들지 않으므로
+> 11 · 14 · 21장의 GPU 절차는 계속 실물에 적용되지 않는다. 실물 절차는 11장 끝 「실물 — CPU 노드에 모델 싣기」다.
+>
 > 나머지 장 — 특히 13(클론) · 16-2(Caddy) — 은 원안 그대로다. 클러스터 구성의 정본은
 > `infra/k8s/base/` 다(라이브 클러스터와 `kubectl diff` 차이 0, 2026-09-08).
 
@@ -858,6 +862,47 @@ kubectl run gpu-test --rm -it --restart=Never \
 T4 정보가 나오면 성공입니다.
 
 > **더 정석적인 방법**: device plugin 에 time-slicing(`replicas: 4`)을 설정하면 GPU 하나를 논리적으로 4개처럼 쓸 수 있습니다. 발표 거리는 되지만 설정이 늘고 실익이 없습니다. 지금은 위 방식으로 두십시오.
+
+### 실물 — CPU 노드에 모델 싣기 (2026-09-22, `_project/decisions/124`)
+
+위 GPU 절은 원안이다. 실물 `t3.large` 에는 GPU 가 없고, 모델은 **NER(`koelectra-ner`, 0.43GB)과 KoE5 임베딩(2.2GB) 둘만** CPU 로 싣는다.
+서버 이미지에 CPU 판 torch 가 들어 있고(`infra/docker/server.Dockerfile`), 파드는 노드의 `/opt/callguard/models` 를 `/models` 로 읽는다(`server.yaml`).
+
+**① 모델 파일 — S3 `models/` 가 정본이다.** 2026-09-22 에 이 저장소의 `scripts/download_models.py` 와 같은 HF 저장소에서 받아 올렸다
+(`nlpai-lab/KoE5` · `monologg/koelectra-base-v3-naver-ner`). 파일 해시 목록이 `s3://assist-apne2/models/models-sha256.txt` 다.
+
+```bash
+# 노드에서 (SSM). 여유 디스크 5GB 이상 — 2026-09-22 실측 19GB
+sudo mkdir -p /opt/callguard/models
+sudo aws s3 sync s3://assist-apne2/models/ /opt/callguard/models/
+cd /opt/callguard/models && sudo sha256sum -c models-sha256.txt --quiet && echo HASH-OK
+```
+
+**② 벡터 재적재 — 임베딩을 켜기 전에.** 15-1 로 적재한 인덱스에는 벡터가 없다. 벡터 없는 인덱스에서 dense 검색은 **0건**이다
+(`scripts/index_knowledge_base.py` 머리말). torch 가 든 이미지(`0.1.26` 이상)가 떠 있을 때 서버 파드 안에서 돌린다.
+
+```bash
+K="sudo k3s kubectl -n callguard"
+curl -fsSL https://codeload.github.com/SeongYuna/call.solidbob.cloud/tar.gz/main | $K exec -i deploy/callguard-server -- tar -xz -C /app --strip-components=1 --wildcards '*/scripts/index_knowledge_base.py' '*/knowledge-base/*'
+$K exec deploy/callguard-server -- python /app/scripts/index_knowledge_base.py --to-es --recreate --embed-model /models/koe5
+```
+
+**③ 하나씩 켠다** — 시크릿에 경로를 넣고 재시작. 경로가 틀려도 서버는 **오류 없이 규칙만으로** 뜨므로 `/health` 의 `spokes` 를 반드시 본다.
+
+```bash
+(umask 077; $K get secret server-env -o yaml > ~/server-env.backup.yaml)
+$K patch secret server-env --type merge -p '{"stringData":{"PII_NER_MODEL_DIR":"/models/koelectra-ner"}}'
+$K rollout restart deploy/callguard-server && $K rollout status deploy/callguard-server
+#   → /health spokes 에 `pii_ner`
+$K patch secret server-env --type merge -p '{"stringData":{"RETRIEVAL_EMBED_MODEL_DIR":"/models/koe5"}}'
+$K rollout restart deploy/callguard-server && $K rollout status deploy/callguard-server
+#   → /health spokes 에 `retrieval_dense`
+$K get pods ; free -h | head -2      # RESTARTS 0 · 여유 1GB 이상
+```
+
+**되돌리기** — 해당 키만 빼고 재시작하면 규칙 + BM25 로 돌아간다.
+`$K patch secret server-env --type json -p '[{"op":"remove","path":"/data/RETRIEVAL_EMBED_MODEL_DIR"}]'`.
+검색 구간이 1,000ms 를 넘으면 임베딩만 끄고 운영 구성으로 판정한다(`124`).
 
 ---
 
