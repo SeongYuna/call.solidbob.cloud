@@ -75,3 +75,18 @@ paths:
 - [ ] 운영 통화가 쌓이기 시작하면 `retrieval_ms`·`generation_ms` 를 **컬럼으로 승격**(`generate_schema_docs.py` → 마이그레이션)
 
 ⚠ **하네스는 계속 「측정 불가」다** — 골든셋에 시계가 없다. 거기에 시각을 지어 넣지 않는다(절대 원칙 2).
+
+## 준비 — 2026-09-21 코드 확인 (정성윤)
+
+**`e2e_check.py` 는 지금 구간 값을 받을 수 없다.** 그래서 「측정」 칸의 첫 일은 수집 경로다.
+
+- `e2e_check.py` 는 REST(`/hub/calls/{id}/transcript` · `/record`)와 **DB** 에서만 읽는다. DB 에는 `internal_latency_ms` 만 있다
+- `retrieval_ms` · `generation_ms` 는 **DB 컬럼이 없다**(`decisions/119` ③) — 응답과 방송에만 실린다
+- `e2e_latency_ms` 는 미디에이터가 **방송 직전**에 채운다(`call_registry.ts` 564~581줄). DB 값은 여전히 NULL 이다 — 서버가 방송 전에 저장하기 때문이다
+- 방송을 받는 곳은 재생기의 `--watch` 다(`services/call-mediator/scripts/replay_persona_call.ts` — `/ws?call_id=` 를 연다)
+
+**할 일 순서**
+1. 재생기 `--watch` 가 받은 `recommendation` 메시지의 네 값(`internal_latency_ms` · `retrieval_ms` · `generation_ms` · `e2e_latency_ms`)을 JSONL 로 남긴다 — 류준 님 스크립트라 먼저 알린다
+2. `e2e_check.py` 가 그 파일을 읽어 구간별 p50·p95 와 표본 수를 보고서에 낸다
+3. 어디서 돌리나 — **운영 DB 는 이 머신에서 닿지 않는다**(RDS 는 VPC 안). 운영으로 재려면 DB 판정을 끄고 방송 값만 모으는 모드가 필요하다. 로컬 전체 스택이면 지금 그대로 된다
+4. 모델이 운영 노드에 붙은 뒤 한 번 더 잰다 — 리랭커 지연이 여기서 처음 운영 값으로 나온다
