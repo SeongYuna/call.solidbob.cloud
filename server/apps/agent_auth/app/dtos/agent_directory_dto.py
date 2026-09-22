@@ -4,9 +4,17 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import date
 
 
 @dataclass(frozen=True)
 class AgentSummary:
     agent_id: str
     display_name: str
+    hired_on: date | None = None  # J-5 근속을 세는 입사일(`decisions/321`). 없으면 0년으로 센다
+
+
+@dataclass(frozen=True)
+class AgentHiredOnCommand:
+    agent_id: str
+    hired_on: date | None  # None 이면 지운다

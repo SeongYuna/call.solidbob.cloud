@@ -942,7 +942,7 @@ Environment Variables → **Production 만** → Deployments → Redeploy(`VITE_
 - [ ] **A-5 를 차별점으로 유지할지** — 초급 WER 0.412(상한). Chirp 3 재측정(`roles/speech.client` 09-22 부여) 값을 보고 정한다(§1-9)
 - [ ] **필요서류 절차 고르기 규칙** — 「1순위가 규칙 없는 `TERM` 이면 판정하지 않는다」에 동의. 콜 미디에이터 `src/` 라 `decisions/124` ② PR 과 함께 태그 한 번으로(§1-11)
 - [ ] **09-21 셋째 판 「남은 일 목록」의 미커밋 파일 회수** — 결정 125~128(일정 공백·배정 호출·공개 데모·스키마 대조)·09-30 판정문 초안·티켓 절차. 저장소 이력 어디에도 없다. 그 세션을 돌린 머신의 `git status` 를 볼 것. ⚠ 오늘 `124`·`125` 를 새로 썼으니 거기 남은 파일은 번호를 옮겨야 한다
-- [ ] **쓰기 경로 ④ 서버 fail-closed** — ◐ **2026-09-22 코드 들어감(장민석, `w6-ingest-guard-fail-closed`, server `0.1.33`) — 미설정이면 401, `/health` `unset`. 기동 거부가 아니라 401 로 갔다. 배포 뒤 `locked` 확인이 남았다.** 원문 — 시크릿은 09-22 에 들어가 잠겼고, 「없으면 연다」를 걷는 코드 변경만 남았다(`w5-ingest-auth-fail-closed`, 장민석 님 검토 대상)
+- [x] **쓰기 경로 ④ 서버 fail-closed** — ✅ **2026-09-22 운영 배포(장민석, `w6-ingest-guard-fail-closed`, server `0.1.34` — PR #131). 배포 뒤 `/health` `locked` · 토큰 없는 쓰기 401 확인.** 미설정이면 401, `/health` `unset`. 기동 거부가 아니라 401 로 갔다. ~~server `0.1.33`~~ 은 #129 와 겹쳐 머지 때 `0.1.34` 로 올라갔다. 원문 — 시크릿은 09-22 에 들어가 잠겼고, 「없으면 연다」를 걷는 코드 변경만 남았다(`w5-ingest-auth-fail-closed`, 장민석 님 검토 대상)
 - [ ] **랜딩 라이브 통화 실제 동작** — 09-22 에 `VITE_CALL_MEDIATOR_WS_URL` 을 넣고 재배포했지만 브라우저로 통화를 걸어 본 적은 없다. 조서희 님 `w6-shared-call-entry` 운영 확인과 같이
 
 ## 2026-09-22 에 남긴 것 (장민석)
@@ -975,3 +975,4 @@ Environment Variables → **Production 만** → Deployments → Redeploy(`VITE_
 - [ ] **재생기 마지막 턴 유실 원인 — 정성윤** — 코드로 보면 재생기가 일찍 닫아도 DB 저장은 빠지지 않는다(가설 기각). 남은 가설: ① 마지막 확정이 미디에이터에 안 닿음 ② 미디에이터→서버 전사 실패 — 운영 미디에이터 로그에 `전사 전달 실패 call=syn-prod-syn-010-20260922` 가 있으면 ②
 - [ ] **테스트·CI 위생 — 공동** — `ai/tests/test_eval_wiring.py` 가 옛 v1-50 을 읽어 F-2 검사가 늘 skip · ES 통합 테스트 2건이 삭제된 SHOP/HLT 도메인을 전제로 실패 + **공유 인덱스 `callguard-kb-single` 을 지우고 벡터 없이 다시 만든다** · CI server job 이 5건 skip(`elasticsearch`·`transformers` 없음) · 프론트 테스트 0 · `CLAUDE.md` §2.5 「F-2 0건 — 측정 불가」→ 실제 99건 채점·통과
 - [ ] **D-2 문의 유형이 24/24 NULL — 장민석** — `/close` 는 요약을 저장하지만 `inquiry_type` 이 비어 있다(판정기는 요약 길이만 본다)
+- [ ] **J-5 시연 준비 — 장민석 (2026-09-22 추가)** — 배정 판정 호출(`320`)과 입사일 API(`321`)는 들어갔다. 시연에서 SYN-007 이 `veteran` 으로 나오려면 **운영에서 셋**이 남았다 — ① 시연 상담원 입사일 넣기(`PUT /admin/agents/{id}/hired-on`, 관리자 토큰 · 화면은 `w6-admin-agent-hired-on-ui`) ② `ROUTING_CANDIDATES` 에 그 상담원 `agent_id` 들(미디에이터 시크릿·매니페스트 — 비면 늘 「후보 없음」) ③ 테스트 통화 1건으로 `routing_log` 행 확인. 페르소나 상담원(A01~A06)은 대본 배역이라 운영 `agent` 행과 이어져 있지 않다 — 어느 행을 시연 상담원으로 쓸지부터 정한다. 입사일은 페르소나 설정에 맞춘 **시연용 값**이다(측정값 아님)

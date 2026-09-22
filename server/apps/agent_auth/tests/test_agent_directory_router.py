@@ -45,8 +45,8 @@ def test_이름순으로_정렬돼_돌아온다():
     assert r.status_code == 200
     assert r.json() == {
         "agents": [
-            {"agent_id": "agent-1", "display_name": "김민준"},
-            {"agent_id": "agent-7", "display_name": "홍길동"},
+            {"agent_id": "agent-1", "display_name": "김민준", "hired_on": None},  # decisions/321 — 입사일(없으면 null)
+            {"agent_id": "agent-7", "display_name": "홍길동", "hired_on": None},
         ]
     }
 

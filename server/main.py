@@ -26,6 +26,7 @@ from fastapi.responses import JSONResponse  # noqa: E402
 
 from admin_auth.adapter.inbound.api.v1.auth_router import auth_router  # noqa: E402
 from agent_auth.adapter.inbound.api.v1.agent_directory_router import agent_directory_router  # noqa: E402
+from agent_auth.adapter.inbound.api.v1.agent_hired_on_router import agent_hired_on_router  # noqa: E402
 from agent_auth.adapter.inbound.api.v1.agent_me_router import agent_me_router  # noqa: E402
 from agent_auth.adapter.inbound.api.v1.agent_token_router import agent_token_router  # noqa: E402
 from core.config import Settings, load_settings  # noqa: E402
@@ -407,6 +408,7 @@ _INGEST_ONLY = [Depends(require_ingest_service)]
 app.include_router(auth_router)
 app.include_router(admin_stats_router)
 app.include_router(agent_directory_router)
+app.include_router(agent_hired_on_router)
 app.include_router(agent_me_router)
 app.include_router(agent_token_router)
 app.include_router(blacklist_decision_router)
