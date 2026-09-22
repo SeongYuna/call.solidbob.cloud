@@ -186,8 +186,8 @@ export function AdminPanel({
                 onApprove={(requestId, expiryMonths) => {
                   void decide(requestId, true, admin, expiryMonths);
                 }}
-                onReject={(requestId) => {
-                  void decide(requestId, false, admin);
+                onReject={(requestId, reason) => {
+                  void decide(requestId, false, admin, undefined, reason);
                 }}
               />
             ) : null}

@@ -19,7 +19,8 @@ export function RequestsTab({
   /** 설정 탭의 기본값 — 승인 카드에 미리 채워지지만 건마다 바꿀 수 있다. */
   defaultExpiryMonths: number;
   onApprove: (requestId: string, expiryMonths: number) => void;
-  onReject: (requestId: string) => void;
+  /** `reason`은 서버가 반려에 필수로 요구한다(`decisions/316`) — 빈 문자열로 부르지 않는다. */
+  onReject: (requestId: string, reason: string) => void;
 }): ReactElement {
   const pending = requests.filter((r) => r.status === "pending");
   const decided = requests.filter((r) => r.status !== "pending");
@@ -37,8 +38,8 @@ export function RequestsTab({
             onApprove={(months) => {
               onApprove(request.request_id, months);
             }}
-            onReject={() => {
-              onReject(request.request_id);
+            onReject={(reason) => {
+              onReject(request.request_id, reason);
             }}
           />
         ))
@@ -70,6 +71,10 @@ export function RequestsTab({
   );
 }
 
+/** 서버가 던지는 문구 그대로 — `blacklist_decision_interactor.py:42`, `decisions/316`. */
+const REJECT_REASON_REQUIRED_MESSAGE =
+  "반려에는 사유가 필요합니다 — 요청한 상담원이 왜 반려됐는지 알 수 있게 적습니다";
+
 function RequestCard({
   request,
   defaultExpiryMonths,
@@ -79,7 +84,7 @@ function RequestCard({
   request: BlacklistRequestItem;
   defaultExpiryMonths: number;
   onApprove: (expiryMonths: number) => void;
-  onReject: () => void;
+  onReject: (reason: string) => void;
 }): ReactElement {
   const abuse = abuseTotal(request.evidence);
   const distress = hasDistress(request.evidence);
@@ -87,6 +92,9 @@ function RequestCard({
   // 건마다 심각도가 다르다 — 기본값으로 미리 채우되 승인 전에 바꿀 수 있다
   // (2026-09-10, "고객 각각으로는 안 되나" 피드백).
   const [expiryMonths, setExpiryMonths] = useState(defaultExpiryMonths);
+  // 반려 사유 — 서버 필수값(`decisions/316`). 승인의 인라인 필드와 같은 방식(모달 아님).
+  const [rejectReason, setRejectReason] = useState("");
+  const [rejectError, setRejectError] = useState<string | null>(null);
 
   return (
     <article className="wrapup-card admin-request">
@@ -143,8 +151,39 @@ function RequestCard({
         />
       </label>
 
+      <label className="admin-inline-field">
+        <span>반려 사유</span>
+        <input
+          type="text"
+          placeholder="반려 사유 입력(필수)"
+          value={rejectReason}
+          onChange={(event) => {
+            setRejectReason(event.target.value);
+            if (rejectError !== null) {
+              setRejectError(null);
+            }
+          }}
+        />
+      </label>
+      {rejectError !== null ? (
+        <p className="header-error" role="alert">
+          {rejectError}
+        </p>
+      ) : null}
+
       <div className="blacklist-actions">
-        <button type="button" className="btn-outline" onClick={onReject}>
+        <button
+          type="button"
+          className="btn-outline"
+          onClick={() => {
+            const reason = rejectReason.trim();
+            if (reason.length === 0) {
+              setRejectError(REJECT_REASON_REQUIRED_MESSAGE);
+              return;
+            }
+            onReject(reason);
+          }}
+        >
           반려
         </button>
         <button

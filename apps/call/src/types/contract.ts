@@ -139,6 +139,21 @@ export interface ComplianceFinding {
   alternative_source?: DocumentSource;
 }
 
+/**
+ * C-1~C-4 컴플라이언스 **검사 실패** 신호 — 위반이 없다는 뜻이 아니다(부록 A-1).
+ * 서버 `services/call-mediator/src/app/ports.ts`(`ComplianceUnavailable`)를 그대로 따른다.
+ * `status`는 고정된 값 집합이 아니다 — HTTP 상태 코드를 문자열로 바꾼 것("501" 등)
+ * · "연결 실패" · "알 수 없음"(`call_registry.ts`의 `statusOf()`) 중 하나가 온다.
+ *
+ * 2026-09-22 — `compliance`(위반 있음)와 구분해서 온다. 이걸 `compliance`와 같은 채널로
+ * 합치면 "검사가 죽었다"가 "위반 없음"으로 보인다 — 그래서 별도 타입·별도 콜백이다.
+ */
+export interface ComplianceUnavailable {
+  call_id: string;
+  segment_id: number;
+  status: string;
+}
+
 /** 자동 트리거(B-1)로 뜬 카드인지, 상담원이 직접 찾은 카드인지. */
 export type CardSourceType = "auto" | "manual";
 

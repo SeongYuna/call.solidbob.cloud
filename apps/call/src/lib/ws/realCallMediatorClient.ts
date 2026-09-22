@@ -5,6 +5,7 @@ import type {
   ClosureEvent,
   ClosureVerdict,
   ComplianceFinding,
+  ComplianceUnavailable,
   DemoDomain,
   DocumentSource,
   ManualSearchRequest,
@@ -23,6 +24,7 @@ type ParsedMessage =
   | { kind: "recommendation_pending"; payload: { call_id: string } }
   | { kind: "call_guard"; payload: { segment_id: string; flags: CallGuardFlag[] } }
   | { kind: "compliance"; payload: { segment_id: string; findings: ComplianceFinding[] } }
+  | { kind: "compliance_unavailable"; payload: { segment_id: string; event: ComplianceUnavailable } }
   | { kind: "closure"; payload: ClosureEvent };
 
 export class RealCallMediatorClient implements CallMediatorClient {
@@ -157,6 +159,10 @@ export class RealCallMediatorClient implements CallMediatorClient {
       }
       return;
     }
+    if (message.kind === "compliance_unavailable") {
+      listeners.onComplianceUnavailable?.(message.payload.segment_id, message.payload.event);
+      return;
+    }
     listeners.onClosure(message.payload);
   }
 }
@@ -174,6 +180,7 @@ export function parseCallMediatorMessage(value: unknown): ParsedMessage | null {
     tagged === "recommendation_pending" ||
     tagged === "call_guard" ||
     tagged === "compliance" ||
+    tagged === "compliance_unavailable" ||
     tagged === "closure"
   ) {
     const inner = isRecord(body.payload) ? body.payload : body;
@@ -200,6 +207,7 @@ function parseByKind(
     | "recommendation_pending"
     | "call_guard"
     | "compliance"
+    | "compliance_unavailable"
     | "closure",
   body: Record<string, unknown>,
 ): ParsedMessage | null {
@@ -221,6 +229,10 @@ function parseByKind(
   }
   if (kind === "compliance") {
     const payload = parseCompliance(body);
+    return payload === null ? null : { kind, payload };
+  }
+  if (kind === "compliance_unavailable") {
+    const payload = parseComplianceUnavailable(body);
     return payload === null ? null : { kind, payload };
   }
   const payload = parseClosure(body);
@@ -298,6 +310,23 @@ function parseCompliance(
     findings.push(finding);
   }
   return { segment_id, findings };
+}
+
+/**
+ * `ComplianceUnavailable` 그대로(`services/call-mediator/src/app/ports.ts`) — 검사가
+ * 실패했다는 신호다. `status`는 고정 값 집합이 아니라 자유 문자열이라(`statusOf()`)
+ * enum 검증 없이 `readString`으로만 받는다.
+ */
+function parseComplianceUnavailable(
+  body: Record<string, unknown>,
+): { segment_id: string; event: ComplianceUnavailable } | null {
+  const call_id = readString(body, "call_id");
+  const segment_id = readString(body, "segment_id");
+  const status = readString(body, "status");
+  if (call_id === null || segment_id === null || status === null) {
+    return null;
+  }
+  return { segment_id, event: { call_id, segment_id: Number(segment_id), status } };
 }
 
 function unwrapPayload(value: unknown): Record<string, unknown> | null {
