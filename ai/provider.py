@@ -95,7 +95,7 @@ def build_model_retriever(
     rerank_candidates: int = 5,
     device: str | None = None,
     cache_size: int = 1024,
-    no_answer_abstain: bool = True,
+    no_answer_abstain: bool = False,
 ) -> tuple[RetrievalPort, list[str]]:
     """임베딩(+리랭킹) 검색 — **실측으로 고른 구성**을 만든다(`_project/decisions/206`).
 
@@ -139,8 +139,9 @@ def build_model_retriever(
     # 리랭커가 켜지면 1순위 점수가 로짓으로 바뀌어 이 값이 의미를 잃는다 — 그 구성의 문턱은 잰 적이 없으니 걸지 않는다.
     from retrieval.adapter.outbound.es_dense_retriever import NO_ANSWER_MIN_SCORE
 
-    # `no_answer_abstain=False` 는 **문턱을 재는 스크립트**(`measure_no_answer_threshold.py`)만 쓴다 — 기권한 항목은
-    # 1순위 점수가 안 남아 분포를 못 잰다. 운영(`server/main.py`)과 하네스는 기본값 그대로다.
+    # ⚠ **기본은 꺼짐이다(2026-09-22, `decisions/215` 보류).** 채택 당일 E2E 24건에서 대화체 발화의 dense 1순위가
+    # 0.60~0.67 에 몰려 발동 추천의 60%(114/189)가 기권했고 SYN-015·017 의 필요서류 절차가 사라졌다 — 운영(`server/main.py`)은
+    # 기본값으로 부르므로 문턱이 걸리지 않는다. 장치(`FallbackRetriever(abstain_below=...)`)는 대화체 표본으로 다시 잴 때 켠다.
     abstain_below = NO_ANSWER_MIN_SCORE if (no_answer_abstain and "rerank" not in layers) else None
     port: RetrievalPort = FallbackRetriever(primary, bm25, abstain_below=abstain_below)
     if cache_size > 0:

@@ -2,7 +2,7 @@
 title: "B-6 「관련 문서 없음」 문턱 값을 정한다 — 팀 결정"
 assignee: "류준"
 role: "ai"
-status: "in-progress"
+status: "done"
 sprint: 6
 priority: 62
 date: 2026-09-22
@@ -48,3 +48,7 @@ paths:
 
 **남은 것** — 임베딩이 운영에 실린 뒤(`decisions/124`) SYN-010 을 다시 넣어 맞장구에 카드가 안 뜨는지 확인하면 done.
 화면은 누적 카드가 0장일 때만 빈 상태 문구(팝업 「관련 문서가 아직 없습니다.」)를 띄운다 — 요청 단위 「관련 문서 없음」 표시는 없다(조서희 님 소관, 미결 B-6 항목).
+
+## 2026-09-22 (저녁) — 보류로 닫는다 (류준)
+
+결정은 났다 — **보류**(`decisions/215` 갱신). 채택 직후 E2E 24건에서 대화체 발화의 60%(114/189)가 기권했고 SYN-015·017 필요서류 절차가 사라져 **운영에 걸지 않는다.** 장치는 남기고 기본값을 껐다(`ai/provider.py` `no_answer_abstain=False`, 테스트로 고정). 대화체 표본으로 다시 재는 일은 [w6-b6-conversational-recalibration](/backlog/w6-b6-conversational-recalibration/) 으로 넘긴다.

@@ -153,13 +153,23 @@ def _fallback_of(port):
     return inner
 
 
-def test_dense_only_gets_no_answer_threshold(monkeypatch, tmp_path):
-    """B-6 기권 문턱은 dense 코사인 눈금으로 잰 값이라 dense 단독 구성에만 건다(decisions/215)."""
+def test_threshold_is_off_by_default(monkeypatch, tmp_path):
+    """B-6 기권 문턱은 보류다(decisions/215, 2026-09-22) — 운영(server/main.py)이 기본값으로 부르므로 꺼져 있어야 한다."""
+    from provider import build_model_retriever
+
+    _fake_model_modules(monkeypatch)
+    port, layers = build_model_retriever(FakeClient(), embed_model_dir=tmp_path, cache_size=0)
+    assert layers == ["retrieval_dense"]
+    assert _fallback_of(port)._abstain_below is None
+
+
+def test_dense_only_gets_no_answer_threshold_when_opted_in(monkeypatch, tmp_path):
+    """켜면 dense 코사인 눈금으로 잰 값이라 dense 단독 구성에만 건다(decisions/215)."""
     from provider import build_model_retriever
     from retrieval.adapter.outbound.es_dense_retriever import NO_ANSWER_MIN_SCORE
 
     _fake_model_modules(monkeypatch)
-    port, layers = build_model_retriever(FakeClient(), embed_model_dir=tmp_path, cache_size=0)
+    port, layers = build_model_retriever(FakeClient(), embed_model_dir=tmp_path, cache_size=0, no_answer_abstain=True)
     assert layers == ["retrieval_dense"]
     assert _fallback_of(port)._abstain_below == NO_ANSWER_MIN_SCORE == 0.67
 
@@ -170,7 +180,7 @@ def test_rerank_config_gets_no_threshold(monkeypatch, tmp_path):
 
     _fake_model_modules(monkeypatch)
     port, layers = build_model_retriever(
-        FakeClient(), embed_model_dir=tmp_path, rerank_model_dir=tmp_path, cache_size=0
+        FakeClient(), embed_model_dir=tmp_path, rerank_model_dir=tmp_path, cache_size=0, no_answer_abstain=True
     )
     assert layers == ["retrieval_dense", "rerank"]
     assert _fallback_of(port)._abstain_below is None

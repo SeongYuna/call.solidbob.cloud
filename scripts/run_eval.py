@@ -125,7 +125,7 @@ def build_masking(ner_model_dir: Path | None) -> LayeredMaskingAdapter:
 RETRIEVERS = ("bm25", "dense", "rerank-dense", "hybrid")
 
 
-def build_retriever(client, *, index: str, kind: str, device: str | None = None, no_answer_abstain: bool = True):
+def build_retriever(client, *, index: str, kind: str, device: str | None = None, no_answer_abstain: bool = False):
     """검색 구성. 기본은 **운영과 같은 BM25** 다 — 운영에 임베딩이 켜지기 전까지 하네스 기본값이 운영을 앞서가면
     기록된 수치가 운영 품질로 읽힌다. 나머지는 `decisions/206` 의 비교 대상이다(`scripts/compare_retrievers.py`)."""
     if kind == "bm25":
@@ -138,7 +138,7 @@ def build_retriever(client, *, index: str, kind: str, device: str | None = None,
             client, index=index, device=device,
             embed_model_dir=ROOT / "models" / "koe5",
             rerank_model_dir=ROOT / "models" / "bge-reranker-v2-m3" if kind == "rerank-dense" else None,
-            no_answer_abstain=no_answer_abstain,  # B-6 기권 문턱(decisions/215) — 끄는 것은 문턱 측정 스크립트뿐
+            no_answer_abstain=no_answer_abstain,  # B-6 기권 문턱(decisions/215) — 보류라 기본 꺼짐(운영과 같게)
         )
         expected = ["retrieval_dense"] + (["rerank"] if kind == "rerank-dense" else []) + ["retrieval_cache"]
         if layers != expected:
