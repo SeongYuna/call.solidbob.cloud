@@ -28,15 +28,22 @@ WORKDIR /app
 COPY server/requirements.txt /tmp/server-requirements.txt
 COPY ai/requirements.txt /tmp/ai-requirements.txt
 
-# `ai/requirements.txt` 전체를 설치하지 않는다. 거기엔 torch·transformers 가 있어
-# 이미지가 수 GB 가 되는데, **요청 경로가 ai/ 에서 실제로 쓰는 서드파티는 elasticsearch 하나**다
-# (retrieval 트리의 서드파티 import 전수 확인 — 티켓 w3-aws-deploy).
+# `ai/requirements.txt` 전체를 설치하지 않는다 — 필요한 것만 골라 넣는다.
 #
 # 버전을 여기 손으로 적지 않고 ai/requirements.txt 에서 뽑는다. 두 곳에 적으면 어긋나고,
 # 어긋나면 ES 서버에 아예 붙지 않는다 (`decisions/020` 실측 —
 # 'Accept version must be either version 8 or 7, but found 9').
 RUN pip install -r /tmp/server-requirements.txt \
  && pip install "$(grep -E '^elasticsearch==' /tmp/ai-requirements.txt)"
+
+# 모델 실행 환경 (2026-09-22, `_project/decisions/124` — NER·임베딩을 운영 노드 CPU 에 싣는다).
+# **CPU 판 torch 만** 넣는다 — PyPI 기본 torch 는 CUDA 라이브러리가 딸려 수 GB 인데 t3.large 에는 GPU 가 없다.
+# 인덱스 순서가 중요하다: cpu 인덱스를 첫째로 두고 PyPI 는 나머지 의존성용이다.
+# 모델 파일은 이미지에 넣지 않는다 — 노드의 /opt/callguard/models 를 파드 /models 로 붙인다(server.yaml).
+# `PII_NER_MODEL_DIR`·`RETRIEVAL_EMBED_MODEL_DIR` 가 비어 있으면 이 층은 그냥 잠들어 있고 규칙·BM25 로 돈다.
+RUN pip install --index-url https://download.pytorch.org/whl/cpu --extra-index-url https://pypi.org/simple \
+      "$(grep -E '^torch==' /tmp/ai-requirements.txt)" \
+ && pip install $(grep -E '^(transformers|huggingface_hub|sentencepiece|numpy)==' /tmp/ai-requirements.txt)
 
 # main.py 가 기대하는 배치 그대로 둔다: /app/server/main.py 와 /app/ai/apps/ · /app/ai/provider.py
 COPY server/ /app/server/
