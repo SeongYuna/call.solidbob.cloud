@@ -10,6 +10,7 @@ requirement:
   - "A-1"
   - "C-5"
 depends_on:
+  - "w5-manual-qa-full-stack"
   - "w4-dashboard-live-contract"
 paths:
   - "apps/call/src/*"

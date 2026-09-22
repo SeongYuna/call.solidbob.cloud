@@ -6,6 +6,8 @@ status: "todo"
 sprint: 6
 priority: 77
 date: 2026-09-21
+depends_on:
+  - "w5-manual-qa-full-stack"
 requirement:
   - "SEC-2"
 paths:

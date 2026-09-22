@@ -6,6 +6,8 @@ status: "todo"
 sprint: 7
 priority: 80
 date: 2026-09-21
+depends_on:
+  - "w5-manual-qa-full-stack"
 paths:
   - "infra/k8s/base/*"
 ---
