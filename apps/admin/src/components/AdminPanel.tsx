@@ -86,6 +86,9 @@ export function AdminPanel({
   const resolveGap = useAdminStore((s) => s.resolveGap);
   const callGuardTotal = useAdminStore((s) => s.callGuardTotal);
   const completedCallsTotal = useAdminStore((s) => s.completedCallsTotal);
+  const statsPendingRequests = useAdminStore((s) => s.statsPendingRequests);
+  const statsActiveEntries = useAdminStore((s) => s.statsActiveEntries);
+  const statsCountedAt = useAdminStore((s) => s.statsCountedAt);
   const veteranThresholdYears = useAdminStore((s) => s.veteranThresholdYears);
   const setVeteranThresholdYears = useAdminStore((s) => s.setVeteranThresholdYears);
   const blacklistExpiryMonths = useAdminStore((s) => s.blacklistExpiryMonths);
@@ -175,8 +178,9 @@ export function AdminPanel({
               <WallboardTab
                 completedCallsTotal={completedCallsTotal}
                 callGuardTotal={callGuardTotal}
-                pendingRequestCount={pendingCount}
-                activeEntryCount={activeEntryCount}
+                pendingRequestCount={statsPendingRequests}
+                activeEntryCount={statsActiveEntries}
+                countedAt={statsCountedAt}
               />
             ) : null}
             {tab === "requests" ? (

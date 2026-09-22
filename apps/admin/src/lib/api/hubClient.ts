@@ -228,34 +228,52 @@ export async function releaseBlacklistEntryApi(
   return toEntryItem(wire.entry);
 }
 
-// ── GET /hub/calls (인증 불필요 — 총 건수만 쓴다) ───────────────────────────
+// ── GET /hub/admin-stats ───────────────────────────────────────────────────
 
-/** 현황판 "완료 통화 누적". `call_list_router`에는 `require_admin`이 없다. */
-export async function fetchCallListTotal(): Promise<number> {
-  let response: Response;
-  try {
-    response = await fetch(`${apiBaseUrl()}/hub/calls?limit=1`, {
-      headers: { "ngrok-skip-browser-warning": "1" },
-    });
-  } catch (error) {
-    throw new HubApiError(
-      error instanceof Error ? `서버에 연결하지 못했다: ${error.message}` : "서버에 연결하지 못했다.",
-      null,
-    );
-  }
-  if (!response.ok) {
-    throw new HubApiError(`요청이 실패했다 (${response.status})`, response.status);
-  }
-  const body = (await response.json()) as { total: string };
-  return toNum(body.total);
+export interface AdminStats {
+  callsTotal: number;
+  /** 현황판 "완료 통화 누적"이 쓰는 값 — `calls_total`(시작된 통화 전체)이 아니라
+   * 닫힌 통화만 센다. 라벨이 "완료"이므로 이쪽이 맞다(2026-09-22 정정). */
+  callsClosed: number;
+  callGuardFlags: number;
+  pendingRequests: number;
+  activeEntries: number;
+  routingDecisions: number;
+  routingBlacklisted: number;
+  routingFellBack: number;
+  countedAt: string;
 }
 
-// ── GET /hub/call-guard-flags ─────────────────────────────────────────────
+interface AdminStatsResponseWire {
+  calls_total: string;
+  calls_closed: string;
+  call_guard_flags: string;
+  pending_requests: string;
+  active_entries: string;
+  routing_decisions: string;
+  routing_blacklisted: string;
+  routing_fell_back: string;
+  counted_at: string;
+}
 
-/** 현황판 "콜가드 경고 누적" 하나만 쓴다 — 개별 항목 화면은 아직 없다. */
-export async function fetchCallGuardFlagTotal(accessToken: string): Promise<number> {
-  const wire = await authedGet<{ total: string }>("/hub/call-guard-flags?limit=1", accessToken);
-  return toNum(wire.total);
+/**
+ * 현황판 숫자를 한 번에 준다 — 예전엔 목록 API 넷을 `limit=1`로 불러 `total`만
+ * 뽑거나(완료 통화·콜가드) 클라이언트에서 목록을 세는 방식(승인 대기·활성
+ * 등록)이었다(2026-09-22, `fetchCallListTotal`·`fetchCallGuardFlagTotal` 대체).
+ */
+export async function fetchAdminStats(accessToken: string): Promise<AdminStats> {
+  const wire = await authedGet<AdminStatsResponseWire>("/hub/admin-stats", accessToken);
+  return {
+    callsTotal: toNum(wire.calls_total),
+    callsClosed: toNum(wire.calls_closed),
+    callGuardFlags: toNum(wire.call_guard_flags),
+    pendingRequests: toNum(wire.pending_requests),
+    activeEntries: toNum(wire.active_entries),
+    routingDecisions: toNum(wire.routing_decisions),
+    routingBlacklisted: toNum(wire.routing_blacklisted),
+    routingFellBack: toNum(wire.routing_fell_back),
+    countedAt: wire.counted_at,
+  };
 }
 
 // ── GET /hub/knowledge-gaps ───────────────────────────────────────────────
