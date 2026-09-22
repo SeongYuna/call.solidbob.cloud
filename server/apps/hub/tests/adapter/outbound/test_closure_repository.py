@@ -40,3 +40,15 @@ def test_실제_DB에_헤더와_항목이_순서대로_남는다(integration_set
     head, items = asyncio.run(scenario())
     assert head == ("DASAN-TERM-4.4", "incomplete", True, "DASAN-TERM-4.4")
     assert items == [(1, "신고서", True), (2, "신고인 신분증", False)]
+
+
+@pytest.mark.integration
+def test_없는_통화면_원시_FK_오류가_아니라_CallNotStartedError다(integration_settings):
+    """전엔 23503 이 그대로 올라가 500 이었다 — 호출자 실수는 404 여야 한다(`decisions/318`)."""
+    from hub.adapter.outbound.postgres.connection import build_connection_factory
+    from hub.app.ports.output.transcript_ingest_record_port import CallNotStartedError
+
+    repo = PostgresClosureRepository(build_connection_factory(integration_settings))
+    with pytest.raises(CallNotStartedError):
+        asyncio.run(repo.record(ClosureVerdict(call_id="it_f2_없는통화", procedure="DASAN-TERM-4.4",
+                                               evidence={"신고서": True}, verdict="complete")))

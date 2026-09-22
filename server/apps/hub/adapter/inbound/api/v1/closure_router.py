@@ -11,6 +11,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from hub.adapter.inbound.api.schemas.closure_schema import ClosureCheckRequest, ClosureVerdictResponse
 from hub.app.dtos.closure_dto import ClosureCheckCommand
 from hub.app.ports.input.closure_check_use_case import ClosureCheckUseCase
+from hub.app.ports.output.transcript_ingest_record_port import CallNotStartedError
 from hub.dependencies.closure_provider import get_closure_check_use_case
 
 closure_router = APIRouter(prefix="/hub", tags=["hub"])
@@ -27,4 +28,9 @@ async def check_closure(
         )
     except ValueError as exc:
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=str(exc)) from exc
+    except CallNotStartedError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"통화가 없습니다: {body.call_id} — POST /hub/calls 가 먼저 와야 한다",
+        ) from exc
     return ClosureVerdictResponse.from_dto(verdict)

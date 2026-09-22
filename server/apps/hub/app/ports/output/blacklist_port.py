@@ -43,8 +43,8 @@ class BlacklistPort(ABC):
         요청자가 상담원 마스터에 없으면 `UnknownAgent`."""
 
     @abstractmethod
-    async def list_requests(self, status: str | None = None) -> list[BlacklistRequest]:
-        """관리자 승인요청창이 읽는 목록."""
+    async def list_requests(self, status: str | None = None, requested_by: str | None = None) -> list[BlacklistRequest]:
+        """관리자 승인요청창이 읽는 목록. `requested_by` 를 주면 그 상담원이 올린 것만 — 「내 요청」(`w6-agent-my-requests-api`)."""
 
     @abstractmethod
     async def decide(

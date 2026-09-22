@@ -22,8 +22,8 @@ class StubBlacklist(BlacklistPort):
         self.calls.append(("save", request))
         return replace(request, request_id="7", requested_at=NOW, evidence_snapshot_at=NOW)
 
-    async def list_requests(self, status=None):
-        self.calls.append(("list_requests", status))
+    async def list_requests(self, status=None, requested_by=None):
+        self.calls.append(("list_requests", status) if requested_by is None else ("list_requests", status, requested_by))
         return []
 
     async def decide(self, request_id, *, approve, decided_by, expires_at, note):
