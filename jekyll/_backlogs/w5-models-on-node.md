@@ -25,9 +25,9 @@ depends_on:
 
 - [x] ① ~~류준 님~~ **정성윤(09-22)** — 류준 님 맥 자격증명 문제로 방향을 바꿔(류준 님 09-22 메시지) 이 머신(WSL)에서 HF 로 받아 올렸다. `koe5` 2.2GB · `koelectra-ner` 430MB · 파일 20개 · 해시 목록 `s3://assist-apne2/models/models-sha256.txt`. ⚠ **류준 님 로컬 폴더와의 해시 대조는 아직이다** — 류준 님이 `find koe5 koelectra-ner -type f | sort | xargs shasum -a 256` 결과를 보내면 대조한다
 - [x] ② PR(09-22) — 서버 이미지 torch CPU 휠 · 파드 hostPath `/opt/callguard/models` · 메모리 상한 1 Gi → 3 Gi · 태그 `0.1.26` · 런북 11장 「실물 — CPU 노드에 모델 싣기」 · 머리말 다섯 번째 정정
-- [ ] ③ 노드로 받기 — SSM `aws s3 sync` (디스크 여유 19 GB, 09-22)
-- [ ] ④ 벡터 재적재 — 새 이미지의 서버 파드 안에서 `index_knowledge_base.py --to-es --recreate`. **임베딩 켜기 전에**
-- [ ] ⑤ 하나씩 켜기 — `server-env` 백업 → `PII_NER_MODEL_DIR` → `spokes` 확인 → `RETRIEVAL_EMBED_MODEL_DIR` → 확인. 메모리·재시작 횟수
+- [x] ③(09-22 정성윤, HASH-OK) 노드로 받기 — SSM `aws s3 sync` (디스크 여유 19 GB, 09-22)
+- [x] ④(09-22, 100청크·1024차원 벡터 확인) 벡터 재적재 — 새 이미지의 서버 파드 안에서 `index_knowledge_base.py --to-es --recreate`. **임베딩 켜기 전에**
+- [x] ⑤(09-22 — `/health` spokes 에 `pii_ner`·`retrieval_dense`·`retrieval_cache`, 재시작 0, 노드 여유 3.2GB) 하나씩 켜기 — `server-env` 백업 → `PII_NER_MODEL_DIR` → `spokes` 확인 → `RETRIEVAL_EMBED_MODEL_DIR` → 확인. 메모리·재시작 횟수
 - [ ] ⑥ 검증 — SYN-010 합성 통화 1건, 검색 구간 p95 ≤ 1,000 ms, 이름만 넣은 발화 마스킹
 - [ ] ⑦ 류준 님 — `run_eval.py --runs 3 --record` 로 모델 구성 값을 실행 ID 와 함께
 
