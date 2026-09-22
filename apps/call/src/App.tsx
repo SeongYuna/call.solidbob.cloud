@@ -33,6 +33,7 @@ export function App(): ReactElement {
 
   const phase = useCallStore((state) => state.phase);
   const shell = useCallStore((state) => state.shell);
+  const mode = useCallStore((state) => state.mode);
   const viewMode = useCallStore((state) => state.viewMode);
   const historyView = useCallStore((state) => state.historyView);
   const summaryReturn = useCallStore((state) => state.summaryReturn);
@@ -129,7 +130,10 @@ export function App(): ReactElement {
                 onLeaveToStandby={leaveToStandby}
               />
             </main>
-            <AgentCallBox session={agentCall} />
+            {/* 합성 통화 재생(mock 시나리오)에는 받을 실제 전화가 없다 — 재생 중엔
+                이 "통화받기" 모달이 자막을 덮지 않게 아예 안 띄운다. 실제 라이브
+                통화(mode==="live")에서의 동작은 그대로 유지한다(2026-09-22). */}
+            {mode === "live" ? <AgentCallBox session={agentCall} /> : null}
           </>
         )}
       </div>
