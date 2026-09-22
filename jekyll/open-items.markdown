@@ -410,7 +410,7 @@ Google STT → 로컬 server 마스킹 → 대시보드 WS 까지 관통했다. 
 Environment Variables → **Production 만** → Deployments → Redeploy(`VITE_` 는 빌드 때 박힌다) → 확인: 번들에 `call-mediator/ws` 가 들어갔는지 ·
 대시보드를 연 동안 `/call-mediator/health` 의 `dashboards` 가 1 이 되는지.
 
-- [ ] **A / B / C 중 무엇으로 할지** — 조서희 님(대시보드) · 정성윤(Vercel). 정하면 위 「뷰 토큰을 대시보드에 어떻게 줄지」와 함께 닫는다
+- [x] **A / B / C 중 무엇으로 할지** — ✅ **2026-09-21 닫음 — 라이브로 둔다**(`_project/decisions/127`). 09-17 에 Vercel 변수로 이미 B 가 돼 있었고 그 상태를 기록했다. 번들의 뷰 토큰은 마스킹된 자막 구독만 열고, 발화를 보내는 문과 STT 과금 문은 번들 밖이다. 원문 — 조서희 님(대시보드) · 정성윤(Vercel). 정하면 위 「뷰 토큰을 대시보드에 어떻게 줄지」와 함께 닫는다
 - [x] **⚠ `?call_mediator=` 가 아무 WebSocket 주소나 받아 저장한다 — 운영 대시보드에 이미 떠 있었다 (신규, 2026-09-11 · 2026-09-14 해결)** —
   `apps/call/src/lib/ws/types.ts`(옛 `apps/dashboard`) 가 `ws://`·`wss://` 로 **시작만 하면** 받아 localStorage 에 남기고 있었다(PR #70 으로 배포,
   운영 번들 `index-ZZuCSHQN.js` 에 `callguard:callMediatorUrlOverride` 확인). 그래서 `call.solidbob.cloud/?call_mediator=wss://<남의 서버>/ws` 링크
@@ -493,7 +493,7 @@ Environment Variables → **Production 만** → Deployments → Redeploy(`VITE_
 
 ### 운영 스키마가 배포보다 늦게 따라간다 (신규, 2026-09-14)
 
-- [ ] **「머지 = 배포」인데 스키마는 사람 손이라 구조적으로 뒤따라간다** — ⚠ **구조적 위험은 그대로 열려 있다. 다만 2026-09-20 현재 «실제로 어긋난 것은 없다»** — 운영 DB 와 `db/schema.sql` 을 **컬럼 단위로** 대조해 **29 테이블 198 컬럼, 타입·길이·NULL 여부까지 어긋남 0** 을 확인했다(`scripts/compare_prod_schema.py` 신설 — 일부러 어긋나게 만든 사본으로 **탐지되는지 먼저 검증**했다. 지금까지 대조는 테이블 「이름」까지였다). **배포마다 이 대조를 돌리면 구멍이 드러난다.** 원문 — 09-14 에 실제로 났다.
+- [ ] **「머지 = 배포」인데 스키마는 사람 손이라 구조적으로 뒤따라간다** — ◐ **2026-09-21 방식을 정했다 — 구현은 남았다**(`_project/decisions/128`): 릴리스 워크플로가 적용 전에 SSM 으로 대조하고 어긋나면 멈춘다(`w6-deploy-schema-precheck`). 원문 — ⚠ **구조적 위험은 그대로 열려 있다. 다만 2026-09-20 현재 «실제로 어긋난 것은 없다»** — 운영 DB 와 `db/schema.sql` 을 **컬럼 단위로** 대조해 **29 테이블 198 컬럼, 타입·길이·NULL 여부까지 어긋남 0** 을 확인했다(`scripts/compare_prod_schema.py` 신설 — 일부러 어긋나게 만든 사본으로 **탐지되는지 먼저 검증**했다. 지금까지 대조는 테이블 「이름」까지였다). **배포마다 이 대조를 돌리면 구멍이 드러난다.** 원문 — 09-14 에 실제로 났다.
   PR #79 머지 → `release.yml` 자동 → server `0.1.5` 가 06:33 배포됐는데 운영 DB 는 22 테이블(`fd96adc`, 09-09)
   이었다. 런북 19장이 「**이미지를 올리기 전에** 스키마를 넣는다」고 적어 뒀지만 **사람이 끼어들 지점이 없다.**
   ⚠ **`/health` 는 이 상태에서도 `ok` 다**(`0.1.5` 기대 출력과 일치) — 배포 판정으로는 안 드러나고
@@ -665,7 +665,7 @@ Environment Variables → **Production 만** → Deployments → Redeploy(`VITE_
   → **2026-09-15 조서희가 처리** — `hubClient.ts`에 `fetchRoutingSetting`·`saveRoutingSetting` 추가,
   `adminStore.ts`의 `loadAll`이 로그인 직후 현재값을 받고 `setVeteranThresholdYears`가 `PUT`으로 저장(저장 성공 응답으로만 상태 갱신 — 실패해도 화면 값이 서버와 어긋나지 않는다).
   `SettingsTab.tsx` 입력 상한을 서버 값(0.5~40)에 맞추고 «연결 안 됨» 문구 걷어냄. 배정 판정을 실제로 부르는 쪽(아래 항목)은 그대로 미결.
-- [ ] **J-5 배정 판정을 부르는 곳이 없다 (2026-09-15, `decisions/313`)** — 교환기가 없고 콜 미디에이터도 부르지 않는다. 판정 API 는 인증도 없다(통화 시작과 같은 한계).
+- [ ] **J-5 배정 판정을 부르는 곳이 없다 (2026-09-15, `decisions/313`)** — ◐ **2026-09-21 정했다 — 구현은 남았다**(`_project/decisions/126`): 콜 미디에이터가 통화 시작 직후 부르고, 통화 종료는 화면 버튼 그대로다. 열쇠 꽂기 뒤에 구현한다(`w7-j5-routing-caller`). 원문 — 교환기가 없고 콜 미디에이터도 부르지 않는다. 판정 API 는 인증도 없다(통화 시작과 같은 한계).
   **정할 것**: 데모에서 콜 미디에이터 `/dev` 테스트 콜이 통화 시작 직후 부르게 할지 · `routing_log.fell_back` 집계를 관리자 현황판에 올릴지
   **2026-09-15 정성윤 확인** — 콜 미디에이터가 서버로 보내는 것은 `POST /hub/calls` 하나뿐이다(`adapters/hub_http.ts:33`).
   배정 판정 호출은 코드에 없다. 프론트는 관여하지 않는다(화면이 부르는 API 가 아니다).
@@ -779,6 +779,7 @@ Environment Variables → **Production 만** → Deployments → Redeploy(`VITE_
 - ✅ **09-18 처리 결과(같은 날 2차)** — ①②④⑤⑥⑦ 반영 후 E2E **24건 ✅22·❌2**(`data/processed/persona-e2e/2026-09-18-1653.md`·`1655.md`). 남은 ❌ 2 = **SYN-011(3.14)·021(2.9) 검색 순위** — BM25 상위 5 에 정답 조항이 없어 필요서류 판정이 없다 → `decisions/208`(운영 임베딩). ③ 은 「카드 순서대로 규칙 있는 첫 조항」으로 바꿨다(콜 미디에이터 `0.2.1`) → **2026-09-21 로컬 재검사: dense 만 켜도 둘 다 ✅(리랭커 불필요). 대신 SYN-023 이 새로 ❌ — 아래 「진행 중 티켓을 닫으며 남긴 것」**
 - [ ] **장민석 님 검토 요청 — 09-18 서버 변경(`0.1.18`, `decisions/302` 로 류준이 고침)** — ① `closure_rule` 에서 `decisions/305` 가 EXCLUDED 로 뒀던 2.6·4.5·4.9·4.12 를 되살렸다(갈래 공통 서류만 필수, 갈래별은 conditional) — 305 취지와 맞는지 ② 이름 규칙의 가족 호칭 문맥이 「아버지가 장애인이에요」 류를 `_NOT_NAMES` 목록으로만 막는다(실제 발화 신규 오탐 0) ③ P4 재라벨이 뒤의 「이」 한 글자를 함께 가린다(의도) ④ **`compliance_flag` 저장 배선(신규)** — `compliance_rule` 카탈로그를 저장 직전 UPSERT 로 채우는 것(대안: `scripts/seed_compliance_rules.py`) · `default_severity` 전부 `medium`(등급 정의 없음) · 저장 실패를 응답에서 숨기는 정책(콜 가드는 500)
 - [ ] **대시보드 컴플라이언스 경고가 서버 결과가 아니라 프론트 로컬 규칙(`apps/call/src/lib/compliance/detectComplianceRisk.ts`)이다 — 조서희** — 서버는 이제 검사·저장까지 한다(콜 미디에이터 `0.2.1`). 콜 미디에이터 `compliance` 메시지 파서를 추가하면 `announceCompliance` 를 켤 수 있다(정성윤 — `main.ts`)
+  - **→ 09-22 켰다(정성윤, call-mediator `0.2.3`, `w6-compliance-broadcast`)** — 파서는 `349b18b` 로 main 에 있다. 조서희 님 요청으로 **검사 실패 신호 `compliance_unavailable`** 을 함께 넣었다(위반 = `compliance` · 실패 = `compliance_unavailable` · 없음 = 침묵). 남은 것은 프론트 몫 — 이 타입의 파서와 화면(3단계, `w6-compliance-alert-ui`) · 로컬 규칙(`detectComplianceRisk.ts`)을 걷을지
 - [ ] **4.20 과태료 이의신청·4.8·3.3·6.12 는 규칙표에 없다(의도)** — 「— 필요서류」 조항이 아니다. 대본 SYN-006·007·012 는 `required_documents` 를 비워 「판정 0건이 정상」. 4.20 본문의 이의신청서·소명 자료를 규칙으로 둘지는 장민석 님 판단
 
 ### 09-19 세션에서 남긴 것 (신규, 2026-09-19, 정성윤)
@@ -900,12 +901,12 @@ Environment Variables → **Production 만** → Deployments → Redeploy(`VITE_
 
 낡은 **서술**은 고쳤다([w5-stale-docs-sweep](/backlog/w5-stale-docs-sweep/)). 아래는 서술이 아니라 **결정이나 코드 작업**이 필요해 남긴 것이다.
 
-- [ ] **팀 — 개발기간과 스프린트 수가 안 맞는다** — 개발기간은 **10-27** 까지인데 1주 1스프린트 × 8 은 **10-14** 에 끝난다(`STATE.md` 가 8주차를 10-08~10-14 로 적는다).
+- [x] **팀 — 개발기간과 스프린트 수가 안 맞는다** — ✅ **2026-09-21 닫음**(`_project/decisions/129`): 8스프린트는 10-14 에 끝나고 10-15 ~ 10-27 은 새 기능 없는 「마감 기간」이다. ⚠ 팀에 묻지 않고 PM 이 기본값으로 정했다 — 발표일을 아는 사람은 알려 주면 고친다. 원문 — 개발기간은 **10-27** 까지인데 1주 1스프린트 × 8 은 **10-14** 에 끝난다(`STATE.md` 가 8주차를 10-08~10-14 로 적는다).
   남는 약 2주가 무엇인지(발표 준비·버퍼·마감 정리) 어디에도 적혀 있지 않다. `w8-*` 티켓의 마감일이 여기에 걸린다
 - [x] ✅ **2026-09-22 달았다**(`_project/decisions/315`, 코드, 운영 배포 전 — 프론트가 토큰을 싣게 바뀐 뒤 머지). 원문 — **장민석 님 — `POST /hub/calls/{id}/close` 와 카드 피드백에 상담원 토큰 가드가 없다** — `server/main.py` 주석은 「대시보드가 직접 부르는 쓰기(`/close`·요약 확정·카드 피드백)는
   사람 토큰(`require_agent`) 몫」이라고 적는데, **실제로 걸린 것은 요약 확정·재수정뿐**이다(`postcall_router.py`·`card_feedback_router.py` 에 `require_agent` 0회, 2026-09-21 grep).
   서비스 토큰 문(`decisions/120`)도 이 둘은 비껴간다 → **두 경로는 어느 토큰도 요구하지 않는다.** 읽기 경로(통화 목록·전사·기록)가 무인증인 것은 기존 미결과 같은 건이다
-- [ ] **정성윤 — 새 클러스터에서 `CORE_API_TOKEN` 이 조용히 비는가(추정 — 확인 필요)** — `infra/k8s/base/call-mediator.yaml` 은 `call-mediator-tokens` 에서 그 키를 **optional** 로 읽는데,
+- [x] **정성윤 — 새 클러스터에서 `CORE_API_TOKEN` 이 조용히 비는가(추정 — 확인 필요)** — ✅ **2026-09-21 확인: 빈다.** `release.yml` 301줄은 `call-mediator-tokens` 가 없을 때만 만들고 그때 INGEST·VIEW 두 키만 넣는다. 지금 클러스터는 키를 손으로 더하면 배포가 지우지 않는다. 런북 단계는 `w5-ingest-auth-fail-closed` 완료 조건으로 옮겼다. 원문 — `infra/k8s/base/call-mediator.yaml` 은 `call-mediator-tokens` 에서 그 키를 **optional** 로 읽는데,
   `release.yml` 의 시크릿 생성은 INGEST·VIEW 두 키만 만든다. 사람이 손으로 넣는 전제라면 런북 12장에 그 단계를 적고, 아니면 워크플로에 넣는다. 비면 쓰기 문이 `open` 으로 남는다
 - [ ] **류준 님 — 하네스가 부르지 않는 지표가 셋 있다** — `ai/apps/evaluation/metrics/` 의 `generation`(B-4·B-5)·`asr`(A-5)·`call_temperature`(D-5)는 `harness.py`·`run_eval.py` 어디서도 import 하지 않는다.
   별도 스크립트로만 돌아서 **`run_eval` 리포트에 「측정 불가」로도 나타나지 않는다**(침묵 누락). 절대 원칙 10 의 취지로는 「측정 불가」 줄이라도 찍는 쪽이 맞다

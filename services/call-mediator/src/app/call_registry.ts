@@ -93,8 +93,9 @@ export interface RegistryDeps {
    */
   announceCallGuard?: boolean;
   /**
-   * 잡힌 컴플라이언스 위반(C-1~C-4)을 `compliance` 메시지로 대시보드에 보낼까. 기본 false — 대시보드 파서
-   * (`apps/call` realCallMediatorClient)가 아직 이 타입을 받지 않는다(2026-09-18). **검사는 끄지 않는다.**
+   * 잡힌 컴플라이언스 위반(C-1~C-4)을 `compliance` 메시지로, 검사에 실패한 발화를 `compliance_unavailable` 로
+   * 대시보드에 보낼까. 기본 false — 켜기 전에 대시보드 파서(`apps/call` realCallMediatorClient)가 두 타입을 다
+   * 받아야 한다. **검사는 끄지 않는다.**
    */
   announceCompliance?: boolean;
   /**
@@ -483,6 +484,10 @@ export class Channel {
   /**
    * C-1~C-4 — 상담원 final 의 **마스킹된 본문**을 검사한다. 판정은 서버 규칙이 한다. 화자로 거르는 것은 판정이 아니라
    * 계약이다(검사 대상이 상담원 발화뿐). 실패해도 통화는 계속된다. 다음 자막을 막지 않도록 줄 밖에서 돈다.
+   *
+   * 화면이 받는 신호는 셋이다 — 위반이 잡히면 `compliance`, 검사가 실패하면 `compliance_unavailable`, 검사가 돌았는데
+   * 잡힌 게 없으면 **아무것도 안 보낸다.** 실패를 「메시지 없음」에 섞으면 탐지가 죽은 것이 「위반 없음」으로 보인다
+   * (2026-09-22 조서희 요청 — 그전엔 둘이 구분되지 않았다).
    */
   private async checkCompliance(item: QueuedResult, maskedText: string): Promise<void> {
     try {
@@ -495,7 +500,14 @@ export class Channel {
         this.deps.broadcaster.publish(this.callId, { type: "compliance", payload });
       }
     } catch (error) {
-      this.deps.log.warn(`컴플라이언스 검사 실패 call=${this.callId} segment=${item.segmentId} status=${statusOf(error)}`);
+      const status = statusOf(error);
+      this.deps.log.warn(`컴플라이언스 검사 실패 call=${this.callId} segment=${item.segmentId} status=${status}`);
+      if (this.deps.announceCompliance === true) {
+        this.deps.broadcaster.publish(this.callId, {
+          type: "compliance_unavailable",
+          payload: { call_id: this.callId, segment_id: String(item.segmentId), status },
+        });
+      }
     }
   }
 
