@@ -2,7 +2,7 @@
 title: "서비스 토큰이 없으면 쓰기 문이 열리지 않게 — ingest_guard fail-closed"
 assignee: "장민석"
 role: "ai"
-status: "todo"
+status: "in-progress"
 sprint: 6
 priority: 60
 date: 2026-09-22
@@ -30,6 +30,13 @@ paths:
 
 ## 완료 조건
 
-- [ ] 토큰 미설정이면 쓰기 일곱 경로가 **401**(또는 기동 거부). 테스트: 없음 401 · 틀림 401 · 맞음 200
-- [ ] `config.py`·`ingest_guard.py` 의 「이행기」 주석 정리 · 런북 12-2-b 에 「없으면 서버가 안 뜬다/닫힌다」 한 줄
+- [x] 토큰 미설정이면 쓰기 일곱 경로가 **401**(또는 기동 거부). 테스트: 없음 401 · 틀림 401 · 맞음 200
+- [x] `config.py`·`ingest_guard.py` 의 「이행기」 주석 정리 · 런북 12-2-b 에 「없으면 서버가 안 뜬다/닫힌다」 한 줄
 - [ ] 태그 올림 · 배포 뒤 `/health` 가 여전히 `locked`
+
+## 2026-09-22 — 코드 (장민석, 담당 확인·착수)
+
+- **401 로 갔다, 기동 거부가 아니다** — 업로드 문·`/close` 와 같은 모양이고 키 하나로 읽기 경로까지 죽이지 않는다. 여덟 경로(`routing-decisions` 포함) 전부.
+- `/health` 의 `ingest_guard`: 미설정이면 `open` → **`unset`**(쓰기 전부 401). 설정이면 그대로 `locked`.
+- 라우터 테스트 11개 파일이 「열림」에 기대 헤더 없이 부르고 있어 `hub/tests/adapter/_ingest_auth.py` 로 헤더를 붙였다. server 1,301 passed.
+- server 태그 `0.1.33`. 남은 것: 배포 뒤 `/health` `locked` 확인.

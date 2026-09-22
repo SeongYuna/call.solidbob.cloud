@@ -16,6 +16,7 @@ function setup(
     announceCallGuard?: boolean;
     announceCompliance?: boolean;
     announceClosure?: boolean;
+    routingCandidates?: string[];
   } = {},
 ) {
   const hub = new FakeHub();
@@ -42,6 +43,7 @@ function setup(
     announceCallGuard: opts.announceCallGuard,
     announceCompliance: opts.announceCompliance,
     announceClosure: opts.announceClosure,
+    routingCandidates: opts.routingCandidates,
   });
   return {
     hub,
@@ -590,4 +592,37 @@ test("withE2eLatency — 방송 시각에서 발화 종료 시각을 뺀다. 없
   assert.equal("e2e_latency_ms" in withE2eLatency(fired, undefined, 2440), false);
   assert.equal("e2e_latency_ms" in withE2eLatency({ fired: "false" }, 1200, 2440), false, "카드가 없으면 「표시까지」가 없다");
   assert.equal(withE2eLatency(fired, 1200, 2440) === fired, false, "원본을 고치지 않는다");
+});
+
+test("J-5 — 통화 시작이 성공하면 배정 판정을 한 번 부른다 · 후보는 설정 목록 (decisions/126)", async () => {
+  const { registry, hub } = setup({ routingCandidates: ["agent-demo-1", "agent-demo-2"] });
+  await openOk(registry, "test-1", "agent", 2);
+  await openOk(registry, "test-1", "customer", 2); // 두 번째 채널은 같은 통화다 — 다시 부르지 않는다
+  await tick(10);
+  assert.deepEqual(hub.routed, [{ call_id: "test-1", candidates: ["agent-demo-1", "agent-demo-2"] }]);
+});
+
+test("J-5 — 후보 설정이 없으면 빈 목록을 보낸다 (서버가 기존 배정 규칙으로 떨어뜨린다)", async () => {
+  const { registry, hub } = setup();
+  await openOk(registry, "test-1", "agent");
+  await tick(10);
+  assert.deepEqual(hub.routed, [{ call_id: "test-1", candidates: [] }]);
+});
+
+test("J-5 — 통화 시작이 실패하면 배정 판정을 부르지 않는다 (서버가 404 를 낼 뿐이다)", async () => {
+  const { registry, hub } = setup();
+  hub.failStart = 503;
+  await registry.open({ callId: "test-1", speaker: "agent", sampleRate: 16000, channelCount: 1 });
+  await tick(10);
+  assert.equal(hub.routed.length, 0);
+});
+
+test("J-5 — 배정 판정이 실패해도 통화는 그대로 돈다 · 로그에 상태만 남긴다", async () => {
+  const { registry, hub, stt, log } = setup();
+  hub.failRouting = 500;
+  const agent = await openOk(registry, "test-1", "agent");
+  stt.streams[0]!.emit("안녕하세요", true, 1000);
+  await agent.close();
+  assert.equal(hub.ingested.length, 1);
+  assert.ok(log.warnings.some((w) => w.includes("배정 판정 실패") && w.includes("call=test-1") && w.includes("500")));
 });

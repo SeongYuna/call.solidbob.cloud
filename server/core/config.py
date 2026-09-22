@@ -69,9 +69,8 @@ class Settings:
     # --- 쓰기 경로 서비스 토큰 (2026-09-20, `_project/decisions/120`) ---
     # 콜 미디에이터 → 서버의 쓰기 6+1 경로(`POST /hub/calls`·`/transcripts`·`/recommendations`·`/call-guard-checks`·
     # `/compliance-checks`·`/required-docs-checks`·`/closure-checks`)를 잠근다. 09-20 운영 왕복에서 **토큰 없이 200** 이었다.
-    # ⚠ **없으면 열린다**(업로드 토큰과 반대다) — 서버를 먼저 배포하는 순간 돌고 있는 미디에이터가 401 이 되지 않게
-    #    하려는 **이행기 동작**이다. 열려 있는지는 `/health` 의 `ingest_guard` 가 말한다. 미디에이터가 토큰을 보내기 시작하면
-    #    fail-closed 로 바꾼다(120 「전환 순서」 4번).
+    # **없으면 닫힌다**(업로드 토큰과 같다) — 미설정이면 일곱 경로가 전부 401 이고 `/health` 의 `ingest_guard` 가 "unset" 이다.
+    #    2026-09-22 까지는 「없으면 연다」 이행기였다(120 「전환 순서」 4번에서 닫음). 콜 미디에이터의 `CORE_API_TOKEN` 과 같은 값.
     ingest_service_token: str | None
 
     # --- 관리자 로그인(구글, 2026-09-14) — apps/admin. 회원가입 없음, 허용 목록은 admin_account ---

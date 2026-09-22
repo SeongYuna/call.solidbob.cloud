@@ -65,21 +65,22 @@ def test_비ASCII_토큰은_500_이_아니라_401_이다(monkeypatch):
 
 
 @pytest.mark.parametrize("path", INGEST_PATHS)
-def test_미설정이면_연다_이행기(monkeypatch, path):
-    """서버를 먼저 배포하는 순간 **돌고 있는 미디에이터가 401 이 되면 안 된다** — 그래서 없으면 연다.
+def test_미설정이면_닫는다(monkeypatch, path):
+    """시크릿을 되돌리거나 키를 빠뜨려도 **문이 조용히 열리지 않는다** — 업로드 문(`110`)·`/close`(`315`)와 같다.
 
-    영구 상태가 아니다. 미디에이터가 토큰을 보내기 시작하면 fail-closed 로 바꾼다(120 「전환 순서」 4번).
+    2026-09-22 까지는 「없으면 연다」였다(120 「전환 순서」 1~3번의 이행기). 미디에이터가 토큰을 보내기 시작해 4번으로 닫았다.
     """
     _env(monkeypatch, None)
     with TestClient(app) as client:
-        assert client.post(path, json={}).status_code != 401
+        assert client.post(path, json={}).status_code == 401
+        assert client.post(path, json={}, headers={"Authorization": "Bearer anything"}).status_code == 401
 
 
-def test_열려_있는지_health_가_말한다(monkeypatch):
-    """「없으면 연다」가 조용하면 안 된다 — 이 저장소는 조용한 상태에 여러 번 당했다."""
+def test_잠금_상태를_health_가_말한다(monkeypatch):
+    """미설정은 「열림」이 아니라 「쓰기 전부 401」이다 — `unset` 이 그것을 말한다. 조용하면 안 된다."""
     _env(monkeypatch, None)
     with TestClient(app) as client:
-        assert client.get("/health").json()["ingest_guard"] == "open"
+        assert client.get("/health").json()["ingest_guard"] == "unset"
     _env(monkeypatch, TOKEN)
     with TestClient(app) as client:
         body = client.get("/health").json()

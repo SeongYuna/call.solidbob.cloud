@@ -7,6 +7,7 @@
  * | `CALL_MEDIATOR_PORT` | 듣는 포트 | 8080 |
  * | `CORE_API_URL` | server 주소. 운영은 `http://callguard-server` | `http://localhost:8000` |
  * | `CORE_API_TOKEN` | server 쓰기 경로의 서비스 토큰 — server 의 `INGEST_SERVICE_TOKEN` 과 **같은 값**(`decisions/120`) | 헤더를 보내지 않는다 |
+ * | `ROUTING_CANDIDATES` | J-5 배정 판정에 넘길 상담사 `agent_id` 쉼표 목록 — 시연용. 미디에이터는 대기 상태를 모른다(`decisions/126`) | 빈 목록(서버가 기존 배정 규칙으로) |
  * | `GOOGLE_APPLICATION_CREDENTIALS` | 서비스 계정 키 **파일 경로** (라이브러리가 직접 읽는다) | 채널을 열지 않는다 |
  * | `STT_MAX_SECONDS_PER_DAY` · `_MONTH` | COST-1 2차 캡 | 채널을 열지 않는다 (fail-closed) |
  * | `CORS_ALLOWED_ORIGINS` | 대시보드 `Origin` 허용 목록 — 서버와 같은 키·같은 기본값 | 로컬 Vite 둘 |
@@ -25,6 +26,8 @@ export interface CallMediatorConfig {
   coreApiUrl: string;
   /** server 쓰기 경로의 서비스 토큰. 비어 있으면 `Authorization` 을 보내지 않는다(`decisions/120` 이행기). */
   coreApiToken: string;
+  /** J-5 배정 판정 후보(`agent_id`). 비면 빈 목록을 보낸다. */
+  routingCandidates: string[];
   caps: Caps;
   allowedOrigins: string[];
   /** 문마다 토큰. 빈 문자열이면 설정되지 않았다. 값은 로그·`/health` 에 싣지 않는다. */
@@ -45,6 +48,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): CallMediatorCo
     port: intOr(env.CALL_MEDIATOR_PORT, 8080),
     coreApiUrl: (env.CORE_API_URL ?? "").trim() || "http://localhost:8000",
     coreApiToken: (env.CORE_API_TOKEN ?? "").trim(),
+    routingCandidates: csvOr(env.ROUTING_CANDIDATES, []),
     caps: {
       perDay: intOr(env.STT_MAX_SECONDS_PER_DAY, 0),
       perMonth: intOr(env.STT_MAX_SECONDS_PER_MONTH, 0),

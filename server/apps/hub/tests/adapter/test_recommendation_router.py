@@ -8,6 +8,7 @@ from hub.app.dtos.trigger_decision_dto import TriggerDecision
 from hub.app.ports.output import RetrievalPort, TriggerPort
 from hub.dependencies.retrieval_provider import get_retrieval_port
 from hub.dependencies.trigger_provider import get_trigger_port
+from hub.tests.adapter._ingest_auth import HEADERS as INGEST_HEADERS
 from main import app
 
 BODY = {"call_id": "c_001", "segment_id": 31, "speaker": "customer",
@@ -33,7 +34,7 @@ def _wire(fire=True):
 
 
 def test_trigger_스포크가_없으면_501이다():
-    with TestClient(app) as client:
+    with TestClient(app, headers=INGEST_HEADERS) as client:
         r = client.post("/hub/recommendations", json=BODY)
     assert r.status_code == 501
 
@@ -42,7 +43,7 @@ def test_발동하면_카드를_계약_형태로_돌려준다():
     """generation 스포크가 없어도 폴백(스니펫)으로 끝까지 돈다."""
     _wire()
     try:
-        with TestClient(app) as client:
+        with TestClient(app, headers=INGEST_HEADERS) as client:
             r = client.post("/hub/recommendations", json=BODY)
         assert r.status_code == 200
         b = r.json()
@@ -63,7 +64,7 @@ def test_미발동이면_cards가_null이다():
     """빈 배열('관련 문서 없음')과 구분된다."""
     _wire(fire=False)
     try:
-        with TestClient(app) as client:
+        with TestClient(app, headers=INGEST_HEADERS) as client:
             r = client.post("/hub/recommendations", json=BODY)
         b = r.json()
         assert b["fired"] == "false" and b["cards"] is None
@@ -74,7 +75,7 @@ def test_미발동이면_cards가_null이다():
 def test_도메인_분류기가_없으면_domain은_null이다():
     _wire()
     try:
-        with TestClient(app) as client:
+        with TestClient(app, headers=INGEST_HEADERS) as client:
             r = client.post("/hub/recommendations", json=BODY)
         assert r.json()["domain"] is None
     finally:
@@ -84,7 +85,7 @@ def test_도메인_분류기가_없으면_domain은_null이다():
 def test_빈_텍스트는_422다():
     _wire()
     try:
-        with TestClient(app) as client:
+        with TestClient(app, headers=INGEST_HEADERS) as client:
             r = client.post("/hub/recommendations", json={**BODY, "text": ""})
         assert r.status_code == 422
     finally:
@@ -103,7 +104,7 @@ def test_콜_미디에이터_도착_시각을_트리거까지_그대로_넘긴�
     _wire()
     app.dependency_overrides[get_trigger_port] = lambda: _Recording()
     try:
-        with TestClient(app) as client:
+        with TestClient(app, headers=INGEST_HEADERS) as client:
             client.post("/hub/recommendations", json={**BODY, "received_at_ms": 3020})
             client.post("/hub/recommendations", json=BODY)
         assert seen == [3020, None]
@@ -127,7 +128,7 @@ def test_카드에_card_id가_문자열로_붙는다():
     _wire()
     app.dependency_overrides[get_recommendation_record_port] = lambda: _Record()
     try:
-        with TestClient(app) as client:
+        with TestClient(app, headers=INGEST_HEADERS) as client:
             cards = client.post("/hub/recommendations", json=BODY).json()["cards"]
         assert [c["card_id"] for c in cards] == ["7"]
     finally:
@@ -138,7 +139,7 @@ def test_DB가_없으면_card_id는_null이다():
     """id 를 지어내지 않는다 — 피드백을 못 받는다는 것이 응답에 그대로 드러난다."""
     _wire()
     try:
-        with TestClient(app) as client:
+        with TestClient(app, headers=INGEST_HEADERS) as client:
             cards = client.post("/hub/recommendations", json=BODY).json()["cards"]
         assert cards and all(c["card_id"] is None for c in cards)
     finally:
@@ -152,7 +153,7 @@ def test_통화가_없으면_404다():
     _wire()
     app.dependency_overrides[get_recommendation_record_port] = lambda: _Record(CallNotStartedError("c_001"))
     try:
-        with TestClient(app) as client:
+        with TestClient(app, headers=INGEST_HEADERS) as client:
             assert client.post("/hub/recommendations", json=BODY).status_code == 404
     finally:
         app.dependency_overrides.clear()

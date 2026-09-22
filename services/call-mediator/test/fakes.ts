@@ -18,6 +18,8 @@ import {
   type RawTranscript,
   type RecommendPayload,
   type RecommendRequest,
+  type RoutingDecisionPayload,
+  type RoutingDecisionRequest,
   type SttEngine,
   type SttHandlers,
   type SttOpenOptions,
@@ -104,6 +106,8 @@ export class FakeHub implements HubPort {
   readonly notProcedures = new Set<string>();
   failIngest: number | null = null;
   failStart: number | null = null;
+  readonly routed: RoutingDecisionRequest[] = [];
+  failRouting: number | null = null;
   ingestDelayMs = 0;
   fired = true;
 
@@ -112,6 +116,14 @@ export class FakeHub implements HubPort {
       throw new HubError("start", this.failStart);
     }
     this.calls.push(request);
+  }
+
+  async decideRouting(request: RoutingDecisionRequest): Promise<RoutingDecisionPayload> {
+    if (this.failRouting !== null) {
+      throw new HubError("routing", this.failRouting);
+    }
+    this.routed.push(request);
+    return { call_id: request.call_id, assigned_agent_id: null, is_blacklisted: "false", fell_back: "false" };
   }
 
   async ingestTranscript(raw: RawTranscript): Promise<MaskedTranscript> {
