@@ -68,6 +68,10 @@ def test_실제_DB_만료_연장_단축_이력과_만료_뒤_재승인(integrati
             assert (c2.previous_expires_at, c2.new_expires_at) == (now + timedelta(days=180), now + timedelta(days=7))
             assert [c.change_id for c in await repo.list_expiry_changes(entry.entry_id)] == [c1.change_id, c2.change_id]
 
+            # 감사 로그 문(Q-67) — 등록을 가리지 않고 **최근 순**. 다른 등록의 행이 섞여도 우리 둘의 순서는 그대로다
+            recent = [c.change_id for c in await repo.list_recent_expiry_changes(200) if c.entry_id == entry.entry_id]
+            assert recent == [c2.change_id, c1.change_id]
+
             # 누적 상한: 승인일 + 365일까지만 — 넘으면 거부되고 만료·이력은 그대로다
             with pytest.raises(ExpiryBeyondCap):
                 await repo.change_expiry(entry.entry_id, changed_by="it-exp-admin", expires_at=now + timedelta(days=366), reason="과한 연장")
