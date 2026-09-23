@@ -115,7 +115,7 @@
 | 3 | 보안 그룹 | `assist-db` | 5432 ← `assist-web` |
 | 4 | IAM 역할 | `callguard-ec2-role` | S3 + SSM |
 | 5 | S3 버킷 | `assist-apne2` | 데이터셋·모델·골든셋 |
-| 6 | VPC 엔드포인트 | `assist-s3-gw` | **CallMediator** 유형, 무료 |
+| 6 | VPC 엔드포인트 | `assist-s3-gw` | **Gateway** 유형, 무료 |
 | 7 | RDS | `callguard-pg` | PostgreSQL 17, db.t4g.micro, 20GiB |
 | 8 | EC2 | `assist-gpu-01` | **g4dn.xlarge**, Ubuntu DLAMI |
 | 9 | EBS 루트 | (EC2 에 포함) | **gp3 150 GiB**, 암호화 O |
@@ -123,6 +123,23 @@
 | 11 | 탄력적 IP | — | 1개 |
 | 12 | AMI | `assist-gpu-baseline` | 세팅 완료 후 |
 
+> ⚠ **2026-09-23 정정 — AWS 용어가 개명에 휩쓸렸다.** 5-5 절과 이 표의 「CallMediator 유형」은 원래 **AWS 의 `Gateway` 유형**이다.
+> 2026-09-17 `gateway` → `call-mediator` 일괄 개명(`decisions/115`)이 **우리 서비스 이름이 아닌 AWS 콘솔 용어까지** 바꿔 놓았다 — 그대로 따라 하면 콘솔에서 그런 유형을 찾을 수 없다.
+>
+> ⚠ **실물 대조 (2026-09-23, 콘솔·AWS CLI 실측).** 위 표는 **원안 이름**이다 — 실제로 만들어진 것은 아래다.
+> 원안을 지우지 않는 이유는 절대 원칙 8 이고, **명령을 따라 칠 때는 아래 이름을 쓴다.**
+>
+> | # | 원안 | 실물 |
+> |---|---|---|
+> | 1 | 키 페어 `assist-key` | **`callguard-key`** (`.pem` 파일명도 같다) |
+> | 7 | RDS `callguard-pg` | 그대로 — `db.t4g.micro` · PostgreSQL **17.11** |
+> | 8 | EC2 `assist-gpu-01`, g4dn.xlarge, Ubuntu DLAMI | **`i-034cda2423f65c8bd`** · **`t3.large`**(GPU 없음) · **Amazon Linux 2023** · `ap-northeast-2b` · **Name 태그 없음** |
+> | 11 | 탄력적 IP 1개 | **없다** — 공인 IP 는 재시작 때 바뀐다(DNS 는 클라우드플레어가 가리킨다) |
+> | 12 | AMI `assist-gpu-baseline` | **아직 없다**(20장 — 인스턴스가 죽으면 복구 경로가 없다) |
+> | — | 네임스페이스 `assist` | **`callguard`** (k3s) |
+>
+> GPU 를 전제한 절(11장 GPU 공유 · 14장 Ollama · VRAM 표)은 **원안이다** — 모델은 `decisions/124` 로 **CPU 노드에 NER·임베딩만** 싣는다.
+>
 > **VPC · 서브넷은 만들지 않습니다.** AWS 계정에는 리전마다 **기본 VPC** 가 자동 생성돼 있고, 퍼블릭 서브넷 구성이라 그대로 쓰면 됩니다. 직접 만들면 NAT Gateway(월 $35+)를 붙이게 될 위험만 커집니다.
 
 ### EC2 사양을 g4dn.xlarge 로 잡은 근거
@@ -420,7 +437,7 @@ s3://assist-apne2/
 
 한 번 전처리하면 원본은 자주 읽지 않습니다. 약 45% 절감됩니다.
 
-### 5-5. CallMediator VPC 엔드포인트 ⚠ 무료이니 반드시
+### 5-5. Gateway VPC 엔드포인트 ⚠ 무료이니 반드시
 
 콘솔 → **VPC** → 왼쪽 **엔드포인트** → **엔드포인트 생성**
 
@@ -428,12 +445,12 @@ s3://assist-apne2/
 |---|---|
 | 이름 | `assist-s3-gw` |
 | 서비스 범주 | AWS 서비스 |
-| 서비스 | 검색창에 `s3` → **`com.amazonaws.ap-northeast-2.s3`** 중 **유형이 `CallMediator`** 인 것 |
+| 서비스 | 검색창에 `s3` → **`com.amazonaws.ap-northeast-2.s3`** 중 **유형이 `Gateway`** 인 것 |
 | VPC | 기본 VPC |
 | 라우팅 테이블 | 기본 라우팅 테이블 **체크** |
 | 정책 | 전체 액세스 |
 
-> ⚠ **반드시 `CallMediator` 유형을 고르십시오.** 같은 이름으로 `Interface` 유형도 나오는데, 그건 **시간당 요금이 붙습니다.** CallMediator 는 무료입니다.
+> ⚠ **반드시 `Gateway` 유형을 고르십시오.** 같은 이름으로 `Interface` 유형도 나오는데, 그건 **시간당 요금이 붙습니다.** CallMediator 는 무료입니다.
 
 이걸 만들면 S3 트래픽이 인터넷 게이트웨이를 안 거치고 VPC 안에서 처리됩니다. 무료이고 더 빠르고 더 안전합니다.
 

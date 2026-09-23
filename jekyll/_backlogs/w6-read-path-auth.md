@@ -2,7 +2,7 @@
 title: "읽기 경로 인증 — 통화 목록·전사·기록·검색이 무인증이고 지식 공백 설명이 마스킹 없이 저장된다"
 assignee: "장민석"
 role: "ai"
-status: "in-progress"
+status: "done"
 sprint: 6
 priority: 58
 date: 2026-09-22
@@ -50,3 +50,20 @@ paths:
 `w6-read-path-token-ui` 완료 — `coreClient.ts`의 네 함수(`fetchCallList`·`fetchCallTranscript`·
 `fetchCallRecord`·`searchDocuments`)가 이제 상담원 토큰을 싣는다. **`server-env`의
 `READ_AUTH_REQUIRED=true`를 켜도 되는 상태다** — 코드 배포 없이 그 한 줄만 남았다.
+
+## 2026-09-23 — 문을 닫았다 (정성윤)
+
+**마지막 한 줄은 서버가 아니라 운영 설정이었다.** 조서희 님이 `24f7df4`(PR #145)로 읽기 넷에 상담원 토큰을
+싣기 시작했고 배포까지 확인된 뒤, 운영 시크릿 `server-env` 에 `READ_AUTH_REQUIRED=true` 를 넣고
+`callguard-server` 를 다시 띄웠다(SSM, 11:5x). 이미지는 그대로 `0.1.38` — 코드 배포가 아니다.
+
+확인한 것 — `/health` `read_guard: **locked**` · 토큰 없이 `GET /hub/calls` · `GET /hub/calls/{id}/transcript` ·
+`POST /hub/search` 전부 **401** · 틀린 토큰도 401 · `/health/ready` 200(문과 무관하게 살아 있다).
+
+- 되돌리기: `kubectl -n callguard patch secret server-env --type json -p '[{"op":"remove","path":"/data/READ_AUTH_REQUIRED"}]'`
+  뒤 `rollout restart deploy/callguard-server`. 30초, 이미지 그대로. 상태는 `/health` 의 `read_guard` 가 말한다.
+- **Q-14 는 절반만 닫힌다(2026-09-23 정정).** 이 티켓이 닫은 것은 **바깥문**이다 — 토큰 없는 사람은 못 읽는다.
+  **로그인한 상담원에게 남의 통화가 보이는 것은 그대로다**: `GET /hub/calls` 가 요청자를 안 보고,
+  통화에 `agent_id` 가 안 채워진다(`call_repository.py` 머리말). 운영 화면에서 09-22 통화 다섯 건이
+  새 로그인에도 보였다. 남은 절반은 [w8-call-owner-scope](/backlog/w8-call-owner-scope/) 로 옮겼다 —
+  **재시험 때 Q-14 는 ✅ 가 아니라 ⚠ 로 적는다.**
