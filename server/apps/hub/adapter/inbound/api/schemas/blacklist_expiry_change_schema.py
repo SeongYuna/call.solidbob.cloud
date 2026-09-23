@@ -42,3 +42,9 @@ class BlacklistExpiryChangeResponse(BaseModel):
 
 class ExpiryChangeListResponse(BaseModel):
     changes: list[ExpiryChangeItemSchema] = Field(description="오래된 순")
+
+
+class RecentExpiryChangeListResponse(BaseModel):
+    """관리자 감사 로그가 읽는다 — 등록을 가리지 않고 **최근 순**이다(등록별 이력과 정렬이 반대)."""
+
+    changes: list[ExpiryChangeItemSchema] = Field(description="최근 순")

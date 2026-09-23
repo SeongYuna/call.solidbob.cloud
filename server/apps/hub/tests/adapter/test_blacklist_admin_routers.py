@@ -62,6 +62,7 @@ def client(link):
     ("post", "/hub/blacklist-entries/3/release", {"reason": "오인"}),
     ("post", "/hub/blacklist-entries/3/expiry", {"expires_in_days": 30, "reason": "연장"}),
     ("get", "/hub/blacklist-entries/3/expiry-changes", None),
+    ("get", "/hub/blacklist-expiry-changes", None),
 ])
 def test_로그인_없이는_401이다(client, method, path, body):
     kwargs = {"json": body} if body is not None else {}
@@ -161,3 +162,37 @@ def test_보존_기간_정리는_비운_건수를_문자열로_돌려준다(clie
     assert r.json() == {"retention_days": "180", "cutoff": "2026-09-14T03:00:00+00:00",
                         "expiry_change_reasons_purged": "2", "rejected_requests_purged": "1"}
 
+
+def test_감사_로그_문은_등록을_가리지_않고_최근_순이다(client):
+    """수동 QA Q-67 — 만료일 변경이 감사 로그에 안 남았다. 등록마다 물으면 N+1 이라 문을 따로 뒀다."""
+    from datetime import datetime, timezone
+
+    from hub.app.dtos.blacklist_dto import ExpiryChange
+
+    app.dependency_overrides[require_admin] = lambda: ADMIN
+    changed = [
+        ExpiryChange(change_id=9, entry_id=4, previous_expires_at=datetime(2026, 10, 1, tzinfo=timezone.utc),
+                     new_expires_at=datetime(2026, 11, 1, tzinfo=timezone.utc), changed_by="admin-1", reason="재발 우려",
+                     changed_at=datetime(2026, 9, 23, 2, tzinfo=timezone.utc)),
+        ExpiryChange(change_id=8, entry_id=3, previous_expires_at=datetime(2026, 9, 1, tzinfo=timezone.utc),
+                     new_expires_at=datetime(2026, 9, 20, tzinfo=timezone.utc), changed_by="admin-2", reason="오인 일부",
+                     changed_at=datetime(2026, 9, 22, 9, tzinfo=timezone.utc)),
+    ]
+
+    class _Recent(StubBlacklist):
+        async def list_recent_expiry_changes(self, limit):
+            self.calls.append(("list_recent_expiry_changes", limit))
+            return changed[:limit]
+
+    port = _Recent()
+    app.dependency_overrides[get_blacklist_port] = lambda: port
+
+    body = client.get("/hub/blacklist-expiry-changes").json()
+    assert [c["change_id"] for c in body["changes"]] == ["9", "8"]          # 최근 순 그대로
+    assert [c["entry_id"] for c in body["changes"]] == ["4", "3"]           # 어느 등록인지가 실린다
+    assert body["changes"][0]["changed_by"] == "admin-1" and body["changes"][0]["reason"] == "재발 우려"
+    assert ("list_recent_expiry_changes", 50) in port.calls                 # 기본값 50
+
+    assert len(client.get("/hub/blacklist-expiry-changes?limit=1").json()["changes"]) == 1
+    assert client.get("/hub/blacklist-expiry-changes?limit=0").status_code == 422
+    assert client.get("/hub/blacklist-expiry-changes?limit=201").status_code == 422

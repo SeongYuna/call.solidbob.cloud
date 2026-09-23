@@ -133,6 +133,19 @@ def _wire_retrieval(app: FastAPI, settings: Settings) -> str | None:
             pass
     # 기동 전에 이미 꽂힌 것(테스트 스텁 등)은 덮지 않는다 — lifespan 은 빈 자리만 채운다.
     app.dependency_overrides.setdefault(get_retrieval_port, lambda: port)
+    # 수동 검색만 B-6 기권을 씌운다(`decisions/135`) — 자동 추천은 그대로다(`215` 가 보류한 것이 그쪽이다).
+    # 씌울지·문턱 값은 `ai/` 가 정한다. dense 단독이 아니면 같은 포트가 돌아온다.
+    from hub.dependencies.search_provider import get_search_retrieval_port  # noqa: PLC0415
+
+    search_port = port
+    if app.state.retrieval_layers:
+        try:
+            from provider import wrap_no_answer  # noqa: PLC0415
+
+            search_port = wrap_no_answer(port, app.state.retrieval_layers)
+        except (ModuleNotFoundError, ImportError):
+            pass
+    app.dependency_overrides.setdefault(get_search_retrieval_port, lambda: search_port)
     return "retrieval"
 
 

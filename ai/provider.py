@@ -245,3 +245,20 @@ def build_call_guard_provider() -> Callable[[], CallGuardPort]:
     """
     port = RuleCallGuardAdapter()
     return lambda: port
+
+
+def wrap_no_answer(port: RetrievalPort, layers: list[str]) -> RetrievalPort:
+    """수동 검색(`POST /hub/search`)이 쓸 포트에 B-6 기권을 씌운다(`_project/decisions/135`).
+
+    자동 추천은 **씌우지 않는다** — `decisions/215` 가 보류한 것이 그쪽이다. 여기서 거는 것은
+    상담원이 직접 친 질의뿐이고, 문턱을 잰 보류 표본이 바로 그 모양이다.
+
+    dense 가 1순위를 정할 때만 건다. 리랭커가 켜지면 점수가 로짓이라 이 눈금이 의미를 잃고,
+    BM25 단독이면 raw 점수라 마찬가지다 — 그 구성의 문턱은 잰 적이 없으니 걸지 않는다.
+    """
+    if layers != ["retrieval_dense"]:
+        return port
+    from retrieval.adapter.outbound.abstaining_retriever import AbstainingRetriever
+    from retrieval.adapter.outbound.es_dense_retriever import NO_ANSWER_MIN_SCORE
+
+    return AbstainingRetriever(port, min_score=NO_ANSWER_MIN_SCORE)

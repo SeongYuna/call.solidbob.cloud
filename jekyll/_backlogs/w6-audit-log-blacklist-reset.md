@@ -1,8 +1,8 @@
 ---
 title: "감사 로그에 블랙리스트 재설정(만료일 변경)이 안 남는다"
-assignee: "장민석"
+assignee: "정성윤"
 role: "ai"
-status: "todo"
+status: "in-progress"
 sprint: 6
 priority: 66
 date: 2026-09-22
@@ -31,3 +31,22 @@ paths:
 - [ ] 운영에서 재설정 1회 → 감사 로그에 보임
 
 근거: 진행 기록 `2026-09-22-18-seongyun` Q-67.
+
+## 2026-09-23 — 서버 쪽을 넘겨받아 고쳤다 (정성윤)
+
+**`todo` 라 아무도 손대지 않은 티켓이라 가져왔다**(`CLAUDE.md` §4 — 진행 기록이 없는 티켓은 옮긴다). 담당은 정성윤으로 바꾼다.
+
+- **원인**: 만료 변경은 `blacklist_entry_expiry_change` 에 제대로 쌓이고 있었다. 빠진 것은 **읽는 문**이다 —
+  등록 1건짜리(`GET /hub/blacklist-entries/{id}/expiry-changes`)만 있어서, 감사 로그 화면이 그걸 쓰려면
+  등록마다 한 번씩 물어야 했다(N+1). 그래서 화면이 아예 안 그렸다.
+- **고친 것**: `GET /hub/blacklist-expiry-changes?limit=50` — 등록을 가리지 않고 **최근 순**, 관리자 로그인 필수.
+  응답은 등록별 이력과 같은 모양(`change_id`·`entry_id`·`previous_expires_at`·`new_expires_at`·`changed_by`·`reason`·`changed_at`,
+  값은 전부 문자열)에 `changes` 배열 하나다. 자르는 일은 SQL `LIMIT` 이 한다 — 인터랙터는 판정하지 않는다.
+- 포트 `BlacklistPort.list_recent_expiry_changes(limit)` 추가 · 슬라이스 단면(입력 포트·인터랙터·프로바이더·라우터·스키마) 한 벌 ·
+  테스트 3종(라우터 401·정렬·`limit` 422 / 인터랙터 / 실제 DB 통합). `server` 1,305건 초록 · 계약 5종 KEPT · 태그 `0.1.39`.
+
+**남은 것 둘**
+
+- [ ] **화면**(조서희) — `AuditLogTab.tsx` 는 지금 `requests`·`entries` 만 합쳐서 그린다.
+      위 문을 한 번 불러 「재설정」 줄을 같이 정렬해 넣으면 된다(`action: "재설정"` · 이전 → 새 만료일 · 사유 · `changed_by`).
+- [ ] **운영 확인**(정성윤) — 배포 뒤 재설정 1회 → 감사 로그에 보이는지. QA Q-67 을 그 번호만 다시 누른다.
