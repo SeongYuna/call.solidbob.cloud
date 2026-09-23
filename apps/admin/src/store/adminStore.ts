@@ -48,6 +48,14 @@ interface AdminState {
   statsActiveEntries: number;
   /** 현황판에 "OO시 기준"으로 보여준다. 아직 못 불렀으면 null. */
   statsCountedAt: string | null;
+  /**
+   * J-5 배정 판정(`decisions/126`·`320`) 집계 — `admin-stats` 응답에는 처음부터
+   * 있었지만 콜 미디에이터가 안 불러 전부 0이던 동안은 화면에 렌더하지 않았다.
+   * 2026-09-22 배포(call-mediator 0.2.5)로 실제 값이 쌓이기 시작해 현황판에 연다.
+   */
+  statsRoutingDecisions: number;
+  statsRoutingBlacklisted: number;
+  statsRoutingFellBack: number;
   /** `decisions/313` — 서버 값(`GET /hub/routing-settings`). `loadAll` 전까지는 로컬 기본값. */
   veteranThresholdYears: number;
   /**
@@ -94,6 +102,9 @@ export const useAdminStore = create<AdminState>((set, get) => ({
   statsPendingRequests: 0,
   statsActiveEntries: 0,
   statsCountedAt: null,
+  statsRoutingDecisions: 0,
+  statsRoutingBlacklisted: 0,
+  statsRoutingFellBack: 0,
   veteranThresholdYears: 3,
   blacklistExpiryMonths: 6,
 
@@ -123,6 +134,9 @@ export const useAdminStore = create<AdminState>((set, get) => ({
         statsPendingRequests: stats.pendingRequests,
         statsActiveEntries: stats.activeEntries,
         statsCountedAt: stats.countedAt,
+        statsRoutingDecisions: stats.routingDecisions,
+        statsRoutingBlacklisted: stats.routingBlacklisted,
+        statsRoutingFellBack: stats.routingFellBack,
         veteranThresholdYears: routingSetting.veteranYears,
       });
     } catch (error) {
