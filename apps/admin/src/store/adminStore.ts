@@ -140,6 +140,13 @@ export const useAdminStore = create<AdminState>((set, get) => ({
         veteranThresholdYears: routingSetting.veteranYears,
       });
     } catch (error) {
+      // 401은 다른 오류와 다르다 — 「다시 시도」를 눌러도 같은 토큰으로 또 401이 난다.
+      // 세션을 지우고 로그인 화면(별도 문구)으로 돌려보낸다(w6-admin-stats-wallboard).
+      if (error instanceof HubApiError && error.status === 401) {
+        await useAuthStore.getState().logout();
+        useAuthStore.setState({ error: "세션이 만료되었습니다 — 다시 로그인해 주세요." });
+        return;
+      }
       set({ status: "error", error: errorMessage(error) });
     }
   },
