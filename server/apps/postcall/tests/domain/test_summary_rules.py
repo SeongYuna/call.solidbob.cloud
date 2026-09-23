@@ -86,3 +86,34 @@ def test_후속조치는_DB_컬럼_길이를_넘지_않는다():
     long = "문자로 보내 드리겠습니다 " + "가" * 300
     (action,) = build_draft([_u("agent", long)]).follow_up_actions
     assert len(action) == ACTION_MAX_CHARS
+
+
+def test_요약이_서류_후속조치_마무리까지_싣는다():
+    """2026-09-23 — 채점(`decisions/218`)에서 서류 2/23 · 조치 1/10 이었다. 두 줄 발췌가 중·후반을 통째로 버렸다.
+
+    고친 뒤 같은 하네스에서 핵심 항목 21/60 → 53/60(서류 23/23 · 조치 9/10)이다. 지어낸 문장은 없다 — 전부 발췌다.
+    """
+    us = [
+        _u("customer", "주민등록초본을 떼려고 하는데 무엇이 필요한가요"),
+        _u("agent", "네 고객님 초본 발급 도와드리겠습니다"),
+        _u("agent", "신분증을 지참하셔서 방문해 주시고 대리인이면 위임장이 필요합니다"),
+        _u("agent", "접수되면 문자로 연락드리겠습니다"),
+        _u("agent", "그 밖에 궁금하신 점은 다시 전화 주시면 안내해 드립니다"),
+    ]
+    draft = build_draft(us)
+    assert "필요서류 안내:" in draft.summary_text and "위임장" in draft.summary_text
+    assert "후속 조치:" in draft.summary_text and "문자로 연락드리겠습니다" in draft.summary_text
+    assert "마무리 안내:" in draft.summary_text
+    # 발췌만 싣는다 — 요약의 각 조각이 실제 발화에 있어야 한다(환각 0, decisions/306)
+    for line in draft.summary_text.split(" / "):
+        if line.startswith("발화 "):
+            continue
+        body = line.split(": ", 1)[1]
+        for piece in body.split(" · "):
+            assert any(piece.rstrip("…") in u.text for u in us), piece
+
+
+def test_서류_안내가_없으면_그_줄은_안_실린다():
+    us = [_u("customer", "버스 노선을 알고 싶어서 전화드렸어요"), _u("agent", "몇 번 버스를 찾으시는지 말씀해 주세요")]
+    draft = build_draft(us)
+    assert "필요서류 안내:" not in draft.summary_text and "후속 조치:" not in draft.summary_text
