@@ -33,7 +33,7 @@ interface HistoryRecord extends CallHistoryRow {
   page: TranscriptPage;
   translations: Record<string, TranslatedUtterance>;
   agentTts: Record<string, AgentTtsStatus>;
-  callGuard: Record<string, CallGuardFlag>;
+  callGuard: Record<string, CallGuardFlag[]>;
   accentHints: Record<string, true>;
   wrapUp: CallWrapUp;
 }
@@ -65,7 +65,7 @@ function playbackFromScenario(
 > {
   const translations: Record<string, TranslatedUtterance> = {};
   const agentTts: Record<string, AgentTtsStatus> = {};
-  const callGuard: Record<string, CallGuardFlag> = {};
+  const callGuard: Record<string, CallGuardFlag[]> = {};
   const accentHints: Record<string, true> = {};
   const segments = scenario.transcripts.map((event, index) => {
     const key = String(index + 1);
@@ -79,7 +79,7 @@ function playbackFromScenario(
     }
     const guard = scenario.callGuard?.[event.segment_id];
     if (guard !== undefined) {
-      callGuard[key] = guard;
+      callGuard[key] = [guard];
     }
     if (scenario.accentRecognition === true && event.speaker === "customer") {
       accentHints[key] = true;
@@ -228,7 +228,7 @@ export function getHistoryPlayback(callId: string): {
   page: TranscriptPage;
   translations: Record<string, TranslatedUtterance>;
   agentTts: Record<string, AgentTtsStatus>;
-  callGuard: Record<string, CallGuardFlag>;
+  callGuard: Record<string, CallGuardFlag[]>;
   accentHints: Record<string, true>;
   scenarioId: MockScenarioId;
   targetLanguage: TargetLanguage | undefined;

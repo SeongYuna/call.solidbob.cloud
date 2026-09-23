@@ -696,7 +696,11 @@ export function TranscriptPanel({
           <ol className="utterance-list">
             {utterances.map((item) => {
               const hasAlert = item.masked.length > 0;
-              const guard = callGuard[item.segment_id];
+              // 위기 신호(distress)가 같은 구간의 폭언 배지에 덮이지 않도록 위로 정렬한다
+              // (w6-qa-ui-defects-three) — 스토어가 배열로 쌓아 준 걸 전부 그린다.
+              const guards = (callGuard[item.segment_id] ?? [])
+                .slice()
+                .sort((a, b) => Number(isCallGuardDistress(b)) - Number(isCallGuardDistress(a)));
               const hits = hitsBySegment.get(item.segment_id) ?? [];
               const translation = translations[item.segment_id];
               const tts = agentTts[item.segment_id];
@@ -886,20 +890,23 @@ export function TranscriptPanel({
                         </button>
                       ) : null}
                     </div>
-                    {guard !== undefined && !hideLegacyGuard ? (
-                      <div
-                        className={`callguard-row${isCallGuardDistress(guard) ? " is-distress" : ""}`}
-                      >
-                        <span className="callguard-pill">
-                          {isCallGuardDistress(guard) ? "🆘 위기 신호" : "🚫 콜가드"}
-                        </span>
-                        <span className="callguard-hint">
-                          {isCallGuardDistress(guard)
-                            ? "통화를 끊지 말고 전문 상담 기관 연결을 안내하세요(DASAN-MANUAL-5.4)."
-                            : "고객이 흥분한 상태입니다. 안내는 이어가시면 됩니다."}
-                        </span>
-                      </div>
-                    ) : null}
+                    {!hideLegacyGuard
+                      ? guards.map((g) => (
+                          <div
+                            key={g.category}
+                            className={`callguard-row${isCallGuardDistress(g) ? " is-distress" : ""}`}
+                          >
+                            <span className="callguard-pill">
+                              {isCallGuardDistress(g) ? "🆘 위기 신호" : "🚫 콜가드"}
+                            </span>
+                            <span className="callguard-hint">
+                              {isCallGuardDistress(g)
+                                ? "통화를 끊지 말고 전문 상담 기관 연결을 안내하세요(DASAN-MANUAL-5.4)."
+                                : "고객이 흥분한 상태입니다. 안내는 이어가시면 됩니다."}
+                            </span>
+                          </div>
+                        ))
+                      : null}
                     {translation !== undefined ? (
                       <p className="utterance-translation">
                         <MaskedText
