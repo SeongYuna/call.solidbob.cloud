@@ -65,7 +65,9 @@ spec:
             # 대시보드 WebSocket 의 Origin 허용 목록 — 배포된 대시보드(Vercel) + 로컬 Vite.
             # 로컬 Vite 를 넣은 것은 개발자가 자기 노트북 대시보드로 운영 콜 미디에이터를 볼 수 있게 하려는 것이다
             # (뷰 토큰은 여전히 필요하다). server 의 CORS 와는 별개다 — 그쪽은 server-env 가 정한다.
-            - { name: CORS_ALLOWED_ORIGINS, value: "https://call.solidbob.cloud,http://localhost:5173,http://127.0.0.1:5173" }
+            # `https://server.solidbob.cloud` 는 콜 미디에이터 자신의 개발 페이지(`/call-mediator/dev`)다 — 브라우저가 그 주소를
+            # Origin 으로 달고 `/dev/text` 에 붙는다. 빠져 있어서 토큰이 맞아도 403 → 1006 이었다(2026-09-22 수동 QA 준비).
+            - { name: CORS_ALLOWED_ORIGINS, value: "https://call.solidbob.cloud,https://server.solidbob.cloud,http://localhost:5173,http://127.0.0.1:5173" }
             # 없으면 루프백 밖을 전부 거절한다(fail-closed) — 파드는 뜨고 /health 가 `*_token_configured: false`.
             - name: CALL_MEDIATOR_INGEST_TOKEN
               valueFrom: { secretKeyRef: { name: call-mediator-tokens, key: CALL_MEDIATOR_INGEST_TOKEN, optional: true } }
