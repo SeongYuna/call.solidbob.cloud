@@ -40,7 +40,7 @@ class _StarDigits(MaskingPort):
         return masked, ([MaskedSpan(type="P4", span=(0, len(text)))] if masked != text else [])
 
 
-def _gold(turns, key_items, inquiry_type="일반행정 문의") -> PostcallGold:
+def _gold(turns, key_items, inquiry_type="일반행정") -> PostcallGold:
     return PostcallGold(id="PC-X", script_id="SYN-X", turns=turns, inquiry_type=inquiry_type, key_items=tuple(key_items))
 
 
@@ -65,7 +65,7 @@ def test_유형이_null_이면_0점이_아니라_측정_불가다():
 
 
 def test_유형을_내면_정확도를_숫자로_낸다():
-    r = run_eval([], Ports(postcall=_JoinAll("대중교통 안내")), [_gold(_TURNS, _ITEMS)])["postcall"]
+    r = run_eval([], Ports(postcall=_JoinAll("대중교통")), [_gold(_TURNS, _ITEMS)])["postcall"]
     assert r["type_accuracy"] == 0.0 and r["type_null"] == 0
 
 
