@@ -84,6 +84,12 @@ export interface RegistryDeps {
   /** 채널을 닫을 때 남은 결과를 기다리는 최대 시간. */
   drainTimeoutMs?: number;
   /**
+   * 서버에 통화 행이 만들어진 직후 `started` 를 대시보드로 보낼까. 기본 false — 이유는
+   * `announcePending` 과 같다(대시보드 파서가 모르는 `type` 에 오류 배너를 띄운다).
+   * `call_id`를 잡을 다른 수단이 없는 짧은 통화의 `/close` 404 를 막는다(`w6-close-callid-missing`).
+   */
+  announceStarted?: boolean;
+  /**
    * 추천 요청 직전에 `recommendation_pending` 을 대시보드로 보낼까. 기본 false —
    * `apps/call` 의 실서버 파서가 모르는 `type` 에 오류 배너를 띄워서, 수신 코드가 들어가기 전에 켜면
    * 라이브 화면이 깨진다(`w4-recommendation-pending-contract`).
@@ -241,6 +247,12 @@ export class CallRegistry {
           if (result.lastSegmentId > 0) {
             call.counter.resumeAfter(result.lastSegmentId);
             this.deps.log.info(`통화 다시 열림 call=${spec.callId} 발화 번호 ${result.lastSegmentId + 1} 부터`);
+          }
+          if (this.deps.announceStarted ?? false) {
+            this.deps.broadcaster.publish(spec.callId, {
+              type: "started",
+              payload: { call_id: spec.callId },
+            });
           }
           return true;
         },

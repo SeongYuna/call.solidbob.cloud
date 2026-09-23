@@ -35,7 +35,25 @@ import {
 import type { ManualSearchOutcome } from "../hooks/useCallMediatorSession";
 import { useCallStore, type Utterance } from "../store/callStore";
 import { isCallGuardDistress } from "../types/contract";
-import type { TranscriptQuerySegment } from "../types/contract";
+import type { ComplianceFinding, TranscriptQuerySegment } from "../types/contract";
+
+/** 화면에 그릴 컴플라이언스 경고 한 건 — 실서버 findings/로컬 mock 규칙을 같은 모양으로 맞춘다. */
+interface LineCompliance {
+  key: string;
+  detectedPhrase: string;
+  suggestedPhrase: string;
+}
+
+function complianceFromFindings(
+  findings: readonly ComplianceFinding[],
+): LineCompliance[] {
+  return findings.map((f) => ({
+    key: `${f.rule_code}:${f.phrase}`,
+    detectedPhrase: f.phrase,
+    suggestedPhrase:
+      f.alternative_source?.title ?? "권장 대체 표현이 등록되지 않았습니다.",
+  }));
+}
 
 /** 이 거리 안이면 맨 아래에 있는 것으로 본다. */
 const PIN_THRESHOLD_PX = 80;
@@ -108,6 +126,9 @@ export function TranscriptPanel({
   const callGuard = useCallStore((state) =>
     state.viewMode === "history" ? state.historyCallGuard : state.callGuard,
   );
+  // 상담기록 재생에는 저장되지 않는다(실시간 통화 전용) — history 모드에서는 항상 빈 채로
+  // 정직하게 남는다(mock으로 채우지 않는다).
+  const complianceFindings = useCallStore((state) => state.compliance);
   const accentHints = useCallStore((state) =>
     state.viewMode === "history" ? state.historyAccentHints : state.accentHints,
   );
@@ -126,6 +147,7 @@ export function TranscriptPanel({
   const historyCallId = useCallStore((state) => state.historyCallId);
   const setHistoryView = useCallStore((state) => state.setHistoryView);
   const callId = useCallStore((state) => state.callId);
+  const routingDecision = useCallStore((state) => state.routingDecision);
   const targetLanguage = useCallStore((state) =>
     state.viewMode === "history"
       ? state.historyTargetLanguage
@@ -518,6 +540,18 @@ export function TranscriptPanel({
           </button>
         </div>
       ) : null}
+      {/* J-5(decisions/313·126·407) — 통화 시작 직후 배정 판정이 기록된다. **판정이
+          연결을 바꾸지 않는다** — 이미 상담원이 받은 뒤의 기록이다. "배정됨"이라고
+          쓰지 않는다. 상담기록(history) 재생에는 이 값이 없다(저장 안 됨). */}
+      {!isHistory && routingDecision !== null ? (
+        <div className="history-banner" role="status">
+          <span>
+            배정 판정 기록됨 · {routingDecision.is_blacklisted ? "블랙리스트 등록 고객" : "블랙리스트 아님"}
+            {routingDecision.fell_back ? " · 근속 기준 상담사 없어 일반 배정" : ""}
+            {" "}— 연결은 바뀌지 않습니다(시연용 기록)
+          </span>
+        </div>
+      ) : null}
       <header className="panel-head transcript-head">
         <div className="transcript-head-row">
           <h2 id="transcript-heading">실시간 자막</h2>
@@ -708,10 +742,23 @@ export function TranscriptPanel({
               const hideLegacyGuard = customerRisks.some(
                 (risk) => risk.type === "abuse" || risk.type === "distress",
               );
-              const compliance =
+              // 실서버가 붙으면(`isCoreApiConfigured()`) 서버 판정(`applyCompliance`)만
+              // 쓴다 — 로컬 규칙(detectComplianceRisk)은 "불법체류" 한 단어만 잡는
+              // 자리표시자라 실제 위반 문장을 못 잡는다(`w6-compliance-alert-ui`).
+              // mock 모드는 서버가 이 신호를 보내지 않으므로 그대로 자리표시자를 쓴다.
+              const complianceWarnings: LineCompliance[] =
                 item.speaker === "agent" && !dismissed.has(item.segment_id)
-                  ? detectComplianceRisk(item.text)
-                  : null;
+                  ? isCoreApiConfigured()
+                    ? complianceFromFindings(
+                        complianceFindings[item.segment_id] ?? [],
+                      )
+                    : (() => {
+                        const risk = detectComplianceRisk(item.text);
+                        return risk === null
+                          ? []
+                          : [{ key: risk.detectedPhrase, ...risk }];
+                      })()
+                  : [];
               const translationHits =
                 hitsBySegment.get(`${item.segment_id}::tr`) ?? [];
               const ttsLang =
@@ -884,10 +931,11 @@ export function TranscriptPanel({
                         />
                       );
                     })}
-                    {compliance !== null ? (
+                    {complianceWarnings.map((warning) => (
                       <ComplianceWarningBanner
-                        detectedPhrase={compliance.detectedPhrase}
-                        suggestedPhrase={compliance.suggestedPhrase}
+                        key={warning.key}
+                        detectedPhrase={warning.detectedPhrase}
+                        suggestedPhrase={warning.suggestedPhrase}
                         onDismiss={() => {
                           setDismissed((current) => {
                             const next = new Set(current);
@@ -896,7 +944,7 @@ export function TranscriptPanel({
                           });
                         }}
                       />
-                    ) : null}
+                    ))}
                   </div>
                 </li>
               );
