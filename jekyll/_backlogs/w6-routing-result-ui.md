@@ -23,7 +23,7 @@ J-5 배정 판정은 통화 시작 직후 미디에이터가 부른다(PR #131).
 
 ## 완료 조건
 
-- [ ] 표시 위치·문구 합의(관리자 통화 상세 또는 상담원 통화 시작 배너)
+- [x] 표시 위치·문구 합의(관리자 통화 상세 또는 상담원 통화 시작 배너)
 - [ ] `routing_log` 를 읽는 API 가 필요하면 장민석 님 티켓으로 쪼갠다
 - [ ] 시연 SYN-006 → SYN-007 에서 `veteran` 이 화면에 보인다
 
@@ -40,3 +40,28 @@ J-5 배정 판정은 통화 시작 직후 미디에이터가 부른다(PR #131).
 **나머지는 그대로 `todo`** — WS 실시간 배너(통화 중 표시)·상담기록 상세 필드·
 `routing_log` 조회 API 는 전부 백엔드가 먼저 필요해 손대지 않았다. 완료 조건 3개
 중 아직 하나도 체크 못 했다(집계 수치는 원래 조건에 없던 것을 추가로 고친 것).
+
+## 2026-09-23 — WS 실시간 배너 완결 (조서희, 표시 위치는 09-22에 이미 정해 뒀다)
+
+**표시 위치·문구는 사실 이미 정해져 있었다** — 09-22에 J-5 배선을 만들었다가 롤백할 때
+(`w7-j5-routing-caller` 참고) `apps/call`의 WS 파싱·스토어(`routingDecision`)·
+`TranscriptPanel.tsx` 배너("배정 판정 기록됨 · 블랙리스트 여부 · 일반 배정 사유")는
+안 지웠다 — 백엔드가 그 메시지를 안 보내서 잠들어 있었을 뿐이다. 1번 조건은 그래서
+체크만 늦었다.
+
+**진짜 빠진 건 방송 자체였다.** `services/call-mediator`의 `decideRouting()`은 판정을
+부르고 **로그에만** 남기고 있었다(`call_registry.ts` 옛 주석: "화면 표시는 조서희 님과
+정한 뒤다"). `w6-close-callid-missing`에서 쓴 것과 같은 패턴으로 고쳤다:
+
+- `ports.ts`에 `CallMediatorMessage`에 `routing_decision` 추가(`RoutingDecisionPayload`는
+  이미 있었다)
+- `call_registry.ts`의 `RegistryDeps.announceRouting`(기본 false) 신설, `decideRouting()`
+  성공 시 서버 응답을 그대로 방송(변형 없음 — 서버 `routing_decision_schema.py`가 프론트
+  `parseRoutingDecision`이 요구하는 필드를 전부 갖고 있는 것을 확인했다)
+- `main.ts`에서 `announceRouting: true`로 켰다
+- 테스트 3건(꺼져있으면 안 보냄·켜져있으면 그대로 방송·판정 실패면 안 보냄) —
+  `npm test` 163/163
+
+**남은 것** — 운영 재확인(SYN-006 → SYN-007에서 실제로 `veteran` 배너가 뜨는지, 3번
+조건)과 `routing_log` 조회 API(2번 조건, 필요하면 장민석 님 티켓)는 그대로 `todo`다.
+`status`는 `in-progress`로 유지한다.
