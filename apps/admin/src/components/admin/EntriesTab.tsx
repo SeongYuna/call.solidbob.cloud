@@ -18,6 +18,13 @@ function entryDisplayHint(
   );
 }
 
+/** `adminStore.extendEntry`가 서버에 보내는 것과 같은 계산(`Math.round(months * 30)`일, 지금부터). */
+function previewExpiryDate(months: number): string {
+  const days = Math.round(months * 30);
+  const date = new Date(Date.now() + days * 24 * 60 * 60 * 1000);
+  return date.toLocaleDateString("ko-KR");
+}
+
 type EntryFilter = "all" | "new" | "repeat";
 
 /**
@@ -257,6 +264,12 @@ function EntryRow({
             }
           }}
         />
+        {/* "재설정"은 기존 만료일에 더하는 게 아니라 **지금부터** 다시 잡는다 — 입력칸이
+            기본값(전역 설정)으로 채워져 있어, 손대지 않고 눌러도 만료일이 조용히 바뀐다는
+            QA 지적(`w6-qa-call-screen-fixes` Q-63)에 맞춰 결과 날짜를 미리 보여준다. */}
+        <span className="admin-meta admin-entry-extend-preview">
+          → {previewExpiryDate(months)} 로
+        </span>
         <button
           type="button"
           className="btn-outline admin-release"

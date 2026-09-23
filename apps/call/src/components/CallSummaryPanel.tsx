@@ -407,9 +407,9 @@ function callDurationS(utterances: Utterance[]): number {
 /**
  * 관리자에게 보낼 대화 맥락.
  *
- * ⚠ **마스킹된 자막(`text`)을 쓴다. `plain_text`(원문)를 쓰지 않는다** —
- * `DASAN-MANUAL-5.5`·C-5. 원문을 실으면 마스킹을 앞단에 둔 의미가 사라진다.
- * 고객 발화만 담는다 — 판단 대상이 고객이기 때문이다.
+ * ⚠ **마스킹된 자막(`text`)만 쓴다** — `DASAN-MANUAL-5.5`·C-5. 원문을 실으면
+ * 마스킹을 앞단에 둔 의미가 사라진다(`Utterance`엔 원문 필드 자체가 없다,
+ * `decisions/408`). 고객 발화만 담는다 — 판단 대상이 고객이기 때문이다.
  */
 function maskedExcerpt(utterances: Utterance[]): string {
   return utterances

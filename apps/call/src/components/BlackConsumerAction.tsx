@@ -9,7 +9,8 @@ interface BlackConsumerActionProps {
 /**
  * Requirement: C-6 확장. 욕설·폭언으로 통화가 길어진 고객을 상담원이 통화 종료 시
  * 직접 판단해 분류한다 — 자동 탐지가 아니다(부록 A-2, 판정은 사람이 한다).
- * 확인 즉시 관리자에게 알림을 보낸다(현재 mock — services/call-mediator 알림 API 없음).
+ * 분류는 이 화면에 기록되지만, 관리자에게 실제로 알림을 보내는 API는 아직 없다
+ * (`w6-qa-ui-defects-three`) — "전송됨"이라고 쓰지 않는다.
  */
 export function BlackConsumerAction({
   callId,
@@ -27,17 +28,20 @@ export function BlackConsumerAction({
         <>
           <span className="black-consumer-badge">
             <FlagIcon />
-            블랙컨슈머로 분류됨 · 관리자에게 전송됨
+            블랙컨슈머로 분류됨 · 관리자 알림 연동 전
           </span>
           <p className="black-consumer-note">
-            상담원이 직접 분류했습니다. 자동 탐지가 아닙니다.
+            상담원이 직접 분류했습니다. 자동 탐지가 아닙니다. 이 분류는
+            여기에 기록되지만, 관리자에게 알림을 보내는 기능은 아직
+            연동되지 않았습니다.
           </p>
         </>
       ) : (
         <>
           <p className="black-consumer-note">
             욕설·폭언이 반복되거나 통화가 비정상적으로 길어졌다면 분류할 수
-            있습니다. 분류하면 관리자에게 즉시 알림이 전송됩니다.
+            있습니다. 관리자 알림은 아직 연동되지 않았습니다 — 분류 기록만
+            남습니다.
           </p>
           <button
             type="button"
@@ -52,8 +56,8 @@ export function BlackConsumerAction({
       {confirming ? (
         <ConfirmDialog
           title="블랙컨슈머로 분류하시겠습니까?"
-          message="확인하면 관리자에게 즉시 알림이 전송됩니다. 이 분류는 상담원의 직접 판단으로 기록됩니다."
-          confirmLabel="분류 및 알림 전송"
+          message="확인하면 상담원의 직접 판단으로 기록됩니다. 관리자 알림은 아직 연동되지 않았습니다."
+          confirmLabel="분류하기"
           cancelLabel="취소"
           onConfirm={() => {
             flagBlackConsumer(callId);

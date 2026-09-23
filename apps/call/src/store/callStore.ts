@@ -41,7 +41,6 @@ export interface Utterance {
   segment_id: string;
   speaker: Speaker;
   text: string;
-  plain_text?: string;
   masked: MaskedSpan[];
   is_final: boolean;
   utterance_end_ms: number;
@@ -121,7 +120,7 @@ export interface CallState {
   /** 히스토리 모드 전용. 실시간 translations 과 섞지 않는다. */
   historyTranslations: Record<string, TranslatedUtterance>;
   historyAgentTts: Record<string, AgentTtsStatus>;
-  historyCallGuard: Record<string, CallGuardFlag>;
+  historyCallGuard: Record<string, CallGuardFlag[]>;
   historyAccentHints: Record<string, true>;
   /** 히스토리 모드 전용. 실시간 cards 와 섞지 않는다. */
   historyCards: PanelCard[];
@@ -139,7 +138,7 @@ export interface CallState {
   translations: Record<string, TranslatedUtterance>;
   agentTts: Record<string, AgentTtsStatus>;
   /** C-6 mock. 키는 TranscriptEvent.segment_id. */
-  callGuard: Record<string, CallGuardFlag>;
+  callGuard: Record<string, CallGuardFlag[]>;
   /**
    * C-1~C-4. 키는 TranscriptEvent.segment_id, 값은 그 세그먼트에 쌓인 위반 목록 —
    * 한 세그먼트에 여러 건이 잡힐 수 있어(call_guard와 달리 override하지 않는다).
@@ -254,7 +253,7 @@ const emptyCall = {
   historyTargetLanguage: null as TargetLanguage | null,
   historyTranslations: {} as Record<string, TranslatedUtterance>,
   historyAgentTts: {} as Record<string, AgentTtsStatus>,
-  historyCallGuard: {} as Record<string, CallGuardFlag>,
+  historyCallGuard: {} as Record<string, CallGuardFlag[]>,
   historyAccentHints: {} as Record<string, true>,
   historyCards: [] as PanelCard[],
   cards: [] as PanelCard[],
@@ -266,7 +265,7 @@ const emptyCall = {
   closure: null as ClosureEvent | null,
   translations: {} as Record<string, TranslatedUtterance>,
   agentTts: {} as Record<string, AgentTtsStatus>,
-  callGuard: {} as Record<string, CallGuardFlag>,
+  callGuard: {} as Record<string, CallGuardFlag[]>,
   compliance: {} as Record<string, ComplianceFinding[]>,
   complianceUnavailable: {} as Record<string, ComplianceUnavailable>,
   routingDecision: null as RoutingDecision | null,
@@ -455,9 +454,6 @@ export const useCallStore = create<CallState>((set, get) => ({
         segment_id: event.segment_id,
         speaker: event.speaker,
         text: event.text,
-        ...(event.plain_text === undefined
-          ? {}
-          : { plain_text: event.plain_text }),
         masked: event.masked,
         is_final: event.is_final,
         utterance_end_ms: event.utterance_end_ms,
@@ -659,12 +655,20 @@ export const useCallStore = create<CallState>((set, get) => ({
   },
 
   applyCallGuard: (transcriptSegmentId, event) => {
-    set((state) => ({
-      callGuard: {
-        ...state.callGuard,
-        [transcriptSegmentId]: event,
-      },
-    }));
+    set((state) => {
+      const existing = state.callGuard[transcriptSegmentId] ?? [];
+      // 같은 세그먼트에 위기 신호와 폭언이 같이 잡히면 하나가 하나를 덮어쓰던 버그
+      // (w6-qa-ui-defects-three) — 배열로 쌓는다. 같은 갈래가 다시 오면 중복만 막는다.
+      if (existing.some((flag) => flag.category === event.category)) {
+        return {};
+      }
+      return {
+        callGuard: {
+          ...state.callGuard,
+          [transcriptSegmentId]: [...existing, event],
+        },
+      };
+    });
   },
 
   applyCompliance: (transcriptSegmentId, event) => {

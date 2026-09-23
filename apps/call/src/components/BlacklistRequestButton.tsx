@@ -41,7 +41,7 @@ export function BlacklistRequestButton({
 
   const evidence = useMemo(
     () =>
-      collectEvidence(Object.values(callGuard) as CallGuardFlag[], {
+      collectEvidence(Object.values(callGuard).flat() as CallGuardFlag[], {
         callDurationS,
       }),
     [callGuard, callDurationS],

@@ -44,3 +44,9 @@ paths:
 
 - **`0.1.35` 운영 배포됨** (PR #132 머지 07:57 → release 성공 · `/health` `version: 0.1.35` · `read_guard: open` 확인, 09-22)
 - 남은 것: `w6-read-path-token-ui`(조서희) 뒤 `server-env` 에 `READ_AUTH_REQUIRED=true` → `read_guard: locked`
+
+## 2026-09-23 — 조서희, 프론트 쪽 붙였다
+
+`w6-read-path-token-ui` 완료 — `coreClient.ts`의 네 함수(`fetchCallList`·`fetchCallTranscript`·
+`fetchCallRecord`·`searchDocuments`)가 이제 상담원 토큰을 싣는다. **`server-env`의
+`READ_AUTH_REQUIRED=true`를 켜도 되는 상태다** — 코드 배포 없이 그 한 줄만 남았다.
