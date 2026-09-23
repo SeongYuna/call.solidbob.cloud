@@ -13,6 +13,7 @@ import type {
   MaskType,
   RecommendationBatch,
   RecommendationCard,
+  RoutingDecision,
   Speaker,
   TranscriptEvent,
 } from "../../types/contract";
@@ -25,7 +26,8 @@ type ParsedMessage =
   | { kind: "call_guard"; payload: { segment_id: string; flags: CallGuardFlag[] } }
   | { kind: "compliance"; payload: { segment_id: string; findings: ComplianceFinding[] } }
   | { kind: "compliance_unavailable"; payload: { segment_id: string; event: ComplianceUnavailable } }
-  | { kind: "closure"; payload: ClosureEvent };
+  | { kind: "closure"; payload: ClosureEvent }
+  | { kind: "routing_decision"; payload: RoutingDecision };
 
 export class RealCallMediatorClient implements CallMediatorClient {
   readonly mode = "live" as const;
@@ -163,6 +165,10 @@ export class RealCallMediatorClient implements CallMediatorClient {
       listeners.onComplianceUnavailable?.(message.payload.segment_id, message.payload.event);
       return;
     }
+    if (message.kind === "routing_decision") {
+      listeners.onRoutingDecision?.(message.payload);
+      return;
+    }
     listeners.onClosure(message.payload);
   }
 }
@@ -181,7 +187,8 @@ export function parseCallMediatorMessage(value: unknown): ParsedMessage | null {
     tagged === "call_guard" ||
     tagged === "compliance" ||
     tagged === "compliance_unavailable" ||
-    tagged === "closure"
+    tagged === "closure" ||
+    tagged === "routing_decision"
   ) {
     const inner = isRecord(body.payload) ? body.payload : body;
     return parseByKind(tagged, inner);
@@ -208,7 +215,8 @@ function parseByKind(
     | "call_guard"
     | "compliance"
     | "compliance_unavailable"
-    | "closure",
+    | "closure"
+    | "routing_decision",
   body: Record<string, unknown>,
 ): ParsedMessage | null {
   if (kind === "transcript") {
@@ -233,6 +241,10 @@ function parseByKind(
   }
   if (kind === "compliance_unavailable") {
     const payload = parseComplianceUnavailable(body);
+    return payload === null ? null : { kind, payload };
+  }
+  if (kind === "routing_decision") {
+    const payload = parseRoutingDecision(body);
     return payload === null ? null : { kind, payload };
   }
   const payload = parseClosure(body);
@@ -327,6 +339,42 @@ function parseComplianceUnavailable(
     return null;
   }
   return { segment_id, event: { call_id, segment_id: Number(segment_id), status } };
+}
+
+/**
+ * `RoutingDecisionPayload` 그대로(`services/call-mediator/src/app/ports.ts`) —
+ * J-5 배정 판정. `assigned_agent_id`는 선택 필드처럼 null이 올 수 있어
+ * `readStringValue`로만 받는다(없으면 "타입 틀림" 경고가 아니라 그냥 null).
+ */
+function parseRoutingDecision(body: Record<string, unknown>): RoutingDecision | null {
+  const call_id = readString(body, "call_id");
+  const is_blacklisted = readBoolean(body, "is_blacklisted");
+  const fell_back = readBoolean(body, "fell_back");
+  const reason = readString(body, "reason");
+  const customer_identified = readBoolean(body, "customer_identified");
+  const veteran_years = readNumber(body, "veteran_years");
+  const unknown_candidates = parseStringList(body.unknown_candidates);
+  if (
+    call_id === null ||
+    is_blacklisted === null ||
+    fell_back === null ||
+    reason === null ||
+    customer_identified === null ||
+    veteran_years === null ||
+    unknown_candidates === null
+  ) {
+    return null;
+  }
+  return {
+    call_id,
+    assigned_agent_id: readStringValue(body.assigned_agent_id),
+    is_blacklisted,
+    fell_back,
+    reason,
+    customer_identified,
+    veteran_years,
+    unknown_candidates,
+  };
 }
 
 function unwrapPayload(value: unknown): Record<string, unknown> | null {

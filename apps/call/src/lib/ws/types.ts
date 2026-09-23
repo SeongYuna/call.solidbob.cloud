@@ -5,6 +5,7 @@ import type {
   ComplianceUnavailable,
   ManualSearchRequest,
   RecommendationBatch,
+  RoutingDecision,
   TranscriptEvent,
   TranslatedUtterance,
   AgentTtsStatus,
@@ -42,6 +43,11 @@ export interface CallMediatorListener {
    * 다른 채널이다. 합치면 "검사가 죽었다"가 "위반 없음"으로 보인다. 키는 자막 segment_id.
    */
   onComplianceUnavailable?: (transcriptSegmentId: string, event: ComplianceUnavailable) => void;
+  /**
+   * J-5 배정 판정(`decisions/313`·`126`·`407`) — 통화 시작 직후 한 번. 세그먼트와
+   * 무관해 키가 없다(통화 전체에 하나).
+   */
+  onRoutingDecision?: (event: RoutingDecision) => void;
   /** A-5 ⓑ. 번역이 아님. 키만 보낸다. 점수는 없다. */
   onAccentRecognition?: (transcriptSegmentId: string) => void;
   /** A-5. 통화 시작 시 대상 언어. 한국어 전용 mock은 null. */

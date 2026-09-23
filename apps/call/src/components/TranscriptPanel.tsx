@@ -126,6 +126,7 @@ export function TranscriptPanel({
   const historyCallId = useCallStore((state) => state.historyCallId);
   const setHistoryView = useCallStore((state) => state.setHistoryView);
   const callId = useCallStore((state) => state.callId);
+  const routingDecision = useCallStore((state) => state.routingDecision);
   const targetLanguage = useCallStore((state) =>
     state.viewMode === "history"
       ? state.historyTargetLanguage
@@ -516,6 +517,18 @@ export function TranscriptPanel({
           <button type="button" className="history-banner-back" onClick={resumeLive}>
             실시간으로 돌아가기
           </button>
+        </div>
+      ) : null}
+      {/* J-5(decisions/313·126·407) — 통화 시작 직후 배정 판정이 기록된다. **판정이
+          연결을 바꾸지 않는다** — 이미 상담원이 받은 뒤의 기록이다. "배정됨"이라고
+          쓰지 않는다. 상담기록(history) 재생에는 이 값이 없다(저장 안 됨). */}
+      {!isHistory && routingDecision !== null ? (
+        <div className="history-banner" role="status">
+          <span>
+            배정 판정 기록됨 · {routingDecision.is_blacklisted ? "블랙리스트 등록 고객" : "블랙리스트 아님"}
+            {routingDecision.fell_back ? " · 근속 기준 상담사 없어 일반 배정" : ""}
+            {" "}— 연결은 바뀌지 않습니다(시연용 기록)
+          </span>
         </div>
       ) : null}
       <header className="panel-head transcript-head">

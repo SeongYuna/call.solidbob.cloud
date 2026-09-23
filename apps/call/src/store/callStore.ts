@@ -14,6 +14,7 @@ import type {
   CallGuardFlag,
   ComplianceFinding,
   ComplianceUnavailable,
+  RoutingDecision,
   BlacklistEntryItem,
   BlacklistEvidence,
   BlacklistRequestItem,
@@ -152,6 +153,12 @@ export interface CallState {
    * 없다). 아직 어떤 컴포넌트도 읽지 않는다 — 이번 범위는 "onError 오탐 제거"까지다.
    */
   complianceUnavailable: Record<string, ComplianceUnavailable>;
+  /**
+   * J-5 배정 판정(`decisions/313`·`126`·`407`) — 통화 시작 직후 한 번만 온다. 세그먼트
+   * 단위가 아니라 통화 전체에 하나라 `Record`가 아니라 단일 값이다. **판정이 연결을
+   * 바꾸지 않는다** — 화면은 "배정됨"이 아니라 "판정 기록됨"으로만 보여줘야 한다.
+   */
+  routingDecision: RoutingDecision | null;
   /** A-5 ⓑ. 키만. 점수는 없다. */
   accentHints: Record<string, true>;
   /** C-6 확장. 상담원이 통화 종료 시 수동으로 분류한 결과 — 자동 탐지가 아니다. */
@@ -190,6 +197,7 @@ export interface CallState {
     transcriptSegmentId: string,
     event: ComplianceUnavailable,
   ) => void;
+  applyRoutingDecision: (event: RoutingDecision) => void;
   applyAccentHint: (transcriptSegmentId: string) => void;
   flagBlackConsumer: (callId: string) => void;
   setTargetLanguage: (lang: TargetLanguage | null) => void;
@@ -256,6 +264,7 @@ const emptyCall = {
   callGuard: {} as Record<string, CallGuardFlag>,
   compliance: {} as Record<string, ComplianceFinding[]>,
   complianceUnavailable: {} as Record<string, ComplianceUnavailable>,
+  routingDecision: null as RoutingDecision | null,
   accentHints: {} as Record<string, true>,
   blackConsumerFlag: null as BlackConsumerFlag | null,
 };
@@ -654,6 +663,10 @@ export const useCallStore = create<CallState>((set, get) => ({
         [transcriptSegmentId]: event,
       },
     }));
+  },
+
+  applyRoutingDecision: (event) => {
+    set({ routingDecision: event });
   },
 
   applyAccentHint: (transcriptSegmentId) => {
