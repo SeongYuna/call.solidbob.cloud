@@ -167,6 +167,11 @@ export interface CallState {
   blacklistRequests: BlacklistRequestItem[];
   /** J-4 — 승인되어 적용 중인 등록. 배정(J-5)이 보는 것은 이쪽이다. */
   blacklistEntries: BlacklistEntryItem[];
+  /**
+   * 통화가 서버에 만들어졌다는 신호(`onStarted`)에서 `callId`만 잡는다 — 전사·추천·판정을
+   * 기다리지 않는다(`w6-close-callid-missing`). 세그먼트가 없으므로 `utterances`는 건드리지 않는다.
+   */
+  applyStarted: (callId: string) => void;
   applyTranscript: (event: TranscriptEvent) => void;
   applyRecommendation: (
     cards: RecommendationCard[],
@@ -285,41 +290,59 @@ function isAuto(item: PanelCard): boolean {
 /**
  * F-2(필요서류) 게이트는 자동 추천 카드에만 붙인다. 상담원이 직접 찾아온 카드에
  * 붙으면 서류 목록이 그 검색 결과에 딸린 것처럼 읽힌다.
+ *
+ * 판정의 조항(`event.procedure`)은 추천 카드의 `source.doc_id`와 같은 체계다
+ * (`RecommendationCard` 주석 참고) — **그 문서를 실제로 추천한 카드**에만 붙인다.
+ * "가장 최근의, 아직 판정 없는 자동 카드"에 붙이면 지나간 추천 묶음의 엉뚱한
+ * 절차 밑에 서류가 달린다(`w6-closure-card-pairing`).
  */
 function attachIndex(cards: PanelCard[], event: ClosureEvent): number {
-  const sameType = cards.findIndex(
+  const sameProcedure = cards.findIndex(
     (item) => item.closure?.procedure === event.procedure,
   );
-  if (sameType !== -1) {
-    return sameType;
+  if (sameProcedure !== -1) {
+    return sameProcedure;
   }
-  for (let i = cards.length - 1; i >= 0; i -= 1) {
-    if (cards[i].closure === null && isAuto(cards[i])) {
-      return i;
-    }
-  }
-  for (let i = cards.length - 1; i >= 0; i -= 1) {
-    if (isAuto(cards[i])) {
-      return i;
-    }
-  }
-  return -1;
+  return cards.findIndex(
+    (item) => isAuto(item) && item.card.source.doc_id === event.procedure,
+  );
+}
+
+/**
+ * 판정과 같은 문서를 추천한 카드가 하나도 없을 때 쓴다(예: 그 카드가 속한 추천
+ * 묶음이 이미 화면에서 사라졌거나, 애초에 추천된 적 없이 판정만 온 경우) —
+ * 남의 카드에 붙이는 대신 판정 전용 카드를 새로 만든다.
+ */
+function cardFromClosure(event: ClosureEvent): RecommendationCard {
+  const title = event.procedure_title ?? event.procedure;
+  return {
+    title,
+    summary: event.reason ?? "",
+    source: event.source ?? { doc_id: event.procedure, title },
+    similarity_score: 0,
+    source_type: "auto",
+  };
 }
 
 function withClosure(
   cards: PanelCard[],
   event: ClosureEvent,
 ): PanelCard[] {
-  if (cards.length === 0) {
-    return cards;
-  }
   const index = attachIndex(cards, event);
-  if (index === -1) {
-    return cards;
+  if (index !== -1) {
+    return cards.map((item, i) =>
+      i === index ? { ...item, closure: event, settled: false } : item,
+    );
   }
-  return cards.map((item, i) =>
-    i === index ? { ...item, closure: event, settled: false } : item,
-  );
+  return [
+    ...cards,
+    {
+      card: cardFromClosure(event),
+      trigger_at_ms: 0,
+      closure: event,
+      settled: false,
+    },
+  ];
 }
 
 /** 끝난 통화: 시나리오가 가진 카드를 한꺼번에. 실시간처럼 순차로 쌓지 않는다. */
@@ -421,6 +444,10 @@ export const useCallStore = create<CallState>((set, get) => ({
   blacklistRequests: [] as BlacklistRequestItem[],
   blacklistEntries: [] as BlacklistEntryItem[],
   ...emptyCall,
+
+  applyStarted: (callId) => {
+    set({ callId });
+  },
 
   applyTranscript: (event) => {
     set((state) => {

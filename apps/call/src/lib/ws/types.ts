@@ -14,6 +14,13 @@ import type {
 import type { TargetLanguage } from "../language/languageMeta";
 
 export interface CallMediatorListener {
+  /**
+   * 통화가 서버에 실제로 만들어졌다는 신호(2026-09-22, `services/call-mediator`
+   * `announceStarted`) — 통화당 한 번, 첫 전사보다도 먼저 올 수 있다. `callId`를
+   * 이 시점에 잡아 두면 발화가 하나도 없는 짧은 통화도 종료가 된다
+   * (`w6-close-callid-missing`). mock은 안 보낸다 — mock은 시나리오가 이미 callId를 안다.
+   */
+  onStarted?: (callId: string) => void;
   onTranscript: (event: TranscriptEvent) => void;
   onRecommendation: (event: RecommendationBatch) => void;
   /**

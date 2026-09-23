@@ -12,6 +12,7 @@ function setup(
   opts: {
     ledger?: Record<string, number>;
     caps?: { perDay: number; perMonth: number };
+    announceStarted?: boolean;
     announcePending?: boolean;
     announceCallGuard?: boolean;
     announceCompliance?: boolean;
@@ -40,6 +41,7 @@ function setup(
     log,
     nowMs: () => now,
     drainTimeoutMs: 500,
+    announceStarted: opts.announceStarted,
     announcePending: opts.announcePending,
     announceCallGuard: opts.announceCallGuard,
     announceCompliance: opts.announceCompliance,
@@ -73,6 +75,29 @@ test("통화를 처음 여는 순간 서버에 통화 행을 만든다 — 화�
   await openOk(registry, "test-1", "customer", 2);
   assert.equal(hub.calls.length, 1);
   assert.deepEqual(hub.calls[0], { call_id: "test-1", stt_engine: "fake-stt", channel_count: 2 });
+});
+
+test("announceStarted 가 꺼져 있으면(기본) started 를 안 보낸다", async () => {
+  const { registry, broadcaster } = setup();
+  await openOk(registry, "test-1", "agent");
+  assert.equal(broadcaster.ofType("started").length, 0);
+});
+
+test("announceStarted 가 켜져 있으면 서버에 통화 행이 생기자마자 started 를 한 번 보낸다 — 화자가 둘이어도 한 번", async () => {
+  const { registry, broadcaster } = setup({ announceStarted: true });
+  await openOk(registry, "test-1", "agent", 2);
+  await openOk(registry, "test-1", "customer", 2);
+  const started = broadcaster.ofType("started");
+  assert.equal(started.length, 1);
+  assert.deepEqual(started[0]!.payload, { call_id: "test-1" });
+});
+
+test("서버가 통화 시작에 실패하면 started 를 보내지 않는다", async () => {
+  const { registry, hub, broadcaster } = setup({ announceStarted: true });
+  hub.failStart = 503;
+  const result = await registry.open({ callId: "test-1", speaker: "agent", sampleRate: 16000, channelCount: 1 });
+  assert.equal(result.ok, false);
+  assert.equal(broadcaster.ofType("started").length, 0);
 });
 
 test("같은 통화의 같은 화자 채널을 두 번 열지 않는다", async () => {

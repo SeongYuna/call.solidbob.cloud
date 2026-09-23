@@ -20,6 +20,7 @@ import type {
 import type { CallMediatorClient, CallMediatorListener, WrapUpSegment } from "./types";
 
 type ParsedMessage =
+  | { kind: "started"; payload: { call_id: string } }
   | { kind: "transcript"; payload: TranscriptEvent }
   | { kind: "recommendation"; payload: RecommendationBatch }
   | { kind: "recommendation_pending"; payload: { call_id: string } }
@@ -137,6 +138,10 @@ export class RealCallMediatorClient implements CallMediatorClient {
       return;
     }
 
+    if (message.kind === "started") {
+      listeners.onStarted?.(message.payload.call_id);
+      return;
+    }
     if (message.kind === "transcript") {
       listeners.onTranscript(message.payload);
       return;
@@ -181,6 +186,7 @@ export function parseCallMediatorMessage(value: unknown): ParsedMessage | null {
 
   const tagged = readString(body, "type");
   if (
+    tagged === "started" ||
     tagged === "transcript" ||
     tagged === "recommendation" ||
     tagged === "recommendation_pending" ||
@@ -209,6 +215,7 @@ export function parseCallMediatorMessage(value: unknown): ParsedMessage | null {
 
 function parseByKind(
   kind:
+    | "started"
     | "transcript"
     | "recommendation"
     | "recommendation_pending"
@@ -219,6 +226,10 @@ function parseByKind(
     | "routing_decision",
   body: Record<string, unknown>,
 ): ParsedMessage | null {
+  if (kind === "started") {
+    const payload = parseStarted(body);
+    return payload === null ? null : { kind, payload };
+  }
   if (kind === "transcript") {
     const payload = parseTranscript(body);
     return payload === null ? null : { kind, payload };
@@ -249,6 +260,12 @@ function parseByKind(
   }
   const payload = parseClosure(body);
   return payload === null ? null : { kind, payload };
+}
+
+/** `services/call-mediator`의 `StartedPayload` — 통화가 서버에 만들어졌다는 신호. */
+function parseStarted(body: Record<string, unknown>): { call_id: string } | null {
+  const call_id = readString(body, "call_id");
+  return call_id === null ? null : { call_id };
 }
 
 /** `services/call-mediator`의 `RecommendationPending` — 「검색 중」 신호. 값은 문자열(7.3절). */
