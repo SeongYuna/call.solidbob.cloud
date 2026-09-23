@@ -2,7 +2,7 @@
 title: "`vercel.json` 셋 — PM·ai·server 브랜치의 Vercel 배포 생성을 끈다 (하루 100건 한도)"
 assignee: "조서희"
 role: "app"
-status: "todo"
+status: "done"
 sprint: 6
 priority: 57
 date: 2026-09-22
@@ -34,3 +34,8 @@ main·frontend 만 남아 147 → 76 이 된다. `apps/` 가 조서희 전담이
 - [ ] 런북 18-4 에 한 줄(정성윤)
 
 근거: 정성윤 11·14번 기록 · 런북 18-4.
+
+## 2026-09-22 — 파일 대신 Vercel 설정으로 끝냄 (정성윤)
+
+정성윤이 **Vercel 프로젝트 설정에서 직접** 브랜치 배포를 막았다 — `vercel.json` 파일은 넣지 않는다. 그래서 `apps/`(조서희 전담)는 건드리지 않았다.
+확인할 것: 다음 `PM`·`ai`·`server` push 에서 Vercel 체크가 생기지 않는지. 설정이 저장소에 없으므로 프로젝트를 새로 만들면 다시 해야 한다(런북 18-4 에 한 줄).

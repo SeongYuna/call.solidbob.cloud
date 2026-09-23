@@ -22,6 +22,7 @@ import {
   type RecommendRequest,
   type RoutingDecisionPayload,
   type RoutingDecisionRequest,
+  type CallStartResult,
 } from "../app/ports.ts";
 
 export class HttpHub implements HubPort {
@@ -43,8 +44,9 @@ export class HttpHub implements HubPort {
     }
   }
 
-  async startCall(request: CallStartRequest): Promise<void> {
-    await this.post("/hub/calls", request);
+  async startCall(request: CallStartRequest): Promise<CallStartResult> {
+    const body = await this.post("/hub/calls", request);
+    return { lastSegmentId: lastSegmentIdOf(body) };
   }
 
   async decideRouting(request: RoutingDecisionRequest): Promise<RoutingDecisionPayload> {
@@ -114,4 +116,17 @@ export class HttpHub implements HubPort {
     }
     return response.json();
   }
+}
+
+/**
+ * 응답의 `last_segment_id`(서버는 숫자를 문자열로 싣는다 — `StrField`). 없거나 이상하면 0 — 옛 서버와도 돈다.
+ * 0 이면 지금처럼 1부터 센다.
+ */
+export function lastSegmentIdOf(body: unknown): number {
+  if (typeof body !== "object" || body === null) {
+    return 0;
+  }
+  const raw = (body as { last_segment_id?: unknown }).last_segment_id;
+  const value = typeof raw === "string" ? Number(raw) : raw;
+  return typeof value === "number" && Number.isSafeInteger(value) && value > 0 ? value : 0;
 }

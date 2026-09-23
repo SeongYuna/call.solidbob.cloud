@@ -103,6 +103,46 @@ def test_UPSERT_충돌_키는_call_id와_segment_id_복합키다():
     assert 'ON CONFLICT ("segment_id")' not in upsert
 
 
+class _ZeroRowCursor(_FakeCursor):
+    """UPSERT 가 WHERE(화자 일치)에 걸려 0행을 갱신한 상황을 흉내 낸다."""
+
+    rowcount = 0
+
+
+class _ZeroRowConnection(_FakeConnection):
+    @asynccontextmanager
+    async def cursor(self):
+        yield _ZeroRowCursor(self._log)
+
+
+def test_UPSERT_는_화자가_같을_때만_덮는다():
+    """w6-segment-id-reuse — 화자가 다른 갱신은 번호 충돌이다. SQL 에 화자 조건이 붙어 있어야 한다."""
+    log, _ = _record(_final())
+    assert 'WHERE "transcript_segment"."speaker" = EXCLUDED."speaker"' in log[0][1]
+
+
+def test_다른_화자로_덮으려_하면_거절하고_커밋도_구간_삭제도_하지_않는다():
+    """2026-09-22 운영 QA test-qa-05 — 재연결 뒤 고객 발화가 1번(상담원 인사)을 덮고 화자는 상담원으로 남았다."""
+    import pytest
+
+    from hub.app.ports.output.transcript_ingest_record_port import SegmentSpeakerConflictError
+
+    log, holder = [], []
+
+    @asynccontextmanager
+    async def _connect():
+        conn = _ZeroRowConnection(log)
+        holder.append(conn)
+        yield conn
+
+    repo = PostgresTranscriptSegmentRepository(_connect)
+    with pytest.raises(SegmentSpeakerConflictError) as err:
+        asyncio.run(repo.record(_final()))
+    assert (err.value.call_id, err.value.segment_id) == ("c_001", 31)
+    assert holder[0].committed is False
+    assert not any('DELETE FROM "masking_event"' in row[1] for row in log)
+
+
 def test_마스킹_구간_삭제는_다른_통화의_같은_순번을_건드리지_않는다():
     """call_id 없이 segment_id 로만 지우면 다른 통화의 같은 순번 구간까지 지워진다."""
     log, _ = _record(_final())
@@ -278,3 +318,40 @@ async def _reset_calls(connect, *call_ids):
                     (call_id,),
                 )
         await conn.commit()
+
+
+@pytest.mark.integration
+def test_실제_DB에서_같은_번호를_다른_화자로_덮으면_거절되고_원래_발화가_남는다(integration_settings):
+    """w6-segment-id-reuse — 재연결한 콜 미디에이터가 번호를 1부터 다시 세도 저장된 전사가 사라지지 않는다.
+    같은 화자의 재전송(재시도)은 여전히 덮는다(decisions/205)."""
+    import asyncio
+
+    from hub.adapter.outbound.postgres.connection import build_connection_factory
+    from hub.app.ports.output.transcript_ingest_record_port import SegmentSpeakerConflictError
+
+    connect = build_connection_factory(integration_settings)
+    call_id = "it_segreuse_01"
+
+    async def scenario():
+        await _reset_calls(connect, call_id)
+        repo = PostgresTranscriptSegmentRepository(connect)
+        await repo.record(TranscriptEvent(call_id=call_id, segment_id=1, speaker="agent",
+                                          text="안녕하세요 다산콜센터입니다", is_final=True))
+        await repo.record(TranscriptEvent(call_id=call_id, segment_id=1, speaker="agent",
+                                          text="안녕하세요 다산콜센터입니다.", is_final=True))  # 재시도 — 덮는다
+        conflicted = False
+        try:
+            await repo.record(TranscriptEvent(call_id=call_id, segment_id=1, speaker="customer",
+                                              text="서류 준비해서 오늘 안에 다 끝내고 싶어서요", is_final=True))
+        except SegmentSpeakerConflictError:
+            conflicted = True
+        async with connect() as conn:
+            async with conn.cursor() as cur:
+                await cur.execute("SELECT speaker, text FROM transcript_segment WHERE call_id=%s AND segment_id=1",
+                                  (call_id,))
+                row = await cur.fetchone()
+        return conflicted, row
+
+    conflicted, row = asyncio.run(scenario())
+    assert conflicted is True
+    assert tuple(row) == ("agent", "안녕하세요 다산콜센터입니다.")

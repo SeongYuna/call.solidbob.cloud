@@ -79,3 +79,7 @@ PR #131 머지 → release 성공. 위 절들의 태그 `0.2.4` 는 #129 와 겹
 
 - **`0.1.35` 운영 배포됨** (PR #132 머지 07:57 → release 성공 · `/health` `version: 0.1.35` · `read_guard: open` 확인, 09-22)
 - 남은 것: 판정 결과 화면 표시(`w6-routing-result-ui`, 조서희) · 운영 `routing_log` 확인(`w6-routing-candidates-prod`)
+
+## 2026-09-22 — 운영에서 베테랑 배정 확인 (정성윤)
+
+`w6-routing-candidates-prod` 로 끝까지 봤다 — 시연 상담원 시드 뒤 SYN-006 → 요청·승인 → 같은 번호 SYN-007 에서 **`demo-A03`(근속 7.0년) 배정**, `routing_log` 31. 이 티켓에 남은 것은 완료 조건 한 줄(판정 결과를 화면 어디에 — `w6-routing-result-ui`, 조서희)뿐이다.

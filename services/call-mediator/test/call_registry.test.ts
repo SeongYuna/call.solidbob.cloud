@@ -125,6 +125,47 @@ test("interim 은 같은 번호, final 뒤에는 새 번호 — 번호는 통화
   );
 });
 
+test("w6-segment-id-reuse — 다시 연 통화는 서버에 저장된 마지막 번호 다음부터 센다", async () => {
+  // 2026-09-22 운영 QA test-qa-05: 채널을 닫았다 다시 열자 1번부터 다시 세어 저장된 상담원 인사를 고객 발화로 덮었다
+  const { registry, hub, stt } = setup();
+  hub.lastSegmentId = 6;
+  const customer = await openOk(registry, "test-qa-05", "customer");
+  stt.streams[0]!.emit("서류 준비해서 오늘 안에 다 끝내고 싶어서요", true, 500);
+  stt.streams[0]!.emit("네", true, 900);
+  await customer.close();
+  assert.deepEqual(
+    hub.ingested.map((raw) => raw.segment_id),
+    [7, 8],
+  );
+});
+
+test("w6-segment-id-reuse — 새 통화(마지막 번호 0)는 전처럼 1부터 센다", async () => {
+  const { registry, hub, stt } = setup();
+  const agent = await openOk(registry, "test-new", "agent");
+  stt.streams[0]!.emit("안녕하세요", true, 300);
+  await agent.close();
+  assert.equal(hub.ingested[0]!.segment_id, 1);
+});
+
+test("w6-segment-id-reuse — 같은 프로세스에서 닫았다 다시 열어도 번호가 이어진다", async () => {
+  // 프로세스 메모리의 통화 객체는 채널이 모두 닫히면 버려진다. 서버가 돌려준 번호로 이어 간다
+  const { registry, hub, stt } = setup();
+  const first = await openOk(registry, "test-qa-05", "agent");
+  stt.streams[0]!.emit("안녕하세요 다산콜센터입니다", true, 300);
+  await first.close();
+  hub.lastSegmentId = Math.max(...hub.ingested.map((raw) => raw.segment_id)); // 서버가 저장한 만큼
+  const again = await openOk(registry, "test-qa-05", "customer");
+  stt.streams[1]!.emit("서류 준비해서 오늘 안에 다 끝내고 싶어서요", true, 400);
+  await again.close();
+  assert.deepEqual(
+    hub.ingested.map((raw) => [raw.speaker, raw.segment_id]),
+    [
+      ["agent", 1],
+      ["customer", 2],
+    ],
+  );
+});
+
 test("utterance_end_ms 는 통화 시작 기준이다 — 늦게 붙은 채널은 그만큼 더한다", async () => {
   const { registry, hub, stt, advance } = setup();
   const agent = await openOk(registry, "test-1", "agent", 2);

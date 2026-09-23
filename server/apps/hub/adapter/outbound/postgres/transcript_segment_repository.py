@@ -22,7 +22,11 @@ from __future__ import annotations
 from datetime import datetime, timezone
 
 from hub.app.dtos.transcript_dto import TranscriptEvent
-from hub.app.ports.output.transcript_ingest_record_port import CallNotStartedError, TranscriptIngestRecordPort
+from hub.app.ports.output.transcript_ingest_record_port import (
+    CallNotStartedError,
+    SegmentSpeakerConflictError,
+    TranscriptIngestRecordPort,
+)
 
 from .connection import ConnectionFactory
 
@@ -40,7 +44,10 @@ ON CONFLICT ("call_id", "segment_id") DO UPDATE SET
     "text" = EXCLUDED."text",
     "is_final" = EXCLUDED."is_final",
     "utterance_end_ms" = EXCLUDED."utterance_end_ms"
+WHERE "transcript_segment"."speaker" = EXCLUDED."speaker"
 """
+# ↑ 화자가 다르면 갱신하지 않는다 — 0행이 되고 아래에서 `SegmentSpeakerConflictError` 로 올린다(`w6-segment-id-reuse`).
+#   같은 화자의 재전송(재시도·마스킹 갱신)은 그대로 덮는다(`decisions/205`).
 
 _DELETE_SPANS = 'DELETE FROM "masking_event" WHERE "call_id" = %s AND "segment_id" = %s'
 
@@ -62,7 +69,7 @@ class PostgresTranscriptSegmentRepository(TranscriptIngestRecordPort):
         async with self._connect() as conn:
             async with conn.cursor() as cur:
                 try:
-                    await cur.execute(
+                    result = await cur.execute(
                         _UPSERT_SEGMENT,
                         (
                             event.segment_id,
@@ -79,6 +86,13 @@ class PostgresTranscriptSegmentRepository(TranscriptIngestRecordPort):
                     if getattr(exc, "sqlstate", None) == _FOREIGN_KEY_VIOLATION:
                         raise CallNotStartedError(event.call_id) from exc
                     raise
+                # psycopg 는 execute 가 커서를 돌려준다. WHERE 에 걸려 갱신을 건너뛰면 0행이다(call_repository.py 와 같은 방식)
+                rowcount = getattr(result, "rowcount", None)
+                if rowcount is None:
+                    rowcount = getattr(cur, "rowcount", 1)
+                if rowcount == 0:
+                    # 커밋하지 않고 나간다 — 구간 지우기(아래)도 일어나지 않는다
+                    raise SegmentSpeakerConflictError(event.call_id, event.segment_id)
                 # 같은 segment 를 다시 받으면 구간도 갈아끼운다 — 남아 있으면 이전 마스킹과 섞인다
                 await cur.execute(_DELETE_SPANS, (event.call_id, event.segment_id))
                 if event.masked:

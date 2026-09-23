@@ -24,6 +24,7 @@ import {
   type SttHandlers,
   type SttOpenOptions,
   type SttStream,
+  type CallStartResult,
 } from "../src/app/ports.ts";
 
 export function newLog(): Logger & { warnings: string[] } {
@@ -118,11 +119,15 @@ export class FakeHub implements HubPort {
   ingestDelayMs = 0;
   fired = true;
 
-  async startCall(request: CallStartRequest): Promise<void> {
+  /** 서버에 이미 저장된 가장 큰 발화 번호 — 다시 연 통화를 흉내 낸다(`w6-segment-id-reuse`). */
+  lastSegmentId = 0;
+
+  async startCall(request: CallStartRequest): Promise<CallStartResult> {
     if (this.failStart !== null) {
       throw new HubError("start", this.failStart);
     }
     this.calls.push(request);
+    return { lastSegmentId: this.lastSegmentId };
   }
 
   async decideRouting(request: RoutingDecisionRequest): Promise<RoutingDecisionPayload> {

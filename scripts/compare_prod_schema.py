@@ -93,6 +93,15 @@ def parse_schema(path: Path) -> dict[str, dict[str, tuple[str, int, str]]]:
     return out
 
 
+def declared_rows(path: Path) -> int | None:
+    """덤프 머리말 `ROWS <n>` — ①이 운영에서 센 행 수. 없으면 None."""
+    for line in path.read_text(encoding="utf-8").splitlines():
+        m = re.match(r"^\s*ROWS\s+(\d+)\s*$", line)
+        if m:
+            return int(m.group(1))
+    return None
+
+
 def parse_dump(path: Path) -> dict[str, dict[str, tuple[str, int, str]]]:
     """①이 만든 파이프 구분 텍스트 → 같은 모양."""
     out: dict[str, dict[str, tuple[str, int, str]]] = {}
@@ -109,12 +118,24 @@ def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("dump", type=Path, help="①이 만든 운영 컬럼 목록 파일")
     ap.add_argument("--schema", type=Path, default=SCHEMA)
+    ap.add_argument(
+        "--allow-prod-extra", action="store_true",
+        help="운영에만 있는 테이블·컬럼은 경고로만 둔다(배포 전 대조 — decisions/128). 기본은 그것도 어긋남으로 센다",
+    )
     args = ap.parse_args()
 
     want = parse_schema(args.schema)          # 저장소가 말하는 모양
     have = parse_dump(args.dump)              # 운영 실물
     if not have:
         print("운영 덤프가 비었다 — ①을 먼저 돌린다", file=sys.stderr)
+        return 1
+    # 덤프가 잘렸는지 — SSM 표준 출력은 24,000자에서 잘린다. 잘린 목록으로 대조하면 🟡 가 거짓으로 난다
+    # (또는 잘린 줄이 운영에 «없는» 것으로 읽힌다). 머리말 행 수와 실제 행 수가 다르면 판정하지 않고 멈춘다.
+    expected = declared_rows(args.dump)
+    parsed = sum(len(c) for c in have.values())
+    if expected is not None and expected != parsed:
+        print(f"운영 덤프가 불완전하다 — 머리말 ROWS {expected} · 읽은 행 {parsed}. 잘렸을 수 있다 — 판정하지 않는다",
+              file=sys.stderr)
         return 1
 
     print(f"저장소 {args.schema.name}: {len(want)} 테이블 · {sum(len(c) for c in want.values())} 컬럼")
@@ -125,9 +146,11 @@ def main() -> int:
     if only_schema:
         print(f"🟡 schema.sql 에만 있는 테이블 {len(only_schema)}: {', '.join(only_schema)}")
     if only_prod:
-        print(f"🟡 운영에만 있는 테이블 {len(only_prod)}: {', '.join(only_prod)}")
+        print(f"🟡 운영에만 있는 테이블 {len(only_prod)}: {', '.join(only_prod)}"
+              + (" — 경고만(--allow-prod-extra)" if args.allow_prod_extra else ""))
 
     mismatch = 0
+    prod_extra = len(only_prod)
     for table in sorted(set(want) & set(have)):
         w, h = want[table], have[table]
         for col in sorted(set(w) - set(h)):
@@ -135,7 +158,7 @@ def main() -> int:
             mismatch += 1
         for col in sorted(set(h) - set(w)):
             print(f"🟡 {table}.{col} — 운영에만 있다 (지운 컬럼이 남았거나 생성기에 없다) · {h[col]}")
-            mismatch += 1
+            prod_extra += 1
         for col in sorted(set(w) & set(h)):
             wt, wl, wn = w[col]
             ht, hl, hn = h[col]
@@ -150,7 +173,10 @@ def main() -> int:
                 print(f"🔴 {table}.{col} — {' · '.join(diffs)}")
                 mismatch += 1
 
-    total = mismatch + len(only_schema) + len(only_prod)
+    # 운영에만 있는 것은 지금 코드를 깨지 않는다 — 배포 전 대조에서는 경고로만 센다(decisions/128 — 구현 때 정하기로 한 것)
+    total = mismatch + len(only_schema) + (0 if args.allow_prod_extra else prod_extra)
+    if args.allow_prod_extra and prod_extra:
+        print(f"\n⚠ 운영에만 있는 것 {prod_extra} 건 — 경고만 하고 판정에서 뺐다")
     print(f"\n{'어긋남 ' + str(total) + ' 건' if total else '✅ 어긋남 0 — 컬럼·타입·길이·NULL 여부까지 같다'}")
     return 1 if total else 0
 

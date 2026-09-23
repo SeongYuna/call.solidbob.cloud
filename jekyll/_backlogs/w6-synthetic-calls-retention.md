@@ -2,7 +2,7 @@
 title: "운영 DB 의 합성 통화 4건 — 시연용으로 남길지 지울지"
 assignee: "정성윤"
 role: "infra"
-status: "todo"
+status: "done"
 sprint: 6
 priority: 72
 date: 2026-09-22
@@ -17,5 +17,9 @@ date: 2026-09-22
 
 ## 완료 조건
 
-- [ ] 팀 결정 — 남긴다(어느 것) / 지운다. [수동 QA](/backlog/w5-manual-qa-full-stack/) 3~6장의 재료로 쓸지도 같이
-- [ ] 지우면 ID 를 명시해 지우고 행 수를 로그에 · 남기면 `stt_engine=synthetic-script` 로 구분됨을 화면 쪽(조서희)에 알린다
+- [x] 팀 결정 — **남긴다, 4건 다**(`_project/decisions/130`, 09-22 정성윤). [수동 QA](/backlog/w5-manual-qa-full-stack/) 3~6장의 재료로 쓸지도 같이
+- [x] 지우면 ID 를 명시해 지우고 행 수를 로그에 · 남기면 `stt_engine=synthetic-script` 로 구분됨을 화면 쪽(조서희)에 알린다
+
+## 결과 (2026-09-22)
+
+`decisions/130` — 수동 QA·시연 재료로 4건 다 남긴다. SYN-006 에 붙은 블랙리스트 **등록 1** 은 관리자 화면에서 해제한다(통화와 별개). `stt_engine=synthetic-script` 구분은 조서희 님께 전달.
