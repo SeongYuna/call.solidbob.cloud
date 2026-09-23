@@ -199,7 +199,8 @@ export type CallMediatorMessage =
   | { type: "call_guard"; payload: CallGuardPayload }
   | { type: "compliance"; payload: CompliancePayload }
   | { type: "compliance_unavailable"; payload: ComplianceUnavailable }
-  | { type: "closure"; payload: ClosurePayload };
+  | { type: "closure"; payload: ClosurePayload }
+  | { type: "routing_decision"; payload: RoutingDecisionPayload };
 
 export interface Broadcaster {
   publish(callId: string, message: CallMediatorMessage): void;

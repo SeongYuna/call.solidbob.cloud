@@ -109,6 +109,13 @@ export interface RegistryDeps {
   /** J-5 배정 판정에 넘길 후보 상담사(`decisions/126`). 기본 빈 목록 — 서버가 기존 배정 규칙으로 떨어뜨린다. */
   routingCandidates?: readonly string[];
   /**
+   * J-5 배정 판정 결과를 `routing_decision` 메시지로 대시보드에 보낼까. 기본 false — 이유는
+   * `announcePending`과 같다. **판정 호출·저장은 끄지 않는다** — 화면 표시만의 스위치다.
+   * 표시 위치·문구는 정해졌다(`decisions/407`, `w6-routing-result-ui`) — 상담원 화면에
+   * "배정 판정 기록됨" 배너, "배정됐다"라고 쓰지 않는다(판정이 연결을 바꾸지 않는다).
+   */
+  announceRouting?: boolean;
+  /**
    * F-2 필요서류 판정을 `closure` 메시지로 대시보드에 보낼까. 기본 false — 대시보드 파서가 아직 옛 종결 형식
    * (`closure_type`·`approved/blocked`)만 받는다. **판정·저장은 끄지 않는다.**
    */
@@ -263,7 +270,7 @@ export class CallRegistry {
       );
     // J-5 — 통화 행이 생긴 직후 배정 판정(`decisions/126`). **시연용 대리다** — 완성본은 교환기가 연결 전에 부른다(`320`).
     // 교환기가 붙으면 이 호출을 지운다(안 지우면 판정이 두 번 기록된다). `started` 에 묶지 않는다 — 전사를 기다리게 하지 않고,
-    // 실패해도 통화는 막지 않는다(배정은 얇은 필터다, `204`). 결과는 로그에만 — 화면 표시는 조서희 님과 정한 뒤다.
+    // 실패해도 통화는 막지 않는다(배정은 얇은 필터다, `204`). 2026-09-23 화면 표시 정했다 — `announceRouting`(`w6-routing-result-ui`).
     void call.started.then((started) => (started ? this.decideRouting(spec.callId) : undefined));
     return call;
   }
@@ -274,6 +281,9 @@ export class CallRegistry {
       this.deps.log.info(
         `배정 판정 call=${callId} assigned=${String(d.assigned_agent_id ?? "-")} blacklisted=${String(d.is_blacklisted)} fell_back=${String(d.fell_back)}`,
       );
+      if (this.deps.announceRouting ?? false) {
+        this.deps.broadcaster.publish(callId, { type: "routing_decision", payload: d });
+      }
     } catch (error: unknown) {
       this.deps.log.warn(`배정 판정 실패 call=${callId} status=${statusOf(error)}`);
     }

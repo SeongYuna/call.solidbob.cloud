@@ -17,6 +17,7 @@ function setup(
     announceCallGuard?: boolean;
     announceCompliance?: boolean;
     announceClosure?: boolean;
+    announceRouting?: boolean;
     routingCandidates?: string[];
     ingestRetryDelaysMs?: number[];
   } = {},
@@ -46,6 +47,7 @@ function setup(
     announceCallGuard: opts.announceCallGuard,
     announceCompliance: opts.announceCompliance,
     announceClosure: opts.announceClosure,
+    announceRouting: opts.announceRouting,
     routingCandidates: opts.routingCandidates,
     // 테스트는 재시도 간격을 짧게 — 기본값(운영)은 call_registry.ts 의 INGEST_RETRY_DELAYS_MS
     ingestRetryDelaysMs: opts.ingestRetryDelaysMs ?? [1, 1],
@@ -694,6 +696,35 @@ test("J-5 — 배정 판정이 실패해도 통화는 그대로 돈다 · 로그
   await agent.close();
   assert.equal(hub.ingested.length, 1);
   assert.ok(log.warnings.some((w) => w.includes("배정 판정 실패") && w.includes("call=test-1") && w.includes("500")));
+});
+
+test("J-5 — announceRouting 이 꺼져 있으면(기본) routing_decision 을 안 보낸다", async () => {
+  const { registry, broadcaster } = setup();
+  await openOk(registry, "test-1", "agent");
+  await tick(10);
+  assert.equal(broadcaster.ofType("routing_decision").length, 0);
+});
+
+test("J-5 — announceRouting 이 켜져 있으면 판정 결과를 그대로 방송한다 (w6-routing-result-ui)", async () => {
+  const { registry, broadcaster } = setup({ announceRouting: true });
+  await openOk(registry, "test-1", "agent");
+  await tick(10);
+  const routed = broadcaster.ofType("routing_decision");
+  assert.equal(routed.length, 1);
+  assert.deepEqual(routed[0]!.payload, {
+    call_id: "test-1",
+    assigned_agent_id: null,
+    is_blacklisted: "false",
+    fell_back: "false",
+  });
+});
+
+test("J-5 — announceRouting 이 켜져 있어도 판정이 실패하면 방송하지 않는다", async () => {
+  const { registry, hub, broadcaster } = setup({ announceRouting: true });
+  hub.failRouting = 500;
+  await openOk(registry, "test-1", "agent");
+  await tick(10);
+  assert.equal(broadcaster.ofType("routing_decision").length, 0);
 });
 
 // ── 확정 전사 재시도 (w6-replay-last-turn, 2026-09-22 운영 SYN-010 마지막 턴 4/5) ─────────────────────────────

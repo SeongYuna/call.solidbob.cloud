@@ -457,16 +457,40 @@ export async function revokeAgentToken(accessToken: string, tokenId: string): Pr
 export interface AgentSummary {
   agentId: string;
   displayName: string;
+  /** `decisions/321` — J-5 근속을 여기서 센다. `null`이면 근속 0년(입사일 미입력). */
+  hiredOn: string | null;
 }
 
 interface AgentSummaryWire {
   agent_id: string;
   display_name: string;
+  hired_on: string | null;
+}
+
+function toAgentSummary(wire: AgentSummaryWire): AgentSummary {
+  return { agentId: wire.agent_id, displayName: wire.display_name, hiredOn: wire.hired_on };
 }
 
 export async function fetchAgents(accessToken: string): Promise<AgentSummary[]> {
   const wire = await authedGet<{ agents: AgentSummaryWire[] }>("/admin/agents", accessToken);
-  return wire.agents.map((a) => ({ agentId: a.agent_id, displayName: a.display_name }));
+  return wire.agents.map(toAgentSummary);
+}
+
+/**
+ * `PUT /admin/agents/{agent_id}/hired-on` — `hiredOn`이 `null`이면 입사일을 지운다(근속 0년으로
+ * 되돌아간다). 오늘보다 뒤 날짜는 서버가 422, 없는 상담원은 404(`w6-admin-agent-hired-on-ui`).
+ */
+export async function updateAgentHiredOn(
+  accessToken: string,
+  agentId: string,
+  hiredOn: string | null,
+): Promise<AgentSummary> {
+  const wire = await authedPut<AgentSummaryWire>(
+    `/admin/agents/${encodeURIComponent(agentId)}/hired-on`,
+    accessToken,
+    { hired_on: hiredOn },
+  );
+  return toAgentSummary(wire);
 }
 
 // ── /hub/routing-settings — J-5 베테랑 배정 기준 (`decisions/313`) ──────────

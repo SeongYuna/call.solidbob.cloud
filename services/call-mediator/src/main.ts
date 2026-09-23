@@ -62,6 +62,9 @@ const registry = new CallRegistry({
   // C-1~C-4 컴플라이언스 메시지 — 2026-09-22 켰다. apps/call 파서가 main 에 들어왔다(349b18b, 조서희). 검사·저장은 늘 돈다.
   // `compliance`(위반) 와 `compliance_unavailable`(검사 실패) 둘 다 이 스위치를 탄다
   announceCompliance: true,
+  // J-5 배정 판정 결과 — 2026-09-23 켰다. apps/call 파서·배너는 이미 있었다(09-22, 그때는
+  // 백엔드가 없어 잠들어 있었다). 판정 호출·저장은 이 스위치와 무관하게 늘 돈다(`w6-routing-result-ui`)
+  announceRouting: true,
 });
 
 const server = createCallMediatorServer({
