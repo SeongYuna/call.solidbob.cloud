@@ -30,6 +30,12 @@ ACTION_MAX_CHARS = 200  # db `follow_up_action.action_text` VARCHAR(200)
 _PROMISE = re.compile(r"(드리겠습니다|드릴게요|드릴께요|드리도록하겠습니다)")
 # 통화가 끝난 뒤에도 할 일이 남는 동작. 「도와드리겠습니다」 처럼 통화 안에서 끝나는 말은 넣지 않는다
 _FOLLOW_UP_VERBS = ("연락", "회신", "전화", "문자", "발송", "보내", "접수", "전달", "연결", "처리", "확인해")
+# 서류를 안내한 상담원 발화를 고르는 어휘(2026-09-23). 채점에서 「서류」 항목이 23건 중 2건만 잡혔다(`decisions/218`) —
+# 요약이 「첫 문의 + 첫 안내」 두 줄뿐이라 **중·후반의 서류 안내를 통째로 버렸기** 때문이다. 지어내지 않고 그 줄을 더 싣는다.
+_DOC_WORDS = ("서류", "신분증", "증명서", "등본", "초본", "신고서", "확인서", "위임장", "원본", "사본",
+              "여권", "등록증", "면허증", "도장", "인감", "통장", "영수증", "진단서", "계약서", "지참", "가져오")
+MAX_DOC_EXCERPTS = 3  # 서류 안내는 여러 줄에 걸쳐 나온다 — 너무 길어지지 않게 셋까지
+MAX_ACTION_EXCERPTS = 5  # 요약에 싣는 후속 조치 수. 전체 목록은 `follow_up_actions` 에 그대로 남는다
 
 
 @dataclass(frozen=True)
@@ -58,21 +64,55 @@ def _clip(text: str, limit: int) -> str:
     return text if len(text) <= limit else text[: limit - 1] + "…"
 
 
-def _summary(utterances: list[Utterance]) -> str:
+def _doc_excerpts(utterances: list[Utterance], *, skip: set[int]) -> list[str]:
+    """서류를 안내한 **상담원** 발화. 순서대로, 중복 없이, `MAX_DOC_EXCERPTS` 까지."""
+    picked: list[str] = []
+    for i, u in enumerate(utterances):
+        if i in skip or u.speaker != "agent" or not _substantive(u):
+            continue
+        if any(word in _squash(u.text) for word in _DOC_WORDS):
+            text = _clip(u.text, EXCERPT_MAX_CHARS)
+            if text not in picked:
+                picked.append(text)
+            if len(picked) == MAX_DOC_EXCERPTS:
+                break
+    return picked
+
+
+def _summary(utterances: list[Utterance], follow_ups: tuple[str, ...]) -> str:
     customer_count = sum(1 for u in utterances if u.speaker == "customer")
     agent_count = sum(1 for u in utterances if u.speaker == "agent")
 
     parts: list[str] = []
+    used: set[int] = set()
     inquiry_at = next(
         (i for i, u in enumerate(utterances) if u.speaker == "customer" and _substantive(u)), None
     )
     if inquiry_at is not None:
+        used.add(inquiry_at)
         parts.append(f"고객 문의: {_clip(utterances[inquiry_at].text, EXCERPT_MAX_CHARS)}")
-        answer = next(
-            (u for u in utterances[inquiry_at + 1 :] if u.speaker == "agent" and _substantive(u)), None
+        answer_at = next(
+            (i for i, u in enumerate(utterances) if i > inquiry_at and u.speaker == "agent" and _substantive(u)),
+            None,
         )
-        if answer is not None:
-            parts.append(f"상담원 안내: {_clip(answer.text, EXCERPT_MAX_CHARS)}")
+        if answer_at is not None:
+            used.add(answer_at)
+            parts.append(f"상담원 안내: {_clip(utterances[answer_at].text, EXCERPT_MAX_CHARS)}")
+
+    # 2026-09-23 세 줄을 더 싣는다 — 전부 **자막에 있는 문장 그대로**다(발췌 원칙, `decisions/306`).
+    docs = _doc_excerpts(utterances, skip=used)
+    if docs:
+        parts.append("필요서류 안내: " + " · ".join(docs))
+    if follow_ups:
+        # 후속 조치는 이미 따로 뽑아 저장한다(D-3). 요약에도 실어야 통화 기록 한 줄만 봐도 「무엇을 해 주기로 했는지」가 보인다
+        parts.append("후속 조치: " + " · ".join(_clip(a, EXCERPT_MAX_CHARS) for a in follow_ups[:MAX_ACTION_EXCERPTS]))
+    closing_at = next(
+        (i for i in range(len(utterances) - 1, -1, -1)
+         if i not in used and utterances[i].speaker == "agent" and _substantive(utterances[i])),
+        None,
+    )
+    if closing_at is not None and closing_at > (inquiry_at or 0):
+        parts.append(f"마무리 안내: {_clip(utterances[closing_at].text, EXCERPT_MAX_CHARS)}")
 
     # 발췌할 발화가 없어도 빈 요약을 내지 않는다 — 건수는 사실이다
     parts.append(f"발화 고객 {customer_count}건 · 상담원 {agent_count}건 (규칙 발췌 초안)")
@@ -96,8 +136,9 @@ def build_draft(utterances: list[Utterance]) -> DraftParts:
     """발화 순서대로 받은 확정 발화 → 초안 조각. 순서는 호출자가 맞춘다(segment_id 오름차순)."""
     from .inquiry_rules import classify_inquiry  # noqa: PLC0415 — inquiry_rules 가 Utterance 를 여기서 가져간다
 
+    follow_ups = _follow_ups(utterances)
     return DraftParts(
-        summary_text=_summary(utterances),
+        summary_text=_summary(utterances, follow_ups),
         inquiry_type=classify_inquiry(utterances),
-        follow_up_actions=_follow_ups(utterances),
+        follow_up_actions=follow_ups,
     )

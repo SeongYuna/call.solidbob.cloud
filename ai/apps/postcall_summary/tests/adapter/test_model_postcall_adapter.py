@@ -64,7 +64,7 @@ def test_model_summary_and_type_layered_on_rule_draft():
     adapter = ModelPostcallAdapter(Rule(), chat=Chat(), retrieval=search)
     d = run(adapter)
     assert d.summary_text.endswith(MODEL_SUMMARY_MARK) and adapter.last_detail.summary_source == "model"
-    assert d.inquiry_type == "생활하수도 관련 문의"
+    assert d.inquiry_type == "상하수도"
     assert d.follow_up_actions == (FollowUpAction("문자로 보내드리겠습니다"),)  # D-3 은 규칙 것 그대로
     assert d.confirmed is False  # 규칙 초안이 True 로 줘도 덮는다
     assert search.queries == ["수도요금 32150원 어떻게 내요"]  # 고객 확정 발화만 검색한다

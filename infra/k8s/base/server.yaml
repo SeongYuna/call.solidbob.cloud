@@ -28,13 +28,25 @@ spec:
             - secretRef: { name: server-env }
           ports:
             - { containerPort: 8000, protocol: TCP }
+          # 프로브는 **둘 다 `/health`** 를 본다(2026-09-23). 전에는 readiness 가 `/docs`(스웨거)였다 —
+          # OpenAPI 를 끄면 조용히 죽는 검사라 바꿨다. `/health` 는 설정 여부만 보는 싼 확인이다.
+          #
+          # ⚠ **`/health/ready` 를 프로브에 쓰지 않는다.** 그쪽은 DB·ES 를 실제로 찌르고 못 붙으면 503 이라,
+          #   ES 가 잠깐 내려가면 readiness 가 떨어져 **자막·마스킹까지 같이 멈춘다**. 검색만 죽는 것이
+          #   전부 죽는 것보다 낫다(`server/main.py` 의 같은 판단). `/health/ready` 는 **사람과 배포 스모크가**
+          #   쓰는 진단용으로 남긴다(런북 19장).
           readinessProbe:
-            # ⚠ 운영 클러스터가 실제로 쓰는 값이라 그대로 뒀다.
-            #   `/health` 로 바꾸면 무엇이 안 붙었는지까지 알 수 있다(spokes·postgres·es).
-            #   바꾸려면 롤아웃이 한 번 돈다.
-            httpGet: { path: /docs, port: 8000 }
+            httpGet: { path: /health, port: 8000 }
             initialDelaySeconds: 10
             periodSeconds: 10
+          livenessProbe:
+            # 프로세스가 살아 있는지만 본다. readiness 보다 느슨하게(3회 연속 실패 = 90초) 잡아
+            # 모델 적재로 느려진 순간에 파드를 죽이지 않는다.
+            httpGet: { path: /health, port: 8000 }
+            initialDelaySeconds: 60
+            periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 3
           resources:
             # 2026-09-22 `decisions/124`: NER(0.45GB)+KoE5 임베딩(2.2GB)을 CPU 로 싣는다 → 상한 1Gi → 3Gi.
             # 노드는 7.6GB 이고 ES 힙 1GiB·redis·미디에이터가 같이 산다. 모델을 안 켜면(환경변수 없음) 전처럼 500MB 대다.
