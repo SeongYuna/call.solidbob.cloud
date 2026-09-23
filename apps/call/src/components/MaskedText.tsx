@@ -1,105 +1,31 @@
 import type { ReactElement } from "react";
-import type { MaskedSpan, MaskType } from "../types/contract";
-import { sliceByCodepoints } from "../lib/text/codepoints";
-import {
-  buildTextRuns,
-  type CharRange,
-} from "../lib/text/highlight";
-
-const FIELD_BY_MASK: Record<MaskType, string> = {
-  P1: "주민번호",
-  P2: "카드번호",
-  P3: "계좌",
-  P4: "연락처",
-  P5: "이메일",
-  P6: "이름",
-  P7: "주소",
-};
-
-export interface RevealSpan {
-  id: string;
-  field: string;
-  range: CharRange;
-}
+import type { MaskedSpan } from "../types/contract";
+import { buildTextRuns, type CharRange } from "../lib/text/highlight";
 
 interface MaskedTextProps {
   text: string;
-  plainText: string;
   masked: MaskedSpan[];
   hits?: CharRange[];
   activeHit?: CharRange | null;
   piiRanges?: CharRange[];
   abuseRanges?: CharRange[];
-  authorized?: boolean;
-  revealAll?: boolean;
-  openedIds?: ReadonlySet<string>;
-  spanIdPrefix?: string;
-  onToggle?: (id: string, field: string, currentlyOpen: boolean) => void;
 }
 
-export function revealSpansFor(
-  prefix: string,
-  masked: MaskedSpan[],
-  piiRanges: readonly CharRange[],
-  abuseRanges: readonly CharRange[],
-): RevealSpan[] {
-  const spans: RevealSpan[] = [];
-  masked.forEach((span, index) => {
-    spans.push({
-      id: `${prefix}:c:${index}`,
-      field: FIELD_BY_MASK[span.type],
-      range: { start: span.span[0], end: span.span[1] },
-    });
-  });
-  piiRanges.forEach((range, index) => {
-    spans.push({
-      id: `${prefix}:p:${index}`,
-      field: "개인정보",
-      range,
-    });
-  });
-  abuseRanges.forEach((range, index) => {
-    spans.push({
-      id: `${prefix}:a:${index}`,
-      field: "부적절한 표현",
-      range,
-    });
-  });
-  return spans;
-}
-
-function coveringSpan(
-  spans: readonly RevealSpan[],
-  start: number,
-  end: number,
-): RevealSpan | null {
-  return (
-    spans.find(
-      (span) => start >= span.range.start && end <= span.range.end,
-    ) ?? null
-  );
-}
-
+/**
+ * 마스킹본을 그대로 그린다 — 원문 보기·권한 확인 토글은 `decisions/408`로 걷었다
+ * (`w7-plaintext-reveal-sec1`). SEC-1("마스킹 전 원문이 DB·로그 어디에도 남지 않는다")과
+ * "권한 확인 후 원문 열람"은 동시에 성립하지 않는다 — 원문을 보여주려면 원문이 어딘가
+ * 있어야 하는데, 실서버는 원문을 절대 주지 않는다(줄 수 없다). mock에만 있던 토글이라
+ * 시연에서 "운영에서도 원문을 볼 수 있다"로 잘못 읽힐 위험이 있었다.
+ */
 export function MaskedText({
   text,
-  plainText,
   masked,
   hits = [],
   activeHit = null,
   piiRanges = [],
   abuseRanges = [],
-  authorized = false,
-  revealAll = false,
-  openedIds = new Set(),
-  spanIdPrefix = "",
-  onToggle,
 }: MaskedTextProps): ReactElement {
-  const revealSpans = revealSpansFor(
-    spanIdPrefix,
-    masked,
-    piiRanges,
-    abuseRanges,
-  );
   if (
     masked.length === 0 &&
     hits.length === 0 &&
@@ -114,25 +40,12 @@ export function MaskedText({
     abuse: abuseRanges,
   });
 
-  let cursor = 0;
   return (
     <>
       {runs.map((run, index) => {
-        const start = cursor;
-        const end = cursor + Array.from(run.text).length;
-        cursor = end;
         if (!run.masked && !run.hit) {
           return <span key={index}>{run.text}</span>;
         }
-        const cover = run.masked ? coveringSpan(revealSpans, start, end) : null;
-        const open =
-          cover !== null &&
-          authorized &&
-          (revealAll || openedIds.has(cover.id));
-        const shown =
-          open && cover !== null
-            ? sliceByCodepoints(plainText, start, end)
-            : run.text;
         const classes = [
           run.maskKind === "abuse"
             ? "masked-span is-abuse"
@@ -141,35 +54,15 @@ export function MaskedText({
               : run.masked
                 ? "masked-span"
                 : "",
-          open ? "is-revealed" : "",
-          authorized && cover !== null ? "is-clickable" : "",
           run.hit ? "search-hit" : "",
           run.active ? "is-active" : "",
         ]
           .filter((name) => name.length > 0)
           .join(" ");
-        if (!authorized || cover === null || onToggle === undefined) {
-          return (
-            <mark key={index} className={classes}>
-              {shown}
-            </mark>
-          );
-        }
         return (
-          <button
-            key={index}
-            type="button"
-            className={`${classes} masked-span-btn`}
-            data-mask-span={cover.id}
-            data-mask-open={open ? "true" : "false"}
-            aria-pressed={open}
-            aria-label={`${cover.field}${open ? " 원문" : " 마스킹"} 열람 전환`}
-            onClick={() => {
-              onToggle(cover.id, cover.field, open);
-            }}
-          >
-            {shown}
-          </button>
+          <mark key={index} className={classes}>
+            {run.text}
+          </mark>
         );
       })}
     </>

@@ -41,7 +41,6 @@ export interface Utterance {
   segment_id: string;
   speaker: Speaker;
   text: string;
-  plain_text?: string;
   masked: MaskedSpan[];
   is_final: boolean;
   utterance_end_ms: number;
@@ -455,9 +454,6 @@ export const useCallStore = create<CallState>((set, get) => ({
         segment_id: event.segment_id,
         speaker: event.speaker,
         text: event.text,
-        ...(event.plain_text === undefined
-          ? {}
-          : { plain_text: event.plain_text }),
         masked: event.masked,
         is_final: event.is_final,
         utterance_end_ms: event.utterance_end_ms,

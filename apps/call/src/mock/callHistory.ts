@@ -88,7 +88,6 @@ function playbackFromScenario(
       segment_id: index + 1,
       speaker: event.speaker,
       text: event.text,
-      ...(event.plain_text === undefined ? {} : { plain_text: event.plain_text }),
       masked: event.masked,
       is_final: event.is_final,
       utterance_end_ms: event.utterance_end_ms,

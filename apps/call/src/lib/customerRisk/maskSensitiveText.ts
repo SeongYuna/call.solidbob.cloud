@@ -30,14 +30,12 @@ function maskAbuseSlice(slice: string): string {
 
 export interface SensitiveMaskResult {
   masked: string;
-  plain: string;
-  onReveal: (field: string, clock: string, callId: string) => void;
 }
 
 /**
  * PII는 •, 욕설은 * 로 같은 길이를 유지해 구간이 어긋나지 않게 한다.
- * 기본 화면은 마스킹본이다. 권한 확인 후에는 예외적으로 원문(plain)을
- * 임시 노출할 수 있다.
+ * 화면은 항상 마스킹본만 보여준다 — 원문 열람 토글은 SEC-1과 모순이라
+ * 걷었다(`decisions/408`, `w7-plaintext-reveal-sec1`).
  */
 export function maskSensitiveText(
   text: string,
@@ -53,17 +51,7 @@ export function maskSensitiveText(
       hit.type === "pii" ? maskPiiSlice(slice) : maskAbuseSlice(slice);
     next = `${next.slice(0, hit.startIndex)}${masked}${next.slice(hit.endIndex)}`;
   }
-  return { masked: next, plain: text, onReveal: logPlainReveal };
-}
-
-export function logPlainReveal(
-  field: string,
-  clock: string,
-  callId: string,
-): void {
-  console.info(
-    `[열람 기록] ${field} 필드 열람 - ${clock} 시점, ${callId}`,
-  );
+  return { masked: next };
 }
 
 export function sensitiveRanges(
