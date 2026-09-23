@@ -255,8 +255,12 @@ def wrap_no_answer(port: RetrievalPort, layers: list[str]) -> RetrievalPort:
 
     dense 가 1순위를 정할 때만 건다. 리랭커가 켜지면 점수가 로짓이라 이 눈금이 의미를 잃고,
     BM25 단독이면 raw 점수라 마찬가지다 — 그 구성의 문턱은 잰 적이 없으니 걸지 않는다.
+
+    ⚠ **층 목록과 «정확히 같은지» 로 보지 않는다.** 운영은 캐시까지 켜서 `["retrieval_dense",
+    "retrieval_cache"]` 다 — 같은지로 봤다가 0.1.39 에서 운영에만 안 걸렸다(2026-09-23 실측:
+    `ㅁㄴㅇㄹ` 1순위 0.54 인데 5건이 나왔다). 점수 눈금을 바꾸는 층은 리랭커뿐이다.
     """
-    if layers != ["retrieval_dense"]:
+    if "retrieval_dense" not in layers or "rerank" in layers:
         return port
     from retrieval.adapter.outbound.abstaining_retriever import AbstainingRetriever
     from retrieval.adapter.outbound.es_dense_retriever import NO_ANSWER_MIN_SCORE
