@@ -103,6 +103,8 @@ WHERE "status" = 'rejected' AND "decided_at" <= %s
 RETURNING "request_id"
 """
 _LIST_CHANGES = f'SELECT {_CHANGE_COLUMNS} FROM "blacklist_entry_expiry_change" WHERE "entry_id" = %s ORDER BY "changed_at", "change_id"'
+# 감사 로그용 — 등록을 가리지 않고 최근 것부터. `changed_at` 이 같으면 나중에 들어온 행이 위다
+_LIST_RECENT_CHANGES = f'SELECT {_CHANGE_COLUMNS} FROM "blacklist_entry_expiry_change" ORDER BY "changed_at" DESC, "change_id" DESC LIMIT %s'
 
 
 def _request(row) -> BlacklistRequest:
@@ -277,6 +279,13 @@ class PostgresBlacklistRepository(BlacklistPort):
                 if await cur.fetchone() is None:
                     raise BlacklistNotFound(f"등록이 없습니다: {entry_id}")
                 await cur.execute(_LIST_CHANGES, (entry_id,))
+                rows = await cur.fetchall()
+        return [_change(r) for r in rows]
+
+    async def list_recent_expiry_changes(self, limit: int) -> list[ExpiryChange]:
+        async with self._connect() as conn:
+            async with conn.cursor() as cur:
+                await cur.execute(_LIST_RECENT_CHANGES, (limit,))
                 rows = await cur.fetchall()
         return [_change(r) for r in rows]
 
