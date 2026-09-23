@@ -33,9 +33,9 @@ class GoogleIdTokenVerifier(GoogleIdentityPort):
             raise InvalidGoogleTokenError(str(exc)) from exc
 
         if claims.get("iss") not in _VALID_ISSUERS:
-            raise InvalidGoogleTokenError("issuer가 구글이 아니다")
+            raise InvalidGoogleTokenError("구글에서 발급한 토큰이 아닙니다 — 다시 로그인해 주세요")
         email = claims.get("email")
         if not email or not claims.get("email_verified"):
-            raise InvalidGoogleTokenError("이메일이 없거나 구글에서 검증되지 않은 계정이다")
+            raise InvalidGoogleTokenError("이메일이 확인되지 않은 구글 계정입니다")
 
         return GoogleIdentity(email=email.lower(), name=claims.get("name"))
