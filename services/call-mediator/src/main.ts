@@ -62,7 +62,8 @@ const registry = new CallRegistry({
   // C-1~C-4 컴플라이언스 메시지 — 2026-09-22 켰다. apps/call 파서가 main 에 들어왔다(349b18b, 조서희). 검사·저장은 늘 돈다.
   // `compliance`(위반) 와 `compliance_unavailable`(검사 실패) 둘 다 이 스위치를 탄다
   announceCompliance: true,
-  // F-2 절차 채택 조건 — 기본 top1(`w6-procedure-pick-rule`). 다른 값은 `decisions/219` 후보를 재는 용도다
+  // F-2 절차 채택 조건 — **기본 `score-floor`**(1순위 점수 ≥ 0.635, `decisions/219` C2 채택).
+  // 옛 동작 `top1` 은 되돌리는 값으로 남아 있다: `F2_PROCEDURE_ADOPTION=top1`(매니페스트에 주석 자리가 있다)
   procedureAdoption: config.procedureAdoption,
   // J-5 배정 판정 결과 — 2026-09-23 켰다. apps/call 파서·배너는 이미 있었다(09-22, 그때는
   // 백엔드가 없어 잠들어 있었다). 판정 호출·저장은 이 스위치와 무관하게 늘 돈다(`w6-routing-result-ui`)

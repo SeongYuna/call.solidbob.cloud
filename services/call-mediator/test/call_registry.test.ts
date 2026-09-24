@@ -260,6 +260,18 @@ test("fired:false 추천 응답도 그대로 흘린다 — 대시보드가 세 �
   assert.equal(broadcaster.ofType("recommendation")[0]?.payload["fired"], "false");
 });
 
+test("fired:false 에도 call_id 를 싣는다 — 화면이 통화 ID 를 잃지 않게(2026-09-24)", async () => {
+  // 서버는 트리거가 안 걸리면 call_id 를 담지 않는다(계약대로다). 화면 파서는 없는 값을 "" 로 채워
+  // 스토어의 통화 ID 를 덮어쓰고, 그러면 `/close` 가 404 가 되어 요약·확정 버튼이 사라진다.
+  // 전에는 뒤따라오는 closure 가 ID 를 되살렸지만 점수 하한(`decisions/219`)으로 절차를 하나도 안 잡는 통화가 생겼다.
+  const { registry, broadcaster, hub, stt } = setup();
+  hub.fired = false;
+  const channel = await openOk(registry, "test-1", "agent");
+  stt.last().emit("네 알겠습니다", true, 800);
+  await channel.close();
+  assert.equal(broadcaster.ofType("recommendation")[0]?.payload["call_id"], "test-1");
+});
+
 test("빈 결과는 서버에 보내지 않는다", async () => {
   const { registry, hub, stt } = setup();
   const channel = await openOk(registry, "test-1", "agent");

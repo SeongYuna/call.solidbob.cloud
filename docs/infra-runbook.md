@@ -1719,6 +1719,14 @@ PR #94 에서 `admin`·`kxu6` 가 `Deployment rate limited — retry in 24 hours
 
 ## 19. 검증 체크리스트
 
+> ⚠ **배포 태그는 PR 안에서 올린다 — 그리고 «다른 브랜치가 집은 번호»도 오류다**(2026-09-15 `decisions/111`·`114`, 2026-09-23 `decisions/131`).
+> `tag-check` 가 PR 에서 판정한다(`scripts/check_release_tags.py` 한 벌). 걸리는 조건 둘 —
+> ① 이미지 코드가 바뀌었는데 `kustomization.yaml` 의 `newTag` 가 **레지스트리에 이미 있는 값**이면 실패.
+> ② **`131` 부터는 다른 브랜치(`main`·`PM`·`server`·`frontend`)가 이미 그 번호를 적어 뒀으면 경고가 아니라 오류다** —
+> 먼저 머지되는 쪽이 그 태그를 굽고, 뒤에 오는 PR 은 **같은 태그로 다른 코드를 굽게 되기 때문**이다. 그때는 그 번호를 **건너뛴다**.
+> ⚠ **`server` 이미지는 `ai/` 변경에도 올라간다** — `server.Dockerfile` 이 `ai/apps/` 를 통째로 싣기 때문이다(정규식 `^(server/|ai/|…)`).
+> 미디에이터만 고친 줄 알고 `server` 태그를 그대로 두면 `tag-check` 가 막는다(2026-09-24 실제로 걸렸다).
+>
 > ✅ **2026-09-22 — 「이미지보다 먼저 스키마」를 사람 기억에서 워크플로로 옮겼다**(`decisions/128`, `w6-deploy-schema-precheck`).
 > `release.yml` `k3s-deploy` 의 **「운영 스키마를 대조한다」** 단계가 매니페스트 적용 **전에** 서버 파드 안에서 운영 컬럼을 뜨고
 > `scripts/compare_prod_schema.py --allow-prod-extra` 로 이 커밋의 `db/schema.sql` 과 대조한다. **어긋나면 적용하지 않고 실패한다**(운영은 그대로 —
@@ -1922,6 +1930,9 @@ curl -s $B/call-mediator/health
 #   stt_credentials_configured  구글 키 파일(gcp-stt-credentials 시크릿, /var/run/gcp 에 마운트)
 #   stt_caps_configured         COST-1 2차 캡 — call-mediator.yaml 에 값으로 적었다(600초/일 · 3600초/월)
 #   ingest_token_configured · view_token_configured   call-mediator-tokens 시크릿
+#   procedure_adoption          F-2 필요서류 절차를 언제 채택하는가(`decisions/219`). 기대: "score-floor"
+#                               ⚠ 릴리스 스모크는 이 값을 **보지 않는다** — 넷만 본다. 사람이 여기서 확인한다.
+#                               "top1" 이 나오면 call-mediator.yaml 의 F2_PROCEDURE_ADOPTION 이 켜져 있는 것이다(되돌림 상태)
 
 # 13. 문 두 개가 잠겨 있는가 — 토큰 없이 밖에서 치면 둘 다 401 이어야 한다
 #     --http1.1 필수: 운영은 HTTP/2 로 협상하는데 HTTP/2 는 Upgrade 를 못 싣는다 → 잠겼든 열렸든 404 가 나온다

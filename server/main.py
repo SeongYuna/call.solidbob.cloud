@@ -12,6 +12,7 @@
 
 from __future__ import annotations
 
+import logging
 import sys
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -19,6 +20,8 @@ from pathlib import Path
 # apps/ 를 경로에 올려 각 앱(hub·evaluation·<스포크>)을 최상위 패키지로 인식시킨다.
 # pytest.ini(pythonpath)·.importlinter(PYTHONPATH=apps) 와 같은 맥락 — 세 곳이 항상 같아야 한다.
 sys.path.insert(0, str(Path(__file__).resolve().parent / "apps"))
+
+logger = logging.getLogger(__name__)
 
 from fastapi import Depends, FastAPI, Request  # noqa: E402
 from fastapi.middleware.cors import CORSMiddleware  # noqa: E402
@@ -129,8 +132,17 @@ def _wire_retrieval(app: FastAPI, settings: Settings) -> str | None:
                 embed_model_dir=settings.retrieval_embed_model_dir,
                 rerank_model_dir=settings.retrieval_rerank_model_dir,
             )
-        except (ModuleNotFoundError, ImportError):
-            pass
+        except (ModuleNotFoundError, ImportError) as exc:
+            logger.warning("임베딩 층 못 띄움 — BM25 로 돈다: %s", type(exc).__name__)
+        if not app.state.retrieval_layers:
+            # **가장 자주 걸리는 것이 상대 경로다.** 모델 디렉터리를 못 찾으면 예외가 아니라 **빈 층**이 돌아온다 —
+            # 예외도 로그도 없이 BM25 로 내려가고, `/health` 를 안 보면 알 길이 없다(2026-09-24 로컬에서 실제로 겪었다).
+            # 그 상태에서는 **F-2 절차 채택의 점수 하한(`decisions/219`, dense 코사인 눈금 0.635)이 조용히 무의미해진다** —
+            # BM25 원점수는 대개 1 보다 커서 늘 통과한다. 그러면 옛 동작(1순위 무조건 채택)으로 되돌아간 것과 같다.
+            logger.warning(
+                "임베딩 모델 디렉터리를 설정했는데 층이 비었다 — BM25 로 돈다 (경로를 절대경로로 주었는가): %s",
+                settings.retrieval_embed_model_dir,
+            )
     # 기동 전에 이미 꽂힌 것(테스트 스텁 등)은 덮지 않는다 — lifespan 은 빈 자리만 채운다.
     app.dependency_overrides.setdefault(get_retrieval_port, lambda: port)
     # 수동 검색만 B-6 기권을 씌운다(`decisions/135`) — 자동 추천은 그대로다(`215` 가 보류한 것이 그쪽이다).

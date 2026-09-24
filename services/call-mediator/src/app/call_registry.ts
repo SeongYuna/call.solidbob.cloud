@@ -588,7 +588,14 @@ export class Channel {
   }
 
   private track(work: Promise<void>): void {
-    const task = work.finally(() => this.inflight.delete(task));
+    // **여기서 잡지 않으면 프로세스가 죽는다.** Node 는 처리되지 않은 rejection 을 기본으로 throw 한다.
+    // 안쪽 함수들이 각자 try/catch 를 하고 있지만 그 **밖**(방송·정리)에서 던지는 경우가 남아 있었고,
+    // 그 한 줄이 통화 중인 모든 채널을 끊는다. 한 통화의 실패가 미디에이터 전체를 내리지 않게 막는다(2026-09-24).
+    const task = work
+      .catch((error: unknown) => {
+        this.deps.log.warn(`통화 작업 실패 call=${this.callId} ${error instanceof Error ? error.message : String(error)}`);
+      })
+      .finally(() => this.inflight.delete(task));
     this.inflight.add(task);
   }
 
@@ -701,7 +708,15 @@ export class Channel {
     }
     this.deps.broadcaster.publish(this.callId, {
       type: "recommendation",
-      payload: withE2eLatency(payload, item.raw.utterance_end_ms, this.callClockMs()),
+      // `call_id` 를 **늘** 싣는다. 서버는 트리거가 안 걸린 응답(`fired:false`)에 call_id 를 담지 않는데(계약대로다),
+      // 화면 파서는 없는 값을 `""` 로 채워 스토어의 통화 ID 를 덮어쓴다 → `/close` 가 404 가 되고 요약·확정 버튼이 사라진다.
+      // 지금까지는 뒤따라오는 `closure` 가 ID 를 되살려 가려져 있었는데, 점수 하한(`decisions/219`)으로 **절차를 하나도
+      // 안 잡는 통화**가 생기면서 그 복구 경로가 없어졌다(2026-09-24 교차 검수). 미디에이터는 통화 ID 를 알고 있으므로
+      // 여기서 채운다 — 서버가 실을 때와 같은 값이다(`cards.call_id = event.call_id`). 화면 쪽 수정(`w6-close-callid-missing`,
+      // 조서희)은 그대로 필요하다. 이건 그 버그가 **상시로 터지는 것**만 막는다
+      // ⚠ `call_id` 를 **뒤에** 쓴다 — 서버는 트리거가 안 걸리면 이 키를 빼는 게 아니라 **`null` 로 싣는다.**
+      // 앞에 두면 그 null 이 덮어써서 아무 효과가 없다(2026-09-24 테스트가 잡았다). 값은 서버가 실을 때와 같다
+      payload: { ...withE2eLatency(payload, item.raw.utterance_end_ms, this.callClockMs()), call_id: this.callId },
     });
     const candidate = topSourceDocId(payload);
     if (mode === "top1") {
@@ -712,6 +727,13 @@ export class Channel {
       const score = topSimilarityScore(payload);
       if (candidate !== null && score !== null && score >= PROCEDURE_SCORE_FLOOR) {
         this.track(this.adoptProcedure(candidate));
+      } else if (candidate !== null) {
+        // **왜 안 잡았는지 남긴다.** 하한은 dense(KoE5) 눈금에 맞춘 값이라, 검색이 BM25 로 내려가거나 리랭커가 켜지면
+        // 점수 눈금이 통째로 달라져 하한이 조용히 무의미해진다(늘 통과하거나 늘 막힌다). 그때 「필요서류가 안 떠요」와
+        // 구분할 단서가 이 줄뿐이다 — 점수가 없으면(`null`) 눈금이 아니라 **필드가 안 온 것**이다
+        this.deps.log.warn(
+          `절차 미채택 call=${this.callId} segment=${item.segmentId} doc=${candidate} score=${score ?? "없음"} 하한=${PROCEDURE_SCORE_FLOOR}`,
+        );
       }
     } else if (tracksStreak) {
       this.call.customerTops.set(
