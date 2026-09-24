@@ -18,7 +18,7 @@ from agent_auth.dependencies.use_case_providers import get_current_agent_use_cas
 
 def agent_bearer_token(authorization: str | None = Header(default=None)) -> str:
     if not authorization or not authorization.lower().startswith("bearer "):
-        raise HTTPException(status_code=401, detail="Authorization: Bearer <상담원 토큰> 헤더가 필요하다")
+        raise HTTPException(status_code=401, detail="상담원 토큰이 필요합니다 — 관리자에게 받은 토큰으로 로그인해 주세요")
     return authorization.split(" ", 1)[1].strip()
 
 
@@ -28,5 +28,5 @@ async def require_agent(
 ) -> str:
     agent_id = await use_case.current(token)
     if agent_id is None:
-        raise HTTPException(status_code=401, detail="상담원 토큰이 없거나 폐기됐다 — 관리자에게 새 토큰을 받아라")
+        raise HTTPException(status_code=401, detail="상담원 토큰이 없거나 폐기됐습니다 — 관리자에게 새 토큰을 요청해 주세요")
     return agent_id

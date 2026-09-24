@@ -77,3 +77,35 @@ def test_스포크_미등록이면_입력이_잘못돼도_501이다():
     with TestClient(app) as client:
         r = client.post("/hub/search", json={"utterance": ""})
     assert r.status_code == 501
+
+
+def test_수동_검색은_전용_포트를_쓴다_자동_추천과_갈라져_있다():
+    """`decisions/135` — 합성 루트가 수동 검색에만 B-6 기권을 씌운다. 그 자리가 실제로 갈라져 있는지 본다.
+
+    수동 QA Q-44(`ㅁㄴㅇㄹ` 에도 결과 4건)의 고침이 여기에 기댄다.
+    """
+    from hub.dependencies.search_provider import get_search_retrieval_port
+
+    class _Abstains(RetrievalPort):
+        async def retrieve(self, utterance: str, top_k: int = 5) -> list[RetrievedDoc]:
+            return []
+
+    app.dependency_overrides[get_retrieval_port] = lambda: _StubRetrieval()
+    app.dependency_overrides[get_search_retrieval_port] = lambda: _Abstains()
+    try:
+        with TestClient(app) as client:
+            r = client.post("/hub/search", json={"utterance": "ㅁㄴㅇㄹ"})
+        assert r.status_code == 200 and r.json()["docs"] == []  # 「관련 문서 없음」
+    finally:
+        app.dependency_overrides.clear()
+
+
+def test_전용_포트를_안_꽂으면_자동_추천과_같은_포트를_쓴다():
+    """이행기·테스트·BM25 단독 구성에서 오늘까지의 동작 그대로여야 한다."""
+    app.dependency_overrides[get_retrieval_port] = lambda: _StubRetrieval()
+    try:
+        with TestClient(app) as client:
+            r = client.post("/hub/search", json={"utterance": "반품 배송비", "top_k": 1})
+        assert r.status_code == 200 and [d["doc_id"] for d in r.json()["docs"]] == ["SHOP-TERM-4.1"]
+    finally:
+        app.dependency_overrides.clear()

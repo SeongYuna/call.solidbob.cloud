@@ -134,6 +134,22 @@ export function App(): ReactElement {
                 이 "통화받기" 모달이 자막을 덮지 않게 아예 안 띄운다. 실제 라이브
                 통화(mode==="live")에서의 동작은 그대로 유지한다(2026-09-22). */}
             {mode === "live" ? <AgentCallBox session={agentCall} /> : null}
+            {/* 토큰 없음·마이크 거부·인식 미지원·WS 거절(1006/1008) 안내(w6-qa-call-screen-fixes
+                Q-48) — AgentCallBox는 실패해도 조용히 사라지므로(2026-09-16 결정, 로컬 테스트를
+                막지 않으려고), 안내는 그 박스가 아니라 여기 따로 남긴다. */}
+            {mode === "live" && agentCall.errorMessage !== null ? (
+              <p className="header-error agent-call-error" role="alert">
+                {agentCall.errorMessage}
+                <button
+                  type="button"
+                  className="agent-call-dismiss"
+                  aria-label="안내 닫기"
+                  onClick={agentCall.dismissError}
+                >
+                  ✕
+                </button>
+              </p>
+            ) : null}
           </>
         )}
       </div>

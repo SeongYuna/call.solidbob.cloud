@@ -29,6 +29,6 @@ async def require_close_caller(
     if await agents.current(token) is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="상담원 토큰 또는 서비스 토큰이 필요하다 — 없거나 폐기됐다",
+            detail="상담원 토큰이 없거나 폐기됐습니다 — 관리자에게 새 토큰을 요청해 주세요",
             headers={"WWW-Authenticate": "Bearer"},
         )

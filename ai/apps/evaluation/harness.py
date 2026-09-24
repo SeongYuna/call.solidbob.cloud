@@ -90,6 +90,12 @@ GENERATION_NOT_PLUGGED = (
     "측정 불가 — 생성 포트를 이 실행에 꽂지 않았다(모델 서버 Ollama 가 있어야 돈다 — "
     "run_eval.py --ollama-url, 또는 scripts/eval_generation.py)"
 )
+# B-2·B-6 — 검색 모듈은 있으나 이 실행에 검색 엔진(ES)이 없다. CI 러너가 이 상태다(2026-09-22, `w2-baseline-gate`).
+# 「모듈 미구현」으로 쓰면 검색이 없는 것처럼 읽힌다. 합성 루트(`run_eval.py`)가 ES 없이 돌 때 이 문장으로 바꿔 싣는다.
+RETRIEVAL_NO_ENGINE = (
+    "측정 불가 — 이 실행에 검색 엔진(ELASTICSEARCH_URL)이 없다(모듈은 있다 — "
+    "검색 기준선은 동결 측정 때 ES 가 있는 곳에서 check_baseline.py 로 본다)"
+)
 # 생성의 입력은 검색 결과다. 검색이 없으면 카드를 만들 근거 조항이 없다.
 GENERATION_NO_RETRIEVAL = "측정 불가 — 검색 포트가 없어 생성에 넣을 근거 조항이 없다"
 # A-5 — 채점기는 있으나 하네스 경로가 없다. 「모듈 미구현」이라 쓰면 STT 가 없는 것처럼 읽히고,

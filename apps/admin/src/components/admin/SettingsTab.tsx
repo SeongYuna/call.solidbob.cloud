@@ -6,6 +6,7 @@ import {
   issueAgentToken,
   purgeBlacklistRetention,
   revokeAgentToken,
+  updateAgentHiredOn,
   type AgentSummary,
   type AgentTokenItem,
   type RetentionPurgeResult,
@@ -90,6 +91,8 @@ export function SettingsTab({
 
       <AgentTokenIssuer />
 
+      <AgentHiredOnList />
+
       <RetentionPurgeCard />
     </section>
   );
@@ -158,6 +161,135 @@ function RetentionPurgeCard(): ReactElement {
   );
 }
 
+/** 오늘 날짜(`YYYY-MM-DD`) — 입사일 입력의 상한(`date` input `max`). 서버도 오늘보다 뒤는 422다. */
+function todayDateString(): string {
+  return new Date().toISOString().slice(0, 10);
+}
+
+/**
+ * `w6-admin-agent-hired-on-ui` — J-5 베테랑 판정은 `agent.hired_on`으로 근속을 센다
+ * (`decisions/321`). 상담원 행이 토큰 발급 때 이름만으로 만들어져 입사일을 넣는 길이
+ * 없었고, 그래서 운영의 모든 상담원이 근속 0년이었다 — 이 화면이 그 길이다.
+ */
+function AgentHiredOnList(): ReactElement {
+  const accessToken = useAuthStore((s) => s.accessToken);
+  const [agents, setAgents] = useState<AgentSummary[]>([]);
+  const [loadError, setLoadError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (accessToken === null) {
+      return;
+    }
+    fetchAgents(accessToken)
+      .then(setAgents)
+      .catch((err: unknown) => {
+        setLoadError(err instanceof HubApiError || err instanceof Error ? err.message : "알 수 없는 오류");
+      });
+  }, [accessToken]);
+
+  return (
+    <div className="wrapup-card admin-settings-card">
+      <div className="wrapup-card-head">
+        <h3>상담원 입사일 (J-5 근속)</h3>
+      </div>
+      <p className="admin-help">
+        입사일이 없으면 <strong>근속 0년으로 계산됩니다</strong> — 위 배정 기준을 아무리
+        낮춰도 베테랑으로 배정될 수 없습니다.
+      </p>
+      {loadError !== null ? (
+        <p className="header-error" role="alert">
+          {loadError}
+        </p>
+      ) : null}
+      {agents.length === 0 && loadError === null ? (
+        <p className="admin-help">등록된 상담원이 없습니다.</p>
+      ) : (
+        <ul className="admin-list" style={{ marginTop: 12 }}>
+          {agents.map((agent) => (
+            <AgentHiredOnRow
+              key={agent.agentId}
+              agent={agent}
+              accessToken={accessToken}
+              onSaved={(updated) => {
+                setAgents((prev) => prev.map((a) => (a.agentId === updated.agentId ? updated : a)));
+              }}
+            />
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+function AgentHiredOnRow({
+  agent,
+  accessToken,
+  onSaved,
+}: {
+  agent: AgentSummary;
+  accessToken: string | null;
+  onSaved: (updated: AgentSummary) => void;
+}): ReactElement {
+  const [value, setValue] = useState(agent.hiredOn ?? "");
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const dirty = value !== (agent.hiredOn ?? "");
+
+  async function handleSave(): Promise<void> {
+    if (accessToken === null) {
+      return;
+    }
+    setError(null);
+    setSaving(true);
+    try {
+      const updated = await updateAgentHiredOn(accessToken, agent.agentId, value.length === 0 ? null : value);
+      onSaved(updated);
+      setValue(updated.hiredOn ?? "");
+    } catch (err) {
+      setError(err instanceof HubApiError || err instanceof Error ? err.message : "알 수 없는 오류");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <li className="admin-entry-row">
+      <div className="admin-entry-row-main">
+        <span className="admin-ref">{maskAgentName(agent.displayName)}</span>
+        <span className="admin-meta">
+          {agent.hiredOn === null ? "입사일 없음 (근속 0년)" : `입사일 ${agent.hiredOn}`}
+        </span>
+        {error !== null ? (
+          <span className="header-error" role="alert">
+            {error}
+          </span>
+        ) : null}
+      </div>
+      <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+        <input
+          type="date"
+          max={todayDateString()}
+          value={value}
+          onChange={(event) => {
+            setValue(event.target.value);
+          }}
+        />
+        <button
+          type="button"
+          className="btn-outline"
+          disabled={!dirty || saving}
+          onClick={() => {
+            void handleSave();
+          }}
+        >
+          {saving ? "저장 중..." : "저장"}
+        </button>
+      </div>
+    </li>
+  );
+}
+
 /**
  * `decisions/307` — 상담원 전용 토큰 발급. 상담원 로그인 화면이 없어 관리자가
  * 발급한 값을 `?agent_token=...` 링크로 건넨다. 토큰 원문은 발급 응답에
@@ -220,7 +352,11 @@ function AgentTokenIssuer(): ReactElement {
       setCopied(false);
       setTokens((prev) => [item, ...prev]);
       // 방금 발급한 상담원을 목록에 반영해 둔다 — 처음 등록됐다면 서버가 여기서 만든 것이다.
-      setAgents((prev) => (prev.some((a) => a.agentId === item.agent_id) ? prev : [...prev, { agentId: item.agent_id, displayName: name }]));
+      setAgents((prev) =>
+        prev.some((a) => a.agentId === item.agent_id)
+          ? prev
+          : [...prev, { agentId: item.agent_id, displayName: name, hiredOn: null }],
+      );
       setAgentName("");
     } catch (err) {
       setError(err instanceof HubApiError || err instanceof Error ? err.message : "알 수 없는 오류");

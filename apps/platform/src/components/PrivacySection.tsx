@@ -29,10 +29,15 @@ const OPS = [
   "서버 측 재검증을 포함한 이중 마스킹 및 정기 점검",
 ] as const;
 
+// 절대 원칙 2 — 측정하지 않은 수치를 기록하지 않는다. 셋 다 ai/ 평가 하네스가 낸
+// 값이고 언제·커밋·표본 수를 아래 각주에 남긴다(`w6-platform-unmeasured-numbers`,
+// 2026-09-23 — 옛 「38% 처리시간 단축」·「92% 정서위기 감지」·「5개 언어 지원」은
+// 실측한 적 없는 값이라 지우고 이걸로 바꿨다. 세 번째(A-5 통번역)처럼 측정
+// 자체가 없는 항목은 숫자를 지어내는 대신 실측이 있는 다른 항목으로 채웠다).
 const STATS = [
-  { value: "38%", label: "평균 상담 처리 시간 단축" },
-  { value: "92%", label: "정서 위기 조기 감지 정확도" },
-  { value: "5", label: "동시 통번역 국가 언어 지원" },
+  { value: "0건", label: "개인정보 마스킹 누락 (P1~P7, n=28)" },
+  { value: "100%", label: "필요서류 판정 정확도 (n=99, 팀 규정 기준)" },
+  { value: "96.9%", label: "필요서류 검색 정확도 Recall@5 (n=96)" },
 ] as const;
 
 export function PrivacySection(): ReactElement {
@@ -101,8 +106,8 @@ export function PrivacySection(): ReactElement {
             ))}
           </dl>
           <p className="mt-5 mb-0 text-[12px] text-muted">
-            위 수치는 디자인 목업입니다. 측정값은 평가 하네스가 낸 것만
-            기록합니다.
+            평가 하네스 실측값입니다 — 마스킹·판정은 커밋 e966b62, 검색은
+            run_id 7(커밋 cc572b4) 기준이며 전부 로컬 기록 DB에 남아 있습니다.
           </p>
         </div>
       </div>

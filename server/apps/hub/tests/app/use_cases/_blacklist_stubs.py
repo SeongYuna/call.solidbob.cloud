@@ -53,6 +53,10 @@ class StubBlacklist(BlacklistPort):
         self.calls.append(("list_expiry_changes", entry_id))
         return []
 
+    async def list_recent_expiry_changes(self, limit):
+        self.calls.append(("list_recent_expiry_changes", limit))
+        return []
+
     async def purge_retained_texts(self):
         from hub.app.dtos.blacklist_retention_dto import RetentionPurgeResult
 

@@ -17,10 +17,12 @@ function setup(
   opts: {
     ledger?: Record<string, number>;
     caps?: { perDay: number; perMonth: number };
+    announceStarted?: boolean;
     announcePending?: boolean;
     announceCallGuard?: boolean;
     announceCompliance?: boolean;
     announceClosure?: boolean;
+    announceRouting?: boolean;
     routingCandidates?: string[];
     ingestRetryDelaysMs?: number[];
     procedureAdoption?: ProcedureAdoption;
@@ -46,10 +48,12 @@ function setup(
     log,
     nowMs: () => now,
     drainTimeoutMs: 500,
+    announceStarted: opts.announceStarted,
     announcePending: opts.announcePending,
     announceCallGuard: opts.announceCallGuard,
     announceCompliance: opts.announceCompliance,
     announceClosure: opts.announceClosure,
+    announceRouting: opts.announceRouting,
     routingCandidates: opts.routingCandidates,
     // 테스트는 재시도 간격을 짧게 — 기본값(운영)은 call_registry.ts 의 INGEST_RETRY_DELAYS_MS
     ingestRetryDelaysMs: opts.ingestRetryDelaysMs ?? [1, 1],
@@ -80,6 +84,29 @@ test("통화를 처음 여는 순간 서버에 통화 행을 만든다 — 화�
   await openOk(registry, "test-1", "customer", 2);
   assert.equal(hub.calls.length, 1);
   assert.deepEqual(hub.calls[0], { call_id: "test-1", stt_engine: "fake-stt", channel_count: 2 });
+});
+
+test("announceStarted 가 꺼져 있으면(기본) started 를 안 보낸다", async () => {
+  const { registry, broadcaster } = setup();
+  await openOk(registry, "test-1", "agent");
+  assert.equal(broadcaster.ofType("started").length, 0);
+});
+
+test("announceStarted 가 켜져 있으면 서버에 통화 행이 생기자마자 started 를 한 번 보낸다 — 화자가 둘이어도 한 번", async () => {
+  const { registry, broadcaster } = setup({ announceStarted: true });
+  await openOk(registry, "test-1", "agent", 2);
+  await openOk(registry, "test-1", "customer", 2);
+  const started = broadcaster.ofType("started");
+  assert.equal(started.length, 1);
+  assert.deepEqual(started[0]!.payload, { call_id: "test-1" });
+});
+
+test("서버가 통화 시작에 실패하면 started 를 보내지 않는다", async () => {
+  const { registry, hub, broadcaster } = setup({ announceStarted: true });
+  hub.failStart = 503;
+  const result = await registry.open({ callId: "test-1", speaker: "agent", sampleRate: 16000, channelCount: 1 });
+  assert.equal(result.ok, false);
+  assert.equal(broadcaster.ofType("started").length, 0);
 });
 
 test("같은 통화의 같은 화자 채널을 두 번 열지 않는다", async () => {
@@ -129,6 +156,47 @@ test("interim 은 같은 번호, final 뒤에는 새 번호 — 번호는 통화
   assert.deepEqual(
     hub.ingested.map((raw) => raw.speaker),
     hub.ingested.map((raw) => (raw.text === "전입신고" ? "customer" : "agent")),
+  );
+});
+
+test("w6-segment-id-reuse — 다시 연 통화는 서버에 저장된 마지막 번호 다음부터 센다", async () => {
+  // 2026-09-22 운영 QA test-qa-05: 채널을 닫았다 다시 열자 1번부터 다시 세어 저장된 상담원 인사를 고객 발화로 덮었다
+  const { registry, hub, stt } = setup();
+  hub.lastSegmentId = 6;
+  const customer = await openOk(registry, "test-qa-05", "customer");
+  stt.streams[0]!.emit("서류 준비해서 오늘 안에 다 끝내고 싶어서요", true, 500);
+  stt.streams[0]!.emit("네", true, 900);
+  await customer.close();
+  assert.deepEqual(
+    hub.ingested.map((raw) => raw.segment_id),
+    [7, 8],
+  );
+});
+
+test("w6-segment-id-reuse — 새 통화(마지막 번호 0)는 전처럼 1부터 센다", async () => {
+  const { registry, hub, stt } = setup();
+  const agent = await openOk(registry, "test-new", "agent");
+  stt.streams[0]!.emit("안녕하세요", true, 300);
+  await agent.close();
+  assert.equal(hub.ingested[0]!.segment_id, 1);
+});
+
+test("w6-segment-id-reuse — 같은 프로세스에서 닫았다 다시 열어도 번호가 이어진다", async () => {
+  // 프로세스 메모리의 통화 객체는 채널이 모두 닫히면 버려진다. 서버가 돌려준 번호로 이어 간다
+  const { registry, hub, stt } = setup();
+  const first = await openOk(registry, "test-qa-05", "agent");
+  stt.streams[0]!.emit("안녕하세요 다산콜센터입니다", true, 300);
+  await first.close();
+  hub.lastSegmentId = Math.max(...hub.ingested.map((raw) => raw.segment_id)); // 서버가 저장한 만큼
+  const again = await openOk(registry, "test-qa-05", "customer");
+  stt.streams[1]!.emit("서류 준비해서 오늘 안에 다 끝내고 싶어서요", true, 400);
+  await again.close();
+  assert.deepEqual(
+    hub.ingested.map((raw) => [raw.speaker, raw.segment_id]),
+    [
+      ["agent", 1],
+      ["customer", 2],
+    ],
   );
 });
 
@@ -635,6 +703,35 @@ test("J-5 — 배정 판정이 실패해도 통화는 그대로 돈다 · 로그
   await agent.close();
   assert.equal(hub.ingested.length, 1);
   assert.ok(log.warnings.some((w) => w.includes("배정 판정 실패") && w.includes("call=test-1") && w.includes("500")));
+});
+
+test("J-5 — announceRouting 이 꺼져 있으면(기본) routing_decision 을 안 보낸다", async () => {
+  const { registry, broadcaster } = setup();
+  await openOk(registry, "test-1", "agent");
+  await tick(10);
+  assert.equal(broadcaster.ofType("routing_decision").length, 0);
+});
+
+test("J-5 — announceRouting 이 켜져 있으면 판정 결과를 그대로 방송한다 (w6-routing-result-ui)", async () => {
+  const { registry, broadcaster } = setup({ announceRouting: true });
+  await openOk(registry, "test-1", "agent");
+  await tick(10);
+  const routed = broadcaster.ofType("routing_decision");
+  assert.equal(routed.length, 1);
+  assert.deepEqual(routed[0]!.payload, {
+    call_id: "test-1",
+    assigned_agent_id: null,
+    is_blacklisted: "false",
+    fell_back: "false",
+  });
+});
+
+test("J-5 — announceRouting 이 켜져 있어도 판정이 실패하면 방송하지 않는다", async () => {
+  const { registry, hub, broadcaster } = setup({ announceRouting: true });
+  hub.failRouting = 500;
+  await openOk(registry, "test-1", "agent");
+  await tick(10);
+  assert.equal(broadcaster.ofType("routing_decision").length, 0);
 });
 
 // ── 확정 전사 재시도 (w6-replay-last-turn, 2026-09-22 운영 SYN-010 마지막 턴 4/5) ─────────────────────────────

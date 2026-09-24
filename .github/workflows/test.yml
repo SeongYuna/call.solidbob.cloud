@@ -92,6 +92,18 @@ jobs:
       - name: 테스트 실행
         run: pytest
 
+      - name: 기준선 게이트 (규칙 채점 — C-5 누락 · F-2 판정)
+        # 절대 원칙 5 「기준선 미달은 CI 실패」 · `_project/decisions/134` · `w2-baseline-gate`.
+        # 러너에 ES 가 없어 검색은 「측정 불가」 경고로만 찍힌다 — 통과로 세지 않는다. 검색 기준선은
+        # 동결 측정 때 ES 가 있는 곳에서 같은 check_baseline.py 로 본다(134).
+        # 하네스가 멈추면(의존성 누락 등) 리포트 파일이 없어 이 step 도 실패한다 — 조용한 초록이 없다.
+        # DATABASE_URL 이 없으니 기록(--record)도 하지 않는다. numpy 는 ai job 과 같은 버전.
+        working-directory: .
+        run: |
+          pip install numpy==2.5.2
+          python scripts/run_eval.py --no-ner --report-json "$RUNNER_TEMP/baseline.json"
+          python scripts/check_baseline.py "$RUNNER_TEMP/baseline.json"
+
       - name: 스키마 적용 (db/schema.sql → 새 DB)
         # 운영(런북 17장)과 같은 파일을 같은 방식(한 번에 실행)으로 넣는다. 생성물이라 고칠 곳은
         # db/generate_schema_docs.py 다. 한 문장이라도 실패하면 이 step 이 실패한다.

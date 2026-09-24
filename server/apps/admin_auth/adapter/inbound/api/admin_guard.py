@@ -18,7 +18,7 @@ from admin_auth.dependencies.use_case_providers import get_current_admin_use_cas
 
 def bearer_token(authorization: str | None = Header(default=None)) -> str:
     if not authorization or not authorization.lower().startswith("bearer "):
-        raise HTTPException(status_code=401, detail="Authorization: Bearer <access_token> 헤더가 필요하다")
+        raise HTTPException(status_code=401, detail="로그인이 필요합니다")
     return authorization.split(" ", 1)[1].strip()
 
 
@@ -28,5 +28,5 @@ async def require_admin(
 ) -> AdminAccount:
     account = await use_case.current(token)
     if account is None:
-        raise HTTPException(status_code=401, detail="세션이 없거나 만료됐다 — 다시 로그인하거나 refresh 하라")
+        raise HTTPException(status_code=401, detail="세션이 없거나 만료됐습니다 — 다시 로그인해 주세요")
     return account

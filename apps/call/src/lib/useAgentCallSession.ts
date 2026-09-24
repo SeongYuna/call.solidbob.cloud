@@ -42,6 +42,8 @@ export interface AgentCallSession {
   errorMessage: string | null;
   start: () => void;
   end: (nextStatus?: AgentCallStatus) => void;
+  /** 화면에 띄운 `errorMessage`를 지운다 — 재연결 없이 안내만 닫을 때 쓴다(`w6-qa-call-screen-fixes` Q-48). */
+  dismissError: () => void;
 }
 
 export function useAgentCallSession(): AgentCallSession {
@@ -109,12 +111,14 @@ export function useAgentCallSession(): AgentCallSession {
     const token = readAgentCallToken();
     if (token === null) {
       setStatus("no-token");
+      setErrorMessage("상담원 전용 링크가 아닙니다 — 관리자에게 통화 토큰 링크를 요청하세요.");
       return;
     }
 
     const Recognition = window.SpeechRecognition ?? window.webkitSpeechRecognition;
     if (Recognition === undefined) {
       setStatus("unsupported");
+      setErrorMessage("이 브라우저는 음성 인식을 지원하지 않습니다 — Chrome에서 열어 주세요.");
       return;
     }
 
@@ -198,5 +202,9 @@ export function useAgentCallSession(): AgentCallSession {
     };
   }, [end]);
 
-  return { status, elapsedSeconds, turns, errorMessage, start, end };
+  const dismissError = useCallback(() => {
+    setErrorMessage(null);
+  }, []);
+
+  return { status, elapsedSeconds, turns, errorMessage, start, end, dismissError };
 }

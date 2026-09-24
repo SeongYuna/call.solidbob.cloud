@@ -17,6 +17,16 @@ export class SegmentCounter {
     this.last += 1;
     return this.last;
   }
+
+  /**
+   * 이미 저장된 번호 뒤로 옮긴다 — 통화를 다시 열 때(`POST /hub/calls` 의 `last_segment_id`).
+   * 앞으로만 간다: 이미 더 큰 번호를 냈으면 그대로 둔다.
+   */
+  resumeAfter(lastStored: number): void {
+    if (Number.isSafeInteger(lastStored) && lastStored > this.last) {
+      this.last = lastStored;
+    }
+  }
 }
 
 /** 채널(화자 하나) 안에서 지금 열려 있는 발화 번호를 들고 있다. */

@@ -73,3 +73,40 @@ def test_고객_식별자가_있으면_customer_를_먼저_만들고_통화에_�
     assert log[0][0].startswith('INSERT INTO "customer"') and 'ON CONFLICT ("customer_id") DO NOTHING' in log[0][0]
     assert log[0][1][0] == ref
     assert log[1][0].startswith('INSERT INTO "call"') and log[1][1][2] == ref
+
+
+class _RowCursor(_FakeCursor):
+    def __init__(self, log: list, row):
+        super().__init__(log, rowcount=1)
+        self._row = row
+
+    async def fetchone(self):
+        return self._row
+
+
+def _last(row):
+    log = []
+
+    class _Conn(_FakeConnection):
+        @asynccontextmanager
+        async def cursor(self):
+            yield _RowCursor(self._log, row)
+
+    @asynccontextmanager
+    async def _connect():
+        yield _Conn(log, 1)
+
+    return asyncio.run(PostgresCallRepository(_connect).last_segment_id("test-qa-05")), log
+
+
+def test_마지막_발화_번호는_그_통화_안에서만_센다():
+    """w6-segment-id-reuse — segment_id 는 통화 안의 순번이다(decisions/205). 다른 통화의 번호를 섞지 않는다."""
+    value, log = _last((6,))
+    assert value == 6
+    sql, args = log[0]
+    assert 'MAX("segment_id")' in sql and '"call_id" = %s' in sql and args == ("test-qa-05",)
+
+
+def test_저장된_발화가_없으면_0이다():
+    assert _last((0,))[0] == 0
+    assert _last(None)[0] == 0

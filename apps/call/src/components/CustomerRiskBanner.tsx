@@ -46,9 +46,11 @@ export function CustomerRiskBanner({
         <p className="compliance-suggest">{guidance}</p>
       </div>
       {supervisorNotified ? (
-        <span className="supervisor-badge">
-          <CheckIcon />
-          관리자에게 전송됨
+        // `logSupervisorAlert`는 목업이다(`lib/customerRisk/supervisorAlert.ts`) — 실제로
+        // 전송되는 곳이 없다. "전송됨"이라고 쓰면 거짓이라 연동 전임을 그대로 적는다
+        // (w6-qa-ui-defects-three).
+        <span className="supervisor-badge" title="관리자 알림 API가 아직 없다 — 이 화면에 기록만 남는다">
+          관리자 알림 연동 전
         </span>
       ) : null}
       <button
@@ -94,24 +96,6 @@ function EscalateIcon(): ReactElement {
     >
       <path d="M12 3v12M8 11l4 4 4-4" />
       <path d="M5 19h14" />
-    </svg>
-  );
-}
-
-function CheckIcon(): ReactElement {
-  return (
-    <svg
-      width="10"
-      height="10"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2.6"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <path d="M5 12.5 10 17.5 19 7" />
     </svg>
   );
 }

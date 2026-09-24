@@ -59,11 +59,6 @@ export interface TranscriptEvent {
   segment_id: string;
   speaker: Speaker;
   text: string;
-  /**
-   * mock 전용. 마스킹본 `text` 와 같은 길이의 원문.
-   * 권한 확인 후 스팬 열람에만 쓴다. 7.3절 계약 필드는 아니다.
-   */
-  plain_text?: string;
   masked: MaskedSpan[];
   is_final: boolean;
   utterance_end_ms: number;
@@ -152,6 +147,24 @@ export interface ComplianceUnavailable {
   call_id: string;
   segment_id: number;
   status: string;
+}
+
+/**
+ * J-5 배정 판정(`decisions/313`·`126`·`407`) — 콜 미디에이터가 통화 시작 직후 부른
+ * `POST /hub/routing-decisions` 결과를 그대로 방송한다. **판정이 연결을 바꾸지 않는다** —
+ * 이미 상담원이 받은 뒤에 판정하는 기록(감사 로그) 목적이다(`decisions/407`). 화면에
+ * "배정됐다"처럼 쓰지 않는다 — `assigned_agent_id`가 있어도 실제 수신 상담사가 아니라
+ * 판정 결과일 뿐이다.
+ */
+export interface RoutingDecision {
+  call_id: string;
+  assigned_agent_id: string | null;
+  is_blacklisted: boolean;
+  fell_back: boolean;
+  reason: string;
+  customer_identified: boolean;
+  veteran_years: number;
+  unknown_candidates: string[];
 }
 
 /** 자동 트리거(B-1)로 뜬 카드인지, 상담원이 직접 찾은 카드인지. */
@@ -312,7 +325,6 @@ export interface TranscriptQuerySegment {
   segment_id: number;
   speaker: Speaker;
   text: string;
-  plain_text?: string;
   masked: MaskedSpan[];
   is_final: boolean;
   utterance_end_ms: number | null;

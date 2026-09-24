@@ -34,6 +34,21 @@ class SegmentNotFoundError(Exception):
         self.segment_id = segment_id
 
 
+class SegmentSpeakerConflictError(Exception):
+    """이미 저장된 발화 번호를 **다른 화자**의 발화로 덮으려 했다 — 거절한다.
+
+    같은 `(call_id, segment_id)` 를 다시 받는 것은 정상이다(재시도·마스킹 갱신, `decisions/205`). 그런데 화자가
+    바뀌었다면 그건 갱신이 아니라 **번호 충돌**이다 — 콜 미디에이터가 통화를 다시 열며 번호를 1부터 다시 센 경우처럼.
+    전에는 UPSERT 가 글자만 바꾸고 화자는 그대로 둬서 고객 말이 상담원 말로 남고 원래 발화는 조용히 사라졌다
+    (2026-09-22 운영 QA `test-qa-05`, `w6-segment-id-reuse`). 조용히 덮지 않고 409 로 드러낸다.
+    """
+
+    def __init__(self, call_id: str, segment_id: int) -> None:
+        super().__init__(f"{call_id}#{segment_id}")
+        self.call_id = call_id
+        self.segment_id = segment_id
+
+
 class TranscriptIngestRecordPort(ABC):
     """전사 수신 활동 기록. 마스킹 **후** 이벤트만 받는다 — 원문을 받는 시그니처는 만들지 않는다 (SEC-1).
     지금은 로그 어댑터, 3주차에 PostgreSQL transcript_segment 어댑터로 교체. I/O 포트라 async (구현체도 async — LSP)."""

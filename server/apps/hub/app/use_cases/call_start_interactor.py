@@ -38,4 +38,7 @@ class CallStartInteractor(CallStartUseCase):
             customer_id=customer_id,
         )
         created = await self._record.record(call)
-        return call if created else replace(call, created=False)
+        if created:
+            return call
+        # 다시 연 통화 — 발화 번호를 이어 세도록 저장된 마지막 번호를 알려 준다(`w6-segment-id-reuse`)
+        return replace(call, created=False, last_segment_id=await self._record.last_segment_id(command.call_id))

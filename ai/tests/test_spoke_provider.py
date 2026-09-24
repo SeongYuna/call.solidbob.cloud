@@ -192,3 +192,64 @@ def test_measurement_can_turn_threshold_off(monkeypatch, tmp_path):
     _fake_model_modules(monkeypatch)
     port, _ = build_model_retriever(FakeClient(), embed_model_dir=tmp_path, cache_size=0, no_answer_abstain=False)
     assert _fallback_of(port)._abstain_below is None
+
+
+def test_수동_검색만_기권을_씌운다(monkeypatch, tmp_path):
+    """`decisions/135` — 자동 추천 포트는 그대로 두고 수동 검색이 쓸 포트에만 문턱을 건다."""
+    from provider import build_model_retriever, wrap_no_answer
+    from retrieval.adapter.outbound.abstaining_retriever import AbstainingRetriever
+    from retrieval.adapter.outbound.es_dense_retriever import NO_ANSWER_MIN_SCORE
+
+    _fake_model_modules(monkeypatch)
+    port, layers = build_model_retriever(FakeClient(), embed_model_dir=tmp_path, cache_size=0)
+    search = wrap_no_answer(port, layers)
+
+    assert _fallback_of(port)._abstain_below is None          # 자동 추천은 215 보류 그대로
+    assert isinstance(search, AbstainingRetriever)            # 수동 검색만 걸린다
+    assert search._min_score == NO_ANSWER_MIN_SCORE == 0.67
+    assert search._inner is port                              # 같은 검색을 두 번 조립하지 않는다(모델 1벌)
+
+
+class _CachedClient(FakeClient):
+    """캐시가 켜진 구성용 — 세대 값(인덱스 UUID)을 읽을 수 있는 가짜 클라이언트(`cached_retriever.es_index_epoch`)."""
+
+    class _Indices:
+        @staticmethod
+        def get_settings(index):
+            return {index: {"settings": {"index": {"uuid": "fake-uuid"}}}}
+
+    indices = _Indices()
+
+
+def test_캐시가_켜진_운영_구성에도_씌운다(monkeypatch, tmp_path):
+    """운영은 캐시까지 켜서 층이 `["retrieval_dense", "retrieval_cache"]` 다.
+
+    0.1.39 는 층 목록이 **정확히 같은지**로 봐서 운영에만 안 걸렸다 — 실측으로 잡았다
+    (`ㅁㄴㅇㄹ` 1순위 0.54 인데 5건). 캐시는 점수 눈금을 바꾸지 않는다.
+    """
+    from provider import build_model_retriever, wrap_no_answer
+    from retrieval.adapter.outbound.abstaining_retriever import AbstainingRetriever
+
+    _fake_model_modules(monkeypatch)
+    port, layers = build_model_retriever(_CachedClient(), embed_model_dir=tmp_path, cache_size=8)
+    assert layers == ["retrieval_dense", "retrieval_cache"]
+    assert isinstance(wrap_no_answer(port, layers), AbstainingRetriever)
+
+
+def test_리랭커나_BM25_구성에는_기권을_씌우지_않는다(monkeypatch, tmp_path):
+    """문턱은 dense 코사인 눈금 값이다 — 로짓·raw 점수 구성에는 잰 적이 없으니 걸지 않는다."""
+    from provider import build_model_retriever, wrap_no_answer
+
+    _fake_model_modules(monkeypatch)
+    reranked, layers = build_model_retriever(
+        FakeClient(), embed_model_dir=tmp_path, rerank_model_dir=tmp_path, cache_size=0
+    )
+    assert wrap_no_answer(reranked, layers) is reranked
+
+    cached_rerank, layers = build_model_retriever(
+        _CachedClient(), embed_model_dir=tmp_path, rerank_model_dir=tmp_path, cache_size=8
+    )
+    assert wrap_no_answer(cached_rerank, layers) is cached_rerank  # 캐시가 있어도 리랭커면 안 건다
+
+    bm25, bm25_layers = build_model_retriever(FakeClient(), embed_model_dir=None)
+    assert wrap_no_answer(bm25, bm25_layers) is bm25

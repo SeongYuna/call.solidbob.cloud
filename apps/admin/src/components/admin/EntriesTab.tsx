@@ -18,6 +18,13 @@ function entryDisplayHint(
   );
 }
 
+/** `adminStore.extendEntry`가 서버에 보내는 것과 같은 계산(`Math.round(months * 30)`일, 지금부터). */
+function previewExpiryDate(months: number): string {
+  const days = Math.round(months * 30);
+  const date = new Date(Date.now() + days * 24 * 60 * 60 * 1000);
+  return date.toLocaleDateString("ko-KR");
+}
+
 type EntryFilter = "all" | "new" | "repeat";
 
 /**
@@ -64,9 +71,12 @@ export function EntriesTab({
 
   return (
     <section aria-label="블랙리스트">
+      {/* ⚠ "이후 통화부터 근속 3년 이상 상담사 우선 배정 판정이 기록에 남습니다"를 뺐다 —
+          콜 미디에이터 배선을 2026-09-22에 만들었다가 같은 날 되돌렸다(검토 전 롤백).
+          판정 호출이 다시 없으니 이 문장은 다시 거짓이다. `decisions/407` ·
+          `w7-j5-routing-caller` 참고. 배선이 다시 켜지면 채운다. */}
       <p className="admin-help">
-        등록된 고객의 전화도 <strong>정상적으로 받습니다.</strong> 바뀌는 것은
-        근속 3년 이상 상담사에게 배정된다는 점 하나입니다.
+        등록된 고객의 전화도 <strong>정상적으로 받습니다</strong> — 차단이 아닙니다.
       </p>
       <div className="admin-tabs admin-subfilter" role="tablist" aria-label="신규·기존 분류">
         <FilterChip label="전체" count={active.length} active={filter === "all"} onClick={() => setFilter("all")} />
@@ -254,6 +264,12 @@ function EntryRow({
             }
           }}
         />
+        {/* "재설정"은 기존 만료일에 더하는 게 아니라 **지금부터** 다시 잡는다 — 입력칸이
+            기본값(전역 설정)으로 채워져 있어, 손대지 않고 눌러도 만료일이 조용히 바뀐다는
+            QA 지적(`w6-qa-call-screen-fixes` Q-63)에 맞춰 결과 날짜를 미리 보여준다. */}
+        <span className="admin-meta admin-entry-extend-preview">
+          → {previewExpiryDate(months)} 로
+        </span>
         <button
           type="button"
           className="btn-outline admin-release"

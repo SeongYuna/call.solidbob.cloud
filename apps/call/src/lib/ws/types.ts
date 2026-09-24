@@ -5,6 +5,7 @@ import type {
   ComplianceUnavailable,
   ManualSearchRequest,
   RecommendationBatch,
+  RoutingDecision,
   TranscriptEvent,
   TranslatedUtterance,
   AgentTtsStatus,
@@ -13,6 +14,13 @@ import type {
 import type { TargetLanguage } from "../language/languageMeta";
 
 export interface CallMediatorListener {
+  /**
+   * 통화가 서버에 실제로 만들어졌다는 신호(2026-09-22, `services/call-mediator`
+   * `announceStarted`) — 통화당 한 번, 첫 전사보다도 먼저 올 수 있다. `callId`를
+   * 이 시점에 잡아 두면 발화가 하나도 없는 짧은 통화도 종료가 된다
+   * (`w6-close-callid-missing`). mock은 안 보낸다 — mock은 시나리오가 이미 callId를 안다.
+   */
+  onStarted?: (callId: string) => void;
   onTranscript: (event: TranscriptEvent) => void;
   onRecommendation: (event: RecommendationBatch) => void;
   /**
@@ -42,6 +50,11 @@ export interface CallMediatorListener {
    * 다른 채널이다. 합치면 "검사가 죽었다"가 "위반 없음"으로 보인다. 키는 자막 segment_id.
    */
   onComplianceUnavailable?: (transcriptSegmentId: string, event: ComplianceUnavailable) => void;
+  /**
+   * J-5 배정 판정(`decisions/313`·`126`·`407`) — 통화 시작 직후 한 번. 세그먼트와
+   * 무관해 키가 없다(통화 전체에 하나).
+   */
+  onRoutingDecision?: (event: RoutingDecision) => void;
   /** A-5 ⓑ. 번역이 아님. 키만 보낸다. 점수는 없다. */
   onAccentRecognition?: (transcriptSegmentId: string) => void;
   /** A-5. 통화 시작 시 대상 언어. 한국어 전용 mock은 null. */

@@ -26,6 +26,7 @@
 from __future__ import annotations
 
 import argparse
+import json
 import os
 import subprocess
 import sys
@@ -42,7 +43,7 @@ from closure_gate.adapter.outbound.rule_closure_gate_adapter import (  # noqa: E
     RuleClosureGateAdapter,
 )
 from evaluation.golden_set import DEFAULT_POSTCALL_SET_PATH, load_golden_set, load_postcall_set  # noqa: E402
-from evaluation.harness import Ports, run_eval  # noqa: E402
+from evaluation.harness import NOT_IMPLEMENTED, RETRIEVAL_NO_ENGINE, Ports, run_eval  # noqa: E402
 from evaluation.report import print_report  # noqa: E402
 from hub.adapter.outbound.postgres.eval_run_repository import (  # noqa: E402
     EvalRunRecord,
@@ -229,6 +230,8 @@ def main() -> int:
     ap.add_argument("--golden-set", type=Path, default=None, help="기본: golden-set/v1-150.json")
     ap.add_argument("--index", default=SINGLE_INDEX)
     ap.add_argument("--runs", type=int, default=1, help="N 번 돌려 최저치를 함께 낸다 (절대 원칙 4)")
+    ap.add_argument("--report-json", type=Path, default=None,
+                    help="최저치 리포트를 JSON 으로 남긴다 — scripts/check_baseline.py 의 입력(기준선 게이트)")
     ap.add_argument("--record", action="store_true",
                     help="결과를 PostgreSQL 의 eval_run/eval_result 에 남긴다 (CLAUDE.md §5)")
     ap.add_argument("--ner-model", type=Path, default=ROOT / "models" / "koelectra-ner",
@@ -258,6 +261,12 @@ def main() -> int:
     ports = build_ports(client, index=args.index, masking=masking, retriever=retriever, generation=generation)
     postcall_cases = load_postcall_set(args.postcall_set) if args.postcall_set.exists() else []
     reports = [run_eval(items, ports, postcall_cases) for _ in range(args.runs)]
+    if client is None:
+        # 검색 모듈은 있다 — 없는 것은 이 실행의 ES 다. 「모듈 미구현」이 아니라 그 사유를 싣는다(w2-baseline-gate)
+        for report in reports:
+            for key in ("retrieval", "no_answer"):
+                if report.get(key) == NOT_IMPLEMENTED:
+                    report[key] = RETRIEVAL_NO_ENGINE
     print_report(
         reports[0],
         golden_set_path=golden_path,
@@ -266,6 +275,13 @@ def main() -> int:
 
     if args.runs > 1:
         _print_worst(reports)
+
+    if args.report_json:
+        # 게이트(`check_baseline.py`)도 최저치를 본다 — 기준선은 평균이 아니다(절대 원칙 4).
+        args.report_json.write_text(
+            json.dumps(_worst(reports), ensure_ascii=False, indent=2, default=str), encoding="utf-8"
+        )
+        print(f"리포트 JSON: {args.report_json}")
 
     if args.record:
         # 여러 번 돌렸으면 **최저치**를 남긴다 — 기준선은 평균이 아니다(절대 원칙 4).

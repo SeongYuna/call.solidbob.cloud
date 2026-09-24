@@ -45,6 +45,41 @@ def test_이미_있던_통화면_created가_False다():
     assert call.created is False and call.call_id == "test-c001"
 
 
+class _ResumedRecord(_SpyRecord):
+    """이미 있던 통화 + 저장된 발화가 6개 — 재연결 상황."""
+
+    def __init__(self, last: int):
+        super().__init__(created=False)
+        self._last = last
+        self.asked: list[str] = []
+
+    async def last_segment_id(self, call_id: str) -> int:
+        self.asked.append(call_id)
+        return self._last
+
+
+def test_다시_연_통화면_저장된_마지막_발화_번호를_싣는다():
+    """w6-segment-id-reuse — 콜 미디에이터가 이 번호 다음부터 센다. 1부터 다시 세면 저장된 전사를 덮는다."""
+    record = _ResumedRecord(last=6)
+    call = asyncio.run(CallStartInteractor(record).start(_cmd()))
+    assert call.created is False and call.last_segment_id == 6
+    assert record.asked == ["test-c001"]
+
+
+def test_새_통화면_마지막_번호를_묻지_않고_0이다():
+    record = _ResumedRecord(last=99)
+    record._created = True
+    call = asyncio.run(CallStartInteractor(record).start(_cmd()))
+    assert call.created is True and call.last_segment_id == 0
+    assert record.asked == []
+
+
+def test_번호를_저장하지_않는_구현은_기본값_0이다():
+    """로그 어댑터처럼 `last_segment_id` 를 구현하지 않은 포트 — 덮어쓸 것이 없으니 0."""
+    call = asyncio.run(CallStartInteractor(_SpyRecord(created=False)).start(_cmd()))
+    assert call.last_segment_id == 0
+
+
 class _Ref:
     def __init__(self, value="r" * 64):
         self.value = value

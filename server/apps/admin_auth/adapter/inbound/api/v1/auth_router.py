@@ -49,7 +49,7 @@ async def login_with_google(
     except InvalidGoogleTokenError as exc:
         raise HTTPException(status_code=401, detail=str(exc)) from exc
     except NotAnAdminError as exc:
-        raise HTTPException(status_code=403, detail="관리자로 등록되지 않은 계정이다") from exc
+        raise HTTPException(status_code=403, detail="관리자로 등록되지 않은 계정입니다") from exc
     return _to_response(pair)
 
 
@@ -61,7 +61,7 @@ async def refresh_tokens(
     try:
         pair = await use_case.refresh(body.refresh_token)
     except InvalidRefreshTokenError as exc:
-        raise HTTPException(status_code=401, detail="refresh token이 없거나 만료됐다 — 다시 로그인하라") from exc
+        raise HTTPException(status_code=401, detail="로그인이 만료됐습니다 — 다시 로그인해 주세요") from exc
     return _to_response(pair)
 
 

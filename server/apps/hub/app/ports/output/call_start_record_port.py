@@ -14,3 +14,11 @@ class CallStartRecordPort(ABC):
 
     @abstractmethod
     async def record(self, call: CallStarted) -> bool: ...
+
+    async def last_segment_id(self, call_id: str) -> int:
+        """이 통화에 이미 저장된 가장 큰 `segment_id`. 없으면 0.
+
+        콜 미디에이터가 같은 통화를 **다시 열 때**(파드 재시작·연결 끊김 뒤 재연결) 발화 번호를 여기서 이어 센다 —
+        1부터 다시 세면 저장된 전사를 같은 번호로 덮어쓴다(2026-09-22 운영 QA `test-qa-05`, `w6-segment-id-reuse`).
+        저장하지 않는 구현(로그 어댑터)은 기본값 0 을 쓴다 — 덮어쓸 것이 없다."""
+        return 0

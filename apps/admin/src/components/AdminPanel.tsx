@@ -89,6 +89,9 @@ export function AdminPanel({
   const statsPendingRequests = useAdminStore((s) => s.statsPendingRequests);
   const statsActiveEntries = useAdminStore((s) => s.statsActiveEntries);
   const statsCountedAt = useAdminStore((s) => s.statsCountedAt);
+  const statsRoutingDecisions = useAdminStore((s) => s.statsRoutingDecisions);
+  const statsRoutingBlacklisted = useAdminStore((s) => s.statsRoutingBlacklisted);
+  const statsRoutingFellBack = useAdminStore((s) => s.statsRoutingFellBack);
   const veteranThresholdYears = useAdminStore((s) => s.veteranThresholdYears);
   const setVeteranThresholdYears = useAdminStore((s) => s.setVeteranThresholdYears);
   const blacklistExpiryMonths = useAdminStore((s) => s.blacklistExpiryMonths);
@@ -181,6 +184,9 @@ export function AdminPanel({
                 pendingRequestCount={statsPendingRequests}
                 activeEntryCount={statsActiveEntries}
                 countedAt={statsCountedAt}
+                routingDecisions={statsRoutingDecisions}
+                routingBlacklisted={statsRoutingBlacklisted}
+                routingFellBack={statsRoutingFellBack}
               />
             ) : null}
             {tab === "requests" ? (

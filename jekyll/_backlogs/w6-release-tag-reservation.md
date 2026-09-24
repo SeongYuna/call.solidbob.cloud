@@ -2,7 +2,7 @@
 title: "배포 태그 번호 선점 방식을 정한다 — 하루에 세 번 겹쳤다"
 assignee: "정성윤"
 role: "infra"
-status: "todo"
+status: "done"
 sprint: 6
 priority: 70
 date: 2026-09-22
@@ -22,4 +22,8 @@ date: 2026-09-22
 
 ## 완료 조건
 
-- [ ] 결정 기록(`1xx`) + 선택한 방식대로 `scripts/check_release_tags.py`·`release.yml`·런북 갱신(파이프라인 파일은 런북 먼저)
+- [x] 결정 기록(`1xx`) + 선택한 방식대로 `scripts/check_release_tags.py`·`release.yml`·런북 갱신(파이프라인 파일은 런북 먼저)
+
+## 결과 (2026-09-22)
+
+**3번 채택** — `_project/decisions/131`. `scripts/check_release_tags.py` 의 ⑥ 「다른 브랜치가 선점」을 `::warning::` 에서 `::error::` 로 올려 `failed` 에 합쳤다(함수 `tag_taken_elsewhere`, 반환값이 오류 목록). 물려받은 값은 여전히 걸리지 않는다. `release.yml` 은 손대지 않았다 — 판정 로직이 한 벌(`decisions/111`)이라 스크립트만 바뀌면 된다.

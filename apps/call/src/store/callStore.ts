@@ -14,6 +14,7 @@ import type {
   CallGuardFlag,
   ComplianceFinding,
   ComplianceUnavailable,
+  RoutingDecision,
   BlacklistEntryItem,
   BlacklistEvidence,
   BlacklistRequestItem,
@@ -40,7 +41,6 @@ export interface Utterance {
   segment_id: string;
   speaker: Speaker;
   text: string;
-  plain_text?: string;
   masked: MaskedSpan[];
   is_final: boolean;
   utterance_end_ms: number;
@@ -120,7 +120,7 @@ export interface CallState {
   /** 히스토리 모드 전용. 실시간 translations 과 섞지 않는다. */
   historyTranslations: Record<string, TranslatedUtterance>;
   historyAgentTts: Record<string, AgentTtsStatus>;
-  historyCallGuard: Record<string, CallGuardFlag>;
+  historyCallGuard: Record<string, CallGuardFlag[]>;
   historyAccentHints: Record<string, true>;
   /** 히스토리 모드 전용. 실시간 cards 와 섞지 않는다. */
   historyCards: PanelCard[];
@@ -138,7 +138,7 @@ export interface CallState {
   translations: Record<string, TranslatedUtterance>;
   agentTts: Record<string, AgentTtsStatus>;
   /** C-6 mock. 키는 TranscriptEvent.segment_id. */
-  callGuard: Record<string, CallGuardFlag>;
+  callGuard: Record<string, CallGuardFlag[]>;
   /**
    * C-1~C-4. 키는 TranscriptEvent.segment_id, 값은 그 세그먼트에 쌓인 위반 목록 —
    * 한 세그먼트에 여러 건이 잡힐 수 있어(call_guard와 달리 override하지 않는다).
@@ -152,6 +152,12 @@ export interface CallState {
    * 없다). 아직 어떤 컴포넌트도 읽지 않는다 — 이번 범위는 "onError 오탐 제거"까지다.
    */
   complianceUnavailable: Record<string, ComplianceUnavailable>;
+  /**
+   * J-5 배정 판정(`decisions/313`·`126`·`407`) — 통화 시작 직후 한 번만 온다. 세그먼트
+   * 단위가 아니라 통화 전체에 하나라 `Record`가 아니라 단일 값이다. **판정이 연결을
+   * 바꾸지 않는다** — 화면은 "배정됨"이 아니라 "판정 기록됨"으로만 보여줘야 한다.
+   */
+  routingDecision: RoutingDecision | null;
   /** A-5 ⓑ. 키만. 점수는 없다. */
   accentHints: Record<string, true>;
   /** C-6 확장. 상담원이 통화 종료 시 수동으로 분류한 결과 — 자동 탐지가 아니다. */
@@ -160,6 +166,11 @@ export interface CallState {
   blacklistRequests: BlacklistRequestItem[];
   /** J-4 — 승인되어 적용 중인 등록. 배정(J-5)이 보는 것은 이쪽이다. */
   blacklistEntries: BlacklistEntryItem[];
+  /**
+   * 통화가 서버에 만들어졌다는 신호(`onStarted`)에서 `callId`만 잡는다 — 전사·추천·판정을
+   * 기다리지 않는다(`w6-close-callid-missing`). 세그먼트가 없으므로 `utterances`는 건드리지 않는다.
+   */
+  applyStarted: (callId: string) => void;
   applyTranscript: (event: TranscriptEvent) => void;
   applyRecommendation: (
     cards: RecommendationCard[],
@@ -190,6 +201,7 @@ export interface CallState {
     transcriptSegmentId: string,
     event: ComplianceUnavailable,
   ) => void;
+  applyRoutingDecision: (event: RoutingDecision) => void;
   applyAccentHint: (transcriptSegmentId: string) => void;
   flagBlackConsumer: (callId: string) => void;
   setTargetLanguage: (lang: TargetLanguage | null) => void;
@@ -241,7 +253,7 @@ const emptyCall = {
   historyTargetLanguage: null as TargetLanguage | null,
   historyTranslations: {} as Record<string, TranslatedUtterance>,
   historyAgentTts: {} as Record<string, AgentTtsStatus>,
-  historyCallGuard: {} as Record<string, CallGuardFlag>,
+  historyCallGuard: {} as Record<string, CallGuardFlag[]>,
   historyAccentHints: {} as Record<string, true>,
   historyCards: [] as PanelCard[],
   cards: [] as PanelCard[],
@@ -253,9 +265,10 @@ const emptyCall = {
   closure: null as ClosureEvent | null,
   translations: {} as Record<string, TranslatedUtterance>,
   agentTts: {} as Record<string, AgentTtsStatus>,
-  callGuard: {} as Record<string, CallGuardFlag>,
+  callGuard: {} as Record<string, CallGuardFlag[]>,
   compliance: {} as Record<string, ComplianceFinding[]>,
   complianceUnavailable: {} as Record<string, ComplianceUnavailable>,
+  routingDecision: null as RoutingDecision | null,
   accentHints: {} as Record<string, true>,
   blackConsumerFlag: null as BlackConsumerFlag | null,
 };
@@ -276,41 +289,59 @@ function isAuto(item: PanelCard): boolean {
 /**
  * F-2(필요서류) 게이트는 자동 추천 카드에만 붙인다. 상담원이 직접 찾아온 카드에
  * 붙으면 서류 목록이 그 검색 결과에 딸린 것처럼 읽힌다.
+ *
+ * 판정의 조항(`event.procedure`)은 추천 카드의 `source.doc_id`와 같은 체계다
+ * (`RecommendationCard` 주석 참고) — **그 문서를 실제로 추천한 카드**에만 붙인다.
+ * "가장 최근의, 아직 판정 없는 자동 카드"에 붙이면 지나간 추천 묶음의 엉뚱한
+ * 절차 밑에 서류가 달린다(`w6-closure-card-pairing`).
  */
 function attachIndex(cards: PanelCard[], event: ClosureEvent): number {
-  const sameType = cards.findIndex(
+  const sameProcedure = cards.findIndex(
     (item) => item.closure?.procedure === event.procedure,
   );
-  if (sameType !== -1) {
-    return sameType;
+  if (sameProcedure !== -1) {
+    return sameProcedure;
   }
-  for (let i = cards.length - 1; i >= 0; i -= 1) {
-    if (cards[i].closure === null && isAuto(cards[i])) {
-      return i;
-    }
-  }
-  for (let i = cards.length - 1; i >= 0; i -= 1) {
-    if (isAuto(cards[i])) {
-      return i;
-    }
-  }
-  return -1;
+  return cards.findIndex(
+    (item) => isAuto(item) && item.card.source.doc_id === event.procedure,
+  );
+}
+
+/**
+ * 판정과 같은 문서를 추천한 카드가 하나도 없을 때 쓴다(예: 그 카드가 속한 추천
+ * 묶음이 이미 화면에서 사라졌거나, 애초에 추천된 적 없이 판정만 온 경우) —
+ * 남의 카드에 붙이는 대신 판정 전용 카드를 새로 만든다.
+ */
+function cardFromClosure(event: ClosureEvent): RecommendationCard {
+  const title = event.procedure_title ?? event.procedure;
+  return {
+    title,
+    summary: event.reason ?? "",
+    source: event.source ?? { doc_id: event.procedure, title },
+    similarity_score: 0,
+    source_type: "auto",
+  };
 }
 
 function withClosure(
   cards: PanelCard[],
   event: ClosureEvent,
 ): PanelCard[] {
-  if (cards.length === 0) {
-    return cards;
-  }
   const index = attachIndex(cards, event);
-  if (index === -1) {
-    return cards;
+  if (index !== -1) {
+    return cards.map((item, i) =>
+      i === index ? { ...item, closure: event, settled: false } : item,
+    );
   }
-  return cards.map((item, i) =>
-    i === index ? { ...item, closure: event, settled: false } : item,
-  );
+  return [
+    ...cards,
+    {
+      card: cardFromClosure(event),
+      trigger_at_ms: 0,
+      closure: event,
+      settled: false,
+    },
+  ];
 }
 
 /** 끝난 통화: 시나리오가 가진 카드를 한꺼번에. 실시간처럼 순차로 쌓지 않는다. */
@@ -413,15 +444,16 @@ export const useCallStore = create<CallState>((set, get) => ({
   blacklistEntries: [] as BlacklistEntryItem[],
   ...emptyCall,
 
+  applyStarted: (callId) => {
+    set({ callId });
+  },
+
   applyTranscript: (event) => {
     set((state) => {
       const next: Utterance = {
         segment_id: event.segment_id,
         speaker: event.speaker,
         text: event.text,
-        ...(event.plain_text === undefined
-          ? {}
-          : { plain_text: event.plain_text }),
         masked: event.masked,
         is_final: event.is_final,
         utterance_end_ms: event.utterance_end_ms,
@@ -623,12 +655,20 @@ export const useCallStore = create<CallState>((set, get) => ({
   },
 
   applyCallGuard: (transcriptSegmentId, event) => {
-    set((state) => ({
-      callGuard: {
-        ...state.callGuard,
-        [transcriptSegmentId]: event,
-      },
-    }));
+    set((state) => {
+      const existing = state.callGuard[transcriptSegmentId] ?? [];
+      // 같은 세그먼트에 위기 신호와 폭언이 같이 잡히면 하나가 하나를 덮어쓰던 버그
+      // (w6-qa-ui-defects-three) — 배열로 쌓는다. 같은 갈래가 다시 오면 중복만 막는다.
+      if (existing.some((flag) => flag.category === event.category)) {
+        return {};
+      }
+      return {
+        callGuard: {
+          ...state.callGuard,
+          [transcriptSegmentId]: [...existing, event],
+        },
+      };
+    });
   },
 
   applyCompliance: (transcriptSegmentId, event) => {
@@ -654,6 +694,10 @@ export const useCallStore = create<CallState>((set, get) => ({
         [transcriptSegmentId]: event,
       },
     }));
+  },
+
+  applyRoutingDecision: (event) => {
+    set({ routingDecision: event });
   },
 
   applyAccentHint: (transcriptSegmentId) => {

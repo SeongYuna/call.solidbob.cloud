@@ -41,7 +41,7 @@ export function BlacklistRequestButton({
 
   const evidence = useMemo(
     () =>
-      collectEvidence(Object.values(callGuard) as CallGuardFlag[], {
+      collectEvidence(Object.values(callGuard).flat() as CallGuardFlag[], {
         callDurationS,
       }),
     [callGuard, callDurationS],
@@ -78,9 +78,13 @@ export function BlacklistRequestButton({
       ) : (
         <div className="wrapup-card blacklist-form">
           <h3>블랙리스트 전환 요청</h3>
+          {/* ⚠ "이후 통화부터 배정 판정이 기록에 남습니다"를 뺐다 — 콜 미디에이터 배선을
+              2026-09-22에 만들었다가 같은 날 되돌렸다(`services/call-mediator`, 검토 전
+              롤백). 판정 호출이 다시 없으니 이 문장은 다시 거짓이다. `decisions/407` ·
+              `w7-j5-routing-caller` 참고. 배선이 다시 켜지면 채운다. */}
           <p className="blacklist-help">
             요청은 <strong>관리자 승인</strong>을 거쳐야 적용됩니다. 승인되어도 전화는
-            정상적으로 받으며, 바뀌는 것은 <strong>누구에게 배정되는가</strong> 하나입니다.
+            <strong>정상적으로 받습니다</strong> — 차단이 아닙니다.
           </p>
 
           {/* ⚠ 위기 신호는 폭언과 다르게 다룬다 — DASAN-MANUAL-5.4.

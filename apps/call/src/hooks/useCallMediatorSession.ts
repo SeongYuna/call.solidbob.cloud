@@ -55,6 +55,9 @@ export function useCallMediatorSession(): CallMediatorSession {
       useCallStore.getState().enterAssist();
       useCallStore.getState().resetCall();
       client.connect({
+        onStarted: (callId) => {
+          useCallStore.getState().applyStarted(callId);
+        },
         onTranscript: queueTranscript,
         onRecommendation: (batch) => {
           useCallStore.getState().applyRecommendation(
@@ -90,6 +93,9 @@ export function useCallMediatorSession(): CallMediatorSession {
         },
         onComplianceUnavailable: (segmentId, event) => {
           useCallStore.getState().applyComplianceUnavailable(segmentId, event);
+        },
+        onRoutingDecision: (event) => {
+          useCallStore.getState().applyRoutingDecision(event);
         },
         onAccentRecognition: (segmentId) => {
           useCallStore.getState().applyAccentHint(segmentId);
@@ -182,6 +188,16 @@ export function useCallMediatorSession(): CallMediatorSession {
       throw new Error("콜 미디에이터에 연결되어 있지 않습니다.");
     }
     const state = useCallStore.getState();
+    // `callId`는 전사·추천·판정 이벤트가 최소 한 번 와야 채워진다(§7.3 계약에
+    // "통화 시작" 메시지가 따로 없다 — `w6-close-callid-missing`). 그 전에 종료를
+    // 누르면 빈 문자열로 `/close`를 불러 404가 나고 요약·블랙리스트 요청까지
+    // 못 쓰게 된다 — 빈 값으로는 아예 부르지 않고 원인을 알 수 있는 오류로 바꾼다.
+    // 통화 시작을 직접 방송하는 메시지가 콜 미디에이터에 생기면 이 가드는 필요 없어진다.
+    if (state.callId === null || state.callId.length === 0) {
+      throw new Error(
+        "통화 번호를 아직 받지 못했습니다 — 발화가 한 번이라도 인식된 뒤에 다시 시도해 주세요.",
+      );
+    }
     const segments = state.utterances.map((u) => ({
       segment_id: u.segment_id,
       speaker: u.speaker,
@@ -189,7 +205,7 @@ export function useCallMediatorSession(): CallMediatorSession {
       is_final: u.is_final,
       utterance_end_ms: u.utterance_end_ms,
     }));
-    return client.wrapUp(state.callId ?? "", segments);
+    return client.wrapUp(state.callId, segments);
   }, []);
 
   return { startCall, replay, leaveToStandby, manualSearch, endCall, wrapUp };

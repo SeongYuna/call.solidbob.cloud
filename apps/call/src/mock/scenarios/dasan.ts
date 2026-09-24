@@ -341,7 +341,6 @@ export const maskingKoScenario: MockScenario = {
       "주민번호 뒷자리는 *******이에요.",
       12800,
       "P1",
-      "주민번호 뒷자리는 1234567이에요.",
     ),
     utterance(
       MASK_CALL,
@@ -360,7 +359,6 @@ export const maskingKoScenario: MockScenario = {
       "그럼 연락처는 *************입니다.",
       21200,
       "P4",
-      "그럼 연락처는 010-2345-6789입니다.",
     ),
     utterance(
       MASK_CALL,
@@ -379,7 +377,6 @@ export const maskingKoScenario: MockScenario = {
       "민원 대상 주소는 ***********입니다.",
       29200,
       "P7",
-      "민원 대상 주소는 서울 중구 다산로12입니다.",
     ),
     utterance(
       MASK_CALL,

@@ -2,7 +2,7 @@
 title: "모델을 운영 노드에 CPU 로 싣는다 — NER + 임베딩 (결정 124, 09-30 판정용)"
 assignee: "정성윤"
 role: "infra"
-status: "in-progress"
+status: "done"
 sprint: 5
 priority: 61
 date: 2026-09-22
@@ -38,3 +38,7 @@ depends_on:
 ## 취소한 티켓
 
 `w6-gpu-model-instance` · `w6-ai-model-http-surface` · `w6-server-remote-model-adapter` — 전용 GPU 와 원격 어댑터가 필요 없어졌다(`124`).
+
+## 결과 (2026-09-22)
+
+①~⑦ 전부 끝났다 — 운영 `/health` spokes 에 `pii_ner`·`retrieval_dense`, 해시 대조 일치, 공식 측정 run_id 3(0.969/0.868)·4(0.812/0.635, 커밋 `e966b62`, 로컬 기록 DB). 첫 검색 지연(SYN-010 3,300ms)은 이 티켓 밖 — `w7-latency-budget` 과 미결 「운영 첫 검색 요청이 3,300ms」에서 잇는다.

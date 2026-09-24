@@ -43,3 +43,14 @@ def test_사유_없는_변경은_거부한다():
     with pytest.raises(ValueError):
         _change(blacklist, reason="   ")
     assert blacklist.calls == []
+
+
+def test_감사_로그용_최근_이력은_한도를_그대로_저장소에_넘긴다():
+    """인터랙터는 판정하지 않는다 — 자르는 일은 저장소(SQL `LIMIT`)가 한다(`w6-audit-log-blacklist-reset`)."""
+    import asyncio
+
+    from hub.app.use_cases.blacklist_expiry_change_recent_interactor import BlacklistRecentExpiryChangeInteractor
+
+    blacklist = StubBlacklist()
+    assert asyncio.run(BlacklistRecentExpiryChangeInteractor(blacklist=blacklist).recent(50)) == []
+    assert blacklist.calls == [("list_recent_expiry_changes", 50)]

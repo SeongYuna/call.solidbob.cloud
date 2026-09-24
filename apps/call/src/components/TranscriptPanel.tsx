@@ -9,7 +9,7 @@ import {
   type UIEvent,
 } from "react";
 import { BrandLockup } from "./AppHeader";
-import { MaskedText, revealSpansFor, type RevealSpan } from "./MaskedText";
+import { MaskedText } from "./MaskedText";
 import { isCoreApiConfigured } from "../lib/api/coreClient";
 import { formatOffsetMs } from "../lib/text/codepoints";
 import { formatCallStartedAt } from "../lib/formatCallTime";
@@ -24,7 +24,6 @@ import type { BannerRiskMatch } from "../lib/customerRisk/detectCustomerRisk";
 import type { CustomerRiskMatch } from "../lib/customerRisk/detectCustomerRisk";
 import { targetLanguageFromCode } from "../lib/language/languageMeta";
 import {
-  logPlainReveal,
   maskSensitiveText,
   sensitiveRanges,
 } from "../lib/customerRisk/maskSensitiveText";
@@ -35,7 +34,25 @@ import {
 import type { ManualSearchOutcome } from "../hooks/useCallMediatorSession";
 import { useCallStore, type Utterance } from "../store/callStore";
 import { isCallGuardDistress } from "../types/contract";
-import type { TranscriptQuerySegment } from "../types/contract";
+import type { ComplianceFinding, TranscriptQuerySegment } from "../types/contract";
+
+/** 화면에 그릴 컴플라이언스 경고 한 건 — 실서버 findings/로컬 mock 규칙을 같은 모양으로 맞춘다. */
+interface LineCompliance {
+  key: string;
+  detectedPhrase: string;
+  suggestedPhrase: string;
+}
+
+function complianceFromFindings(
+  findings: readonly ComplianceFinding[],
+): LineCompliance[] {
+  return findings.map((f) => ({
+    key: `${f.rule_code}:${f.phrase}`,
+    detectedPhrase: f.phrase,
+    suggestedPhrase:
+      f.alternative_source?.title ?? "권장 대체 표현이 등록되지 않았습니다.",
+  }));
+}
 
 /** 이 거리 안이면 맨 아래에 있는 것으로 본다. */
 const PIN_THRESHOLD_PX = 80;
@@ -76,20 +93,10 @@ function historyAsUtterance(segment: TranscriptQuerySegment): Utterance {
     segment_id: String(segment.segment_id),
     speaker: segment.speaker,
     text: segment.text,
-    ...(segment.plain_text === undefined
-      ? {}
-      : { plain_text: segment.plain_text }),
     masked: segment.masked,
     is_final: segment.is_final,
     utterance_end_ms: segment.utterance_end_ms ?? 0,
   };
-}
-
-function revealClock(ms: number): string {
-  const total = Math.max(0, Math.floor(ms / 1000));
-  const m = Math.floor(total / 60);
-  const s = total % 60;
-  return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
 }
 
 export function TranscriptPanel({
@@ -108,6 +115,9 @@ export function TranscriptPanel({
   const callGuard = useCallStore((state) =>
     state.viewMode === "history" ? state.historyCallGuard : state.callGuard,
   );
+  // 상담기록 재생에는 저장되지 않는다(실시간 통화 전용) — history 모드에서는 항상 빈 채로
+  // 정직하게 남는다(mock으로 채우지 않는다).
+  const complianceFindings = useCallStore((state) => state.compliance);
   const accentHints = useCallStore((state) =>
     state.viewMode === "history" ? state.historyAccentHints : state.accentHints,
   );
@@ -126,6 +136,7 @@ export function TranscriptPanel({
   const historyCallId = useCallStore((state) => state.historyCallId);
   const setHistoryView = useCallStore((state) => state.setHistoryView);
   const callId = useCallStore((state) => state.callId);
+  const routingDecision = useCallStore((state) => state.routingDecision);
   const targetLanguage = useCallStore((state) =>
     state.viewMode === "history"
       ? state.historyTargetLanguage
@@ -133,11 +144,6 @@ export function TranscriptPanel({
   );
   const [dismissed, setDismissed] = useState<ReadonlySet<string>>(new Set());
   const [notifiedKeys, setNotifiedKeys] = useState<ReadonlySet<string>>(
-    () => new Set(),
-  );
-  const [authorized, setAuthorized] = useState(false);
-  const [revealAll, setRevealAll] = useState(false);
-  const [openedIds, setOpenedIds] = useState<ReadonlySet<string>>(
     () => new Set(),
   );
   const notifiedRef = useRef(new Set<string>());
@@ -165,9 +171,6 @@ export function TranscriptPanel({
     setDismissed(new Set());
     notifiedRef.current = new Set();
     setNotifiedKeys(new Set());
-    setAuthorized(false);
-    setRevealAll(false);
-    setOpenedIds(new Set());
   }, [callId, historyCallId, viewMode]);
 
   useEffect(() => {
@@ -248,116 +251,6 @@ export function TranscriptPanel({
     });
     return grouped;
   }, [matches]);
-
-  const allRevealIds = useMemo(() => {
-    const ids: string[] = [];
-    for (const item of utterances) {
-      // 실서버 모드에서는 detectCustomerRisk를 부르지 않는다 — 아래 설명 참고.
-      const customerRisks =
-        item.speaker === "customer" && !isCoreApiConfigured()
-          ? detectCustomerRisk(item.text)
-          : [];
-      const piiMatches = customerRisks.filter((risk) => risk.type === "pii");
-      const abuseMatches = customerRisks.filter(
-        (risk) => risk.type === "abuse",
-      );
-      const contractMasked =
-        piiMatches.length > 0 || abuseMatches.length > 0
-          ? []
-          : item.masked;
-      for (const span of revealSpansFor(
-        item.segment_id,
-        contractMasked,
-        sensitiveRanges(item.text, piiMatches, "pii"),
-        sensitiveRanges(item.text, abuseMatches, "abuse"),
-      )) {
-        ids.push(span.id);
-      }
-    }
-    return ids;
-  }, [utterances]);
-
-  const toggleSpan = useCallback(
-    (
-      id: string,
-      field: string,
-      currentlyOpen: boolean,
-      clock: string,
-    ) => {
-      if (!authorized) {
-        return;
-      }
-      if (currentlyOpen) {
-        if (revealAll) {
-          setRevealAll(false);
-          setOpenedIds(new Set(allRevealIds.filter((key) => key !== id)));
-        } else {
-          setOpenedIds((current) => {
-            const next = new Set(current);
-            next.delete(id);
-            return next;
-          });
-        }
-        return;
-      }
-      setOpenedIds((current) => {
-        const next = new Set(current);
-        next.add(id);
-        return next;
-      });
-      logPlainReveal(field, clock, callId ?? historyCallId ?? "");
-    },
-    [allRevealIds, authorized, callId, historyCallId, revealAll],
-  );
-
-  const toggleLineSpans = useCallback(
-    (spans: readonly RevealSpan[], clock: string) => {
-      if (!authorized || spans.length === 0) {
-        return;
-      }
-      const allOpen =
-        revealAll || spans.every((span) => openedIds.has(span.id));
-      if (allOpen) {
-        const closing = new Set(spans.map((span) => span.id));
-        if (revealAll) {
-          setRevealAll(false);
-          setOpenedIds(
-            new Set(allRevealIds.filter((id) => !closing.has(id))),
-          );
-        } else {
-          setOpenedIds((current) => {
-            const next = new Set(current);
-            for (const span of spans) {
-              next.delete(span.id);
-            }
-            return next;
-          });
-        }
-        return;
-      }
-      setOpenedIds((current) => {
-        const next = new Set(current);
-        for (const span of spans) {
-          next.add(span.id);
-        }
-        return next;
-      });
-      const logId = callId ?? historyCallId ?? "";
-      for (const span of spans) {
-        if (!openedIds.has(span.id)) {
-          logPlainReveal(span.field, clock, logId);
-        }
-      }
-    },
-    [
-      allRevealIds,
-      authorized,
-      callId,
-      historyCallId,
-      openedIds,
-      revealAll,
-    ],
-  );
 
   const total = matches.length;
   const current = total === 0 ? -1 : Math.min(hitIndex, total - 1);
@@ -518,39 +411,21 @@ export function TranscriptPanel({
           </button>
         </div>
       ) : null}
+      {/* J-5(decisions/313·126·407) — 통화 시작 직후 배정 판정이 기록된다. **판정이
+          연결을 바꾸지 않는다** — 이미 상담원이 받은 뒤의 기록이다. "배정됨"이라고
+          쓰지 않는다. 상담기록(history) 재생에는 이 값이 없다(저장 안 됨). */}
+      {!isHistory && routingDecision !== null ? (
+        <div className="history-banner" role="status">
+          <span>
+            배정 판정 기록됨 · {routingDecision.is_blacklisted ? "블랙리스트 등록 고객" : "블랙리스트 아님"}
+            {routingDecision.fell_back ? " · 근속 기준 상담사 없어 일반 배정" : ""}
+            {" "}— 연결은 바뀌지 않습니다(시연용 기록)
+          </span>
+        </div>
+      ) : null}
       <header className="panel-head transcript-head">
         <div className="transcript-head-row">
           <h2 id="transcript-heading">실시간 자막</h2>
-          {!isCoreApiConfigured() ? (
-            <div className="mask-auth-bar">
-              <button
-                type="button"
-                className="mask-auth-btn"
-                aria-pressed={authorized}
-                onClick={() => {
-                  setAuthorized(true);
-                }}
-              >
-                권한 확인 (데모)
-              </button>
-              <button
-                type="button"
-                className="mask-auth-btn"
-                disabled={!authorized}
-                aria-pressed={revealAll}
-                onClick={() => {
-                  if (revealAll) {
-                    setRevealAll(false);
-                    setOpenedIds(new Set());
-                    return;
-                  }
-                  setRevealAll(true);
-                }}
-              >
-                원문 보기
-              </button>
-            </div>
-          ) : null}
         </div>
         <div className="transcript-search">
           <svg
@@ -662,7 +537,11 @@ export function TranscriptPanel({
           <ol className="utterance-list">
             {utterances.map((item) => {
               const hasAlert = item.masked.length > 0;
-              const guard = callGuard[item.segment_id];
+              // 위기 신호(distress)가 같은 구간의 폭언 배지에 덮이지 않도록 위로 정렬한다
+              // (w6-qa-ui-defects-three) — 스토어가 배열로 쌓아 준 걸 전부 그린다.
+              const guards = (callGuard[item.segment_id] ?? [])
+                .slice()
+                .sort((a, b) => Number(isCallGuardDistress(b)) - Number(isCallGuardDistress(a)));
               const hits = hitsBySegment.get(item.segment_id) ?? [];
               const translation = translations[item.segment_id];
               const tts = agentTts[item.segment_id];
@@ -681,7 +560,6 @@ export function TranscriptPanel({
               );
               const sensitive = maskSensitiveText(item.text, customerRisks);
               const displayText = sensitive.masked;
-              const revealPlain = item.plain_text ?? sensitive.plain;
               const piiRanges = sensitiveRanges(item.text, piiMatches, "pii");
               const abuseRanges = sensitiveRanges(
                 item.text,
@@ -692,13 +570,6 @@ export function TranscriptPanel({
                 piiMatches.length > 0 || abuseMatches.length > 0
                   ? []
                   : item.masked;
-              const lineSpans = revealSpansFor(
-                item.segment_id,
-                contractMasked,
-                piiRanges,
-                abuseRanges,
-              );
-              const lineClock = revealClock(item.utterance_end_ms);
               const bannerRisks = uniqueCustomerBanners(customerRisks).filter(
                 (risk) =>
                   !dismissed.has(
@@ -708,10 +579,23 @@ export function TranscriptPanel({
               const hideLegacyGuard = customerRisks.some(
                 (risk) => risk.type === "abuse" || risk.type === "distress",
               );
-              const compliance =
+              // 실서버가 붙으면(`isCoreApiConfigured()`) 서버 판정(`applyCompliance`)만
+              // 쓴다 — 로컬 규칙(detectComplianceRisk)은 "불법체류" 한 단어만 잡는
+              // 자리표시자라 실제 위반 문장을 못 잡는다(`w6-compliance-alert-ui`).
+              // mock 모드는 서버가 이 신호를 보내지 않으므로 그대로 자리표시자를 쓴다.
+              const complianceWarnings: LineCompliance[] =
                 item.speaker === "agent" && !dismissed.has(item.segment_id)
-                  ? detectComplianceRisk(item.text)
-                  : null;
+                  ? isCoreApiConfigured()
+                    ? complianceFromFindings(
+                        complianceFindings[item.segment_id] ?? [],
+                      )
+                    : (() => {
+                        const risk = detectComplianceRisk(item.text);
+                        return risk === null
+                          ? []
+                          : [{ key: risk.detectedPhrase, ...risk }];
+                      })()
+                  : [];
               const translationHits =
                 hitsBySegment.get(`${item.segment_id}::tr`) ?? [];
               const ttsLang =
@@ -805,59 +689,39 @@ export function TranscriptPanel({
                         <p className="utterance-text">
                           <MaskedText
                             text={displayText}
-                            plainText={revealPlain}
                             masked={contractMasked}
                             piiRanges={piiRanges}
                             abuseRanges={abuseRanges}
                             hits={hits}
                             activeHit={activeHit}
-                            authorized={authorized}
-                            revealAll={revealAll}
-                            openedIds={openedIds}
-                            spanIdPrefix={item.segment_id}
-                            onToggle={(id, field, currentlyOpen) => {
-                              toggleSpan(
-                                id,
-                                field,
-                                currentlyOpen,
-                                lineClock,
-                              );
-                            }}
                           />
                         </p>
                       </div>
-                      {hasAlert ? (
-                        <button
-                          type="button"
-                          className="alert-pill"
-                          disabled={!authorized}
-                          onClick={() => {
-                            toggleLineSpans(lineSpans, lineClock);
-                          }}
-                        >
-                          ⚠ 경고
-                        </button>
-                      ) : null}
+                      {/* 마스킹된 줄임을 알리는 정적 배지다(`.claude/rules/call.md §2`) — 원문
+                          열람 토글은 SEC-1과 모순이라 걷었다(`decisions/408`, `w7-plaintext-reveal-sec1`). */}
+                      {hasAlert ? <span className="alert-pill">⚠ 경고</span> : null}
                     </div>
-                    {guard !== undefined && !hideLegacyGuard ? (
-                      <div
-                        className={`callguard-row${isCallGuardDistress(guard) ? " is-distress" : ""}`}
-                      >
-                        <span className="callguard-pill">
-                          {isCallGuardDistress(guard) ? "🆘 위기 신호" : "🚫 콜가드"}
-                        </span>
-                        <span className="callguard-hint">
-                          {isCallGuardDistress(guard)
-                            ? "통화를 끊지 말고 전문 상담 기관 연결을 안내하세요(DASAN-MANUAL-5.4)."
-                            : "고객이 흥분한 상태입니다. 안내는 이어가시면 됩니다."}
-                        </span>
-                      </div>
-                    ) : null}
+                    {!hideLegacyGuard
+                      ? guards.map((g) => (
+                          <div
+                            key={g.category}
+                            className={`callguard-row${isCallGuardDistress(g) ? " is-distress" : ""}`}
+                          >
+                            <span className="callguard-pill">
+                              {isCallGuardDistress(g) ? "🆘 위기 신호" : "🚫 콜가드"}
+                            </span>
+                            <span className="callguard-hint">
+                              {isCallGuardDistress(g)
+                                ? "통화를 끊지 말고 전문 상담 기관 연결을 안내하세요(DASAN-MANUAL-5.4)."
+                                : "고객이 흥분한 상태입니다. 안내는 이어가시면 됩니다."}
+                            </span>
+                          </div>
+                        ))
+                      : null}
                     {translation !== undefined ? (
                       <p className="utterance-translation">
                         <MaskedText
                           text={translation.translated_text}
-                          plainText={translation.translated_text}
                           masked={[]}
                           hits={translationHits}
                           activeHit={activeTranslationHit}
@@ -884,10 +748,11 @@ export function TranscriptPanel({
                         />
                       );
                     })}
-                    {compliance !== null ? (
+                    {complianceWarnings.map((warning) => (
                       <ComplianceWarningBanner
-                        detectedPhrase={compliance.detectedPhrase}
-                        suggestedPhrase={compliance.suggestedPhrase}
+                        key={warning.key}
+                        detectedPhrase={warning.detectedPhrase}
+                        suggestedPhrase={warning.suggestedPhrase}
                         onDismiss={() => {
                           setDismissed((current) => {
                             const next = new Set(current);
@@ -896,7 +761,7 @@ export function TranscriptPanel({
                           });
                         }}
                       />
-                    ) : null}
+                    ))}
                   </div>
                 </li>
               );

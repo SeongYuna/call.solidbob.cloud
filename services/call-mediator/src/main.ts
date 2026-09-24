@@ -48,6 +48,9 @@ const registry = new CallRegistry({
   nowMs: () => Date.now(),
   // J-5 배정 판정 후보 — 통화 시작 직후 서버에 넘긴다(decisions/126). 비면 빈 목록
   routingCandidates: config.routingCandidates,
+  // 통화 시작 메시지 — 2026-09-22 켰다. apps/call 파서(onStarted)가 main 에 들어왔다. `call_id`를
+  // 전사·추천·판정 이벤트 없이도 잡게 해 짧은 통화의 `/close` 404 를 막는다(`w6-close-callid-missing`)
+  announceStarted: true,
   // 세 메시지 모두 2026-09-15 켰다 — apps/call 실서버 파서가 main 에 들어왔다(PR #88 에 실린 frontend 69508ae,
   // realCallMediatorClient.ts 의 parseRecommendationPending·parseCallGuard·새 parseClosure). 끄려면 false 로 되돌린다
   // 「검색 중」 신호(w4-recommendation-pending-contract)
@@ -61,6 +64,9 @@ const registry = new CallRegistry({
   announceCompliance: true,
   // F-2 절차 채택 조건 — 기본 top1(`w6-procedure-pick-rule`). 다른 값은 `decisions/219` 후보를 재는 용도다
   procedureAdoption: config.procedureAdoption,
+  // J-5 배정 판정 결과 — 2026-09-23 켰다. apps/call 파서·배너는 이미 있었다(09-22, 그때는
+  // 백엔드가 없어 잠들어 있었다). 판정 호출·저장은 이 스위치와 무관하게 늘 돈다(`w6-routing-result-ui`)
+  announceRouting: true,
 });
 
 const server = createCallMediatorServer({

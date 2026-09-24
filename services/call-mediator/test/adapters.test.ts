@@ -208,3 +208,13 @@ test("HttpHub — 서비스 토큰이 없으면 Authorization 을 보내지 않�
   }
   assert.equal(auth, undefined);
 });
+
+test("w6-segment-id-reuse — 통화 시작 응답의 last_segment_id(문자열)를 숫자로 읽고, 없거나 이상하면 0", async () => {
+  const { lastSegmentIdOf } = await import("../src/adapters/hub_http.ts");
+  assert.equal(lastSegmentIdOf({ created: "false", last_segment_id: "6" }), 6);
+  assert.equal(lastSegmentIdOf({ last_segment_id: 12 }), 12);
+  assert.equal(lastSegmentIdOf({ created: "true" }), 0); // 옛 서버 — 필드 없음
+  assert.equal(lastSegmentIdOf({ last_segment_id: "-3" }), 0);
+  assert.equal(lastSegmentIdOf({ last_segment_id: "abc" }), 0);
+  assert.equal(lastSegmentIdOf(null), 0);
+});

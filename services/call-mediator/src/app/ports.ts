@@ -150,8 +150,18 @@ export class HubError extends Error {
   }
 }
 
+/**
+ * `POST /hub/calls` 응답에서 콜 미디에이터가 쓰는 것. 서버는 같은 `call_id` 를 다시 받아도 행을 건드리지 않고(멱등),
+ * **이미 저장된 가장 큰 발화 번호**를 돌려준다 — 통화를 다시 열면(파드 재시작·연결 끊김 뒤 재연결) 여기서 이어 센다.
+ * 1부터 다시 세면 저장된 전사를 같은 번호로 덮어썼다(2026-09-22 운영 QA `test-qa-05`, `w6-segment-id-reuse`).
+ */
+export interface CallStartResult {
+  /** 새 통화이거나 필드가 없는 옛 서버면 0 */
+  lastSegmentId: number;
+}
+
 export interface HubPort {
-  startCall(request: CallStartRequest): Promise<void>;
+  startCall(request: CallStartRequest): Promise<CallStartResult>;
   decideRouting(request: RoutingDecisionRequest): Promise<RoutingDecisionPayload>;
   ingestTranscript(raw: RawTranscript): Promise<MaskedTranscript>;
   recommend(request: RecommendRequest): Promise<RecommendPayload>;
@@ -171,14 +181,26 @@ export interface RecommendationPending {
   segment_id: string;
 }
 
+/**
+ * 통화가 서버에 실제로 만들어졌다는 신호 — 통화당 한 번, 서버 `POST /hub/calls`가 성공한
+ * 직후(`callFor()`)다. §7.3 계약엔 없던 메시지다 — 대시보드가 `call_id`를 잡을 곳이
+ * 전사·추천·판정 이벤트뿐이라, 그 셋 중 아무것도 오기 전에 통화를 끝내면(맞장구만 있는
+ * 아주 짧은 통화) `call_id`가 빈 채로 남아 `/close`가 404 났다(`w6-close-callid-missing`).
+ */
+export interface StartedPayload {
+  call_id: string;
+}
+
 export type CallMediatorMessage =
   | { type: "transcript"; payload: MaskedTranscript }
+  | { type: "started"; payload: StartedPayload }
   | { type: "recommendation_pending"; payload: RecommendationPending }
   | { type: "recommendation"; payload: RecommendPayload }
   | { type: "call_guard"; payload: CallGuardPayload }
   | { type: "compliance"; payload: CompliancePayload }
   | { type: "compliance_unavailable"; payload: ComplianceUnavailable }
-  | { type: "closure"; payload: ClosurePayload };
+  | { type: "closure"; payload: ClosurePayload }
+  | { type: "routing_decision"; payload: RoutingDecisionPayload };
 
 export interface Broadcaster {
   publish(callId: string, message: CallMediatorMessage): void;

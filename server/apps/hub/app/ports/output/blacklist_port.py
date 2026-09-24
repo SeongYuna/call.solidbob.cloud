@@ -79,5 +79,12 @@ class BlacklistPort(ABC):
         """만료 변경 이력, 오래된 순. 등록이 없으면 `BlacklistNotFound`."""
 
     @abstractmethod
+    async def list_recent_expiry_changes(self, limit: int) -> list[ExpiryChange]:
+        """등록을 가리지 않고 **최근 변경부터**. 감사 로그가 읽는다 — 등록마다 한 번씩 물으면 N+1 이다.
+
+        등록이 하나도 없어도 예외가 아니다(빈 목록). `limit` 은 호출자가 이미 좁혀서 준다.
+        """
+
+    @abstractmethod
     async def purge_retained_texts(self) -> RetentionPurgeResult:
         """보존 기간이 지난 자유 입력 문장을 표시로 바꾼다(`decisions/312`). 행을 지우지 않는다. 여러 번 불러도 결과가 같다."""

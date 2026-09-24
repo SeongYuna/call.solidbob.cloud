@@ -95,6 +95,17 @@ function post<T>(path: string, body: unknown, headers?: Record<string, string>):
   return request<T>(path, { method: "POST", body: JSON.stringify(body), headers });
 }
 
+/**
+ * 읽기 경로(통화 목록·전사·기록·검색) 넷에 붙인다(`w6-read-path-token-ui`, `decisions/322`).
+ * 서버가 아직 과도기라(`READ_AUTH_REQUIRED` 꺼짐) 토큰 없이 보내도 지나간다 — 그래서
+ * `closeCall`류처럼 없으면 던지지 않는다. 상담원 로그인이 없으면(mock·비로그인) 그대로
+ * 헤더 없이 보낸다. **상담원 토큰만** 싣는다 — 서비스 토큰은 서버 간 호출(`e2e_check.py`) 몫이다.
+ */
+function agentAuthHeaders(): Record<string, string> | undefined {
+  const token = readAgentToken();
+  return token === null ? undefined : { Authorization: `Bearer ${token}` };
+}
+
 // ── GET /hub/agents/me ────────────────────────────────────────────────────
 
 interface AgentMeResponseWire {
@@ -157,7 +168,10 @@ export async function fetchCallList(options?: {
     params.set("offset", String(options.offset));
   }
   const query = params.toString();
-  const wire = await get<CallListResponseWire>(`/hub/calls${query.length > 0 ? `?${query}` : ""}`);
+  const wire = await get<CallListResponseWire>(
+    `/hub/calls${query.length > 0 ? `?${query}` : ""}`,
+    agentAuthHeaders(),
+  );
   return {
     calls: wire.calls.map((c) => ({
       call_id: c.call_id,
@@ -210,6 +224,7 @@ export async function fetchCallTranscript(
   const query = params.toString();
   const wire = await get<TranscriptPageWire>(
     `/hub/calls/${encodeURIComponent(callId)}/transcript${query.length > 0 ? `?${query}` : ""}`,
+    agentAuthHeaders(),
   );
   return {
     call_id: wire.call_id,
@@ -246,10 +261,14 @@ interface SearchResponseWire {
 
 /** B-6 수동 검색. 조항 목록 → 카드로 바꾸는 것은 이 함수(화면 몫)가 한다. */
 export async function searchDocuments(utterance: string, topK?: number): Promise<RecommendationCard[]> {
-  const wire = await post<SearchResponseWire>("/hub/search", {
-    utterance,
-    ...(topK !== undefined ? { top_k: topK } : {}),
-  });
+  const wire = await post<SearchResponseWire>(
+    "/hub/search",
+    {
+      utterance,
+      ...(topK !== undefined ? { top_k: topK } : {}),
+    },
+    agentAuthHeaders(),
+  );
   return wire.docs.map((d) => ({
     title: d.title,
     summary: d.snippet,
@@ -698,7 +717,10 @@ export interface CallRecord {
  * (`fetchCallTranscript`가 따로 준다). 감정분석·통번역은 저장되지 않아 없다.
  */
 export async function fetchCallRecord(callId: string): Promise<CallRecord> {
-  const wire = await get<CallRecordResponseWire>(`/hub/calls/${encodeURIComponent(callId)}/record`);
+  const wire = await get<CallRecordResponseWire>(
+    `/hub/calls/${encodeURIComponent(callId)}/record`,
+    agentAuthHeaders(),
+  );
   return {
     callId: wire.call_id,
     status: wire.status,
