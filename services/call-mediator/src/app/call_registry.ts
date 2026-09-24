@@ -126,12 +126,13 @@ export interface RegistryDeps {
    */
   ingestRetryDelaysMs?: readonly number[];
   /**
-   * F-2 — 추천 1순위 카드의 조항을 **언제** 절차로 잡나(`decisions/219`). 기본 `top1`(= 지금까지의 동작, C0).
-   * 나머지 둘은 219 가 사전 등록한 후보를 재려고 둔 것이다 — 채택 여부는 결정 기록을 따른다.
-   * - `top1` — 추천마다 1순위 조항을 잡는다(`w6-procedure-pick-rule`)
+   * F-2 — 추천 1순위 카드의 조항을 **언제** 절차로 잡나(`decisions/219`). 기본 `score-floor`
+   * (= 219 가 보류 표본에서 채택한 C2, 2026-09-24). 나머지 둘은 옛 동작과 떨어진 후보를 다시 잴 때 쓴다.
+   * - `score-floor` — 1순위 카드의 `similarity_score` 가 `PROCEDURE_SCORE_FLOOR` 이상일 때만 잡는다(C2, **기본**)
+   * - `top1` — 추천마다 1순위 조항을 잡는다(`w6-procedure-pick-rule` — 2026-09-24 이전의 기본, C0)
    * - `two-consecutive` — **고객 발화로 발동한 추천 두 번이 연달아** 같은 1순위 조항일 때만 잡는다(C1·C3).
-   *   발동하지 않은 추천(`fired` ≠ `"true"` — 상담원 발화·트리거가 거른 맞장구)은 연속을 끊지도 잇지도 않는다
-   * - `score-floor` — 1순위 카드의 `similarity_score` 가 `PROCEDURE_SCORE_FLOOR` 이상일 때만 잡는다(C2)
+   *   발동하지 않은 추천(`fired` ≠ `"true"` — 상담원 발화·트리거가 거른 맞장구)은 연속을 끊지도 잇지도 않는다.
+   *   **채택하지 않았다** — 보류 표본에서 필요한 절차를 8건 중 7건 잃었다
    */
   procedureAdoption?: ProcedureAdoption;
 }
@@ -140,7 +141,8 @@ export type ProcedureAdoption = "top1" | "two-consecutive" | "score-floor";
 export const PROCEDURE_ADOPTIONS: readonly ProcedureAdoption[] = ["top1", "two-consecutive", "score-floor"];
 
 /**
- * C2(`score-floor`)의 하한 — `decisions/219` 사전 등록값. **학습 표본(`dasan-v0` 24건, 09-22 16:43 로컬 E2E)에서** 골랐다:
+ * C2(`score-floor`)의 하한 — `decisions/219` 사전 등록값이자 **2026-09-24 채택값**(보류 표본 12건에서 엉뚱한 쌍
+ * 10 → 3, 정답 절차 손실 0). **학습 표본(`dasan-v0` 24건, 09-22 16:43 로컬 E2E)에서** 골랐다:
  * 필요서류 대본마다 「대본 절차가 1순위였던 추천」의 최고 점수를 구하고, 그 최솟값(SYN-015 초본 4.3, 0.6359)을 넘지 않게
  * 내림한 값이다 — v0 에서 C0 이 잡던 필요한 절차를 하나도 잃지 않는 가장 높은 하한. 점수 눈금은 dense(KoE5) cosine
  * `(1 + cos) / 2`(운영 구성, 리랭커 없음). 값을 바꾸려면 다시 사전 등록하고 새 표본으로 잰다 — 설정이 아니라 결정이다.
@@ -673,7 +675,7 @@ export class Channel {
         payload: { call_id: this.callId, segment_id: String(item.segmentId) },
       });
     }
-    const mode = this.deps.procedureAdoption ?? "top1";
+    const mode = this.deps.procedureAdoption ?? "score-floor";
     const tracksStreak = mode === "two-consecutive" && item.raw.speaker === "customer";
     if (tracksStreak) {
       this.call.customerTops.set(item.segmentId, { state: "pending" });

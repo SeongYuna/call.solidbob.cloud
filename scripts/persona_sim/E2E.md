@@ -78,7 +78,7 @@ curl -s localhost:8080/health   # active_calls 0
 - 출력: `data/processed/persona-e2e/<YYYY-MM-DD-HHMM>.json` + `.md` (gitignore — 커밋하지 않는다). 종료 코드 0 = 전부 ✅.
   보고서 머리와 JSON `summary.procedures` 에 **F-2 절차 집계**(엉뚱한 쌍·행 · 필요서류 대본의 정답 절차 판정 유무)가 붙는다(`decisions/219`).
 - `--scripts-dir` 로 대본 폴더를 바꾼다(기본 `dasan-v0`). 재생기에는 늘 JSON 경로로 넘긴다.
-- 콜 미디에이터의 절차 채택 조건은 `F2_PROCEDURE_ADOPTION`(`top1` 기본 · `two-consecutive` · `score-floor`) — `/health` 의 `procedure_adoption` 으로 보인다.
+- 콜 미디에이터의 절차 채택 조건은 `F2_PROCEDURE_ADOPTION`(**`score-floor` 기본** — 2026-09-24 채택, `decisions/219` · 옛 기본 `top1` · `two-consecutive`) — `/health` 의 `procedure_adoption` 으로 보인다.
 - DB 는 `--database-url`(기본 위 ②의 `callguard_e2e`) 로 직접 읽는다. 못 붙으면 DB 판정만 건너뛰고 API 판정은 한다.
 
 ## 3. 판정 기준 (전부 규칙 — `e2e/judge.py`)

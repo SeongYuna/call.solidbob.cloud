@@ -819,7 +819,7 @@ test("재시도하는 동안 뒤 결과는 기다린다 — 자막 순서가 뒤
   );
 });
 
-// ── decisions/219 — 절차 채택 조건 후보. 기본(top1)은 위 F-2 테스트들이 고정한다 ─────────────────────────
+// ── decisions/219 — 절차 채택 조건. 기본은 score-floor(2026-09-24 채택) — 위 F-2 테스트들은 FakeHub 기본 점수 0.9 로 돈다 ─────────────────────────
 
 /** 고객 발화마다 1순위 조항을 바꿔 가며 흘리고, 판정을 물은 조항(422 포함)을 돌려준다. */
 async function askedProcedures(
@@ -843,8 +843,21 @@ async function askedProcedures(
   return [...new Set(hub.docsAsked)];
 }
 
-test("219 — 기본값은 top1 이다: 고객 발화 한 번의 1순위도 절차로 잡는다 (C0 그대로)", async () => {
-  const asked = await askedProcedures(undefined, [{ speaker: "customer", text: "네", top: "DASAN-TERM-4.13" }]);
+test("219 — 기본값은 score-floor 다(2026-09-24 채택): 하한 이상이면 잡고, 아래면 안 잡는다", async () => {
+  assert.deepEqual(
+    await askedProcedures(undefined, [{ speaker: "customer", text: "네", top: "DASAN-TERM-4.13", score: "0.9" }]),
+    ["DASAN-TERM-4.13"],
+  );
+  assert.deepEqual(
+    await askedProcedures(undefined, [{ speaker: "customer", text: "네", top: "DASAN-TERM-4.13", score: "0.6349" }]),
+    [],
+  );
+});
+
+test("219 — 옛 기본값 top1 은 이름을 대면 그대로 쓴다: 고객 발화 한 번의 1순위를 점수와 무관하게 잡는다 (C0)", async () => {
+  const asked = await askedProcedures("top1", [
+    { speaker: "customer", text: "네", top: "DASAN-TERM-4.13", score: "0.1" },
+  ]);
   assert.deepEqual(asked, ["DASAN-TERM-4.13"]);
 });
 
