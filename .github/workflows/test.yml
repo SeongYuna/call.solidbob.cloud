@@ -159,6 +159,15 @@ jobs:
       - name: 구조 계약 검사 (import-linter)
         run: PYTHONPATH=apps:../server/apps lint-imports --config .importlinter
 
+      - name: 합성 통화 판정 테스트 (scripts/persona_sim)
+        # 2026-09-28 추가. `decisions/219` 판정 테스트 28건이 **네 job 어디에도 없었다** — 저장소에 있는데
+        # CI 가 한 번도 안 돌렸다(류준 인계 ⑥-5). 새 job 을 만들지 않고 여기 붙인다:
+        # job 이름은 main 룰셋의 필수 통과 검사라 늘리면 룰셋·`ruleset-main.json` 도 같이 고쳐야 하고,
+        # 그 동기화를 놓쳐 PR 이 영원히 머지되지 않은 적이 두 번 있다(`CLAUDE.md` §7). 내용도 `ai/` 쪽이다.
+        # 스택 없이 도는 순수 판정 함수라 의존성이 더 필요 없다(0.1초).
+        working-directory: .
+        run: python -m pytest scripts/persona_sim/tests -q
+
   jekyll:
     # 사이트가 곧 산출물이다. main 에 머지되는 순간 배포되므로, 깨진 채로 들어가면
     # 그때서야 알게 된다. 머지 전에 빌드와 내부 링크를 확인한다.

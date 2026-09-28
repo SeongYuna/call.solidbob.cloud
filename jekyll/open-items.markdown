@@ -1013,3 +1013,20 @@ Environment Variables → **Production 만** → Deployments → Redeploy(`VITE_
 - [ ] **기준선이 BM25 구성 하나뿐이다 — 류준·팀** — `scripts/check_baseline.py` 의 0.812/0.635 는 **BM25 기준선 run_id 4** 값이다(절대 원칙 4 대로 최저치를 둔다 — 올리지 않았다). **운영 실구성(NER+KoE5 dense)에는 기준선이 없다** — 그 구성 리포트에 이 값을 들이대면 느슨하다(run_id 8 은 0.971/0.875). 구성별로 기준선을 둘 것인지는 **팀이 정할 일**이다
 - [ ] **D-2 유형 정확도 1.0 은 기록된 run 이 아니다 — 류준** — 판정용 run_id 8·9(커밋 `5b2b4c4`)는 `decisions/323` 머지 전이라 리포트에 「측정 불가 — 유형이 null」로 찍혀 있다. 09-22 밤의 1.0(10/10)은 `--record` 없이 잰 값이고, **5종 중 3종(일반행정 4·상하수도 3·대중교통 3) 표본**이다 — 감염병·재난·생계 지원금은 0건(`decisions/218` 2026-09-24 절). 판정문·발표에 쓰려면 다시 잰다
 - [ ] **run 8·9 의 `eval_run.components` 가 NULL 이다 — 류준** — 컬럼은 생겼지만(`759b3d4`, 09-22 16:53) run 8·9 는 그 11분 전 커밋(`5b2b4c4`, 16:42)에서 돌았다. 두 run 의 구성은 `data/processed/eval-export/2026-09-22-run-8-9.json` 과 명령줄에만 있다. **동결 측정에서는 `components` 가 두 구성에서 다르게 찍히는지 확인한다**
+
+### 2026-09-28 — 류준이 정성윤에게 넘긴 다섯 건, 전부 처리 (정성윤)
+
+`_project/handoff/2026-09-24-ryujun-conflicts.md` §1-⑥. 다섯 다 닫혔으니 새 미결로 남기지 않고 결과만 적는다.
+
+- [x] **런북 17장 지식베이스 적재 확인이 401 이었다** — `POST /hub/search` 를 토큰 없이 부르는 절차였다.
+      09-23 부터 읽기 문이 닫혀서(`READ_AUTH_REQUIRED=true`) 그대로는 401 이다. 19장처럼 노드에서 서비스 토큰을 읽어
+      `Authorization: Bearer` 로 싣게 고쳤다(값은 찍지 않는다). 런북 전체를 훑어 **토큰 없는 읽기 호출은 이것 하나뿐**이었다.
+- [x] **배포 뒤 `procedure_adoption` 눈으로 확인** — `0.2.10` 배포 직후 `/call-mediator/health` 에 `"procedure_adoption": "score-floor"` 확인.
+      `/health` 의 `spokes` 에 `retrieval_dense` 도 있다(하한이 dense 눈금 위에서 걸린다는 뜻).
+- [x] **되돌리는 손잡이** — `infra/k8s/base/call-mediator.yaml:64` 에 `F2_PROCEDURE_ADOPTION: "top1"` 이 주석으로 있다. 확인했다.
+      시연 중 절차가 안 뜨면 주석을 풀고 적용한다 — **이미지 재빌드는 필요 없다.**
+- [x] **배포 중 WebSocket 끊김** — 머지 시점에 `active_calls: 0` 이었고 미디에이터·서버 파드 둘 다 재시작 0으로 한 번에 떴다.
+- [x] **CI 가 `scripts/persona_sim/tests/` 를 하나도 안 돌린다** — **`ai` job 에 한 단계로 붙였다(새 job 을 만들지 않았다).**
+      job 이름은 main 룰셋의 필수 통과 검사라 늘리면 룰셋과 `.github/ruleset-main.json` 을 같이 고쳐야 하고,
+      그 동기화를 놓쳐 PR 이 머지되지 않은 적이 두 번 있다(`CLAUDE.md` §7). 내용도 `ai/` 쪽이고 스택 없이 0.1초에 도는
+      순수 판정 함수라 의존성도 더 필요 없다. **28건이 이제 모든 PR 에서 돈다.**
