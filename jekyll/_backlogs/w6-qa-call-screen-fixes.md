@@ -47,3 +47,12 @@ paths:
 
 검증: `apps/call`(`tsc --noEmit`·`vite build`·`npm test` 11/11), `apps/admin`(`tsc --noEmit`·`vite build`) 통과.
 `status`는 `done`이 아니라 `in-progress`로 둔다 — 운영 재확인이 하나도 없고, 두 항목(보호 알림 배너·시연 절차)은 코드 변경이 아니라 설계 결정이 먼저 필요하다.
+
+## 2026-09-28 — 콜가드 걸린 표현 · 반말 문구 (조서희)
+
+- **콜가드 배너에 걸린 표현** — 서버(`call_guard_dto.py`)는 `phrase`(마스킹된 자막에서 자른 값)를 보내는데 파서가 버리고 있었다.
+  `realCallMediatorClient.ts` 파서가 `phrase` 를 읽고(선택 필드 — 없거나 비면 안 싣는다) `CallGuardFlag.phrase?` 에 담는다.
+  실서버 모드의 콜가드 줄에 「🚫 콜가드 「표현」 안내…」로 보인다. 점수·위험도는 없다. 테스트 `apps/call/test/callGuardPhrase.test.tsx`.
+- **반말 문구 셋** — `useAgentCallSession.ts`: 「주소가 설정되지 않았다」·「마이크 권한이 거부됐다」·「연결이 끊겼다」 → 존댓말.
+  마이크 거부에는 허용 방법 한 줄을 덧붙였다.
+- 운영에서 폭언 발화로 표현이 실제로 뜨는지는 아직 눈으로 보지 않았다.

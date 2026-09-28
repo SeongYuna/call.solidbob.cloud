@@ -402,6 +402,21 @@ export async function fetchBlacklistExpiryChanges(
   return wire.changes.map(toExpiryChangeItem);
 }
 
+// ── GET /hub/blacklist-expiry-changes?limit= ─────────────────────────────
+// 등록을 가리지 않는 최근 만료 변경(최근 순) — 감사 로그가 읽는다(QA Q-67). 관리자 로그인 필요.
+// 등록마다 위 문을 부르면 N+1 이라 서버가 따로 열었다.
+
+export async function fetchRecentBlacklistExpiryChanges(
+  accessToken: string,
+  limit = 50,
+): Promise<ExpiryChangeItem[]> {
+  const wire = await authedGet<{ changes: ExpiryChangeItemWire[] }>(
+    `/hub/blacklist-expiry-changes?limit=${encodeURIComponent(String(limit))}`,
+    accessToken,
+  );
+  return wire.changes.map(toExpiryChangeItem);
+}
+
 // ── /admin/agent-tokens — 상담원 토큰 발급·목록·폐기 (`decisions/307`) ──────
 
 export interface AgentTokenItem {

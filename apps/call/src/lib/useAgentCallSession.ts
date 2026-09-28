@@ -125,7 +125,7 @@ export function useAgentCallSession(): AgentCallSession {
     const base = callMediatorDemoBase();
     if (base.length === 0) {
       setStatus("error");
-      setErrorMessage("콜 미디에이터 주소가 설정되지 않았다(VITE_CALL_MEDIATOR_DEMO_BASE_URL).");
+      setErrorMessage("콜 미디에이터 주소가 설정되지 않았습니다(VITE_CALL_MEDIATOR_DEMO_BASE_URL).");
       return;
     }
 
@@ -169,7 +169,7 @@ export function useAgentCallSession(): AgentCallSession {
       };
       rec.onerror = (event) => {
         if (event.error === "not-allowed") {
-          setErrorMessage("마이크 권한이 거부됐다.");
+          setErrorMessage("마이크 권한이 거부되었습니다 — 브라우저 주소창의 권한 설정에서 마이크를 허용해 주세요.");
           end("error");
         }
       };
@@ -188,7 +188,7 @@ export function useAgentCallSession(): AgentCallSession {
 
     ws.onclose = (event) => {
       if (runningRef.current) {
-        setErrorMessage(`콜 미디에이터 연결이 끊겼다 (${event.code}).`);
+        setErrorMessage(`콜 미디에이터 연결이 끊겼습니다 (${event.code}).`);
         end("error");
       }
     };
