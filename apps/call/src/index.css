@@ -1020,6 +1020,27 @@ button {
   animation: compliance-in 180ms ease-out;
 }
 
+.compliance-banner.compliance-unavailable {
+  background: var(--surface-muted, rgba(127, 127, 127, 0.1));
+}
+
+.compliance-banner.compliance-unavailable .compliance-icon,
+.compliance-banner.compliance-unavailable .compliance-label {
+  color: var(--muted);
+}
+
+.compliance-banner.compliance-unavailable .compliance-suggest {
+  font-weight: 500;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.no-docs-note {
+  margin: 6px 0 0;
+  font-size: 12px;
+  color: var(--muted);
+}
+
 .compliance-icon {
   flex-shrink: 0;
   margin-top: 2px;

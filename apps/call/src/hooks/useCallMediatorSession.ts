@@ -65,6 +65,7 @@ export function useCallMediatorSession(): CallMediatorSession {
             batch.call_id,
             batch.trigger_at_ms,
             batch.fired,
+            batch.segment_id,
           );
         },
         onRecommendationPending: () => {

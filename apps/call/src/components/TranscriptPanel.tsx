@@ -15,7 +15,10 @@ import { formatOffsetMs } from "../lib/text/codepoints";
 import { formatCallStartedAt } from "../lib/formatCallTime";
 import { findMatches, type CharRange } from "../lib/text/highlight";
 import { ManualSearchBar } from "./ManualSearchBar";
-import { ComplianceWarningBanner } from "./ComplianceWarningBanner";
+import {
+  ComplianceUnavailableNotice,
+  ComplianceWarningBanner,
+} from "./ComplianceWarningBanner";
 import { CustomerRiskBanner } from "./CustomerRiskBanner";
 import { LanguageBadge } from "./LanguageBadge";
 import { detectComplianceRisk } from "../lib/compliance/detectComplianceRisk";
@@ -118,6 +121,10 @@ export function TranscriptPanel({
   // 상담기록 재생에는 저장되지 않는다(실시간 통화 전용) — history 모드에서는 항상 빈 채로
   // 정직하게 남는다(mock으로 채우지 않는다).
   const complianceFindings = useCallStore((state) => state.compliance);
+  const complianceUnavailable = useCallStore(
+    (state) => state.complianceUnavailable,
+  );
+  const noDocsSegments = useCallStore((state) => state.noDocsSegments);
   const accentHints = useCallStore((state) =>
     state.viewMode === "history" ? state.historyAccentHints : state.accentHints,
   );
@@ -596,6 +603,14 @@ export function TranscriptPanel({
                           : [{ key: risk.detectedPhrase, ...risk }];
                       })()
                   : [];
+              // 검사가 돌지 못한 상담원 발화 — 위반 경고가 없다고 「통과」로 보이지 않게
+              // 따로 표시한다(`w6-compliance-alert-ui` 완료 조건 2). 실서버 전용·실시간 전용.
+              const complianceMissed =
+                item.speaker === "agent" &&
+                !isHistory &&
+                isCoreApiConfigured() &&
+                complianceWarnings.length === 0 &&
+                complianceUnavailable[item.segment_id] !== undefined;
               const translationHits =
                 hitsBySegment.get(`${item.segment_id}::tr`) ?? [];
               const ttsLang =
@@ -762,6 +777,10 @@ export function TranscriptPanel({
                         }}
                       />
                     ))}
+                    {complianceMissed ? <ComplianceUnavailableNotice /> : null}
+                    {!isHistory && noDocsSegments[item.segment_id] === true ? (
+                      <NoDocsNote />
+                    ) : null}
                   </div>
                 </li>
               );
@@ -856,4 +875,12 @@ function TtsIcon(): ReactElement {
       />
     </svg>
   );
+}
+
+/**
+ * B-6 — 이 발화로 검색은 했지만 관련 문서를 찾지 못했다. 패널 전체 빈 문구만으로는
+ * 어느 발화에서 못 찾았는지 안 보인다. 「없다」가 아니라 「못 찾았다」로만 쓴다.
+ */
+export function NoDocsNote(): ReactElement {
+  return <p className="no-docs-note">관련 문서 없음 — 이 발화로는 찾지 못했습니다</p>;
 }

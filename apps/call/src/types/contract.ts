@@ -209,6 +209,13 @@ export interface RecommendationBatch {
   cards: RecommendationCard[];
   internal_latency_ms: number;
   domain?: DemoDomain;
+  /**
+   * 이 추천을 부른 전사 세그먼트(선택). 서버 `RecommendResponse` 에는 없고, 콜 미디에이터가
+   * `recommendation_pending` 에 이미 싣는 것과 같은 키를 `recommendation` 에도 실어 줄 때만 온다.
+   * 있으면 `fired: true, cards: []`(관련 문서 없음)를 **그 발화 줄에** 표시한다. 없으면
+   * 어느 발화였는지 추정하지 않는다 — `trigger_at_ms` 는 수신 시각이라 발화와 1:1 이 아니다.
+   */
+  segment_id?: string;
 }
 
 /**

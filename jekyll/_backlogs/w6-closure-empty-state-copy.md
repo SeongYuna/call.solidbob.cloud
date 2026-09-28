@@ -28,4 +28,4 @@ paths:
 
 - [x] 두 문구 교체 · 렌더 테스트(`apps/call/test/emptyStates.test.tsx`)
 - [x] 카드는 있는데 closure 가 없는 상태의 렌더 테스트
-- [ ] (범위 밖, P1) 수동 검색 카드에 나중 F-2 판정 붙이기 — `applyManualResult`
+- [x] (P1, 같은 날 이어서) 수동 검색 카드에 나중 F-2 판정 붙이기 — `callStore.attachIndex` 에 ③ 같은 문서의 수동 카드 단계를 더했다. 자동 카드가 먼저, 다른 조항에는 안 붙는다(`test/p1Screens.test.tsx`)
