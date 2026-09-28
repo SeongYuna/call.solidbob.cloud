@@ -4,7 +4,7 @@ title: 데이터베이스 ERD
 permalink: /docs/16/
 ---
 
-{% include pivot-201.html note="**이 페이지에서 바뀐 것**: `call.domain` 컬럼은 값이 `dasan` 하나뿐이라 사실상 상수가 됐다. **컬럼을 지우지는 않았다** — 되돌릴 때 마이그레이션이 더 비싸다. 새 기능(A-3 언어 코드 · C-6 폭언 · D 감정)에 필요한 스키마는 아직 설계되지 않았다." %}
+{% include pivot-201.html note="**이 페이지에서 바뀐 것**: `call.domain` 컬럼은 값이 `dasan` 하나뿐이라 사실상 상수가 됐다. **컬럼을 지우지는 않았다** — 되돌릴 때 마이그레이션이 더 비싸다. ~~새 기능(A-3 언어 코드 · C-6 폭언 · D 감정)에 필요한 스키마는 아직 설계되지 않았다.~~ → 2026-09-09 C-6 은 `call_guard_flag`, D-5 는 `voice_outlier` 로 생겼다(`decisions/205`). A-5(동시 통번역 — `A-3` 은 오기) 언어 코드 자리는 아직 없다." %}
 
 [3장 시스템 아키텍처](/docs/03/)는 `call`·`transcript`·`recommendation`·`closure`·
 `eval_result` 5개 테이블만 언급한다. 이건 아키텍처 다이어그램에 들어간 5개 큰 덩어리일
@@ -28,6 +28,14 @@ permalink: /docs/16/
 
 <img src="/assets/erd/ERD.png" alt="CallGuard ERD" style="max-width:100%; border:1px solid #e5e7eb; border-radius:6px;">
 
+> **2026-09-28 기준 29개 테이블이다** (`db/schema.sql` 의 `CREATE TABLE` 수). 09-09 의 22개 뒤로 일곱이 늘었다 —
+> F-2 필요서류 항목 `closure_item`(`decisions/305`) · 요약 수정 이력 `call_summary_revision`(`311`) ·
+> 블랙리스트 만료 변경 `blacklist_entry_expiry_change`(`309`) · 관리자 로그인 `admin_account`·`admin_refresh_token`(`403`) ·
+> 상담원 토큰 `agent_token`(`307`) · 운영 설정 `app_setting`(`313`).
+> **`closure` 도 바뀌었다** — 금융보험·쇼핑 처리유형 컬럼을 걷고 **다산 필요서류 체크리스트의 헤더**가 됐다.
+> `verdict` 는 `complete`/`incomplete`(차단이 아니라 경고)이고, 서류 하나하나는 `closure_item` 에 1:N 으로 담긴다.
+> 아래 본문의 「16개」「F-2 적용 도메인(금융보험·쇼핑)에만 행이 생김」은 그 이전 기록이다(절대 원칙 8).
+
 > **2026-09-09 — 22개 테이블이 됐다.** J 블록(`blacklist_request`·`blacklist_entry`·
 > `routing_log` — `_project/decisions/204`)과 **C-6·D-5 의 출력을 담을 자리**
 > (`call_guard_flag`·`voice_outlier` — `_project/decisions/205`)가 늘었다.
@@ -49,7 +57,7 @@ permalink: /docs/16/
 | (없음) | 발화 하나에 마스킹 스팬 여러 개(C-5), 위반 탐지 여러 개(C-1~C-4) | `masking_event`, `compliance_flag` |
 | `recommendation` | 트리거 1건이 카드 여러 개를 냄([2.1절](/docs/02/) 화면도 배열) | `recommendation` + `recommendation_card` |
 | (없음) | 카드·종결 판정이 인용하는 문서 출처가 참조 무결성 없이 문자열로만 떠다니면 안 됨 | `document` |
-| `closure` | 그대로 두되 evidence 필드를 표로 역정규화(아래). **F-2 적용 도메인(금융보험·쇼핑)에만 행이 생김** | `closure` |
+| `closure` | 그대로 두되 evidence 필드를 표로 역정규화(아래). ~~**F-2 적용 도메인(금융보험·쇼핑)에만 행이 생김**~~ → 다산 필요서류 판정의 헤더 — 항목은 `closure_item`(2026-09-14, `decisions/305`) | `closure` · `closure_item` |
 | (없음) | D-3(후속조치, 1:N), D-4(공백 리포트 — B/C/F 세 모듈 실패 누적) | `follow_up_action`, `knowledge_gap` |
 | `eval_result` | [6.2절](/docs/06/) "여러 번 실행한 값 중 최저치 고정" — 실행 단위 없인 구분 불가 | `eval_run` + `eval_result` |
 | (없음) | G-2([2.8절](/docs/02/), 조건부) 지역 자원 목록 — 스키마만 선반영 | `resource_center` |
@@ -122,8 +130,9 @@ ERD.png 왼쪽 위 범례 참고. **실선**은 자식이 부모 없이는 존�
    여러 장. 카드는 `document`를 근거로 인용.
 4. **통화 → 종결**: `call` 1건에 `closure` 시도가 여러 번(거절되면 재시도) —
    **UPDATE 없이 INSERT만 하는 append-only** ([F-4](/docs/02/)). `document` 근거 인용도
-   동일. **F-2 적용 도메인(금융보험·쇼핑)의 통화에만 행이 생긴다** — 다산콜센터·
-   질병관리본부는 안내형 업무라 종결 개념이 없다.
+   동일. ~~**F-2 적용 도메인(금융보험·쇼핑)의 통화에만 행이 생긴다** — 다산콜센터·
+   질병관리본부는 안내형 업무라 종결 개념이 없다.~~ → **2026-09-14 부터 다산 통화에 필요서류 판정 행이 생긴다**
+   (`verdict` `complete`/`incomplete` — 차단이 아니라 경고, 서류별 항목은 `closure_item`, `decisions/305`).
 5. **통화 → 후속처리**: 종료 후 `follow_up_action` 여러 건, 실패 시 `knowledge_gap`에
    누적 — `call`·`transcript_segment`·`closure` 세 곳을 전부 (nullable) FK로 가리킴.
 6. **평가는 별도 축**: `eval_run` 1건에 `eval_result` 여러 건. 통화 데이터와 직접 연결

@@ -23,8 +23,19 @@ def test_manual_policy_chapter1_and_6_do_not_vote():
     assert suggest_inquiry_type(["DASAN-TERM-6.1", "DASAN-TERM-5.3"]) == "감염병"
 
 
-def test_types_match_aihub_categories():
-    assert set(INQUIRY_TYPES) == {"대중교통", "상하수도", "일반행정", "감염병"}
+def test_types_match_production_catalogue():
+    """유형 이름은 **운영 표를 직접 읽어** 대조한다(2026-09-28, 류준 제안).
+
+    손으로 적어 둔 목록과 맞추면 운영 표(`server/apps/postcall/.../inquiry_rules.py`)가 바뀔 때 또 갈라진다 —
+    09-22 에 실제로 그렇게 갈라졌고 그때 가드는 초록이었다. 이 표의 값이 **운영 판정을 덮어쓰므로**
+    (`model_postcall_adapter` 의 `suggest_inquiry_type(...) or inquiry_type`), 갈라지면 화면·DB 라벨이 틀린다.
+
+    `⊆` 로 본다 — 운영 표에는 여기서 투표하지 않는 유형(6장 재난·생계 지원금 · 미분류)이 더 있다.
+    """
+    from postcall.domain.services.inquiry_rules import INQUIRY_RULES  # 운영 표를 직접 읽는다
+
+    assert set(INQUIRY_TYPES) <= {name for name, _ in INQUIRY_RULES}
+    assert set(INQUIRY_TYPES) == {"대중교통", "상하수도", "일반행정", "감염병"}  # 투표하는 넷은 그대로
 
 
 def test_summary_digit_not_in_transcript():
