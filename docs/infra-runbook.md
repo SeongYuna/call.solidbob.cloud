@@ -1283,10 +1283,13 @@ sudo k3s kubectl -n callguard exec elasticsearch-0 -- curl -s "localhost:9200/_c
 2026-09-11 실제 출력: `청크 98개 (조항 98개)` → `생성된 인덱스: callguard-kb-single` · `callguard-kb-single: 98건` ·
 `_cat/indices` `green open callguard-kb-single … docs.count 98`. 파드에 푼 파일은 파드 재시작 때 사라진다(ES 데이터는 남는다).
 
-밖에서 확인(19장과 같은 `B`):
+밖에서 확인(19장과 같은 `B`). ⚠ **2026-09-23 부터 읽기 경로에 토큰이 필요하다**(`READ_AUTH_REQUIRED=true`,
+`decisions/322` 2단계) — 토큰 없이 부르면 **401** 이다. 19장처럼 노드에서 서비스 토큰을 읽어 싣는다(값은 찍지 않는다):
 
 ```bash
-curl -s -X POST $B/hub/search -H 'content-type: application/json' -d '{"utterance":"주민등록등본 발급 대리 신청 서류","top_k":3}'
+T=$(sudo k3s kubectl -n callguard get secret server-env -o jsonpath='{.data.INGEST_SERVICE_TOKEN}' | base64 -d)
+curl -s -X POST $B/hub/search -H "Authorization: Bearer $T" -H 'content-type: application/json' \
+  -d '{"utterance":"주민등록등본 발급 대리 신청 서류","top_k":3}'
 ```
 
 기대: 200 과 `doc_id` 가 붙은 조항 3개(2026-09-11: `DASAN-TERM-4.1 증명서 발급` · `4.3 주민등록초본` · `2.6`).
