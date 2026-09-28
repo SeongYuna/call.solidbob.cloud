@@ -491,6 +491,10 @@ function parseRecommendation(body: Record<string, unknown>): RecommendationBatch
   if (domain !== undefined) {
     batch.domain = domain;
   }
+  const segment_id = readString(body, "segment_id");
+  if (segment_id !== null && segment_id.length > 0) {
+    batch.segment_id = segment_id;
+  }
   return batch;
 }
 

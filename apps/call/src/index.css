@@ -749,6 +749,28 @@ button {
   font-size: 13.5px;
 }
 
+.closure-panel-empty p {
+  margin: 0;
+}
+
+.closure-panel-empty .closure-empty-hint {
+  margin-top: 6px;
+  font-size: 12.5px;
+}
+
+.closure-empty-popup-link {
+  margin-top: 8px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--accent);
+  font: inherit;
+  font-size: 12.5px;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
 .panel-head h2 {
   margin: 0;
   font-size: 12px;
@@ -996,6 +1018,27 @@ button {
   background: #fff6e8;
   color: var(--text);
   animation: compliance-in 180ms ease-out;
+}
+
+.compliance-banner.compliance-unavailable {
+  background: var(--surface-muted, rgba(127, 127, 127, 0.1));
+}
+
+.compliance-banner.compliance-unavailable .compliance-icon,
+.compliance-banner.compliance-unavailable .compliance-label {
+  color: var(--muted);
+}
+
+.compliance-banner.compliance-unavailable .compliance-suggest {
+  font-weight: 500;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.no-docs-note {
+  margin: 6px 0 0;
+  font-size: 12px;
+  color: var(--muted);
 }
 
 .compliance-icon {

@@ -129,6 +129,11 @@ export interface CallState {
   lastFired: boolean | null;
   /** 카드 추천 요청을 보낸 뒤 응답(cards 또는 fired:false)을 기다리는 중인가. */
   cardsLoading: boolean;
+  /**
+   * B-6 — 검색은 했지만(`fired: true`) 카드가 0장이었던 세그먼트. 키만 쓴다.
+   * 추천 메시지에 `segment_id` 가 실려 올 때만 채워진다(추정하지 않는다).
+   */
+  noDocsSegments: Record<string, true>;
   maskingLog: MaskingLogEntry[];
   manualSearches: ManualSearchLogEntry[];
   /** 카드 식별자 → 채택 기록. 통화가 바뀌면 함께 비워진다. */
@@ -149,7 +154,7 @@ export interface CallState {
   /**
    * C-1~C-4 검사 실패 신호(2026-09-22) — 키는 TranscriptEvent.segment_id, 값은 가장
    * 최근 실패 1건(call_guard와 같은 override 방식 — 검사 실패는 목록으로 쌓을 이유가
-   * 없다). 아직 어떤 컴포넌트도 읽지 않는다 — 이번 범위는 "onError 오탐 제거"까지다.
+   * 없다). `TranscriptPanel` 이 상담원 발화 줄에 「탐지 미동작」으로 그린다(2026-09-28).
    */
   complianceUnavailable: Record<string, ComplianceUnavailable>;
   /**
@@ -177,6 +182,8 @@ export interface CallState {
     callId: string,
     triggerAtMs: number,
     fired: boolean,
+    /** 이 추천을 부른 세그먼트. 알 때만 넘긴다 — 「관련 문서 없음」을 그 줄에 표시하는 데 쓴다. */
+    segmentId?: string,
   ) => void;
   /** 카드 추천 요청이 나가 응답을 기다리는 중임을 표시한다. */
   startCardsLoading: () => void;
@@ -268,6 +275,7 @@ const emptyCall = {
   callGuard: {} as Record<string, CallGuardFlag[]>,
   compliance: {} as Record<string, ComplianceFinding[]>,
   complianceUnavailable: {} as Record<string, ComplianceUnavailable>,
+  noDocsSegments: {} as Record<string, true>,
   routingDecision: null as RoutingDecision | null,
   accentHints: {} as Record<string, true>,
   blackConsumerFlag: null as BlackConsumerFlag | null,
@@ -282,18 +290,32 @@ export function cardId(card: RecommendationCard): string {
   return `${card.source.doc_id}\0${card.title}`;
 }
 
+/**
+ * 이벤트가 실어 온 `call_id` 가 비었으면 이미 잡아 둔 값을 지킨다. 서버는 트리거
+ * 미발동 응답에 `call_id` 를 싣지 않고 파서는 그 자리를 `""` 로 채운다 — 그대로
+ * 덮어쓰면 통화 종료 뒤 요약·확정·블랙리스트 버튼이 사라진다(`w6-close-callid-missing`).
+ */
+export function keepCallId(
+  incoming: string,
+  current: string | null,
+): string | null {
+  return incoming.length > 0 ? incoming : current;
+}
+
 function isAuto(item: PanelCard): boolean {
   return cardSourceType(item.card) === "auto";
 }
 
 /**
- * F-2(필요서류) 게이트는 자동 추천 카드에만 붙인다. 상담원이 직접 찾아온 카드에
- * 붙으면 서류 목록이 그 검색 결과에 딸린 것처럼 읽힌다.
+ * F-2(필요서류) 판정을 붙일 카드를 고른다. 판정의 조항(`event.procedure`)은 추천 카드의
+ * `source.doc_id`와 같은 체계다(`RecommendationCard` 주석 참고) — **그 문서를 실제로
+ * 띄운 카드**에만 붙인다. "가장 최근의, 아직 판정 없는 자동 카드"에 붙이면 지나간 추천
+ * 묶음의 엉뚱한 절차 밑에 서류가 달린다(`w6-closure-card-pairing`).
  *
- * 판정의 조항(`event.procedure`)은 추천 카드의 `source.doc_id`와 같은 체계다
- * (`RecommendationCard` 주석 참고) — **그 문서를 실제로 추천한 카드**에만 붙인다.
- * "가장 최근의, 아직 판정 없는 자동 카드"에 붙이면 지나간 추천 묶음의 엉뚱한
- * 절차 밑에 서류가 달린다(`w6-closure-card-pairing`).
+ * 순서: ① 이미 같은 절차가 붙은 카드 ② 같은 문서의 자동 추천 카드 ③ **같은 문서의
+ * 수동 검색 카드**(2026-09-28). ③ 이 없으면 상담원이 먼저 찾아 둔 조항에 판정이
+ * 와도 판정 전용 카드가 따로 생겨 같은 조항이 두 장이 된다(류준 인계 P0-1 ⑤).
+ * 문서가 같을 때만 붙이므로 「남의 검색 결과에 서류가 딸린 것처럼」 읽히지 않는다.
  */
 function attachIndex(cards: PanelCard[], event: ClosureEvent): number {
   const sameProcedure = cards.findIndex(
@@ -302,8 +324,14 @@ function attachIndex(cards: PanelCard[], event: ClosureEvent): number {
   if (sameProcedure !== -1) {
     return sameProcedure;
   }
-  return cards.findIndex(
+  const sameDocAuto = cards.findIndex(
     (item) => isAuto(item) && item.card.source.doc_id === event.procedure,
+  );
+  if (sameDocAuto !== -1) {
+    return sameDocAuto;
+  }
+  return cards.findIndex(
+    (item) => item.closure === null && item.card.source.doc_id === event.procedure,
   );
 }
 
@@ -445,7 +473,7 @@ export const useCallStore = create<CallState>((set, get) => ({
   ...emptyCall,
 
   applyStarted: (callId) => {
-    set({ callId });
+    set((state) => ({ callId: keepCallId(callId, state.callId) }));
   },
 
   applyTranscript: (event) => {
@@ -479,15 +507,19 @@ export const useCallStore = create<CallState>((set, get) => ({
       }));
 
       return {
-        callId: event.call_id,
+        callId: keepCallId(event.call_id, state.callId),
         utterances,
         maskingLog: [...remaining, ...added],
       };
     });
   },
 
-  applyRecommendation: (incoming, callId, triggerAtMs, fired) => {
+  applyRecommendation: (incoming, callId, triggerAtMs, fired, segmentId) => {
     set((state) => {
+      const noDocsSegments =
+        fired && incoming.length === 0 && segmentId !== undefined
+          ? { ...state.noDocsSegments, [segmentId]: true as const }
+          : state.noDocsSegments;
       const withSource = incoming.filter(hasCardSource);
       const arriving = new Set(withSource.map(cardId));
       const seen = new Set(state.cards.map((item) => cardId(item.card)));
@@ -500,7 +532,13 @@ export const useCallStore = create<CallState>((set, get) => ({
           : item,
       );
       if (added.length === 0) {
-        return { callId, cards: promoted, lastFired: fired, cardsLoading: false };
+        return {
+          callId: keepCallId(callId, state.callId),
+          cards: promoted,
+          lastFired: fired,
+          cardsLoading: false,
+          noDocsSegments,
+        };
       }
       let cards: PanelCard[] = [
         ...promoted,
@@ -519,7 +557,13 @@ export const useCallStore = create<CallState>((set, get) => ({
           cards = withClosure(cards, state.closure);
         }
       }
-      return { callId, cards, lastFired: fired, cardsLoading: false };
+      return {
+        callId: keepCallId(callId, state.callId),
+        cards,
+        lastFired: fired,
+        cardsLoading: false,
+        noDocsSegments,
+      };
     });
   },
 
@@ -557,7 +601,7 @@ export const useCallStore = create<CallState>((set, get) => ({
 
   applyClosure: (event) => {
     set((state) => ({
-      callId: event.call_id,
+      callId: keepCallId(event.call_id, state.callId),
       closure: event,
       cards: withClosure(state.cards, event),
     }));
