@@ -6,6 +6,15 @@ import {
 } from "../lib/ws/types";
 
 /**
+ * 주소에 실린 토큰 값을 `***` 로 가린다 — 이름에 `token` 이 든 쿼리 전부(`token`·
+ * `agent_token`·`call_token` …). 배너는 시연 녹화 화면에 그대로 찍힌다. 다른 쿼리와
+ * 호스트는 어디에 붙었는지 알아야 하므로 그대로 둔다.
+ */
+export function redactTokenInUrl(url: string): string {
+  return url.replace(/([?&][^=&#]*token[^=&#]*=)[^&#]*/gi, "$1***");
+}
+
+/**
  * `?call_mediator=` 런타임 오버라이드가 켜져 있는 동안 화면에 눈에 띄게 알린다
  * (2026-09-11 open-items 지적 — 조용히 다른 서버에 붙으면 상담원이 가짜
  * 자막·가짜 "필요서류" 카드를 실제 응답으로 믿을 수 있다). 어디에 붙었는지
@@ -24,17 +33,33 @@ export function CallMediatorOverrideBanner(): ReactElement | null {
   }
 
   return (
+    <CallMediatorOverrideBannerView
+      url={overrideUrl}
+      onClear={() => {
+        clearCallMediatorOverride();
+        window.location.reload();
+      }}
+    />
+  );
+}
+
+/** 배너 표시부. 주소는 여기서 가려서 그린다 — 호출부가 가리는 것을 잊어도 새지 않게. */
+export function CallMediatorOverrideBannerView({
+  url,
+  onClear,
+}: {
+  url: string;
+  onClear: () => void;
+}): ReactElement {
+  return (
     <div className="call-mediator-override-banner" role="status">
       <span className="call-mediator-override-text">
-        ⚠ 라이브 콜 미디에이터에 연결됨 — <code>{overrideUrl}</code>
+        ⚠ 라이브 콜 미디에이터에 연결됨 — <code>{redactTokenInUrl(url)}</code>
       </span>
       <button
         type="button"
         className="call-mediator-override-clear"
-        onClick={() => {
-          clearCallMediatorOverride();
-          window.location.reload();
-        }}
+        onClick={onClear}
       >
         연결 해제
       </button>

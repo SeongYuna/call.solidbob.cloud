@@ -111,13 +111,7 @@ export function TermsPanel({
       <div className="panel-body terms-body" ref={bodyRef}>
         {view === "popup" ? (
           cards.length === 0 ? (
-            cardsLoading ? (
-              <CardsLoadingIndicator />
-            ) : lastFired === false ? (
-              <p className="empty">이 민원 유형은 서류 안내 대상이 아닙니다.</p>
-            ) : (
-              <p className="empty">관련 문서가 아직 없습니다.</p>
-            )
+            <PopupEmptyState loading={cardsLoading} lastFired={lastFired} />
           ) : (
             <ul className="term-card-list">
               {cards.map((item, index) => (
@@ -128,7 +122,7 @@ export function TermsPanel({
             </ul>
           )
         ) : (
-          <ClosureCardList cards={cards} />
+          <ClosureCardList cards={cards} onShowPopup={() => setView("popup")} />
         )}
       </div>
       <BookmarkDock onJump={jumpTo} />
@@ -147,19 +141,62 @@ function CardsLoadingIndicator(): ReactElement {
 }
 
 /**
+ * 팝업창 탭이 비었을 때. `fired: false` 는 「트리거가 발동하지 않아 검색하지 않았다」는
+ * 뜻이지 「서류 안내 대상이 아니다」가 아니다 — 없다고 단정하지 않는다(부록 A-1).
+ */
+export function PopupEmptyState({
+  loading,
+  lastFired,
+}: {
+  loading: boolean;
+  lastFired: boolean | null;
+}): ReactElement {
+  if (loading) {
+    return <CardsLoadingIndicator />;
+  }
+  if (lastFired === false) {
+    return <p className="empty">아직 검색할 문의 내용이 없습니다.</p>;
+  }
+  return <p className="empty">관련 문서가 아직 없습니다.</p>;
+}
+
+/**
  * 필요서류 탭: procedure 있는 카드만 그린다. 없는 카드는 목록에서 뺀다.
  * 연결된 카드가 없으면 안내 문구 하나, 여러 건이면 전부 보여 준다.
+ *
+ * 절차가 하나도 안 잡힌 상태는 「필요한 서류가 없다」가 아니다 — 1순위 카드 점수가
+ * 채택 하한(0.635) 아래라 절차로 삼지 않았을 뿐이다(`decisions/219`). 그래서
+ * 「아직 못 찾았다」로만 쓰고, 팝업창에 카드가 있으면 그쪽을 가리킨다.
  */
-function ClosureCardList({ cards }: { cards: PanelCard[] }): ReactElement {
+export function ClosureCardList({
+  cards,
+  onShowPopup,
+}: {
+  cards: PanelCard[];
+  onShowPopup: () => void;
+}): ReactElement {
   const linked = cards
     .map((item, index) => ({ item, index }))
     .filter(({ item }) => hasProcedure(item));
 
   if (linked.length === 0) {
     return (
-      <p className="empty closure-panel-empty">
-        필요서류 안내가 필요한 민원이 아직 없습니다
-      </p>
+      <div className="empty closure-panel-empty">
+        <p>아직 확실한 절차를 찾지 못했습니다.</p>
+        {cards.length > 0 ? (
+          <button
+            type="button"
+            className="closure-empty-popup-link"
+            onClick={onShowPopup}
+          >
+            {`「팝업창」에서 관련 문서 ${cards.length}건 보기`}
+          </button>
+        ) : (
+          <p className="closure-empty-hint">
+            관련 문서가 뜨면 「팝업창」에서, 직접 찾으려면 수동 검색을 이용하세요.
+          </p>
+        )}
+      </div>
     );
   }
 

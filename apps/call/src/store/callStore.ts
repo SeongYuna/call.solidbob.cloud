@@ -282,6 +282,18 @@ export function cardId(card: RecommendationCard): string {
   return `${card.source.doc_id}\0${card.title}`;
 }
 
+/**
+ * 이벤트가 실어 온 `call_id` 가 비었으면 이미 잡아 둔 값을 지킨다. 서버는 트리거
+ * 미발동 응답에 `call_id` 를 싣지 않고 파서는 그 자리를 `""` 로 채운다 — 그대로
+ * 덮어쓰면 통화 종료 뒤 요약·확정·블랙리스트 버튼이 사라진다(`w6-close-callid-missing`).
+ */
+export function keepCallId(
+  incoming: string,
+  current: string | null,
+): string | null {
+  return incoming.length > 0 ? incoming : current;
+}
+
 function isAuto(item: PanelCard): boolean {
   return cardSourceType(item.card) === "auto";
 }
@@ -445,7 +457,7 @@ export const useCallStore = create<CallState>((set, get) => ({
   ...emptyCall,
 
   applyStarted: (callId) => {
-    set({ callId });
+    set((state) => ({ callId: keepCallId(callId, state.callId) }));
   },
 
   applyTranscript: (event) => {
@@ -479,7 +491,7 @@ export const useCallStore = create<CallState>((set, get) => ({
       }));
 
       return {
-        callId: event.call_id,
+        callId: keepCallId(event.call_id, state.callId),
         utterances,
         maskingLog: [...remaining, ...added],
       };
@@ -500,7 +512,12 @@ export const useCallStore = create<CallState>((set, get) => ({
           : item,
       );
       if (added.length === 0) {
-        return { callId, cards: promoted, lastFired: fired, cardsLoading: false };
+        return {
+          callId: keepCallId(callId, state.callId),
+          cards: promoted,
+          lastFired: fired,
+          cardsLoading: false,
+        };
       }
       let cards: PanelCard[] = [
         ...promoted,
@@ -519,7 +536,12 @@ export const useCallStore = create<CallState>((set, get) => ({
           cards = withClosure(cards, state.closure);
         }
       }
-      return { callId, cards, lastFired: fired, cardsLoading: false };
+      return {
+        callId: keepCallId(callId, state.callId),
+        cards,
+        lastFired: fired,
+        cardsLoading: false,
+      };
     });
   },
 
@@ -557,7 +579,7 @@ export const useCallStore = create<CallState>((set, get) => ({
 
   applyClosure: (event) => {
     set((state) => ({
-      callId: event.call_id,
+      callId: keepCallId(event.call_id, state.callId),
       closure: event,
       cards: withClosure(state.cards, event),
     }));

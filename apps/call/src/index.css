@@ -749,6 +749,28 @@ button {
   font-size: 13.5px;
 }
 
+.closure-panel-empty p {
+  margin: 0;
+}
+
+.closure-panel-empty .closure-empty-hint {
+  margin-top: 6px;
+  font-size: 12.5px;
+}
+
+.closure-empty-popup-link {
+  margin-top: 8px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--accent);
+  font: inherit;
+  font-size: 12.5px;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
 .panel-head h2 {
   margin: 0;
   font-size: 12px;

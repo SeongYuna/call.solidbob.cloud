@@ -59,3 +59,13 @@ test 스크립트 없음, `test/` 디렉터리도 없음) — "파서 테스트 
 빌드·타입체크(`tsc --noEmit`·`vite build`)만 통과 확인했고, **실제로 추천 0건 통화를 운영에서
 끝까지 돌려 `/close` 200을 본 적은 없다.** 그래서 `status`를 `done`이 아니라 `in-progress`로
 둔다 — 코드는 됐지만 실측이 없다(절대 원칙 2).
+
+## 2026-09-28 — 덮어쓰기 경로를 막음 (조서희)
+
+- 09-24 류준 인계(P0-2): `started` 로 이르게 잡는 것은 됐으나 **빈 `call_id` 로 덮어쓰는 경로**가 남아 있었다
+  (`realCallMediatorClient.ts` 미발동 추천의 `?? ""` → `callStore.applyRecommendation`).
+- `callStore.ts` 에 `keepCallId()` 를 두고 `callId` 를 쓰는 다섯 곳(started·transcript·recommendation 2·closure)에
+  적용 — 비었으면 이미 잡은 값을 지킨다.
+- vitest `apps/call/test/callStore.callId.test.ts` 6건 — 수정을 되돌리면 3건이 실패하는 것을 확인했다.
+- **남은 것**: 완료 조건 2의 **운영 `/close` 200 · 요약 저장**은 아직 눈으로 보지 않았다(단위 테스트는 스토어 `callId` 유지까지만 본다).
+  그래서 `in-progress` 로 둔다. 시연 리허설에서 추천 0건 통화 한 통으로 확인한다.
