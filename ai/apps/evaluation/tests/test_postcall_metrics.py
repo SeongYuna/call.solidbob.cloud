@@ -21,7 +21,7 @@ ACT = KeyItem(id="c.act", kind="조치", label="다시 안내", forms=("다시 �
 
 
 def _case(summary: str, predicted_type: str | None = None, items=(INQ, DOC, ACT)) -> PostcallCase:
-    return PostcallCase(call_id="c", key_items=tuple(items), expected_type="일반행정 문의",
+    return PostcallCase(call_id="c", key_items=tuple(items), expected_type="일반행정",
                         summary=summary, predicted_type=predicted_type)
 
 
@@ -64,7 +64,7 @@ def test_아무것도_없으면_0이다():
 
 def test_매크로는_통화마다_같은_무게_마이크로는_항목마다():
     a = _case("전입신고 남편분 신분증 다시 안내드리겠습니다")  # 3/3
-    b = PostcallCase(call_id="d", key_items=(INQ,), expected_type="일반행정 문의", summary="없음", predicted_type=None)  # 0/1
+    b = PostcallCase(call_id="d", key_items=(INQ,), expected_type="일반행정", summary="없음", predicted_type=None)  # 0/1
     r = score_postcall([a, b])
     assert r["n_calls"] == 2 and r["key_items"] == 4 and r["key_items_hit"] == 3
     assert r["coverage_macro"] == pytest.approx(0.5)
@@ -81,6 +81,7 @@ def test_유형이_전부_None_이면_0점이_아니라_측정_불가다():
 
 
 def test_유형은_글자까지_같아야_맞고_None_은_분모에_남는다():
+    # 셋 중 하나만 정답과 **글자까지** 같다 — 「일반행정 문의」는 운영 유형표에 없는 옛 이름이라 틀린 것으로 센다
     r = score_postcall([_case("x", "일반행정 문의"), _case("x", "일반행정"), _case("x", None)])
     assert r["type_accuracy"] == pytest.approx(1 / 3)
     assert r["type_null"] == 1
