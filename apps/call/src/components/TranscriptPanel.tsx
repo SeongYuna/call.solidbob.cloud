@@ -725,6 +725,9 @@ export function TranscriptPanel({
                             <span className="callguard-pill">
                               {isCallGuardDistress(g) ? "🆘 위기 신호" : "🚫 콜가드"}
                             </span>
+                            {g.phrase !== undefined ? (
+                              <CallGuardPhrase phrase={g.phrase} />
+                            ) : null}
                             <span className="callguard-hint">
                               {isCallGuardDistress(g)
                                 ? "통화를 끊지 말고 전문 상담 기관 연결을 안내하세요(DASAN-MANUAL-5.4)."
@@ -883,4 +886,12 @@ function TtsIcon(): ReactElement {
  */
 export function NoDocsNote(): ReactElement {
   return <p className="no-docs-note">관련 문서 없음 — 이 발화로는 찾지 못했습니다</p>;
+}
+
+/**
+ * C-6 — 서버가 잡은 표현(마스킹된 자막에서 잘라 온 것). 어느 말 때문에 경고가 떴는지
+ * 상담원이 보게 한다. 점수·위험도 없이 표현만 보인다(부록 A-1).
+ */
+export function CallGuardPhrase({ phrase }: { phrase: string }): ReactElement {
+  return <span className="callguard-phrase">{`「${phrase}」`}</span>;
 }
