@@ -13,18 +13,18 @@ from postcall_summary.domain.services.rules import (
 
 def test_vote_by_chapter_with_rank_weight():
     # 1위 4장(1.0) vs 2·3위 2장(0.5+0.333) — 1위가 이긴다
-    assert suggest_inquiry_type(["DASAN-TERM-4.3", "DASAN-TERM-2.1", "DASAN-TERM-2.5"]) == "일반행정 문의"
+    assert suggest_inquiry_type(["DASAN-TERM-4.3", "DASAN-TERM-2.1", "DASAN-TERM-2.5"]) == "일반행정"
     # 2·3·4위가 모이면 1위를 넘는다 (0.5+0.333+0.25 > 1.0)
-    assert suggest_inquiry_type(["DASAN-TERM-4.3", "DASAN-TERM-3.1", "DASAN-TERM-3.2", "DASAN-TERM-3.9"]) == "생활하수도 관련 문의"
+    assert suggest_inquiry_type(["DASAN-TERM-4.3", "DASAN-TERM-3.1", "DASAN-TERM-3.2", "DASAN-TERM-3.9"]) == "상하수도"
 
 
 def test_manual_policy_chapter1_and_6_do_not_vote():
     assert suggest_inquiry_type(["DASAN-MANUAL-2.1", "DASAN-POLICY-1", "DASAN-TERM-1.4", "DASAN-TERM-6.2"]) is None
-    assert suggest_inquiry_type(["DASAN-TERM-6.1", "DASAN-TERM-5.3"]) == "코로나19 관련 상담"
+    assert suggest_inquiry_type(["DASAN-TERM-6.1", "DASAN-TERM-5.3"]) == "감염병"
 
 
 def test_types_match_aihub_categories():
-    assert set(INQUIRY_TYPES) == {"대중교통 안내", "생활하수도 관련 문의", "일반행정 문의", "코로나19 관련 상담"}
+    assert set(INQUIRY_TYPES) == {"대중교통", "상하수도", "일반행정", "감염병"}
 
 
 def test_summary_digit_not_in_transcript():
