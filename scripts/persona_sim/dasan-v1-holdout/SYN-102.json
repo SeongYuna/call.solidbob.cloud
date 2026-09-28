@@ -1,0 +1,118 @@
+{
+  "id": "SYN-102",
+  "version": "dasan-v1-holdout",
+  "source": "synthetic",
+  "generated_by": "Claude Code (claude-opus-5) · 2026-09-22 · 보류 표본(decisions/219) · 사람 검토 전",
+  "title": "다자녀 가정 지원 — 중간에 가을 축제 얘기로 샌다",
+  "length_class": "medium",
+  "turn_count": 13,
+  "caller_number": "01000000202",
+  "agent_persona": "A03",
+  "customer_persona": "C13",
+  "procedure": {
+    "doc_ids": [
+      "DASAN-TERM-4.14",
+      "DASAN-TERM-4.22",
+      "DASAN-MANUAL-3.2"
+    ],
+    "required_documents": [
+      "신청서",
+      "신분증",
+      "자녀 수를 확인할 수 있는 서류"
+    ]
+  },
+  "turns": [
+    {
+      "seq": 1,
+      "speaker": "agent",
+      "text": "한별시 통합민원콜센터입니다. 무엇을 도와드릴까요?",
+      "tone": "calm"
+    },
+    {
+      "seq": 2,
+      "speaker": "customer",
+      "text": "아이가 셋인데요, 다자녀 가정이면 시설 이용 할인 같은 거 받을 수 있다고 해서요.",
+      "tone": "calm"
+    },
+    {
+      "seq": 3,
+      "speaker": "agent",
+      "text": "네, 다자녀 가정 지원은 신청서, 신분증, 자녀 수를 확인할 수 있는 서류로 신청하세요. 주민등록등본이나 가족관계증명서면 됩니다.",
+      "tone": "calm"
+    },
+    {
+      "seq": 4,
+      "speaker": "customer",
+      "text": "그렇군요.",
+      "tone": "calm"
+    },
+    {
+      "seq": 5,
+      "speaker": "agent",
+      "text": "다만 지원 항목마다 인정하는 자녀 연령 기준이 다를 수 있어서, 어떤 할인을 받으실지 알려 주시면 그 기준을 확인해 드릴게요.",
+      "tone": "calm"
+    },
+    {
+      "seq": 6,
+      "speaker": "customer",
+      "text": "수영장 할인이요. 아 그리고 이번 가을 축제 아이들 체험 부스는 아직 자리 있나요?",
+      "tone": "calm"
+    },
+    {
+      "seq": 7,
+      "speaker": "agent",
+      "text": "축제 체험 부스는 사전 신청제라 신청 기간과 선정 방식은 공고 기준으로 안내드리고, 남은 자리가 있는지는 제가 단정해 드릴 수 없어요.",
+      "tone": "calm"
+    },
+    {
+      "seq": 8,
+      "speaker": "customer",
+      "text": "아 네, 그건 나중에 공고 볼게요.",
+      "tone": "calm"
+    },
+    {
+      "seq": 9,
+      "speaker": "agent",
+      "text": "수영장 할인의 자녀 연령 기준은 소관 부서 확인 후 문자로 알려 드릴까요?",
+      "tone": "calm"
+    },
+    {
+      "seq": 10,
+      "speaker": "customer",
+      "text": "네 부탁드려요.",
+      "tone": "calm"
+    },
+    {
+      "seq": 11,
+      "speaker": "agent",
+      "text": "정리하면 신청서, 신분증, 등본이나 가족관계증명서, 세 가지입니다.",
+      "tone": "calm"
+    },
+    {
+      "seq": 12,
+      "speaker": "customer",
+      "text": "네, 친절하게 알려 주셔서 감사해요.",
+      "tone": "calm"
+    },
+    {
+      "seq": 13,
+      "speaker": "agent",
+      "text": "이용해 주셔서 감사합니다. 좋은 하루 보내세요.",
+      "tone": "calm"
+    }
+  ],
+  "expected": {
+    "pii_by_pattern": {},
+    "compliance": [],
+    "call_guard_by_type": {},
+    "customer_non_calm_turns": [],
+    "j": {
+      "blacklist_request": false,
+      "routing": "normal"
+    }
+  },
+  "notes": [
+    "TERM-4.14: 신청서·신분증·자녀 수 확인 서류(등본 또는 가족관계증명서). 항목별 자녀 연령 기준은 확인해 안내",
+    "축제(4.22)는 규칙 없는 안내 조항 — 잔여 자리를 단정하지 않는다"
+  ]
+}

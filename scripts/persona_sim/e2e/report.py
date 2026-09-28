@@ -22,6 +22,21 @@ DISCLAIMER = (
 CAUSE_LABEL = {"wiring": "배선", "rule": "규칙", "script": "대본", "known": "알려진 미구현", "": "—"}
 
 
+def procedure_summary(verdicts: list[Verdict]) -> dict[str, Any]:
+    """F-2 절차 집계(`decisions/219`) — 엉뚱한 (대본, 절차) 쌍·행 · 필요서류 대본의 정답 절차 판정 유무."""
+    pairs = sum(len(v.procedures.get("wrong", {})) for v in verdicts)
+    rows = sum(sum(v.procedures.get("wrong", {}).values()) for v in verdicts)
+    needed = [v for v in verdicts if v.procedures.get("needed") is not None]
+    return {
+        "wrong_pairs": pairs,
+        "wrong_rows": rows,
+        "scripts_with_wrong": sum(1 for v in verdicts if v.procedures.get("wrong")),
+        "needed_scripts": len(needed),
+        "needed_hit": sum(1 for v in needed if v.procedures.get("needed")),
+        "needed_missed": [v.script_id for v in needed if not v.procedures.get("needed")],
+    }
+
+
 def to_json(meta: dict[str, Any], verdicts: list[Verdict]) -> str:
     payload = {
         "source": "synthetic",
@@ -30,9 +45,11 @@ def to_json(meta: dict[str, Any], verdicts: list[Verdict]) -> str:
             "scripts": len(verdicts),
             "passed": sum(1 for v in verdicts if v.ok),
             "failed": sum(1 for v in verdicts if not v.ok),
+            "procedures": procedure_summary(verdicts),
         },
         "verdicts": [
-            {"script_id": v.script_id, "call_id": v.call_id, "ok": v.ok, "checks": [asdict(c) for c in v.checks]}
+            {"script_id": v.script_id, "call_id": v.call_id, "ok": v.ok, "checks": [asdict(c) for c in v.checks],
+             "procedures": v.procedures}
             for v in verdicts
         ],
     }
@@ -48,6 +65,10 @@ def to_markdown(meta: dict[str, Any], verdicts: list[Verdict]) -> str:
             lines.append(f"| {key} | `{meta[key]}` |")
     passed = sum(1 for v in verdicts if v.ok)
     lines += ["", f"**{len(verdicts)}건 중 ✅ {passed} · ❌ {len(verdicts) - passed}** (⚠ 는 세지 않는다)", ""]
+    ps = procedure_summary(verdicts)
+    lines += [f"F-2 절차 집계 — 엉뚱한 (대본, 절차) **{ps['wrong_pairs']}쌍 · {ps['wrong_rows']}행** (대본 {ps['scripts_with_wrong']}건) · "
+              f"필요서류 대본 {ps['needed_scripts']}건 중 정답 절차 판정 {ps['needed_hit']}건"
+              + (f" (없음: {', '.join(ps['needed_missed'])})" if ps["needed_missed"] else ""), ""]
 
     lines.append("| 대본 | call_id | 결과 | 실패한 판정 (원인 갈래) | ⚠ |")
     lines.append("|---|---|---|---|---|")

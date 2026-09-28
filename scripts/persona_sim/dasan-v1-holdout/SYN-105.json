@@ -1,0 +1,125 @@
+{
+  "id": "SYN-105",
+  "version": "dasan-v1-holdout",
+  "source": "synthetic",
+  "generated_by": "Claude Code (claude-opus-5) · 2026-09-22 · 보류 표본(decisions/219) · 사람 검토 전",
+  "title": "세대분할 신청 — 계량기 하나를 두 집이 쓰는 고령 민원인, 날씨와 옛날 얘기",
+  "length_class": "medium",
+  "turn_count": 14,
+  "caller_number": "01000000205",
+  "agent_persona": "A03",
+  "customer_persona": "C17",
+  "procedure": {
+    "doc_ids": [
+      "DASAN-TERM-3.8",
+      "DASAN-TERM-3.3",
+      "DASAN-MANUAL-3.2"
+    ],
+    "required_documents": [
+      "신청서",
+      "신분증",
+      "세대 구성을 확인할 수 있는 서류",
+      "건축물 현황을 확인할 수 있는 서류"
+    ]
+  },
+  "turns": [
+    {
+      "seq": 1,
+      "speaker": "agent",
+      "text": "한별시 통합민원콜센터입니다.",
+      "tone": "calm"
+    },
+    {
+      "seq": 2,
+      "speaker": "customer",
+      "text": "아이고, 수고 많아요. 오늘 비가 많이 오네요. 거기도 비 와요?",
+      "tone": "calm"
+    },
+    {
+      "seq": 3,
+      "speaker": "agent",
+      "text": "네, 여기도 오네요. 무엇을 도와드릴까요?",
+      "tone": "calm"
+    },
+    {
+      "seq": 4,
+      "speaker": "customer",
+      "text": "우리 집이 이층인데 아래층 세 든 집이랑 수도 계량기를 하나 같이 써요. 요금이 너무 많이 나와서.",
+      "tone": "calm"
+    },
+    {
+      "seq": 5,
+      "speaker": "agent",
+      "text": "한 계량기를 여러 세대가 같이 쓰시면 세대분할을 신청하실 수 있어요. 그러면 세대별 누진 기준이 적용될 수 있습니다.",
+      "tone": "calm"
+    },
+    {
+      "seq": 6,
+      "speaker": "customer",
+      "text": "그게 뭐예요? 세대분할?",
+      "tone": "calm"
+    },
+    {
+      "seq": 7,
+      "speaker": "agent",
+      "text": "한 계량기를 쓰는 집을 세대별로 나눠서 요금을 계산하는 거예요. 서류는 신청서, 신분증, 세대 구성을 확인할 수 있는 서류, 건축물 현황을 확인할 수 있는 서류예요.",
+      "tone": "calm"
+    },
+    {
+      "seq": 8,
+      "speaker": "customer",
+      "text": "그렇지요. 이 집 지을 때는 우리 식구만 살았는데, 애들 다 나가고 세를 줬어요.",
+      "tone": "calm"
+    },
+    {
+      "seq": 9,
+      "speaker": "agent",
+      "text": "네, 그러셨군요. 세대 구성 서류는 주민등록등본 같은 걸 말씀드린 거예요.",
+      "tone": "calm"
+    },
+    {
+      "seq": 10,
+      "speaker": "customer",
+      "text": "아 네, 등본.",
+      "tone": "calm"
+    },
+    {
+      "seq": 11,
+      "speaker": "agent",
+      "text": "인정되는 세대 수는 현장 확인 후에 정해진다는 점도 알아 두세요.",
+      "tone": "calm"
+    },
+    {
+      "seq": 12,
+      "speaker": "customer",
+      "text": "네네, 알겠어요. 젊은 사람이 말을 참 차근차근 하네.",
+      "tone": "calm"
+    },
+    {
+      "seq": 13,
+      "speaker": "agent",
+      "text": "정리하면 신청서, 신분증, 등본, 건축물 현황 서류, 네 가지입니다.",
+      "tone": "calm"
+    },
+    {
+      "seq": 14,
+      "speaker": "customer",
+      "text": "고마워요. 비 조심하고요.",
+      "tone": "calm"
+    }
+  ],
+  "expected": {
+    "pii_by_pattern": {},
+    "compliance": [],
+    "call_guard_by_type": {},
+    "customer_non_calm_turns": [],
+    "j": {
+      "blacklist_request": false,
+      "routing": "normal"
+    }
+  },
+  "notes": [
+    "TERM-3.8: 신청서·신분증·세대 구성 확인 서류(주민등록등본 등)·건축물 현황 확인 서류. 인정 세대 수는 현장 확인 후",
+    "날씨·옛날 얘기·「그게 뭐예요?」 가 잡음이다"
+  ]
+}

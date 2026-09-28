@@ -1,0 +1,95 @@
+{
+  "id": "SYN-109",
+  "version": "dasan-v1-holdout",
+  "source": "synthetic",
+  "generated_by": "Claude Code (claude-opus-5) · 2026-09-22 · 보류 표본(decisions/219) · 사람 검토 전",
+  "title": "운전면허 적성검사 갱신 — 시 소관 아님, 필요서류 안내하지 않음",
+  "length_class": "medium",
+  "turn_count": 10,
+  "caller_number": "01000000209",
+  "agent_persona": "A03",
+  "customer_persona": "C03",
+  "procedure": {
+    "doc_ids": [
+      "DASAN-MANUAL-2.2",
+      "DASAN-TERM-1.2"
+    ],
+    "required_documents": []
+  },
+  "turns": [
+    {
+      "seq": 1,
+      "speaker": "agent",
+      "text": "한별시 통합민원콜센터입니다.",
+      "tone": "calm"
+    },
+    {
+      "seq": 2,
+      "speaker": "customer",
+      "text": "운전면허 적성검사 기간이 다 됐다고 문자가 왔는데요, 갱신하려면 뭐 가져가야 돼요?",
+      "tone": "calm"
+    },
+    {
+      "seq": 3,
+      "speaker": "agent",
+      "text": "운전면허 갱신은 시에서 처리하는 업무가 아니라서, 소관 기관 문의처로 안내해 드릴게요.",
+      "tone": "calm"
+    },
+    {
+      "seq": 4,
+      "speaker": "customer",
+      "text": "아 그렇군요.",
+      "tone": "calm"
+    },
+    {
+      "seq": 5,
+      "speaker": "agent",
+      "text": "면허 갱신 서류나 기간은 그 기관에서 정확히 안내받으셔야 해요. 제가 대신 서류를 말씀드리면 틀릴 수 있어서요.",
+      "tone": "calm"
+    },
+    {
+      "seq": 6,
+      "speaker": "customer",
+      "text": "사진 같은 거 필요하지 않아요?",
+      "tone": "calm"
+    },
+    {
+      "seq": 7,
+      "speaker": "agent",
+      "text": "그 부분도 소관 기관 기준이라 제가 확정해 드리기 어려워요. 문의처 번호를 문자로 보내 드릴까요?",
+      "tone": "calm"
+    },
+    {
+      "seq": 8,
+      "speaker": "customer",
+      "text": "네 부탁드려요.",
+      "tone": "calm"
+    },
+    {
+      "seq": 9,
+      "speaker": "agent",
+      "text": "보내 드렸습니다. 이용해 주셔서 감사합니다.",
+      "tone": "calm"
+    },
+    {
+      "seq": 10,
+      "speaker": "customer",
+      "text": "네, 감사합니다.",
+      "tone": "calm"
+    }
+  ],
+  "expected": {
+    "pii_by_pattern": {},
+    "compliance": [],
+    "call_guard_by_type": {},
+    "customer_non_calm_turns": [],
+    "j": {
+      "blacklist_request": false,
+      "routing": "normal"
+    }
+  },
+  "notes": [
+    "운전면허 갱신은 시 소관이 아니다 — 소관 기관 문의처를 안내하고 서류를 대신 안내하지 않는다(MANUAL-2.2)",
+    "필요서류 절차가 없는 통화 — 판정이 하나라도 뜨면 엉뚱한 판정이다"
+  ]
+}

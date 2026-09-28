@@ -31,7 +31,7 @@ paths:
 
 - [ ] **동결 커밋**을 정하고 그 커밋에서 `--runs 3 --record` — 운영 구성과 모델 구성 **둘 다**
 - [ ] 값마다 측정일 · 커밋 · 명령 · 표본 수(§5). `run_id` 가 남는다
-- [ ] 「측정 불가」 목록을 함께 낸다 — F-2(채점 케이스 0건, `decisions/118`) · trigger(의도적 미배선) · A-5(데이터 미확보 시)
+- [ ] 「측정 불가」 목록을 함께 낸다 — ~~F-2(채점 케이스 0건, `decisions/118`)~~ **F-2 는 빼라 — 이제 잰다**(`f2_case` 99건, `decisions/125` 가 `118` 을 되돌렸다. run_id 8·9 에서 `accuracy 1.0 · n 99`) · trigger(의도적 미배선) · A-5(데이터 미확보 시) · D-5 통화 온도(`NO_SAMPLES`) · 생성(포트 미장착) · **D-2 유형**(동결 커밋이 `decisions/323` 뒤라면 숫자가 나온다 — 나오면 「5종 중 3종 표본」 단서를 붙인다)
 - [ ] 한계 넷을 값 옆에 붙인다 — C-5 「누락 0」은 **오류 없는 전사 한정** · 주입기가 실측 오류의 46.9% 를 못 흉내 낸다(곡선이 낙관 쪽) · 쌍둥이 조항 2건(`123`) · 컴플라이언스·콜 가드 1.0 은 **자기충족 상한**
 - [ ] [발표 자료](/backlog/w8-presentation/)·[최종 문서](/backlog/w8-final-docs/)가 이 값만 쓴다
 
@@ -39,8 +39,13 @@ paths:
 
 ## 동결 때 그대로 돌릴 절차 (2026-09-22 준비 — **실행은 안 했다**)
 
-> 09-22 에 같은 명령으로 운영·모델 두 구성을 이미 재 봤다(run_id 1·2, 커밋 `121157e`, [w6-model-config-remeasure](/backlog/w6-model-config-remeasure/)).
-> **그 값은 동결 전 값이다** — 이 티켓의 값으로 쓰지 않는다. 동결 커밋에서 아래를 **한 번에** 다시 돌린다.
+> 09-22 에 두 구성을 이미 재 봤다 — **판정용 정본은 `run_id 8`(운영 실구성: 규칙+NER · KoE5 dense, **리랭커 없음**)·`run_id 9`(BM25 기준선)**,
+> 커밋 `5b2b4c4` · 골든셋 `v1-150.2`(295건) · 내보내기 `data/processed/eval-export/2026-09-22-run-8-9.json`
+> ([w6-model-config-remeasure](/backlog/w6-model-config-remeasure/)). 그 앞의 run_id 1·2(`121157e`)·3·4(`e966b62`)·5·6 은 옛 판이다.
+> **run 8·9 도 동결 전 값이다** — 이 티켓의 값으로 쓰지 않는다. 동결 커밋에서 아래를 **한 번에** 다시 돌린다.
+>
+> ⚠ **이름을 가른다** — 「운영 구성」이라는 말을 쓰지 않는다. **BM25 기준선**(규칙 + BM25·nori, NER 끔)과
+> **운영 실구성**(규칙+NER + KoE5 dense, 리랭커 없음, B-6 문턱 꺼짐 — 09-22 12:10 부터 운영, `decisions/124`) 둘로 부른다.
 
 **0. 동결 커밋을 정한다** — `git rev-parse --short HEAD` 를 여기 적는다. **워킹트리가 깨끗해야 한다**
 (09-22 에는 추적 안 되는 `.claude/worktrees/` 때문에 `-dirty` 가 찍혔다 — 지우거나 다른 클론에서 돌린다).
@@ -56,13 +61,16 @@ export DATABASE_URL=postgresql://callguard:callguard-dev@127.0.0.1:5434/callguar
 
 **2. 두 구성 — 각 3회 최저, 기록** (절대 원칙 4)
 ```bash
-.venv/bin/python scripts/run_eval.py --runs 3 --no-ner --retriever bm25 --record          # 운영 구성
-.venv/bin/python scripts/run_eval.py --runs 3 --retriever rerank-dense --record           # 모델 구성
+.venv/bin/python scripts/run_eval.py --runs 3 --no-ner --retriever bm25 --record          # BM25 기준선
+.venv/bin/python scripts/run_eval.py --runs 3 --retriever dense --record                  # 운영 실구성 — ⚠ rerank-dense 가 아니다
 ```
+
+> ⚠ **`--retriever rerank-dense` 를 쓰지 않는다.** 운영에는 **리랭커가 없다**(`decisions/124` — NER·KoE5 만 운영 노드 CPU 에 싣는다).
+> 리랭커를 켠 값은 운영에 없는 구성의 값이라 「로컬 참고치」로만 실을 수 있다. 판정·발표에 쓰는 열은 `--retriever dense` 다.
 
 **3. 생성(B-4)** — Ollama 에 kanana 가 등록돼 있을 때만(`decisions/207`)
 ```bash
-.venv/bin/python scripts/run_eval.py --runs 3 --retriever rerank-dense --record \
+.venv/bin/python scripts/run_eval.py --runs 3 --retriever dense --record \
   --ollama-url http://localhost:11434 --generation-model kanana-1.5-2.1b-instruct:q4_k_m
 .venv/bin/python scripts/eval_generation.py        # 원출력 환각은 하네스 밖에서만 잰다(포트가 원출력을 주지 않는다)
 ```
@@ -73,7 +81,12 @@ export DATABASE_URL=postgresql://callguard:callguard-dev@127.0.0.1:5434/callguar
 
 ### 체크리스트
 - [ ] 값마다 측정일 · 커밋 · 명령 · 표본 수 · `run_id`
+- [ ] **명령줄을 리포트에 그대로 남긴다** — `--retriever` 와 `--no-ner` 가 어느 열인지는 `eval_run` 만 봐서는 알 수 없다
+- [ ] **`eval_run.components` 가 두 구성에서 다르게 찍혔는지 확인한다** — `db/schema.sql` `components` + `run_eval.py` `components_label()`(커밋 `759b3d4`). ⚠ **run 8·9 는 그보다 11분 앞선 커밋이라 NULL 이다** — 동결 run 에서는 채워져야 한다
+- [ ] **ES 가 안 떠 있으면 중단한다** — 검색 항목이 전부 「측정 불가」로 찍힌 run 을 `--record` 로 DB 에 남기지 않는다(지울 수 없다)
 - [ ] 측정 불가 목록을 **리포트 문구 그대로**: trigger · domain_routing · call_temperature · asr (· generation 원출력 환각)
 - [ ] 한계 넷을 값 옆에 — C-5 「누락 0」은 오류 없는 전사 한정 · 주입기 46.9% · 쌍둥이 조항(`123`) · 컴플라이언스·콜 가드·F-2 1.0 은 상한
-- [ ] **골든셋 판**: `eval_run.golden_set_version` 은 파일 이름이라 `v1-150` 으로 찍힌다 — 발표 자료에는 `v1-150.1`(`decisions/212`)로 적는다
-- [ ] 모델 구성은 **운영에 떠 있지 않으면 「로컬 참고치」** 로만 싣는다(`decisions/121` §5)
+- [ ] **골든셋 판**: 발표 자료에는 **`v1-150.2`**(295건 — B 102 · B-6 23 · F-2 99 · C-5 항목 36/패턴 40 · C-6 15)로 적는다.
+      ⚠ **`eval_run.golden_set_version` 은 파일 이름에서 와서 `v1-150` 으로만 찍힌다** — 판은 커밋으로 가른다(`decisions/212`·`217`)
+- [ ] **오류 내성 곡선도 동결 커밋에서 다시 잰다** — 지금 있는 곡선은 `e966b62`·`v1-150.1`·n 96 이라 본 표(n 102)와 세대가 다르다
+- [ ] 리랭커 값은 **운영에 없는 구성**이므로 싣는다면 「로컬 참고치」로만(`decisions/121` §5 · `124`)

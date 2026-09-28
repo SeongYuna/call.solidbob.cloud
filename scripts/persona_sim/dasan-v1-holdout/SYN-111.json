@@ -1,0 +1,108 @@
+{
+  "id": "SYN-111",
+  "version": "dasan-v1-holdout",
+  "source": "synthetic",
+  "generated_by": "Claude Code (claude-opus-5) · 2026-09-22 · 보류 표본(decisions/219) · 사람 검토 전",
+  "title": "병원 가는 버스 막차 — 손주 자랑이 섞인 고령 민원인",
+  "length_class": "medium",
+  "turn_count": 12,
+  "caller_number": "01000000211",
+  "agent_persona": "A01",
+  "customer_persona": "C08",
+  "procedure": {
+    "doc_ids": [
+      "DASAN-TERM-2.3",
+      "DASAN-TERM-2.11",
+      "DASAN-MANUAL-2.1"
+    ],
+    "required_documents": []
+  },
+  "turns": [
+    {
+      "seq": 1,
+      "speaker": "agent",
+      "text": "안녕하세요, 한별시 통합민원콜센터입니다!",
+      "tone": "calm"
+    },
+    {
+      "seq": 2,
+      "speaker": "customer",
+      "text": "여보세요? 아 네, 내가 병원을 가야 하는데 버스가 몇 시까지 있는지 몰라서.",
+      "tone": "calm"
+    },
+    {
+      "seq": 3,
+      "speaker": "agent",
+      "text": "네, 어르신. 타시는 버스 노선 번호를 먼저 알려 주시겠어요?",
+      "tone": "calm"
+    },
+    {
+      "seq": 4,
+      "speaker": "customer",
+      "text": "번호는 모르겠고, 집 앞에서 타면 병원 앞에 서는 파란 버스예요.",
+      "tone": "calm"
+    },
+    {
+      "seq": 5,
+      "speaker": "agent",
+      "text": "그러면 출발하시는 곳과 병원 이름을 알려 주시면 경로를 찾아 드릴게요. 걸으시는 건 괜찮으세요?",
+      "tone": "calm"
+    },
+    {
+      "seq": 6,
+      "speaker": "customer",
+      "text": "다리가 좀 불편해요. 손주가 차로 데려다주면 좋은데 요새 바빠서. 우리 손주가 올해 취직을 했거든.",
+      "tone": "calm"
+    },
+    {
+      "seq": 7,
+      "speaker": "agent",
+      "text": "축하드려요. 걷는 구간이 적은 경로로 찾아볼게요.",
+      "tone": "calm"
+    },
+    {
+      "seq": 8,
+      "speaker": "customer",
+      "text": "네 부탁드려요.",
+      "tone": "calm"
+    },
+    {
+      "seq": 9,
+      "speaker": "agent",
+      "text": "막차 시각은 기점에서 출발하는 시각이라 정류장에 오는 시각과 다를 수 있어요. 현재 기준으로 안내드리는 거예요.",
+      "tone": "calm"
+    },
+    {
+      "seq": 10,
+      "speaker": "customer",
+      "text": "그렇군요.",
+      "tone": "calm"
+    },
+    {
+      "seq": 11,
+      "speaker": "agent",
+      "text": "노선 번호를 확인하면 막차 시각을 다시 알려 드릴게요.",
+      "tone": "calm"
+    },
+    {
+      "seq": 12,
+      "speaker": "customer",
+      "text": "아이고 고마워요. 안녕히 계세요.",
+      "tone": "calm"
+    }
+  ],
+  "expected": {
+    "pii_by_pattern": {},
+    "compliance": [],
+    "call_guard_by_type": {},
+    "customer_non_calm_turns": [],
+    "j": {
+      "blacklist_request": false,
+      "routing": "normal"
+    }
+  },
+  "notes": [
+    "TERM-2.3: 노선 번호를 먼저 확인, 막차는 기점 출발 기준. TERM-2.11: 이동 여건을 먼저 확인. MANUAL-2.1: 「현재 기준」",
+    "필요서류 절차가 없는 통화 — 맞장구·잡담·끝인사가 대부분이다"
+  ]
+}

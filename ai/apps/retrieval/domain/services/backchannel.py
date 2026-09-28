@@ -56,10 +56,26 @@ _FILLER = ("잘", "정말", "진짜", "너무", "참", "대단히", "많이", "�
 
 BACKCHANNEL_UNITS: frozenset[str] = frozenset(_ACK + _THANKS + _GREETING + _FILLER)
 
+# ── 넓힌 어휘 (decisions/219 후보 C3 — 사전 등록본) ─────────────────────────────
+# 216 과 달리 **학습 표본(`dasan-v0` 24건)을 보고** 넓혔다 — 216 측정에서 못 거른 6턴(「Thank you!」·「네, 부탁합니다.」·
+# 「네, 부탁드려요.」·「네, 이번엔 알겠습니다.」·「네, 수고해요.」)과 v0 고객 턴 중 맞장구로 읽히는 것(「Oh... okay.」·
+# 「네, 그렇게 해 주세요.」·「네, 연락 기다릴게요.」)과 그 활용형이다. 그래서 v0 로는 이 어휘를 판정하지 않는다 —
+# 219 는 새 보류 표본(`scripts/persona_sim/dasan-v1-holdout/`)으로 잰다. 기본은 꺼짐(`widened=False`).
+_WIDENED_219 = (
+    "thankyou", "thanks", "okay", "ok", "oh", "yes",
+    "부탁합니다", "부탁해요", "부탁드려요", "부탁드립니다", "부탁드릴게요",
+    "수고해요", "수고하셔요",
+    "이번엔", "이제",
+    "그렇게해주세요", "그렇게해줘요", "그래주세요",
+    "기다릴게요", "연락기다릴게요",
+    "알았다고요", "알겠다고요",
+)
+
+BACKCHANNEL_UNITS_WIDENED: frozenset[str] = BACKCHANNEL_UNITS | frozenset(_WIDENED_219)
+
 MASK_CHAR = "*"  # server/apps/masking/domain/value_objects/pii_pattern.py 와 같은 문자
 
 _NON_WORD = re.compile(r"[^0-9A-Za-z가-힣]+")
-_MAX_UNIT = max(len(u) for u in BACKCHANNEL_UNITS)
 
 
 def normalize(text: str) -> str:
@@ -68,24 +84,29 @@ def normalize(text: str) -> str:
 
 
 @lru_cache(maxsize=4096)
-def _segmentable(s: str) -> bool:
+def _segmentable(s: str, widened: bool = False) -> bool:
     """`s` 전체가 어휘 단위의 이어붙임으로 나뉘는가(빈틈 없이)."""
+    units = BACKCHANNEL_UNITS_WIDENED if widened else BACKCHANNEL_UNITS
+    max_unit = max(len(u) for u in units)
     n = len(s)
     ok = [False] * (n + 1)
     ok[0] = True
     for end in range(1, n + 1):
-        for start in range(max(0, end - _MAX_UNIT), end):
-            if ok[start] and s[start:end] in BACKCHANNEL_UNITS:
+        for start in range(max(0, end - max_unit), end):
+            if ok[start] and s[start:end] in units:
                 ok[end] = True
                 break
     return ok[n]
 
 
-def is_backchannel(text: str) -> bool:
-    """맞장구·인사·감사·끝인사로만 된 발화인가. 판정은 규칙이다(절대 원칙 9)."""
+def is_backchannel(text: str, *, widened: bool = False) -> bool:
+    """맞장구·인사·감사·끝인사로만 된 발화인가. 판정은 규칙이다(절대 원칙 9).
+
+    `widened=True` 면 `decisions/219` C3 의 넓힌 어휘까지 본다(규칙 1~4 는 같다).
+    """
     if MASK_CHAR in text:
         return False
     s = normalize(text)
     if not s:
         return False
-    return _segmentable(s)
+    return _segmentable(s, widened)

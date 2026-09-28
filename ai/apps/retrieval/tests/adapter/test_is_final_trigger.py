@@ -124,3 +124,22 @@ def test_맞장구_억제는_상담원_발화_판정을_바꾸지_않는다():
 def test_맞장구_억제는_기본_꺼짐이다():
     """`decisions/216` — 사전 등록 규칙을 못 넘어(손실 1 · 억제 16/22) 넣지 않았다. 운영(`server/main.py`)은 기본값으로 부른다."""
     assert IsFinalTrigger().decide(event(text="아 네, 알겠습니다.")).fire is True
+
+
+# ── 넓힌 어휘(`decisions/219` 후보 C3) ─────────────────────────────────────────
+
+@pytest.mark.parametrize("text", ["Thank you!", "네, 부탁드려요.", "네, 수고해요.", "Oh... okay.", "네, 이번엔 알겠습니다."])
+def test_넓힌_어휘를_켜면_v0_에서_놓친_맞장구도_거른다(text):
+    assert IsFinalTrigger(suppress_backchannel=True).decide(event(text=text)).fire is True  # 216 어휘로는 못 거른다
+    assert IsFinalTrigger(suppress_backchannel=True, widened_backchannel=True).decide(event(text=text)).fire is False
+
+
+@pytest.mark.parametrize("text", ["네, 그런데 초본은요?", "Oh... okay. 그럼 신청은 해도 돼요?", "네 부탁드려요 *****", "그게 뭐예요?"])
+def test_넓힌_어휘도_내용이_있으면_발동한다(text):
+    assert IsFinalTrigger(suppress_backchannel=True, widened_backchannel=True).decide(event(text=text)).fire is True
+
+
+def test_넓힌_어휘는_기본_꺼짐이다():
+    """`decisions/219` — 채택 여부는 결정 기록을 따른다. 억제 자체도 기본 꺼짐(216)."""
+    assert IsFinalTrigger().decide(event(text="Thank you!")).fire is True
+    assert IsFinalTrigger(suppress_backchannel=True).decide(event(text="Thank you!")).fire is True

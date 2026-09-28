@@ -1,0 +1,113 @@
+{
+  "id": "SYN-107",
+  "version": "dasan-v1-holdout",
+  "source": "synthetic",
+  "generated_by": "Claude Code (claude-opus-5) · 2026-09-22 · 보류 표본(decisions/219) · 사람 검토 전",
+  "title": "미취업 청년 지원금 — 대학원 휴학 중인 청년, 여러 번 되묻는다",
+  "length_class": "medium",
+  "turn_count": 12,
+  "caller_number": "01000000207",
+  "agent_persona": "A02",
+  "customer_persona": "C09",
+  "procedure": {
+    "doc_ids": [
+      "DASAN-TERM-6.6",
+      "DASAN-TERM-6.1",
+      "DASAN-MANUAL-3.3"
+    ],
+    "required_documents": [
+      "신청서",
+      "신분증",
+      "연령을 확인할 수 있는 서류",
+      "미취업 상태를 확인할 수 있는 서류",
+      "입금 계좌 정보"
+    ]
+  },
+  "turns": [
+    {
+      "seq": 1,
+      "speaker": "agent",
+      "text": "한별시 통합민원콜센터입니다.",
+      "tone": "calm"
+    },
+    {
+      "seq": 2,
+      "speaker": "customer",
+      "text": "청년 지원금 있다고 해서요. 취업 못 한 사람한테 주는 거요.",
+      "tone": "calm"
+    },
+    {
+      "seq": 3,
+      "speaker": "agent",
+      "text": "미취업 청년 지원금이요. 재학 중이거나 재직 중이면 대상에서 빠질 수 있어서, 지금 상태를 먼저 여쭤볼게요.",
+      "tone": "calm"
+    },
+    {
+      "seq": 4,
+      "speaker": "customer",
+      "text": "대학원 휴학 중이에요. 휴학도 재학이에요?",
+      "tone": "calm"
+    },
+    {
+      "seq": 5,
+      "speaker": "agent",
+      "text": "휴학이 어느 쪽으로 인정되는지는 소관 부서 심사 기준이라 제가 정해 드릴 수는 없어요. 신청은 하실 수 있어요.",
+      "tone": "calm"
+    },
+    {
+      "seq": 6,
+      "speaker": "customer",
+      "text": "네네.",
+      "tone": "calm"
+    },
+    {
+      "seq": 7,
+      "speaker": "agent",
+      "text": "서류는 신청서, 신분증, 연령을 확인할 수 있는 서류, 미취업 상태를 확인할 수 있는 서류, 입금 계좌 정보예요.",
+      "tone": "calm"
+    },
+    {
+      "seq": 8,
+      "speaker": "customer",
+      "text": "미취업 상태 서류요? 그게 뭐예요?",
+      "tone": "calm"
+    },
+    {
+      "seq": 9,
+      "speaker": "agent",
+      "text": "지금 일하고 있지 않다는 걸 확인하는 서류예요. 어떤 서류를 인정하는지는 공고 기준을 따릅니다.",
+      "tone": "calm"
+    },
+    {
+      "seq": 10,
+      "speaker": "customer",
+      "text": "아 네, 그렇군요.",
+      "tone": "calm"
+    },
+    {
+      "seq": 11,
+      "speaker": "agent",
+      "text": "다시 정리하면 신청서, 신분증, 연령 확인 서류, 미취업 확인 서류, 입금 계좌 정보, 다섯 가지예요.",
+      "tone": "calm"
+    },
+    {
+      "seq": 12,
+      "speaker": "customer",
+      "text": "감사합니다, 수고하세요.",
+      "tone": "calm"
+    }
+  ],
+  "expected": {
+    "pii_by_pattern": {},
+    "compliance": [],
+    "call_guard_by_type": {},
+    "customer_non_calm_turns": [],
+    "j": {
+      "blacklist_request": false,
+      "routing": "normal"
+    }
+  },
+  "notes": [
+    "TERM-6.6: 신청서·신분증·연령 확인 서류·미취업 상태 확인 서류·입금 계좌. 재학·재직이면 제외될 수 있어 현재 상태를 먼저 확인"
+  ]
+}

@@ -35,6 +35,8 @@ from retrieval.domain.services.trigger import STT_FINAL_LAG_MS, fire_at_ms, shou
 
 # 맞장구·인사·감사·끝인사 억제(`decisions/216`)의 기본값. 결정 기록의 채택 여부를 따른다.
 SUPPRESS_BACKCHANNEL_DEFAULT = False
+# 억제에 넓힌 어휘(`decisions/219` 후보 C3)를 쓸까. 결정 기록의 채택 여부를 따른다.
+WIDENED_BACKCHANNEL_DEFAULT = False
 
 
 class IsFinalTrigger(TriggerPort):
@@ -49,6 +51,7 @@ class IsFinalTrigger(TriggerPort):
         lag_ms: int = STT_FINAL_LAG_MS,
         now_ms: Callable[[], int] | None = None,  # 통화 기준 ms 를 돌려주는 시계
         suppress_backchannel: bool = SUPPRESS_BACKCHANNEL_DEFAULT,
+        widened_backchannel: bool = WIDENED_BACKCHANNEL_DEFAULT,
     ) -> None:
         if lag_ms < 0:
             raise ValueError(f"lag_ms 는 음수일 수 없다: {lag_ms}")
@@ -57,11 +60,12 @@ class IsFinalTrigger(TriggerPort):
         # 켜면 맞장구·인사·감사·끝인사로만 된 발화는 발동하지 않는다(`fired: false` — 검색·카드 없음).
         # 규칙은 문자열 판정뿐이다(점수 문턱 없음). 발동한 턴의 질의·검색은 바꾸지 않는다.
         self._suppress_backchannel = suppress_backchannel
+        self._widened_backchannel = widened_backchannel
 
     def decide(self, event: TranscriptEvent) -> TriggerDecision:
         if not should_fire(is_final=event.is_final, speaker=event.speaker, text=event.text):
             return TriggerDecision(fire=False)
-        if self._suppress_backchannel and is_backchannel(event.text):
+        if self._suppress_backchannel and is_backchannel(event.text, widened=self._widened_backchannel):
             return TriggerDecision(fire=False)  # decisions/216 — 검색할 내용이 없는 발화
 
         if self._now_ms:

@@ -43,6 +43,8 @@ class Verdict:
     script_id: str
     call_id: str
     checks: list[Check] = field(default_factory=list)
+    # F-2 절차 집계(`decisions/219`) — `procedure_counts` 의 값. 판정(✅/❌)과 별개로 쌍·행을 센다
+    procedures: dict[str, Any] = field(default_factory=dict)
 
     @property
     def failed(self) -> list[Check]:
@@ -319,6 +321,26 @@ def judge_foreign_procedures(script: dict[str, Any], record: dict[str, Any]) -> 
                  cause="rule")
 
 
+def procedure_counts(script: dict[str, Any], record: dict[str, Any]) -> dict[str, Any]:
+    """F-2 절차 판정 집계 — `decisions/219` 의 채택 규칙이 세는 값.
+
+    - `wrong` — 대본 `procedure.doc_ids` **밖** 절차별 판정 행 수(= 엉뚱한 (대본, 절차) 쌍과 그 행)
+    - `needed` — 서류가 있는 대본이면 대본 절차(`doc_ids` 의 TERM) 판정이 1건이라도 있는가. 서류 없는 대본은 `None`
+    """
+    procedure = script.get("procedure") or {}
+    allowed = set(procedure.get("doc_ids", []))
+    wrong: dict[str, int] = {}
+    for c in record.get("closures", []):
+        proc = str(c.get("procedure"))
+        if proc not in allowed:
+            wrong[proc] = wrong.get(proc, 0) + 1
+    needed: bool | None = None
+    if procedure.get("required_documents"):
+        terms = {d for d in allowed if "-TERM-" in d}
+        needed = any(c.get("procedure") in terms for c in record.get("closures", []))
+    return {"wrong": dict(sorted(wrong.items())), "needed": needed}
+
+
 def judge_postcall(record: dict[str, Any], call_row: dict[str, Any] | None) -> list[Check]:
     """D-1 — 통화 후 요약 초안이 DB 에 있고 `/record` 로 읽힌다. 통화 종료 상태는 알려진 미구현(⚠)."""
     checks = [
@@ -356,4 +378,5 @@ def judge(script: dict[str, Any], call_id: str, api_segments: list[dict[str, Any
         v.checks += judge_compliance(script, db["compliance"])
     v.checks += judge_required_docs(script, record)
     v.checks += judge_postcall(record, db.get("call"))
+    v.procedures = procedure_counts(script, record)
     return v

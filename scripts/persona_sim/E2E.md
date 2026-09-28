@@ -36,6 +36,10 @@ CORE_API_URL=http://localhost:8000
 # 쓰기 경로가 fail-closed 다(`decisions/120`) — 서버(INGEST_SERVICE_TOKEN)와 콜 미디에이터(CORE_API_TOKEN)에 **같은 로컬 전용 값**
 INGEST_SERVICE_TOKEN=e2e-local-only-not-a-secret
 CORE_API_TOKEN=e2e-local-only-not-a-secret
+# ⚠ **절대 경로로 준다.** 상대 경로면 모델을 못 찾고 **예외도 없이 층이 비어** BM25 로 내려간다(2026-09-24 실제로 겪었다).
+# 그러면 F-2 절차 채택의 **점수 하한(0.635)이 조용히 무의미해진다** — BM25 원점수는 대개 1 보다 커서 늘 통과한다.
+# 0.1.42 부터 기동 로그에 「층이 비었다 — BM25 로 돈다」가 찍히고, `/health` 의 `spokes` 에 `retrieval_dense` 가 없으면 그 상태다.
+RETRIEVAL_EMBED_MODEL_DIR=/절대/경로/models/koe5
 EOF
 
 # ④ 서버 :8000   (.venv 에 uvicorn 이 없으면 .venv/bin/python -m pip install uvicorn==0.52.4 python-dotenv==1.2.3)
@@ -56,8 +60,18 @@ curl -s localhost:8080/health   # active_calls 0
 .venv/bin/python scripts/persona_sim/e2e_check.py --only SYN-004 SYN-006 --speed 6
 .venv/bin/python scripts/persona_sim/e2e_check.py --only SYN-004 --skip-replay --call-id syn-e2e-syn-004-20260918T1610   # 다시 판정만
 .venv/bin/python scripts/persona_sim/e2e_check.py --dry-run             # 스택 없이 — 전부 ❌ 가 정상(판정 로직 확인용)
+.venv/bin/python scripts/persona_sim/e2e_check.py --scripts-dir scripts/persona_sim/dasan-v1-holdout   # 보류 표본(decisions/219)
 .venv/bin/python -m pytest scripts/persona_sim/tests -q                 # 판정 함수 단위 테스트(스택 없음)
 ```
+
+> ⚠ **검사기에 환경변수를 넘기는 것을 잊지 마라 (2026-09-24).** DB 는 `DATABASE_URL` 이 아니라 **`E2E_DATABASE_URL`** 을 읽고,
+> `/close` 는 `INGEST_SERVICE_TOKEN` 을 쓴다. 안 넘기면 **「DB 0행」·「call 테이블에 행이 없다」·401 이 무더기로 뜨는데
+> 실제로는 행이 다 들어가 있다** — 코드가 아니라 실행 방법이 틀린 것이다. 이렇게 넘긴다:
+>
+> ```bash
+> (set -a; source /tmp/e2e.env; export E2E_DATABASE_URL="$DATABASE_URL"; set +a; \
+>   .venv/bin/python scripts/persona_sim/e2e_check.py --only SYN-004 --core-url http://localhost:8001 --mediator-url http://localhost:8081)
+> ```
 
 - 대본마다 재생기(`services/call-mediator/scripts/replay_persona_call.ts`)를 `--watch --close` 로 subprocess 실행한다.
   **call_id 는 검사기가 정해 넘긴다**(`syn-e2e-<id>-<시각>`) — 재생기 출력은 파싱하지 않는다.
@@ -75,6 +89,9 @@ curl -s localhost:8080/health   # active_calls 0
   `{"type":"end"}` 를 보내고, `--final-timeout`(기본 20초) 안에 안 돌아오면 **경고 + 종료 코드 1** 이다 — 검사기가
   「재생기 종료 1」과 그 경고 줄을 찍는다. 저장 건수 판정(`왕복·API 확정 자막 수`)은 빠진 턴 번호를 적는다.
 - 출력: `data/processed/persona-e2e/<YYYY-MM-DD-HHMM>.json` + `.md` (gitignore — 커밋하지 않는다). 종료 코드 0 = 전부 ✅.
+  보고서 머리와 JSON `summary.procedures` 에 **F-2 절차 집계**(엉뚱한 쌍·행 · 필요서류 대본의 정답 절차 판정 유무)가 붙는다(`decisions/219`).
+- `--scripts-dir` 로 대본 폴더를 바꾼다(기본 `dasan-v0`). 재생기에는 늘 JSON 경로로 넘긴다.
+- 콜 미디에이터의 절차 채택 조건은 `F2_PROCEDURE_ADOPTION`(**`score-floor` 기본** — 2026-09-24 채택, `decisions/219` · 옛 기본 `top1` · `two-consecutive`) — `/health` 의 `procedure_adoption` 으로 보인다.
 - DB 는 `--database-url`(기본 위 ②의 `callguard_e2e`) 로 직접 읽는다. 못 붙으면 DB 판정만 건너뛰고 API 판정은 한다.
 
 ## 3. 판정 기준 (전부 규칙 — `e2e/judge.py`)
