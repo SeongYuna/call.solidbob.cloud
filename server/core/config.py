@@ -152,8 +152,12 @@ def load_settings() -> Settings:
         upload_max_bytes=_env_int("UPLOAD_MAX_BYTES", _DEFAULT_UPLOAD_MAX_BYTES) or _DEFAULT_UPLOAD_MAX_BYTES,
         google_oauth_client_id=_env("GOOGLE_OAUTH_CLIENT_ID"),
         admin_jwt_secret=_env("ADMIN_JWT_SECRET"),
-        admin_access_token_ttl_seconds=_env_int("ADMIN_ACCESS_TOKEN_TTL_SECONDS", 300) or 300,
-        admin_refresh_token_ttl_seconds=_env_int("ADMIN_REFRESH_TOKEN_TTL_SECONDS", 600) or 600,
+        # 2026-09-28 운영 값으로 올렸다(`decisions/136`) — access 30분 · refresh 12시간.
+        # 옛 기본값 300/600 은 09-14 에 「테스트만 진행」 전제로 넣은 값이라 **15분이면 로그인이 풀렸다**
+        # (수동 QA Q-05 가 실제로 그걸 잡았고, 시연 중 관리자 화면이 튕긴다). 운영 시크릿에도 같은 값을 넣었지만
+        # 키가 빠진 채 새로 배포돼도 조용히 5분으로 돌아가지 않게 **기본값을 여기서 함께 올린다.**
+        admin_access_token_ttl_seconds=_env_int("ADMIN_ACCESS_TOKEN_TTL_SECONDS", 1800) or 1800,
+        admin_refresh_token_ttl_seconds=_env_int("ADMIN_REFRESH_TOKEN_TTL_SECONDS", 43200) or 43200,
         redis_url=_env("REDIS_URL"),
         customer_ref_hmac_key=_env("CUSTOMER_REF_HMAC_KEY"),
         pii_ner_model_dir=_env("PII_NER_MODEL_DIR"),
