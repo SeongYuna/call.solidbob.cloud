@@ -272,6 +272,20 @@ test("fired:false 에도 call_id 를 싣는다 — 화면이 통화 ID 를 잃�
   assert.equal(broadcaster.ofType("recommendation")[0]?.payload["call_id"], "test-1");
 });
 
+test("추천 방송에 segment_id 를 싣는다 — 어느 발화의 추천인지(2026-09-28)", async () => {
+  // 서버 응답(RecommendResponse)에는 어느 세그먼트의 추천인지가 없다. 화면은 `fired:true, cards:[]`
+  // (B-6 관련 문서 없음)를 **그 발화 줄 밑에** 그리는데 붙일 자리를 몰랐다(`w6-per-utterance-no-docs`).
+  // `trigger_at_ms` 는 수신 시각이라 발화와 1:1 이 아니다 — 미디에이터가 아는 값을 싣는다.
+  const { registry, broadcaster, hub, stt } = setup();
+  hub.fired = false; // 관련 문서 없음 경로에서도 실려야 한다
+  const channel = await openOk(registry, "test-1", "agent");
+  stt.last().emit("전입신고 하려고요", true, 800);
+  await channel.close();
+  const sent = broadcaster.ofType("recommendation")[0]?.payload;
+  assert.equal(sent?.["segment_id"], "1");
+  assert.equal(sent?.["call_id"], "test-1"); // 앞의 수정과 함께 남아 있는지
+});
+
 test("빈 결과는 서버에 보내지 않는다", async () => {
   const { registry, hub, stt } = setup();
   const channel = await openOk(registry, "test-1", "agent");

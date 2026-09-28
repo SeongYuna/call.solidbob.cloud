@@ -716,7 +716,17 @@ export class Channel {
       // 조서희)은 그대로 필요하다. 이건 그 버그가 **상시로 터지는 것**만 막는다
       // ⚠ `call_id` 를 **뒤에** 쓴다 — 서버는 트리거가 안 걸리면 이 키를 빼는 게 아니라 **`null` 로 싣는다.**
       // 앞에 두면 그 null 이 덮어써서 아무 효과가 없다(2026-09-24 테스트가 잡았다). 값은 서버가 실을 때와 같다
-      payload: { ...withE2eLatency(payload, item.raw.utterance_end_ms, this.callClockMs()), call_id: this.callId },
+      //
+      // `segment_id` 도 같은 이유로 여기서 싣는다(2026-09-28, `w6-per-utterance-no-docs`) — **어느 발화의 추천인지**가
+      // 서버 응답(`RecommendResponse`)에 없다. 화면은 `fired: true, cards: []`(B-6 관련 문서 없음)를 **그 발화 줄 밑에**
+      // 그리려는데 붙일 자리를 몰랐다. `trigger_at_ms` 는 수신 시각이라 발화와 1:1 이 아니고, 화면에서 추정하면
+      // 엉뚱한 줄에 붙는다. 미디에이터는 어느 세그먼트로 요청했는지 알고 있다 — `recommendation_pending` 이 이미 같은 키를 싣는다.
+      // 화면 파서는 **선택 필드**로 읽어 없으면 아무것도 안 그린다(조서희, PR #153) — 옛 미디에이터와도 깨지지 않는다.
+      payload: {
+        ...withE2eLatency(payload, item.raw.utterance_end_ms, this.callClockMs()),
+        call_id: this.callId,
+        segment_id: String(item.segmentId),
+      },
     });
     const candidate = topSourceDocId(payload);
     if (mode === "top1") {
