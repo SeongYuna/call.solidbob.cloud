@@ -292,7 +292,13 @@ function parseCallGuard(
     if (category === null) {
       return null;
     }
-    flags.push({ segment_id: segmentIdNum, category });
+    const flag: CallGuardFlag = { segment_id: segmentIdNum, category };
+    // 걸린 표현(마스킹된 자막 기준). 비었거나 없으면 싣지 않는다 — 배너는 갈래 안내만 그린다.
+    const phrase = readString(item, "phrase");
+    if (phrase !== null && phrase.trim().length > 0) {
+      flag.phrase = phrase;
+    }
+    flags.push(flag);
   }
   return { segment_id, flags };
 }

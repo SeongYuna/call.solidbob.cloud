@@ -104,6 +104,11 @@ export interface AgentTtsStatus {
 export interface CallGuardFlag {
   segment_id: number;
   category: "insult" | "threat" | "sexual" | "distress";
+  /**
+   * 걸린 표현 — 서버가 **마스킹된 자막에서 잘라** 보낸다(`call_guard_dto.py`, MANUAL-5.5).
+   * 선택 필드다: mock 시나리오와 옛 미디에이터에는 없다. 없으면 화면은 갈래 안내만 그린다.
+   */
+  phrase?: string;
 }
 
 /** 위기 신호인가 — 화면·집계가 폭언과 반대로 다뤄야 하는 갈래다(MANUAL-5.4). */
