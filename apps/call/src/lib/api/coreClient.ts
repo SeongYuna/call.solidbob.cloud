@@ -645,6 +645,7 @@ interface SavedClosureItemWire {
 interface SavedClosureWire {
   closure_id: string;
   procedure: string;
+  procedure_title?: string | null;
   verdict: string;
   detected: string;
   reason: string | null;
@@ -691,6 +692,8 @@ export interface SavedClosureItem {
 export interface SavedClosure {
   closureId: string;
   procedure: string;
+  /** 규칙표 제목(server 0.1.44 부터). 옛 서버·규칙표 밖 절차면 null */
+  procedureTitle: string | null;
   verdict: "complete" | "incomplete";
   detected: boolean;
   reason: string | null;
@@ -746,6 +749,7 @@ export async function fetchCallRecord(callId: string): Promise<CallRecord> {
     closures: wire.closures.map((cl) => ({
       closureId: cl.closure_id,
       procedure: cl.procedure,
+      procedureTitle: cl.procedure_title ?? null,
       verdict: cl.verdict as "complete" | "incomplete",
       detected: toBool(cl.detected),
       reason: cl.reason,

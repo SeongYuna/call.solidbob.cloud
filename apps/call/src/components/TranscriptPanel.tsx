@@ -465,7 +465,11 @@ export function TranscriptPanel({
         <div className="history-banner" role="status">
           <span>
             배정 판정 기록됨 · {routingDecision.is_blacklisted ? "블랙리스트 등록 고객" : "블랙리스트 아님"}
-            {routingDecision.fell_back ? " · 근속 기준 상담사 없어 일반 배정" : ""}
+            {routingDecision.fell_back
+              ? " · 근속 기준 상담사 없어 일반 배정"
+              : routingDecision.is_blacklisted && routingDecision.assigned_agent_id
+                ? ` → 베테랑 상담사(${routingDecision.assigned_agent_id})에게 배정 판정`
+                : ""}
             {" "}— 연결은 바뀌지 않습니다(시연용 기록)
           </span>
         </div>
