@@ -449,6 +449,22 @@ function panelCardsFromRecord(record: CallRecord): PanelCard[] {
   return [...realCards, ...closureCards];
 }
 
+/** 진행 중(판정 붙음·미정착)인 카드 전부의 근거를 합친다 — 없으면 `null`(머리 칩을 안 그린다). */
+export function pendingTally(cards: readonly PanelCard[]): { met: number; total: number } | null {
+  let found = false;
+  const acc = { met: 0, total: 0 };
+  for (const item of cards) {
+    if (item.closure === null || item.settled) {
+      continue;
+    }
+    found = true;
+    const t = evidenceTally(item.closure);
+    acc.met += t.met;
+    acc.total += t.total;
+  }
+  return found ? acc : null;
+}
+
 export function evidenceTally(closure: ClosureEvent): {
   met: number;
   total: number;

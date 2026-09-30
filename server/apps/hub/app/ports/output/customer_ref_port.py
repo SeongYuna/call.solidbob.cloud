@@ -18,3 +18,8 @@ class CustomerRefPort(ABC):
     @abstractmethod
     def ref(self, phone: str) -> str | None:
         """식별자. 비밀키가 없어 만들 수 없으면 None. 번호 형식이 아니면 `InvalidPhoneNumber`."""
+
+    def hint(self, phone: str) -> str | None:
+        """화면 표시용 뒤 4자리(`****1234`, `decisions/144` — 316 일부 철회). 기본은 없음 — 구현체가 켠다.
+        뒤 4자리만이라 번호를 되돌릴 수 없고, HMAC 과 함께 저장돼도 전수 대입의 단서로는 부족하다(경우의 수 10^4 → 10^7)."""
+        return None

@@ -1,8 +1,8 @@
 ---
 title: "미발동 추천의 `call_id` 누락으로 `callId` 가 빈 문자열 → `/close` 404 — 요약·확정·블랙리스트 요청이 사라진다"
-assignee: "조서희"
+assignee: "정성윤"
 role: "app"
-status: "in-progress"
+status: "done"
 sprint: 6
 priority: 59
 date: 2026-09-22
@@ -24,7 +24,7 @@ paths:
 ## 완료 조건
 
 - [x] `callId` 를 추천이 아니라 통화 시작 메시지(`started`)에서 잡는다
-- [ ] 추천 0건 통화로 `/close` 200 · 요약 저장 확인(파서 테스트 1건)
+- [x] 추천 0건 통화로 `/close` 200 · 요약 저장 확인(파서 테스트 1건)
 
 근거: 미결 「대시보드 — 조서희」 ①.
 
@@ -69,3 +69,8 @@ test 스크립트 없음, `test/` 디렉터리도 없음) — "파서 테스트 
 - vitest `apps/call/test/callStore.callId.test.ts` 6건 — 수정을 되돌리면 3건이 실패하는 것을 확인했다.
 - **남은 것**: 완료 조건 2의 **운영 `/close` 200 · 요약 저장**은 아직 눈으로 보지 않았다(단위 테스트는 스토어 `callId` 유지까지만 본다).
   그래서 `in-progress` 로 둔다. 시연 리허설에서 추천 0건 통화 한 통으로 확인한다.
+
+## 2026-09-30 — 운영 확인 · done (정성윤)
+
+**정성윤이 넘겨받았다**(`decisions/137` — 마감까지 `apps/` 도 정성윤이 고친다. §4 대로 `assignee` 를 옮기고 여기 적는다). 수동 QA 2회차(`_logs/2026-09-30-01-seongyun`, 운영 server `0.1.43` · call-mediator `0.2.11` · call `index-sR-v0E8Y`) **Q-50~Q-53 ✅** — `test-qa-seongyun-02` 에서 통화 후 처리 → `/close` 200 · 요약 저장·확정·재수정까지 운영에서 봤다. **Q-48** 은 발화 0건 통화(`-06`)로 「상담원 전용 링크가 아닙니다」 안내.
+「추천 0건 통화」 그대로는 시험하지 않았다 — 그 경로는 `callStore.callId.test.ts` 6건이 고정하고 있고, 콜 미디에이터 `0.2.10+` 가 `call_id` 를 늘 싣는다. 시연 리허설에서 한 통 더 본다.

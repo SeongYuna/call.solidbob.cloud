@@ -30,46 +30,103 @@ type ParsedMessage =
   | { kind: "closure"; payload: ClosureEvent }
   | { kind: "routing_decision"; payload: RoutingDecision };
 
+/** 재연결 대기 — 1초에서 두 배씩, 최대 30초. 콜 미디에이터의 25초 핑 끊김·네트워크 순단을 넘긴다. */
+const RECONNECT_BASE_MS = 1_000;
+const RECONNECT_MAX_MS = 30_000;
+
 export class RealCallMediatorClient implements CallMediatorClient {
   readonly mode = "live" as const;
   private socket: WebSocket | null = null;
   private listeners: CallMediatorListener | null = null;
+  /** 사용자가 끊은 것인가 — 그때만 다시 붙지 않는다(`disconnect()`). */
+  private closedByUser = false;
+  private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
+  private reconnectAttempts = 0;
 
   constructor(private readonly url: string) {}
 
+  /**
+   * 2026-10-01 — 끊기면 스스로 다시 붙는다(`decisions/138` 예외). 전에는 재시도 코드가 없어 콜 미디에이터가
+   * 25초 핑에 응답 없는 대시보드를 끊으면(`ws_server.ts`) 새로고침 전까지 자막이 영구히 멈췄다(적용 감사 02).
+   * 구독 소켓은 상태가 없어 다시 붙기만 하면 그 뒤 메시지는 그대로 온다 — 끊긴 사이의 메시지는 잃는다(사실대로 둔다).
+   */
   connect(listeners: CallMediatorListener): void {
     this.disconnect();
+    this.closedByUser = false;
+    this.reconnectAttempts = 0;
     this.listeners = listeners;
-    listeners.onStatus({ mode: "live", connected: false });
+    this.open();
+  }
 
-    try {
-      this.socket = new WebSocket(this.url);
-    } catch {
-      listeners.onError("콜 미디에이터에 연결하지 못했습니다.");
+  private open(): void {
+    const listeners = this.listeners;
+    if (listeners === null || this.closedByUser) {
       return;
     }
+    listeners.onStatus({ mode: "live", connected: false });
 
-    this.socket.addEventListener("open", () => {
+    let socket: WebSocket;
+    try {
+      socket = new WebSocket(this.url);
+    } catch {
+      listeners.onError("콜 미디에이터에 연결하지 못했습니다.");
+      this.scheduleReconnect();
+      return;
+    }
+    this.socket = socket;
+
+    socket.addEventListener("open", () => {
+      if (this.socket !== socket) {
+        return;
+      }
+      this.reconnectAttempts = 0;
       this.listeners?.onStatus({ mode: "live", connected: true });
     });
 
-    this.socket.addEventListener("message", (event: MessageEvent<string>) => {
-      this.handleMessage(event.data);
+    socket.addEventListener("message", (event: MessageEvent<string>) => {
+      if (this.socket === socket) {
+        this.handleMessage(event.data);
+      }
     });
 
-    this.socket.addEventListener("error", () => {
-      this.listeners?.onError("콜 미디에이터 연결에 문제가 생겼습니다.");
+    socket.addEventListener("error", () => {
+      if (this.socket === socket) {
+        this.listeners?.onError("콜 미디에이터 연결에 문제가 생겼습니다.");
+      }
     });
 
-    this.socket.addEventListener("close", () => {
+    socket.addEventListener("close", () => {
+      if (this.socket !== socket) {
+        return;
+      }
+      this.socket = null;
       this.listeners?.onStatus({ mode: "live", connected: false });
+      this.scheduleReconnect();
     });
   }
 
+  private scheduleReconnect(): void {
+    if (this.closedByUser || this.listeners === null || this.reconnectTimer !== null) {
+      return;
+    }
+    const delay = Math.min(RECONNECT_BASE_MS * 2 ** this.reconnectAttempts, RECONNECT_MAX_MS);
+    this.reconnectAttempts += 1;
+    this.reconnectTimer = setTimeout(() => {
+      this.reconnectTimer = null;
+      this.open();
+    }, delay);
+  }
+
   disconnect(): void {
+    this.closedByUser = true;
+    if (this.reconnectTimer !== null) {
+      clearTimeout(this.reconnectTimer);
+      this.reconnectTimer = null;
+    }
     if (this.socket !== null) {
-      this.socket.close();
+      const socket = this.socket;
       this.socket = null;
+      socket.close();
     }
     this.listeners = null;
   }
@@ -710,20 +767,29 @@ function readDomain(value: unknown): DemoDomain | undefined {
   return undefined;
 }
 
+/** 계약 위반을 한 번만 경고한다 — 메시지마다 찍으면 콘솔이 넘친다. 테스트가 되돌릴 수 있게 export. */
+export const contractWarnings = { warned: false };
+
 /**
  * 2026-09-10 — 백엔드가 모든 응답 필드를 문자열로 보내기로 했다(장민석 확인,
- * ngrok 실측). 그 밖의 타입이 오면 계약 위반이므로 조용히 넘기지 않고 즉시
- * 알린다. 실제 값(number·boolean)으로의 변환은 이 함수를 통과한 뒤 각
- * read*() 가 한다 — 나머지 앱 코드는 지금처럼 number·boolean 을 그대로 쓴다.
+ * ngrok 실측). 그 밖의 타입이 오면 계약 위반이므로 조용히 넘기지 않는다. 실제 값(number·boolean)으로의
+ * 변환은 이 함수를 통과한 뒤 각 read*() 가 한다 — 나머지 앱 코드는 지금처럼 number·boolean 을 그대로 쓴다.
+ *
+ * 2026-10-01 — `alert()` 를 걷었다(`decisions/138` 예외, 적용 감사 03). 통화 중 블로킹 모달이 뜨면 자막이 멈추고
+ * 시연이 끊긴다. 계약 위반은 그 메시지를 버리고(전과 같다) 콘솔에 **한 번만** 경고한다 — 헤더 상태와
+ * 「탐지 미동작」 표시가 있어 조용한 초록이 되지 않는다.
  */
 function readStringValue(value: unknown): string | null {
   // undefined(필드 없음)·null(명시적 없음, 예: RecommendResponse.domain) 은
-  // "타입이 틀렸다"가 아니라 "값이 없다"이므로 alert 대상이 아니다.
+  // "타입이 틀렸다"가 아니라 "값이 없다"이므로 경고 대상이 아니다.
   if (value === undefined || value === null) {
     return null;
   }
   if (typeof value !== "string") {
-    alert("데이터 타입이 틀립니다");
+    if (!contractWarnings.warned) {
+      contractWarnings.warned = true;
+      console.warn("콜 미디에이터 계약 위반 — 문자열이 아닌 필드를 받아 그 메시지를 버렸습니다.", typeof value);
+    }
     return null;
   }
   return value;

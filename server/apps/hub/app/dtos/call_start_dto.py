@@ -40,5 +40,6 @@ class CallStarted:
     status: str
     created: bool
     customer_id: str | None = None  # 발신 번호의 HMAC. 번호가 없거나 키가 없으면 None — 지어내지 않는다
+    display_hint: str | None = None  # 화면 표시용 `****1234`(`decisions/144`). customer_id 가 있을 때만
     # 이미 있던 통화(`created=False`)에 저장된 가장 큰 발화 번호. 새 통화면 0. 콜 미디에이터가 여기서 이어 센다
     last_segment_id: int = 0

@@ -22,8 +22,10 @@ _CALL = """
 SELECT c."customer_id",
        COALESCE(EXTRACT(EPOCH FROM (c."ended_at" - c."started_at")),
                 (SELECT MAX(s."utterance_end_ms") FROM "transcript_segment" s WHERE s."call_id" = c."call_id") / 1000.0,
-                0)
-FROM "call" c WHERE c."call_id" = %s
+                0),
+       cu."display_hint"
+FROM "call" c LEFT JOIN "customer" cu ON cu."customer_id" = c."customer_id"
+WHERE c."call_id" = %s
 """
 _GUARD_COUNTS = 'SELECT "category", COUNT(*) FROM "call_guard_flag" WHERE "call_id" = %s GROUP BY "category"'
 _OUTLIERS = 'SELECT COUNT(*) FROM "voice_outlier" WHERE "call_id" = %s'
@@ -78,4 +80,5 @@ class PostgresBlacklistEvidenceRepository(BlacklistEvidencePort):
                 temperature_outliers=outliers,
             ),
             context_excerpt="\n".join(texts)[:EXCERPT_MAX_CHARS],
+            display_hint=call[2] if len(call) > 2 else None,
         )

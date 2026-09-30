@@ -49,6 +49,7 @@ class BlacklistRequestCreateInteractor(BlacklistRequestCreateUseCase):
                 reason=masked_reason[:REASON_MAX_CHARS],
                 context_excerpt=collected.context_excerpt,
                 evidence=collected.evidence,
+                display_hint=collected.display_hint,
             )
         )
         return BlacklistRequestCreated(request=saved, has_distress=collected.evidence.has_distress)

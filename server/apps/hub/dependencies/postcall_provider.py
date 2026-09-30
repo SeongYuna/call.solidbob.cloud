@@ -10,10 +10,13 @@
 
 from __future__ import annotations
 
-from fastapi import Depends
+from fastapi import Depends, Request
 from postcall.adapter.outbound.rule_postcall_adapter import RulePostcallAdapter
 
 from hub.app.ports.input.postcall_use_case import PostcallUseCase
+from hub.adapter.outbound.postgres.compliance_flag_repository import PostgresComplianceFlagRepository
+from hub.adapter.outbound.postgres.connection import build_connection_factory
+from hub.app.ports.output.compliance_flag_query_port import ComplianceFlagQueryPort
 from hub.app.ports.output.postcall_port import PostcallPort
 from hub.app.ports.output.postcall_record_port import PostcallRecordPort
 from hub.app.use_cases.postcall_interactor import PostcallInteractor
@@ -24,8 +27,17 @@ def get_postcall_port() -> PostcallPort:
     return RulePostcallAdapter()
 
 
+def get_compliance_flag_query_port(request: Request) -> ComplianceFlagQueryPort | None:
+    """위반 발화 번호 조회 — PostgreSQL 이 없으면 None(요약은 전처럼 만든다)."""
+    settings = request.app.state.settings
+    if not settings.postgres_configured:
+        return None
+    return PostgresComplianceFlagRepository(build_connection_factory(settings))
+
+
 def get_postcall_use_case(
     postcall: PostcallPort = Depends(get_postcall_port),
     record: PostcallRecordPort = Depends(get_postcall_record_port),
+    flags: ComplianceFlagQueryPort | None = Depends(get_compliance_flag_query_port),
 ) -> PostcallUseCase:
-    return PostcallInteractor(postcall=postcall, record=record)
+    return PostcallInteractor(postcall=postcall, record=record, flags=flags)

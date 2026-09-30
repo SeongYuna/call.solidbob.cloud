@@ -13,6 +13,10 @@
  *
  * 크롬(폰·PC) 기준. 마이크 권한은 HTTPS 또는 localhost 에서만 열린다 — 운영
  * `https://server.solidbob.cloud/call-mediator/dev` 는 이미 HTTPS 라 터널(ngrok)이 필요 없다.
+ *
+ * 2026-09-30 — **글자 입력 칸**을 더했다. QA 2회차에서 마이크 인식이 0건이었는데 페이지가 `network`·`audio-capture`
+ * 오류를 삼켜 원인을 보지 못했다(`_logs/2026-09-30-01`). 이제 인식 오류는 이름 그대로 상태 줄에 찍히고, 마이크가
+ * 안 되거나 브라우저가 음성 인식을 지원하지 않아도 **글자를 쳐서 확정 발화로 보낼 수 있다**(같은 `/dev/text` 문).
  */
 import { createHash } from "node:crypto";
 
@@ -35,6 +39,9 @@ export const DEV_PAGE_HTML = `<!doctype html>
   #status { margin-top: 12px; font-size: 13px; }
   #log { margin-top: 12px; background: #fff; border: 1px solid #e1e4ea; border-radius: 8px; padding: 8px 10px; min-height: 120px; font-size: 14px; white-space: pre-wrap; }
   .interim { color: #8a93a5; }
+  .row { display: flex; gap: 8px; margin-top: 8px; }
+  .row input { flex: 1; }
+  .row button { width: auto; margin: 0; padding: 10px 16px; }
 </style>
 </head>
 <body>
@@ -54,6 +61,8 @@ export const DEV_PAGE_HTML = `<!doctype html>
 
   <button id="start">통화 시작</button>
   <div id="status">대기 중</div>
+  <label for="text">글자로 보내기 (마이크가 안 될 때 — 선택한 화자의 확정 발화로 들어갑니다. Enter 로도 보냅니다)</label>
+  <div class="row"><input id="text" autocomplete="off" disabled placeholder="통화 시작 후 입력"><button id="send" disabled>보내기</button></div>
   <div id="log"></div>
 </main>
 <script>
@@ -80,9 +89,22 @@ export const DEV_PAGE_HTML = `<!doctype html>
   };
 
   if (!Recognition) {
-    setStatus("이 브라우저는 음성 인식(Web Speech API)을 지원하지 않습니다. 크롬으로 여세요.");
-    $("start").disabled = true;
-    return;
+    setStatus("이 브라우저는 음성 인식(Web Speech API)을 지원하지 않습니다 — 글자 입력만 됩니다. 마이크는 크롬에서 여세요.");
+  }
+
+  // 통화 중에는 화자·통화 ID·토큰을 잠근다 — 채널은 열 때의 화자로 붙었다. 화자를 바꾸려면 종료하고 다시 연다(유예 안이면 통화 상태는 이어진다).
+  const setTextEnabled = (on) => {
+    $("text").disabled = !on; $("send").disabled = !on;
+    $("speaker").disabled = on; $("callId").disabled = on; $("token").disabled = on;
+    if (on) $("text").focus();
+  };
+
+  function sendText() {
+    const text = $("text").value.trim();
+    if (!text || !ws || ws.readyState !== WebSocket.OPEN) return;
+    ws.send(JSON.stringify({ text, is_final: true }));
+    logLine("[" + ($("speaker").value === "agent" ? "상담원" : "고객") + "] " + text, false);
+    $("text").value = "";
   }
 
   function stop(reason) {
@@ -90,6 +112,7 @@ export const DEV_PAGE_HTML = `<!doctype html>
     if (rec) { try { rec.stop(); } catch (e) {} rec = null; }
     if (ws && ws.readyState === WebSocket.OPEN) { ws.send(JSON.stringify({ type: "end" })); }
     $("start").textContent = "통화 시작"; $("start").className = "";
+    setTextEnabled(false);
     setStatus(reason || "종료");
   }
 
@@ -104,7 +127,9 @@ export const DEV_PAGE_HTML = `<!doctype html>
     ws.onopen = () => {
       running = true;
       $("start").textContent = "통화 종료"; $("start").className = "stop";
-      setStatus("듣는 중 — 말하세요");
+      setTextEnabled(true);
+      if (!Recognition) { setStatus("연결됨 — 글자를 쳐서 보내세요 (이 브라우저는 마이크 인식이 없습니다)"); return; }
+      setStatus("듣는 중 — 말하거나 글자를 치세요");
       rec = new Recognition();
       rec.lang = "ko-KR"; rec.continuous = true; rec.interimResults = true;
       rec.onresult = (event) => {
@@ -119,9 +144,15 @@ export const DEV_PAGE_HTML = `<!doctype html>
         }
         if (interim.trim()) { ws.send(JSON.stringify({ text: interim, is_final: false })); logLine(interim, true); }
       };
-      rec.onerror = (e) => { if (e.error === "not-allowed") stop("마이크 권한이 거부됐습니다"); };
+      // 오류는 이름 그대로 보인다 — network(크롬 인식 서버 실패)·audio-capture(마이크 없음)·no-speech 등.
+      // 통화는 끊지 않는다(글자 입력은 계속 된다). 권한 거부만 마이크를 접는다.
+      rec.onerror = (e) => {
+        if (e.error === "not-allowed") { try { rec.stop(); } catch (x) {} rec = null; setStatus("마이크 권한이 거부됐습니다 — 글자 입력은 됩니다"); return; }
+        if (e.error === "no-speech" || e.error === "aborted") return;
+        setStatus("마이크 인식 오류: " + e.error + " — 글자 입력은 됩니다");
+      };
       // 크롬은 조용하면 인식을 스스로 멈춘다 — 통화 중이면 다시 켠다.
-      rec.onend = () => { if (running) { try { rec.start(); } catch (e) {} } };
+      rec.onend = () => { if (running && rec) { try { rec.start(); } catch (e) {} } };
       rec.start();
     };
     ws.onclose = (e) => {
@@ -131,6 +162,8 @@ export const DEV_PAGE_HTML = `<!doctype html>
   }
 
   $("start").onclick = () => (running ? stop() : start());
+  $("send").onclick = sendText;
+  $("text").addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); sendText(); } });
 })();
 </script>
 </body>

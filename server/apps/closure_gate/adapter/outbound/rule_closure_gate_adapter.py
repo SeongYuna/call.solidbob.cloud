@@ -20,6 +20,10 @@ SUPPORTED_PROCEDURES = tuple(RULES)
 
 
 class RuleClosureGateAdapter(ClosureGatePort):
+    def title_of(self, procedure: str) -> str | None:
+        rule = RULES.get(procedure)
+        return rule.title if rule is not None else None
+
     def evaluate(
         self, call_id: str, procedure: str, evidence: dict[str, bool], reason: str | None = None
     ) -> ClosureVerdict:

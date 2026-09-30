@@ -2,7 +2,7 @@
 title: "8스프린트 회고 — 안 된 것을 그대로 적는다"
 assignee: "공동"
 role: "infra"
-status: "todo"
+status: "in-progress"
 sprint: 8
 priority: 87
 date: 2026-09-21
@@ -24,6 +24,10 @@ depends_on:
 
 ## 완료 조건
 
-- [ ] `jekyll/` 에 회고 페이지(`layout: doc`, `permalink` 명시) — 상단 내비에 올릴지는 그때 정한다
-- [ ] 수치는 [최종 측정](/backlog/w8-final-eval-run/) 값만 쓴다
-- [ ] 내부 서사·개인 평가는 `_project/` 로(§8)
+- [x] `jekyll/` 에 회고 페이지(`layout: doc`, `permalink` 명시) — 상단 내비에 올릴지는 그때 정한다
+- [x] 수치는 [최종 측정](/backlog/w8-final-eval-run/) 값만 쓴다
+- [x] 내부 서사·개인 평가는 `_project/` 로(§8)
+
+## 2026-10-01 — 초안 (정성윤) · in-progress
+
+`jekyll/docs/17-회고.markdown` 에 성공 조건·안 된 것·배운 것·정성윤 단락을 썼다(수치는 `decisions/138` 정본). **류준·장민석·조서희 단락은 각자가 쓴다** — 그때 done. 상단 내비에는 올리지 않고 목차에만 둔다.

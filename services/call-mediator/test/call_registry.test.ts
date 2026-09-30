@@ -26,6 +26,7 @@ function setup(
     routingCandidates?: string[];
     ingestRetryDelaysMs?: number[];
     procedureAdoption?: ProcedureAdoption;
+    callRetainMs?: number;
   } = {},
 ) {
   const hub = new FakeHub();
@@ -58,6 +59,8 @@ function setup(
     // 테스트는 재시도 간격을 짧게 — 기본값(운영)은 call_registry.ts 의 INGEST_RETRY_DELAYS_MS
     ingestRetryDelaysMs: opts.ingestRetryDelaysMs ?? [1, 1],
     procedureAdoption: opts.procedureAdoption,
+    // 테스트는 유예를 짧게(기본 0 = 옛 동작: 채널이 모두 닫히면 바로 버린다). 유예 테스트만 값을 준다
+    callRetainMs: opts.callRetainMs ?? 0,
   });
   return {
     hub,
@@ -962,4 +965,65 @@ test("219 C2 — score-floor: 1순위 점수가 하한 아래면 잡지 않고, 
     { speaker: "customer", text: "음", top: "DASAN-TERM-6.4", score: "숫자 아님" },
   ]);
   assert.deepEqual(asked, ["DASAN-TERM-4.6"]);
+});
+
+// ---------------------------------------------------------------------------------------------------------------------
+// 통화 상태 유예 — 2026-09-30 QA 2회차(`_logs/2026-09-30-01`): 화자를 바꾸느라 채널을 닫았다 열면 절차·상담원 발화가 사라졌다
+
+test("유예 — 채널이 모두 닫혀도 유예 안에 다시 열면 절차·상담원 발화가 남고, 배정 판정은 다시 부르지 않는다", async () => {
+  const { registry, hub, stt } = setup({ callRetainMs: 200, routingCandidates: ["agent-demo-1"] });
+  hub.topDocId = "DASAN-TERM-4.3";
+  const customer = await openOk(registry, "test-1", "customer");
+  stt.streams[0]!.emit("초본 떼려면 뭐 필요해요", true, 1000);
+  await customer.close();
+  await tick(10);
+  assert.equal(registry.activeCalls, 0, "유예 중인 통화는 active 로 세지 않는다");
+
+  const agent = await openOk(registry, "test-1", "agent");
+  stt.streams[1]!.emit("신분증 지참하시고 오세요", true, 2000);
+  await agent.close();
+  await tick(10);
+
+  assert.deepEqual(hub.docsChecked.map((r) => [r.procedure, r.agent_utterances]), [
+    ["DASAN-TERM-4.3", []],
+    ["DASAN-TERM-4.3", ["신분증 지참하시고 오세요"]], // 절차가 남아 있어 상담원 발화가 판정된다
+  ]);
+  assert.equal(hub.routed.length, 1, "배정 판정은 통화당 한 번");
+  assert.equal(hub.calls.length, 2, "서버 통화 행은 다시 확인한다(UPSERT)");
+  assert.deepEqual(
+    hub.ingested.map((raw) => [raw.speaker, raw.segment_id]),
+    [
+      ["customer", 1],
+      ["agent", 2],
+    ],
+  );
+});
+
+test("유예 — 유예가 지나면 통화를 버린다 · 다시 열면 새 통화처럼 절차를 다시 잡고 배정 판정을 다시 부른다", async () => {
+  const { registry, hub, stt } = setup({ callRetainMs: 30 });
+  hub.topDocId = "DASAN-TERM-4.3";
+  const first = await openOk(registry, "test-1", "customer");
+  stt.streams[0]!.emit("초본 떼려면 뭐 필요해요", true, 1000);
+  await first.close();
+  await tick(80);
+
+  const again = await openOk(registry, "test-1", "customer");
+  stt.streams[1]!.emit("초본 떼려면 뭐 필요해요", true, 2000);
+  await again.close();
+  await tick(10);
+  // 같은 1순위 조항을 **다시** 잡았다 — 절차 집합이 비어 있었다는 뜻(유예 안이었다면 이미 잡혀 있어 한 번이다)
+  assert.deepEqual(hub.docsChecked.map((r) => r.procedure), ["DASAN-TERM-4.3", "DASAN-TERM-4.3"]);
+  assert.equal(hub.routed.length, 2);
+});
+
+test("유예 — 0 이면 바로 버린다(옛 동작) · 서버 통화 시작 실패는 유예 없이 버린다", async () => {
+  const { registry, hub } = setup({ callRetainMs: 0 });
+  const channel = await openOk(registry, "test-1", "agent");
+  await channel.close();
+  await tick();
+  assert.equal(registry.activeCalls, 0);
+  hub.failStart = 503;
+  const result = await registry.open({ callId: "test-2", speaker: "agent", sampleRate: 16000, channelCount: 1 });
+  assert.equal(result.ok, false);
+  assert.equal(registry.activeCalls, 0);
 });

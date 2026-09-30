@@ -8,7 +8,7 @@ import {
   type ClosureEvent,
 } from "../types/contract";
 import { evidenceHint } from "../lib/evidenceHints";
-import { cardId, evidenceTally, useCallStore } from "../store/callStore";
+import { cardId, evidenceTally, pendingTally, useCallStore } from "../store/callStore";
 import type { PanelCard } from "../store/callStore";
 import { SessionControls } from "./AppHeader";
 import {
@@ -16,6 +16,7 @@ import {
   type ArrowSelectOption,
 } from "./ArrowSelectChip";
 import { ProgressRing } from "./ProgressRing";
+import { InlineMarkdown } from "./InlineMarkdown";
 import { BookmarkDock } from "./BookmarkDock";
 import { CallHistoryPanel } from "./CallHistoryPanel";
 import { CustomerHistorySummaryCard } from "./CustomerHistorySummaryCard";
@@ -62,11 +63,8 @@ export function TermsPanel({
   );
   const error = useCallStore((state) => state.error);
   const [view, setView] = useState<TermsContentView>("closure");
-  const pending = cards.find((item) => item.closure !== null && !item.settled);
-  const tally =
-    pending?.closure !== undefined && pending.closure !== null
-      ? evidenceTally(pending.closure)
-      : null;
+  // 머리 칩은 진행 중인 판정 **전부**를 합친다 — 전에는 첫 카드 하나만 세서 카드 둘일 때 숫자가 어긋났다(QA 2회차 관찰).
+  const tally = pendingTally(cards);
 
   const bodyRef = useRef<HTMLDivElement>(null);
 
@@ -262,7 +260,9 @@ function TermCard({
               {isHistory ? null : <AdoptToggle adopted={adopted} onToggle={onAdopt} />}
             </div>
             <h3>{item.card.title}</h3>
-            <p className="card-summary">{item.card.summary}</p>
+            <p className="card-summary">
+              <InlineMarkdown text={item.card.summary} />
+            </p>
             <p className="card-source">
               <FileTextIcon />
               <span>{item.card.source.title}</span>

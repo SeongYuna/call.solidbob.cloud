@@ -57,7 +57,8 @@ async def get_call_record(
         ],
         closures=[
             SavedClosureSchema(
-                closure_id=cl.closure_id, procedure=cl.procedure, verdict=cl.verdict, detected=cl.detected,
+                closure_id=cl.closure_id, procedure=cl.procedure, procedure_title=cl.procedure_title,
+                verdict=cl.verdict, detected=cl.detected,
                 reason=cl.reason, source_doc_id=cl.source_doc_id, decided_at=cl.decided_at.isoformat(),
                 items=[SavedClosureItemSchema(rank=i.rank, document_name=i.document_name, informed=i.informed)
                        for i in cl.items],

@@ -94,3 +94,10 @@ def test_고객_식별자를_싣는다_HMAC_이지_번호가_아니다():
     hmac = "a" * 64
     assert _get(replace(RECORD, customer_id=hmac)).json()["customer_id"] == hmac
     assert _get(RECORD).json()["customer_id"] is None
+
+
+def test_판정에_규칙표_제목을_붙인다():
+    """지난 통화 보기 카드 제목이 조항 ID 만 보이던 것(QA 2회차) — 규칙표(`closure_rule.py`)의 제목을 조회 때 붙인다(저장 컬럼 아님)."""
+    closure = _get(RECORD).json()["closures"][0]
+    assert closure["procedure"] == "DASAN-TERM-4.3"
+    assert closure["procedure_title"] == "주민등록초본 발급"

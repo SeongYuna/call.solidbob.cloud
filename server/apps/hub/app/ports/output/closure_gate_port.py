@@ -14,3 +14,7 @@ class ClosureGatePort(ABC):
     def evaluate(
         self, call_id: str, procedure: str, evidence: dict[str, bool], reason: str | None = None
     ) -> ClosureVerdict: ...
+
+    def title_of(self, procedure: str) -> str | None:
+        """절차 조항의 제목(규칙표). 지난 통화 보기가 조항 ID 대신 제목을 보이게(2026-10-01). 모르면 None — 지어내지 않는다."""
+        return None

@@ -25,8 +25,13 @@ class CallStartInteractor(CallStartUseCase):
 
     async def start(self, command: CallStartCommand) -> CallStarted:
         customer_id = None
+        display_hint = None
         if command.caller_phone and self._customer_ref is not None:
             customer_id = self._customer_ref.ref(command.caller_phone)  # 형식이 틀리면 InvalidPhoneNumber
+            if customer_id is not None:
+                # 식별자 없이 힌트만 남기지 않는다. 옛 구현체(테스트 스텁)에 hint 가 없으면 None
+                hint = getattr(self._customer_ref, "hint", None)
+                display_hint = hint(command.caller_phone) if callable(hint) else None
         call = CallStarted(
             call_id=command.call_id,
             domain=command.domain,
@@ -36,6 +41,7 @@ class CallStartInteractor(CallStartUseCase):
             status=_STATUS_IN_PROGRESS,
             created=True,
             customer_id=customer_id,
+            display_hint=display_hint,
         )
         created = await self._record.record(call)
         if created:

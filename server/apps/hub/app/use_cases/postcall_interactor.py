@@ -16,20 +16,31 @@ from dataclasses import replace
 from hub.app.dtos.call_summary_dto import CallSummaryDraft
 from hub.app.dtos.postcall_dto import PostcallCommand
 from hub.app.ports.input.postcall_use_case import PostcallUseCase
+from hub.app.ports.output.compliance_flag_query_port import ComplianceFlagQueryPort
 from hub.app.ports.output.postcall_port import PostcallPort
 from hub.app.ports.output.postcall_record_port import PostcallRecordPort
 
 
 class PostcallInteractor(PostcallUseCase):
-    def __init__(self, postcall: PostcallPort, record: PostcallRecordPort) -> None:
+    def __init__(
+        self, postcall: PostcallPort, record: PostcallRecordPort, flags: ComplianceFlagQueryPort | None = None
+    ) -> None:
         self._postcall = postcall
         self._record = record
+        self._flags = flags
 
     async def close(self, command: PostcallCommand) -> CallSummaryDraft:
         if not command.segments:
             raise ValueError("전사가 비어 있습니다 — 요약할 내용이 없습니다")
 
-        draft = await self._postcall.summarize(command.call_id, list(command.segments))
+        # 위반이 잡힌 상담원 발화는 「안내」로 발췌되지 않게 번호를 같이 넘긴다(2026-10-01). 읽기 실패는 요약을 막지 않는다
+        flagged: frozenset[int] = frozenset()
+        if self._flags is not None:
+            try:
+                flagged = await self._flags.flagged_segment_ids(command.call_id)
+            except Exception:  # noqa: BLE001 — 저장 조회가 죽어도 초안은 낸다(전과 같은 초안)
+                flagged = frozenset()
+        draft = await self._postcall.summarize_with_flags(command.call_id, list(command.segments), flagged)
         # 모델이 confirmed=True 를 실어 보내도 무시한다 — 확정은 사람이 하는 일이다
         draft = replace(draft, call_id=command.call_id, confirmed=False)
         await self._record.record(draft)  # 저장한 것과 돌려주는 것이 같은 초안이다

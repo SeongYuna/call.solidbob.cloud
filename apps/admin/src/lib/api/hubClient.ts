@@ -242,6 +242,16 @@ export interface AdminStats {
   routingBlacklisted: number;
   routingFellBack: number;
   countedAt: string;
+  /**
+   * 오늘(KST 자정부터) 값 — `w6-admin-stats-today`. 서버는 2026-09-24 부터 보냈지만(server 0.1.4x)
+   * 화면이 읽지 않아 현황판에 누적만 있었다(QA 2회차 관찰: 「오늘 통화가 없는데 초기화 상태가 아니다」).
+   * 옛 서버(필드 없음)면 0 으로 읽는다.
+   */
+  callsToday: number;
+  callGuardFlagsToday: number;
+  requestsToday: number;
+  /** 「오늘」이 어느 날인지 — KST `YYYY-MM-DD`. 옛 서버면 null. */
+  today: string | null;
 }
 
 interface AdminStatsResponseWire {
@@ -254,6 +264,10 @@ interface AdminStatsResponseWire {
   routing_blacklisted: string;
   routing_fell_back: string;
   counted_at: string;
+  calls_today?: string;
+  call_guard_flags_today?: string;
+  requests_today?: string;
+  today?: string | null;
 }
 
 /**
@@ -273,6 +287,10 @@ export async function fetchAdminStats(accessToken: string): Promise<AdminStats> 
     routingBlacklisted: toNum(wire.routing_blacklisted),
     routingFellBack: toNum(wire.routing_fell_back),
     countedAt: wire.counted_at,
+    callsToday: toNum(wire.calls_today ?? "0"),
+    callGuardFlagsToday: toNum(wire.call_guard_flags_today ?? "0"),
+    requestsToday: toNum(wire.requests_today ?? "0"),
+    today: typeof wire.today === "string" && wire.today.length > 0 ? wire.today : null,
   };
 }
 

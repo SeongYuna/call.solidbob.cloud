@@ -57,7 +57,8 @@ export function SettingsTab({
           />
         </label>
         <p className="admin-help">
-          저장하면 다음 배정 판정부터 이 기준이 쓰입니다(0.5~40년).
+          값을 바꾸면 바로 저장됩니다 — 따로 저장 버튼이 없습니다. 다음 배정 판정부터 이 기준이
+          쓰입니다(0.5~40년).
         </p>
       </div>
 
@@ -81,11 +82,11 @@ export function SettingsTab({
           />
         </label>
         <p className="admin-help">
-          만료가 없으면 영구 표시가 됩니다(`decisions/205` ⑤). 이건 **기본값**일
+          만료가 없으면 영구 표시가 됩니다(결정 기록 205 ⑤). 이건 <strong>기본값</strong>일
           뿐입니다 — 사안마다 심각도가 다르므로, 실제 기간은 <strong>승인
           카드에서 건마다 조정</strong>하거나 <strong>블랙리스트 탭에서 등록 후
           연장·단축</strong>합니다. 여기서 바꾼 값은 앞으로 새 승인 카드에
-          미리 채워지는 값만 바뀝니다.
+          미리 채워지는 값만 바뀝니다(바꾸면 바로 저장됩니다).
         </p>
       </div>
 

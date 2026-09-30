@@ -3,14 +3,18 @@
 
 from __future__ import annotations
 
+from dataclasses import replace
+
 from hub.app.dtos.call_record_dto import CallRecord, CallRecordNotFound
 from hub.app.ports.input.call_record_use_case import CallRecordUseCase
 from hub.app.ports.output.call_record_port import CallRecordPort
+from hub.app.ports.output.closure_gate_port import ClosureGatePort
 
 
 class CallRecordInteractor(CallRecordUseCase):
-    def __init__(self, record_port: CallRecordPort) -> None:
+    def __init__(self, record_port: CallRecordPort, gate: ClosureGatePort | None = None) -> None:
         self._records = record_port
+        self._gate = gate
 
     async def get(self, call_id: str) -> CallRecord:
         if not call_id.strip():
@@ -18,4 +22,11 @@ class CallRecordInteractor(CallRecordUseCase):
         record = await self._records.get(call_id)
         if record is None:
             raise CallRecordNotFound(f"통화가 없습니다: {call_id}")
-        return record
+        if self._gate is None or not record.closures:
+            return record
+        # 절차 제목은 저장하지 않고 규칙표에서 붙인다(2026-10-01) — 화면이 `DASAN-TERM-4.3` 대신 「주민등록초본 발급」을 보인다.
+        # 규칙표에 없는 절차는 None 그대로 — 제목을 지어내지 않는다
+        return replace(record, closures=tuple(
+            replace(cl, procedure_title=self._gate.title_of(cl.procedure)) if cl.procedure_title is None else cl
+            for cl in record.closures
+        ))

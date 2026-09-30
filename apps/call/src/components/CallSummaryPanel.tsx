@@ -822,7 +822,7 @@ function MoodSection({
       </p>
       {isMock ? (
         <p className="wrapup-note">
-          감정분석 모델 연동 전 — mock 라벨입니다. 점수는 없습니다.
+          통화 온도 모델 연동 전 — 예시 라벨입니다. 점수는 없습니다.
         </p>
       ) : null}
     </section>

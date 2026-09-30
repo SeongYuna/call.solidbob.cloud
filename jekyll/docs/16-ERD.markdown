@@ -9,8 +9,9 @@ permalink: /docs/16/
 [3장 시스템 아키텍처](/docs/03/)는 `call`·`transcript`·`recommendation`·`closure`·
 `eval_result` 5개 테이블만 언급한다. 이건 아키텍처 다이어그램에 들어간 5개 큰 덩어리일
 뿐, 기능 명세를 하나씩 대조해보면 1:N 관계로 쪼개야 할 하위 데이터와 원래 계획엔 없던
-개체(고객·문서·후속조치·공백 리포트)가 더 필요하다. 그래서 실제로는 **16개 테이블**로
-설계했다.
+개체(고객·문서·후속조치·공백 리포트)가 더 필요하다. 그래서 실제로는 ~~**16개 테이블**로~~
+설계했다. → **2026-10-01 정정: 지금은 29개 테이블이다**(`db/schema.sql` 기준 — 블랙리스트·배정·감사·상담원 토큰·요약 재수정·설정 등이
+5~6주차에 더해졌다). 아래 본문과 그림은 8월 판이라 그 뒤 테이블이 빠져 있다 — 정본은 저장소의 `db/schema.sql`·`db/docs/ERD.md` 다.
 
 > 저장소 원본: `db/schema.sql`(DDL), `db/docs/erd.dot`(다이어그램 소스),
 > `db/generate_schema_docs.py`(스키마 정의 — 여기만 고치면 SQL·ERD가 같이 갱신됨),
@@ -21,7 +22,7 @@ permalink: /docs/16/
 > 통신 전용이던 `plan`(요금제) 테이블을 제거하고 `subscriber`를 `customer`로 정리했다.
 > `call`에 `domain` 컬럼을 추가해 도메인 라우팅 정보를 스키마에 명시했고, `closure`의
 > `closure_type`·evidence 컬럼을 실제 F-2 적용 도메인(금융보험·쇼핑)의 처리 유형으로
-> 교체했다. 17개 → 16개 테이블. 상세: `_project/decisions/006-db-스키마-도메인-정리.md`,
+> 교체했다. 17개 → 16개 테이블(그때의 수 — 2026-10-01 현재 29개). 상세: `_project/decisions/006-db-스키마-도메인-정리.md`,
 > [`db/docs/ERD.md`](https://github.com/SeongYuna/call.solidbob.cloud/blob/main/db/docs/ERD.md).
 
 ## ERD

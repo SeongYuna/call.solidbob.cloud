@@ -8,7 +8,7 @@
  * 형식 그대로다")가 실측한 방송 payload와 `ports.ts`의 타입 정의를 따랐다.
  */
 import { describe, expect, it } from "vitest";
-import { parseCallMediatorMessage } from "../src/lib/ws/realCallMediatorClient";
+import { contractWarnings, parseCallMediatorMessage } from "../src/lib/ws/realCallMediatorClient";
 
 describe("parseCallMediatorMessage — 알 수 없는 메시지", () => {
   it("타입 태그가 없거나 모르는 값이면 null — 화면이 「알 수 없는 메시지」 오류로 처리한다", () => {
@@ -60,9 +60,17 @@ describe("parseCallMediatorMessage — transcript(자막)", () => {
     });
   });
 
-  it("불린이 문자열이 아니면(계약 위반) 버린다 — 조용히 잘못 그리지 않는다", () => {
+  it("불린이 문자열이 아니면(계약 위반) 버린다 — alert 없이 콘솔 경고 한 번 (2026-10-01)", () => {
+    const originalWarn = console.warn;
     const originalAlert = globalThis.alert;
-    globalThis.alert = () => {};
+    let warned = 0;
+    console.warn = () => {
+      warned += 1;
+    };
+    globalThis.alert = () => {
+      throw new Error("alert 를 불렀다 — 통화 중 블로킹 모달은 걷어냈다(2026-10-01)");
+    };
+    contractWarnings.warned = false;
     try {
       const message = parseCallMediatorMessage({
         type: "transcript",
@@ -77,8 +85,11 @@ describe("parseCallMediatorMessage — transcript(자막)", () => {
         },
       });
       expect(message).toBeNull();
+      expect(warned).toBe(1);
     } finally {
+      console.warn = originalWarn;
       globalThis.alert = originalAlert;
+      contractWarnings.warned = false;
     }
   });
 });

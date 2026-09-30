@@ -70,7 +70,8 @@ def test_고객_식별자가_있으면_customer_를_먼저_만들고_통화에_�
     ref = "a" * 64
     created, log, _ = _run(rowcount=1, customer_id=ref)
     assert created is True
-    assert log[0][0].startswith('INSERT INTO "customer"') and 'ON CONFLICT ("customer_id") DO NOTHING' in log[0][0]
+    assert log[0][0].startswith('INSERT INTO "customer"')
+    assert 'ON CONFLICT ("customer_id") DO UPDATE SET "display_hint" = COALESCE("customer"."display_hint"' in log[0][0]
     assert log[0][1][0] == ref
     assert log[1][0].startswith('INSERT INTO "call"') and log[1][1][2] == ref
 

@@ -12,9 +12,10 @@
   [미결 항목](https://docs.solidbob.cloud/open-items/)
   `main` 에 머지되면 `.github/workflows/pages.yml` 이 `jekyll/` 을 빌드해 자동 배포한다.
 - 소개 페이지: <https://www.solidbob.cloud/> — `apps/platform` (Vercel)
-- **데모 사이트: <https://call.solidbob.cloud/>** — `apps/call`(옛 `apps/dashboard`) 상담원 화면 (Vercel).
-  콜 미디에이터·코어가 아직 없어 **mock 으로 돈다**(`VITE_CALL_MEDIATOR_WS_URL` 이 비면 `MockCallMediatorClient`).
-  둘 다 `main` 머지로 자동 배포된다 (`_project/decisions/106`).
+- **상담원 화면: <https://call.solidbob.cloud/>** — `apps/call`(옛 `apps/dashboard`) (Vercel). 운영 서버
+  `https://server.solidbob.cloud`(API + 콜 미디에이터, EC2 k3s)에 붙어 **실서버 모드**로 돈다 — `VITE_CALL_MEDIATOR_WS_URL` 이
+  비면 `MockCallMediatorClient` 로 내려간다(로컬 개발용). 관리자 화면은 <https://admin.solidbob.cloud/>(`apps/admin`).
+  셋 다 `main` 머지로 자동 배포된다 (`_project/decisions/106`).
 
 ## 저장소 구조
 
@@ -31,6 +32,12 @@
 | `scripts/`, `data/` | 유틸리티 / 데이터 (원본은 커밋하지 않는다) |
 | `_project/` | 비공개 — 기획서 원본·보완지시서, 결정 기록, 세션 인수인계 상태 |
 | `.github/workflows/` | `pages.yml`(사이트 배포) · `test.yml`(CI — 하네스 테스트 · 구조 계약 · 사이트 빌드·링크 검사) |
+
+## 데이터 출처
+
+- 이 프로젝트의 골든셋 일부·STT 실측·A-5 숙련도별 WER 은 **AI Hub(한국지능정보사회진흥원) 사업결과**인
+  「다산콜센터 민원 상담 음성」(다산콜DB) · 「외국인 한국어 발화 음성」(71479) 을 이용해 만들었다. AI Hub 이용정책에 따라
+  원문 데이터는 저장소에 싣지 않고(`data/raw/` 는 gitignore, 골든셋은 바꿔 씀 — `decisions/212`) 2차 저작물에도 같은 출처를 표기한다.
 
 ## 로컬 실행
 

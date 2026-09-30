@@ -2,7 +2,7 @@
 title: "코어 기준선 통과 확인 — F·G·H·I 동결 판정"
 assignee: "정성윤"
 role: "infra"
-status: "in-progress"
+status: "done"
 sprint: 6
 priority: 66
 date: 2026-09-15
@@ -114,3 +114,8 @@ python scripts/run_eval.py --runs 3 --no-ner --retriever bm25        # 3회 중 
 `w2-baseline-gate` 가 닫혔다(`decisions/134`). 판정일에 할 일은 판정문 초안(`_project/baseline-check-2026-09-30-draft.md`)대로 운영 `/health` 확인 + 검색 기준선 확인 한 번:
 `ELASTICSEARCH_URL=… python scripts/run_eval.py --runs 3 --no-ner --retriever bm25 --report-json r.json && python scripts/check_baseline.py r.json`.
 09-22 에 이 머신에서 같은 명령으로 **Recall@5 0.853 · MRR 0.686(n 102) — 통과**를 확인했다(기록 DB 없음, 공식 값은 류준 run_id 8·9).
+
+## 2026-09-30 — 판정일: 통과 (정성윤)
+
+운영 `/health` 에 `pii_ner`·`retrieval_dense` 가 있어 **운영 실구성(run_id 8)** 으로 판정했다 — **통과.** 판정문은 [진행 기록 `2026-09-30-02-seongyun`](/progress/)이 정본이다(초안 `_project/baseline-check-2026-09-30-draft.md` 는 옮기고 지웠다).
+B 0.971(n 102) · C-5 누락 0(n 40, 오류 없는 전사 한정) · F-2 1.0(n 99, 규칙표 안) · E run_id 8·9. 곡선은 한 세대 낡은 값(`e966b62`, n 96)이라 그렇게 적었다. F·G·H·I 는 판정과 무관하게 착수하지 않는다(`decisions/132`).

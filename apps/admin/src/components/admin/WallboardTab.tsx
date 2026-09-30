@@ -37,6 +37,10 @@ export function WallboardTab({
   routingDecisions,
   routingBlacklisted,
   routingFellBack,
+  callsToday,
+  callGuardFlagsToday,
+  requestsToday,
+  today,
 }: {
   completedCallsTotal: number;
   callGuardTotal: number;
@@ -50,6 +54,14 @@ export function WallboardTab({
   routingBlacklisted: number;
   /** 그중 근속 기준 상담사가 없어 일반 배정으로 떨어진 건수. */
   routingFellBack: number;
+  /** 오늘(KST 자정부터) 시작된 통화 — `w6-admin-stats-today`. 누적과 달리 날마다 0 에서 시작한다. */
+  callsToday: number;
+  /** 오늘 잡힌 콜 가드 신호. */
+  callGuardFlagsToday: number;
+  /** 오늘 올라온 블랙리스트 요청(상태 무관). */
+  requestsToday: number;
+  /** 「오늘」이 어느 날인지(KST `YYYY-MM-DD`). 옛 서버면 null — 그때는 오늘 줄을 그리지 않는다. */
+  today: string | null;
 }): ReactElement {
   const slices = useMemo(
     () => [
@@ -71,6 +83,22 @@ export function WallboardTab({
         실시간 통화 현황(지금 몇 통화가 진행 중인지)은 상담원 앱과 분리돼
         있어 여기서 볼 수 없습니다.
       </p>
+      {/* 오늘 줄 — 2026-09-30 QA 2회차에서 「오늘 통화가 없는데 초기화 상태가 아니다」 로 잡힌 것.
+          누적 타일은 그대로 두고(지우지 않는다), 날마다 0 에서 시작하는 값을 따로 보인다(`w6-admin-stats-today`). */}
+      {today !== null ? (
+        <section className="wallboard-today" aria-label="오늘 현황">
+          <h3 className="wallboard-donut-title">{`오늘 (${today}, KST)`}</h3>
+          <div className="wallboard-grid">
+            <WallboardTile label="오늘 시작된 통화" value={callsToday} />
+            <WallboardTile label="오늘 콜가드 경고" value={callGuardFlagsToday} />
+            <WallboardTile
+              label="오늘 올라온 블랙리스트 요청"
+              value={requestsToday}
+              emphasize={requestsToday > 0}
+            />
+          </div>
+        </section>
+      ) : null}
       <div className="wallboard-layout">
         <div className="wallboard-grid">
           <WallboardTile label="완료 통화 누적" value={completedCallsTotal} />

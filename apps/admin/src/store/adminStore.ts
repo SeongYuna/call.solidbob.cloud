@@ -56,6 +56,11 @@ interface AdminState {
   statsRoutingDecisions: number;
   statsRoutingBlacklisted: number;
   statsRoutingFellBack: number;
+  /** 오늘(KST) 값 — `w6-admin-stats-today`. 누적 옆에 「오늘」 줄을 따로 그린다. */
+  statsCallsToday: number;
+  statsCallGuardFlagsToday: number;
+  statsRequestsToday: number;
+  statsToday: string | null;
   /** `decisions/313` — 서버 값(`GET /hub/routing-settings`). `loadAll` 전까지는 로컬 기본값. */
   veteranThresholdYears: number;
   /**
@@ -105,6 +110,10 @@ export const useAdminStore = create<AdminState>((set, get) => ({
   statsRoutingDecisions: 0,
   statsRoutingBlacklisted: 0,
   statsRoutingFellBack: 0,
+  statsCallsToday: 0,
+  statsCallGuardFlagsToday: 0,
+  statsRequestsToday: 0,
+  statsToday: null,
   veteranThresholdYears: 3,
   blacklistExpiryMonths: 6,
 
@@ -137,6 +146,10 @@ export const useAdminStore = create<AdminState>((set, get) => ({
         statsRoutingDecisions: stats.routingDecisions,
         statsRoutingBlacklisted: stats.routingBlacklisted,
         statsRoutingFellBack: stats.routingFellBack,
+        statsCallsToday: stats.callsToday,
+        statsCallGuardFlagsToday: stats.callGuardFlagsToday,
+        statsRequestsToday: stats.requestsToday,
+        statsToday: stats.today,
         veteranThresholdYears: routingSetting.veteranYears,
       });
     } catch (error) {

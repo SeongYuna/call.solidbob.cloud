@@ -42,6 +42,9 @@ MAX_ACTION_EXCERPTS = 5  # 요약에 싣는 후속 조치 수. 전체 목록은 
 class Utterance:
     speaker: str  # "customer" | "agent"
     text: str  # 마스킹 완료본 (SEC-1)
+    # 컴플라이언스 위반(C-1~C-4)이 잡힌 상담원 발화(2026-10-01). 발췌 후보에서 뺀다 — 위반 문장을 「안내」로 요약에 싣지 않는다.
+    # 건수에는 그대로 센다(사실이다). 검사가 안 돈 통화는 전부 False 라 전과 같다
+    flagged: bool = False
 
 
 @dataclass(frozen=True)
@@ -56,7 +59,7 @@ def _squash(text: str) -> str:
 
 
 def _substantive(u: Utterance) -> bool:
-    return len(_squash(u.text)) >= MIN_SUBSTANTIVE_CHARS
+    return not u.flagged and len(_squash(u.text)) >= MIN_SUBSTANTIVE_CHARS
 
 
 def _clip(text: str, limit: int) -> str:
@@ -122,7 +125,7 @@ def _summary(utterances: list[Utterance], follow_ups: tuple[str, ...]) -> str:
 def _follow_ups(utterances: list[Utterance]) -> tuple[str, ...]:
     actions: list[str] = []
     for u in utterances:
-        if u.speaker != "agent":
+        if u.speaker != "agent" or u.flagged:
             continue
         squashed = _squash(u.text)
         if _PROMISE.search(squashed) and any(verb in squashed for verb in _FOLLOW_UP_VERBS):

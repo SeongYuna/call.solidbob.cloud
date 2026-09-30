@@ -37,3 +37,7 @@ class HmacCustomerRefAdapter(CustomerRefPort):
         if self._key is None:
             return None
         return hmac.new(self._key, digits.encode("ascii"), hashlib.sha256).hexdigest()
+
+    def hint(self, phone: str) -> str | None:
+        """`****` + 뒤 4자리(`decisions/144`). 정규화한 숫자에서 자르므로 표기가 달라도 같은 값이다."""
+        return "****" + normalize_phone(phone)[-4:]

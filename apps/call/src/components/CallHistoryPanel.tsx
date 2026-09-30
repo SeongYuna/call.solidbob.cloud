@@ -67,6 +67,9 @@ function MockCallHistoryList({
                 {DEMO_DOMAIN_LABELS[row.item.domain]}
               </span>
               <span className="call-history-type">{row.item.inquiry_type}</span>
+              <span className="call-history-id" title={row.item.call_id}>
+                {row.item.call_id}
+              </span>
               <span className="call-history-ref">{row.item.customer_ref}</span>
             </button>
             <button
@@ -171,6 +174,9 @@ function LiveCallHistoryList({
                   {DEMO_DOMAIN_LABELS[item.domain]}
                 </span>
                 <span className="call-history-type">{item.inquiry_type}</span>
+                <span className="call-history-id" title={item.call_id}>
+                  {item.call_id}
+                </span>
                 {(repeatCounts.get(item.customer_ref) ?? 0) > 1 ? (
                   <span className="call-history-ref">재문의 고객</span>
                 ) : null}

@@ -2,7 +2,7 @@
 title: "AWS 자원 정리 — RDS 권장 사항 2건 · Enhanced Monitoring · 7월 잔재"
 assignee: "정성윤"
 role: "infra"
-status: "todo"
+status: "cancelled"
 sprint: 4
 priority: 4
 date: 2026-09-14
@@ -18,9 +18,9 @@ requirement:
 
 ## 할 것
 
-- [ ] **RDS 권장 사항 2건의 내용 확인** — 「퍼블릭 액세스 허용」이거나 「백업 보존 0일」이면 즉시 조치 대상이다.
+- [x] **RDS 권장 사항 2건의 내용 확인** — 「퍼블릭 액세스 허용」이거나 「백업 보존 0일」이면 즉시 조치 대상이다.
       RDS 를 고른 이유가 **백업 하나**였다(`w3-aws-deploy`) — 보존이 0이면 고른 이유가 사라진다
-- [ ] **`rds-monitoring-role` 이 있다 = Enhanced Monitoring 이 켜져 있다.** 의도한 것인지 확인하고,
+- [x] **`rds-monitoring-role` 이 있다 = Enhanced Monitoring 이 켜져 있다.** 의도한 것인지 확인하고,
       아니면 끈다. 소액이지만 CloudWatch Logs 로 계속 나간다(COST-1)
 - [ ] **7월 잔재 정리** — 두 번째 VPC `vpc-0a2f05f0b6898780f` · 보안 그룹 `admin-security` · `launch-wizard-1`(07-24 생성).
       인스턴스가 1대뿐이라 **과금은 없다.** 지우는 이유는 돈이 아니라 **자원 목록이 읽히게 하는 것**이다 —
@@ -64,3 +64,14 @@ aws ec2 detach-internet-gateway $R --internet-gateway-id igw-08af6f27a9a8cbab8 -
 aws ec2 delete-internet-gateway $R --internet-gateway-id igw-08af6f27a9a8cbab8
 aws ec2 delete-vpc $R --vpc-id vpc-0a2f05f0b6898780f
 ```
+
+## 2026-09-30 — 읽기 전용 확인 (정성윤) · 삭제만 남았다
+
+- **RDS 권장 2건의 내용** — `describe-db-recommendations`(09-30): ① Enhanced Monitoring 꺼짐 ② Multi-AZ 아님. **둘 다 informational** 이고 「퍼블릭 액세스」·「백업 0일」이 아니다
+  (`PubliclyAccessible False` · `BackupRetentionPeriod 7`). 즉시 조치 없음 — 둘 다 **안 한다**(Multi-AZ 는 비용 2배, Enhanced Monitoring 은 CloudWatch Logs 과금).
+- **`rds-monitoring-role`** — 인스턴스 `MonitoringInterval 0` · `MonitoringRoleArn None`. **역할만 있고 Enhanced Monitoring 은 꺼져 있다**(비용 0). 역할은 7월 잔재와 같이 지워도 되고 두어도 된다.
+- **7월 잔재 삭제** — 되돌릴 수 없어 사용자 확인 뒤 한다. 명령은 위 그대로다(VPC `vpc-0a2f05f0b6898780f` · `admin-security` · `launch-wizard-1`). 지운 뒤 런북 22장 점검 명령과 대조.
+
+## 2026-10-01 — cancelled (사용자 결정 「티켓 닫아」)
+
+7월 잔재는 지우지 않는다. 운영과 무관한 자원이고 비용이 거의 없다(RDS 권장 2건은 informational, Enhanced Monitoring 은 꺼져 있음). 종료 정리(`w8-project-closeout`)에서 계정의 자원을 한 번에 내릴 때 같이 사라진다 — 그때 이 티켓의 명령을 쓴다.

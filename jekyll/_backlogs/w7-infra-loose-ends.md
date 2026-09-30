@@ -2,7 +2,7 @@
 title: "인프라 잔여 넷 — 프로브 · ES configured · uploads 수명 주기 · Vercel 설정"
 assignee: "정성윤"
 role: "infra"
-status: "todo"
+status: "done"
 sprint: 7
 priority: 80
 date: 2026-09-21
@@ -29,8 +29,8 @@ paths:
 
 ## 완료 조건
 
-- [ ] 넷 각각 «했다» 또는 «안 한다 + 이유» 로 미결에서 내린다
-- [ ] 위 두 티켓을 끝내거나, 안 하기로 하면 `cancelled` 로 닫고 이유를 적는다
+- [x] 넷 각각 «했다» 또는 «안 한다 + 이유» 로 미결에서 내린다
+- [x] 위 두 티켓을 끝내거나, 안 하기로 하면 `cancelled` 로 닫고 이유를 적는다
 
 ## 준비 — 2026-09-21 읽기 전용으로 확인한 사실 (정성윤)
 
@@ -45,3 +45,14 @@ paths:
    하려면 `uploads/` 에 만료 규칙(예: 90일 — 근거 없는 예시값)을 더한다. 시연 음성을 남겨야 하면 **안 한다**
 4. **Vercel** — 이 머신에 vercel CLI 가 없다. 대시보드에서 한다: 프로젝트 셋의 Settings → Git → Ignored Build Step 값과 Root Directory 를 런북 18-4 대조표와 눈으로 맞춘다.
    옛 변수 둘(`VITE_GATEWAY_WS_URL` · `VITE_GATEWAY_DEMO_BASE_URL`)은 `call-solidbob-cloud-kxu6` → Settings → Environment Variables 에서 지운다(재배포 불필요 — 번들이 이미 새 변수로 구워졌다)
+
+## 2026-09-30 — 넷 다 내렸다 · done (정성윤)
+
+1. **`/health/ready` 프로브 — 안 한다.** 09-21 권고 그대로: ES·DB 가 잠깐 끊길 때 서비스에서 빠지는 대가가 크고 자막·마스킹은 ES 없이도 돈다. 런북 19장 수동 검사로 둔다.
+2. **ES `configured` — 닫는다.** 09-30 노드에서 converge 와 같은 방법(main tarball → `kubectl kustomize infra/k8s/base` → `kubectl diff`)으로 돌리니 **diff 0줄**(SSM, 읽기 전용).
+   지금 main 과 클러스터가 같다. 릴리스 때 `configured` 가 찍히는 것은 apply 가 diff 없이도 그렇게 보고하는 것이라 실제 변경이 아니다 — 더 쫓지 않는다.
+3. **`uploads/` 수명 주기 — 안 한다.** 시연 음성을 남겨야 하고, `datasets/` 는 비어 있다. 종료 정리(`w8-project-closeout`)에서 버킷째 다룬다.
+4. **Vercel — 했다.** `vercel env ls`(09-30, 프로젝트 `call-solidbob-cloud`) 에 남은 변수는 `VITE_CALL_MEDIATOR_WS_URL` 하나 — 옛 변수 둘(`VITE_GATEWAY_WS_URL`·`VITE_GATEWAY_DEMO_BASE_URL`)은 이미 없다.
+   `vercel.json` 이관은 안 한다(대시보드 값이 대조표와 맞고, 옮기면 세 프로젝트 설정을 다시 맞춰야 한다).
+
+같이 열려 있던 둘 — `w4-aws-resource-hygiene` 는 읽기 전용 확인을 끝내고 삭제만 사용자 결정으로 남겼다(아래 티켓) · `w2-stt-batch` 는 **cancelled**(오디오가 있는 머신이 끝내 없었다. 사유는 그 티켓에).

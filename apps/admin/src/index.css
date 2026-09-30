@@ -3067,6 +3067,10 @@ button {
 
 /* 현황판 — .standby-kpi 카드와 같은 무게감(큰 숫자 + 배지)을 쓴다. */
 /* 2026-09-15 — 좌측 통계 카드 + 우측 비율 도넛. 데스크톱 기준, 반응형은 신경 안 쓴다. */
+.wallboard-today {
+  margin-bottom: 16px;
+}
+
 .wallboard-layout {
   display: grid;
   grid-template-columns: 1fr 300px;
