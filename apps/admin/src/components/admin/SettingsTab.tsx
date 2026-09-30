@@ -259,7 +259,7 @@ function AgentHiredOnRow({
       <div className="admin-entry-row-main">
         <span className="admin-ref">{maskAgentName(agent.displayName)}</span>
         <span className="admin-meta">
-          {agent.hiredOn === null ? "입사일 없음 (근속 0년)" : `입사일 ${agent.hiredOn}`}
+          {agent.hiredOn === null ? "입사일 없음 (근속 0년)" : `입사일 ${agent.hiredOn} (근속 ${tenureYears(agent.hiredOn)}년)`}
         </span>
         {error !== null ? (
           <span className="header-error" role="alert">
@@ -474,4 +474,11 @@ function AgentTokenIssuer(): ReactElement {
       ) : null}
     </div>
   );
+}
+
+/** 입사일 → 근속 연차(소수 한 자리). 서버 J-5 판정과 같은 셈(365.25일 = 1년). 미래 날짜면 0. */
+function tenureYears(hiredOn: string): string {
+  const ms = Date.now() - new Date(`${hiredOn}T00:00:00`).getTime();
+  const years = Math.max(0, ms / (365.25 * 24 * 60 * 60 * 1000));
+  return years.toFixed(1);
 }

@@ -274,4 +274,5 @@ jobs:
         run: |
           set -o pipefail
           npm test 2>&1 | tee apps-test.log
-          grep -qE "Tests +[1-9][0-9]* passed" apps-test.log || { echo "::error::apps/call 테스트가 하나도 돌지 않았다"; exit 1; }
+          # vitest 출력에 색 코드가 섞여 있어(첫 실행 10-01 에 이 줄이 헛되게 실패했다) 코드를 벗기고 본다
+          sed -E 's/\[[0-9;]*m//g' apps-test.log | grep -qE "Tests +[1-9][0-9]* passed" || { echo "::error::apps/call 테스트가 하나도 돌지 않았다"; exit 1; }

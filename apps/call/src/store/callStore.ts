@@ -426,11 +426,20 @@ function panelCardsFromRecord(record: CallRecord): PanelCard[] {
       settled: true,
     })),
   );
-  const closureCards: PanelCard[] = record.closures.map((cl) => ({
+  // 판정은 상담원 발화마다 다시 저장돼 같은 절차의 행이 여럿이다 — 절차마다 **가장 나중 판정 하나**만 카드로 만든다
+  // (2026-10-01, QA 3회차에서 4.3 카드가 둘 떴다). 제목은 서버가 규칙표에서 붙인 값, 없으면 조항 ID 그대로.
+  const latestByProcedure = new Map<string, (typeof record.closures)[number]>();
+  for (const cl of record.closures) {
+    const prev = latestByProcedure.get(cl.procedure);
+    if (prev === undefined || cl.decidedAt >= prev.decidedAt) {
+      latestByProcedure.set(cl.procedure, cl);
+    }
+  }
+  const closureCards: PanelCard[] = [...latestByProcedure.values()].map((cl) => ({
     card: {
-      title: cl.procedure,
+      title: cl.procedureTitle ?? cl.procedure,
       summary: cl.reason ?? "",
-      source: { doc_id: cl.sourceDocId ?? "", title: cl.sourceDocId ?? cl.procedure },
+      source: { doc_id: cl.sourceDocId ?? "", title: cl.procedureTitle ?? cl.sourceDocId ?? cl.procedure },
       similarity_score: 0,
       source_type: "auto",
     } satisfies RecommendationCard,
@@ -438,6 +447,7 @@ function panelCardsFromRecord(record: CallRecord): PanelCard[] {
     closure: {
       call_id: record.callId,
       procedure: cl.procedure,
+      procedure_title: cl.procedureTitle ?? undefined,
       reason: cl.reason,
       evidence: Object.fromEntries(cl.items.map((i) => [i.documentName, i.informed])),
       verdict: cl.verdict,
