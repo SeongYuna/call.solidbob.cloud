@@ -92,6 +92,10 @@ export function AdminPanel({
   const statsRoutingDecisions = useAdminStore((s) => s.statsRoutingDecisions);
   const statsRoutingBlacklisted = useAdminStore((s) => s.statsRoutingBlacklisted);
   const statsRoutingFellBack = useAdminStore((s) => s.statsRoutingFellBack);
+  const statsCallsToday = useAdminStore((s) => s.statsCallsToday);
+  const statsCallGuardFlagsToday = useAdminStore((s) => s.statsCallGuardFlagsToday);
+  const statsRequestsToday = useAdminStore((s) => s.statsRequestsToday);
+  const statsToday = useAdminStore((s) => s.statsToday);
   const veteranThresholdYears = useAdminStore((s) => s.veteranThresholdYears);
   const setVeteranThresholdYears = useAdminStore((s) => s.setVeteranThresholdYears);
   const blacklistExpiryMonths = useAdminStore((s) => s.blacklistExpiryMonths);
@@ -187,6 +191,10 @@ export function AdminPanel({
                 routingDecisions={statsRoutingDecisions}
                 routingBlacklisted={statsRoutingBlacklisted}
                 routingFellBack={statsRoutingFellBack}
+                callsToday={statsCallsToday}
+                callGuardFlagsToday={statsCallGuardFlagsToday}
+                requestsToday={statsRequestsToday}
+                today={statsToday}
               />
             ) : null}
             {tab === "requests" ? (

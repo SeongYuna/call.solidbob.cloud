@@ -79,9 +79,10 @@ class DigitMasking(MaskingPort):
         return "".join("*" if ch.isdigit() else ch for ch in text), ()
 
 
-def evidence(customer_ref=REF, distress=0) -> CallEvidence:
+def evidence(customer_ref=REF, distress=0, display_hint="****5678") -> CallEvidence:
     return CallEvidence(
         customer_ref=customer_ref,
         evidence=RequestEvidence(call_duration_s=600, insult_count=3, distress_count=distress),
         context_excerpt="이런 *** 같은",
+        display_hint=display_hint,
     )

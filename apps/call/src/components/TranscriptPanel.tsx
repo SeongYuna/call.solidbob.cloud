@@ -37,7 +37,7 @@ import {
 import type { ManualSearchOutcome } from "../hooks/useCallMediatorSession";
 import { useCallStore, type Utterance } from "../store/callStore";
 import { isCallGuardDistress } from "../types/contract";
-import type { ComplianceFinding, TranscriptQuerySegment } from "../types/contract";
+import type { CallGuardFlag, ComplianceFinding, TranscriptQuerySegment } from "../types/contract";
 
 /** 화면에 그릴 컴플라이언스 경고 한 건 — 실서버 findings/로컬 mock 규칙을 같은 모양으로 맞춘다. */
 interface LineCompliance {
@@ -55,6 +55,14 @@ function complianceFromFindings(
     suggestedPhrase:
       f.alternative_source?.title ?? "권장 대체 표현이 등록되지 않았습니다.",
   }));
+}
+
+/**
+ * 서버 `alternative_source` 가 대체 표현이 아니라 **근거 조항 ID**(`DASAN-…`)만 실어 올 때가 있다 —
+ * 그걸 「권장 표현」이라고 붙이면 상담원이 조항 번호를 읽으라는 말로 본다(QA 2회차 관찰). 이름을 사실대로 바꾼다.
+ */
+export function complianceLabel(suggestedPhrase: string): string {
+  return /^DASAN-[A-Z]+-\d/.test(suggestedPhrase.trim()) ? "근거 조항" : "권장 표현";
 }
 
 /** 이 거리 안이면 맨 아래에 있는 것으로 본다. */
@@ -75,6 +83,38 @@ const CUSTOMER_GUIDANCE = {
   abuse: "안전 문구 사용을 권장합니다",
   distress: "슈퍼바이저 연결을 고려하세요",
 } as const;
+
+/**
+ * C-6 — 갈래별 안내 문구. 매뉴얼 5장(`knowledge-base/dasan/manual/MANUAL.md`)을 그대로 옮겼다.
+ * 전에는 위기 신호 말고는 전부 「고객이 흥분한 상태입니다. 안내는 이어가시면 됩니다」 한 줄이라
+ * 협박(5.2 — 1차 안내 뒤 곧바로 종료 가능)에 매뉴얼과 반대되는 안내가 붙었다(QA 2회차 Q-29·Q-30).
+ * 판단은 상담원·상급자 몫이다 — 시스템은 탐지와 경고까지만 한다(5.2). 위험도·점수는 쓰지 않는다(부록 A-1).
+ */
+export const CALL_GUARD_COPY: Record<
+  CallGuardFlag["category"],
+  { pill: string; hint: string; source: string }
+> = {
+  insult: {
+    pill: "🚫 상담원 보호 알림",
+    hint: "욕설·모욕이 잡혔습니다. 업무와 무관한 표현을 삼가 달라고 1차 안내하고, 계속되면 통화가 종료될 수 있음을 2차 안내하세요. 같은 방식으로 대응하지 않습니다.",
+    source: "DASAN-MANUAL-5.1",
+  },
+  threat: {
+    pill: "🚫 상담원 보호 알림",
+    hint: "신체적 위해를 암시하는 협박이 잡혔습니다. 1차 안내 뒤 곧바로 통화를 종료할 수 있습니다 — 종료 사유와 시각을 기록하세요. 종료 판단은 상담원과 상급자 몫입니다.",
+    source: "DASAN-MANUAL-5.2",
+  },
+  sexual: {
+    pill: "🚫 상담원 보호 알림",
+    hint: "성적 표현이 잡혔습니다. 1차 안내 뒤 곧바로 통화를 종료할 수 있습니다 — 종료 사유와 시각을 기록하세요.",
+    source: "DASAN-MANUAL-5.2",
+  },
+  distress: {
+    pill: "🆘 위기 신호",
+    hint: "통화를 끊지 말고 전문 상담 기관 연결을 우선하세요. 위험 정도를 판단하거나 설득하지 않습니다.",
+    source: "DASAN-MANUAL-5.4",
+  },
+};
 
 function uniqueCustomerBanners(
   risks: readonly CustomerRiskMatch[],
@@ -717,24 +757,43 @@ export function TranscriptPanel({
                       {hasAlert ? <span className="alert-pill">⚠ 경고</span> : null}
                     </div>
                     {!hideLegacyGuard
-                      ? guards.map((g) => (
-                          <div
-                            key={g.category}
-                            className={`callguard-row${isCallGuardDistress(g) ? " is-distress" : ""}`}
-                          >
-                            <span className="callguard-pill">
-                              {isCallGuardDistress(g) ? "🆘 위기 신호" : "🚫 콜가드"}
-                            </span>
-                            {g.phrase !== undefined ? (
-                              <CallGuardPhrase phrase={g.phrase} />
-                            ) : null}
-                            <span className="callguard-hint">
-                              {isCallGuardDistress(g)
-                                ? "통화를 끊지 말고 전문 상담 기관 연결을 안내하세요(DASAN-MANUAL-5.4)."
-                                : "고객이 흥분한 상태입니다. 안내는 이어가시면 됩니다."}
-                            </span>
-                          </div>
-                        ))
+                      ? guards
+                          .filter((g) => !dismissed.has(`${item.segment_id}:guard:${g.category}`))
+                          .map((g) => {
+                            const copy = CALL_GUARD_COPY[g.category];
+                            return (
+                              <div
+                                key={g.category}
+                                role="alert"
+                                className={`callguard-row${isCallGuardDistress(g) ? " is-distress" : ""}`}
+                                data-callguard-category={g.category}
+                              >
+                                <span className="callguard-pill">{copy.pill}</span>
+                                {g.phrase !== undefined ? (
+                                  <CallGuardPhrase phrase={g.phrase} />
+                                ) : null}
+                                <span className="callguard-hint">
+                                  {copy.hint}
+                                  <span className="callguard-source">{` (${copy.source})`}</span>
+                                </span>
+                                {/* 닫기 — QA 2회차 Q-45: 컴플라이언스 경고는 닫히는데 콜 가드는 못 닫았다 */}
+                                <button
+                                  type="button"
+                                  className="compliance-dismiss callguard-dismiss"
+                                  aria-label="콜 가드 알림 닫기"
+                                  onClick={() => {
+                                    setDismissed((current) => {
+                                      const next = new Set(current);
+                                      next.add(`${item.segment_id}:guard:${g.category}`);
+                                      return next;
+                                    });
+                                  }}
+                                >
+                                  ✕
+                                </button>
+                              </div>
+                            );
+                          })
                       : null}
                     {translation !== undefined ? (
                       <p className="utterance-translation">
@@ -769,6 +828,7 @@ export function TranscriptPanel({
                     {complianceWarnings.map((warning) => (
                       <ComplianceWarningBanner
                         key={warning.key}
+                        label={complianceLabel(warning.suggestedPhrase)}
                         detectedPhrase={warning.detectedPhrase}
                         suggestedPhrase={warning.suggestedPhrase}
                         onDismiss={() => {

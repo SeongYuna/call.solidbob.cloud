@@ -14,6 +14,11 @@ export type ManualSearchOutcome =
 export interface CallMediatorSession {
   startCall: () => void;
   replay: () => void;
+  /**
+   * 「새 통화 시작」 — mock 은 시나리오를 다시 재생하고, 실서버(live)는 대기 화면으로 나간다.
+   * 전에는 둘 다 `replay` 라서 live 에서 아무 일도 안 일어났다(QA 2회차 Q-55, `_logs/2026-09-30-01`).
+   */
+  startNewCall: () => void;
   leaveToStandby: () => void;
   manualSearch: (query: string) => Promise<ManualSearchOutcome>;
   endCall: () => void;
@@ -183,6 +188,15 @@ export function useCallMediatorSession(): CallMediatorSession {
     useCallStore.getState().enterStandby();
   }, []);
 
+  const startNewCall = useCallback(() => {
+    const client = clientRef.current;
+    if (client !== null && client.mode === "mock") {
+      attach(client);
+      return;
+    }
+    leaveToStandby();
+  }, [attach, leaveToStandby]);
+
   const wrapUp = useCallback(async (): Promise<CallWrapUp> => {
     const client = clientRef.current;
     if (client === null) {
@@ -209,5 +223,5 @@ export function useCallMediatorSession(): CallMediatorSession {
     return client.wrapUp(state.callId, segments);
   }, []);
 
-  return { startCall, replay, leaveToStandby, manualSearch, endCall, wrapUp };
+  return { startCall, replay, startNewCall, leaveToStandby, manualSearch, endCall, wrapUp };
 }

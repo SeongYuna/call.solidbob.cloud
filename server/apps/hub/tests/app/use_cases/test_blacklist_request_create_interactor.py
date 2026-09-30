@@ -43,3 +43,31 @@ def test_통화가_없으면_NotFound_고객이_식별_안_됐으면_Conflict():
 def test_빈_사유_빈_요청자는_거부한다(kw):
     with pytest.raises(ValueError):
         _run(evidence(), **kw)
+
+
+def test_뒤_4자리_힌트를_통화의_고객에서_옮겨_적는다():
+    """`decisions/144` — 316 이 「채우지 않는다」로 둔 display_hint 를 뒤 4자리로 연다. 번호 원문은 어디에도 없다."""
+    import asyncio  # noqa: PLC0415
+
+    from hub.app.dtos.blacklist_request_create_dto import BlacklistRequestCreateCommand  # noqa: PLC0415
+    from hub.app.use_cases.blacklist_request_create_interactor import BlacklistRequestCreateInteractor  # noqa: PLC0415
+
+    from ._blacklist_stubs import DigitMasking, evidence  # noqa: PLC0415
+
+    class _Evidence:
+        async def collect(self, call_id):
+            return evidence(display_hint="****5678")
+
+    class _Blacklist:
+        def __init__(self):
+            self.saved = None
+
+        async def save_request(self, request):
+            self.saved = request
+            return request
+
+    bl = _Blacklist()
+    it = BlacklistRequestCreateInteractor(blacklist=bl, evidence=_Evidence(), masking=DigitMasking())
+    asyncio.run(it.create(BlacklistRequestCreateCommand(call_id="c1", requested_by="a1", reason="반복 폭언")))
+    assert bl.saved.display_hint == "****5678"
+    assert "5678" not in bl.saved.customer_ref  # HMAC 이지 번호가 아니다

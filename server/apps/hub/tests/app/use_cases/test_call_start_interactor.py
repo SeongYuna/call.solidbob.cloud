@@ -103,3 +103,31 @@ def test_번호가_없거나_키가_없으면_고객을_잇지_않는다():
     no_key = _Ref(value=None)
     assert asyncio.run(CallStartInteractor(_SpyRecord(), customer_ref=no_key).start(
         _cmd(caller_phone="01012345678"))).customer_id is None
+
+
+def test_발신_번호가_있으면_뒤_4자리_힌트를_같이_남긴다():
+    """`decisions/144`. 식별자(HMAC)가 없으면 힌트도 없다 — 힌트만 남는 반쪽 기록을 만들지 않는다."""
+    import asyncio  # noqa: PLC0415
+
+    from hub.app.dtos.call_start_dto import CallStartCommand  # noqa: PLC0415
+    from hub.app.use_cases.call_start_interactor import CallStartInteractor  # noqa: PLC0415
+
+    class _RefWithHint(_Ref):
+        def hint(self, phone):
+            return "****" + phone[-4:]
+
+    record = _SpyRecord()
+    started = asyncio.run(CallStartInteractor(record, _RefWithHint()).start(
+        CallStartCommand(call_id="c1", domain="dasan", stt_engine="mock", channel_count=1, caller_phone="010-0000-0901")))
+    assert started.display_hint == "****0901"
+
+    class _NoRef(_Ref):
+        def ref(self, phone):
+            return None
+
+        def hint(self, phone):
+            return "****0901"
+
+    started = asyncio.run(CallStartInteractor(_SpyRecord(), _NoRef()).start(
+        CallStartCommand(call_id="c2", domain="dasan", stt_engine="mock", channel_count=1, caller_phone="010-0000-0901")))
+    assert started.customer_id is None and started.display_hint is None

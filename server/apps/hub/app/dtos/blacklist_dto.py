@@ -82,6 +82,8 @@ class BlacklistRequest:
     evidence_snapshot_at: datetime | None = None
     # 반려 사유(관리자, 마스킹본 — `decisions/316`). 승인 메모는 등록(`BlacklistEntry.note`) 쪽이다
     decision_note: str | None = None
+    # 화면 표시용 뒤 4자리 `****1234`(`decisions/144` — 316 의 「채우지 않는다」 일부 철회). 통화 시작에서 만든 값을 옮겨 적는다
+    display_hint: str | None = None
 
     def __post_init__(self) -> None:
         if self.status not in STATUSES:

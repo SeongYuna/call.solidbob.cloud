@@ -82,6 +82,9 @@ TABLES: list[Table] = [
                         "(`decisions/304`, 2026-09-14 VARCHAR(40)→(64) — 40 자로는 HMAC 이 안 들어갔다)"),
             Column("first_seen_at", "DATETIME", nullable=False),
             Column("status", "VARCHAR(20)", nullable=False),
+            Column("display_hint", "VARCHAR(8)",
+                   note="화면 표시용 뒤 4자리 `****1234`(`decisions/144`, 2026-10-01 — 316 일부 철회). 통화 시작에서 "
+                        "발신 번호로 만들고 그 뒤 번호는 버린다. 뒤 4자리만이라 번호를 되돌릴 수 없다. NULL = 번호가 없던 고객"),
         ],
     ),
     Table(
@@ -416,8 +419,8 @@ TABLES: list[Table] = [
                         "전화번호는 C-5 의 P4 이고, 자막에서 지운 값을 여기 평문으로 두면 "
                         "마스킹을 앞단에 둔 의미가 사라진다. 키는 .env(SEC-2)"),
             Column("display_hint", "VARCHAR(8)",
-                   note="⚠ **채우지 않는다**(`decisions/316`) — 전화번호 뒷자리도 P4 의 일부라 HMAC 으로 가린 것을 "
-                        "되돌리는 단서가 된다. 관리자는 call_id·마스킹된 자막으로 알아본다. 컬럼은 되돌릴 때를 위해 남긴다"),
+                   note="화면 표시용 뒤 4자리 `****1234` — `customer.display_hint` 를 요청 생성 때 옮겨 적는다"
+                        "(`decisions/144`, 2026-10-01). ~~채우지 않는다(`316`)~~ 는 일부 철회. 옛 행·번호 없던 통화는 NULL"),
             Column("requested_by", "VARCHAR(20)", "FK", "agent.agent_id", nullable=False),
             Column("reason", "VARCHAR(500)", nullable=False, note="상담원이 적은 사유"),
             Column("context_excerpt", "TEXT", nullable=False,

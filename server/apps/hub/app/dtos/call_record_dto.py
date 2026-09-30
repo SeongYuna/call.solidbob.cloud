@@ -47,6 +47,7 @@ class SavedClosure:
     source_doc_id: str | None
     decided_at: datetime
     items: tuple[SavedClosureItem, ...] = field(default_factory=tuple)
+    procedure_title: str | None = None  # 규칙표 제목 — 조회 시 ClosureGatePort.title_of 로 채운다(저장 컬럼 아님)
 
 
 @dataclass(frozen=True)

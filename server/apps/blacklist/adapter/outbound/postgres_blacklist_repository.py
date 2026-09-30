@@ -45,13 +45,14 @@ _FOREIGN_KEY_VIOLATION = "23503"
 _REQUEST_COLUMNS = """
 "request_id", "call_id", "customer_ref", "requested_by", "reason", "context_excerpt", "call_duration_s",
 "insult_count", "threat_count", "sexual_count", "temperature_outliers", "status", "requested_at",
-"decided_by", "decided_at", "evidence_snapshot_at", "decision_note"
+"decided_by", "decided_at", "evidence_snapshot_at", "decision_note", "display_hint"
 """
 _INSERT_REQUEST = f"""
 INSERT INTO "blacklist_request"
     ("call_id", "customer_ref", "requested_by", "reason", "context_excerpt", "call_duration_s", "insult_count",
-     "threat_count", "sexual_count", "temperature_outliers", "status", "requested_at", "evidence_snapshot_at")
-VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 'pending', %s, %s)
+     "threat_count", "sexual_count", "temperature_outliers", "status", "requested_at", "evidence_snapshot_at",
+     "display_hint")
+VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 'pending', %s, %s, %s)
 RETURNING {_REQUEST_COLUMNS}
 """
 _LIST_REQUESTS = f'SELECT {_REQUEST_COLUMNS} FROM "blacklist_request"'
@@ -116,7 +117,7 @@ def _request(row) -> BlacklistRequest:
             temperature_outliers=row[10],
         ),
         status=row[11], requested_at=row[12], decided_by=row[13], decided_at=row[14], evidence_snapshot_at=row[15],
-        decision_note=row[16],
+        decision_note=row[16], display_hint=row[17] if len(row) > 17 else None,
     )
 
 
@@ -154,6 +155,7 @@ class PostgresBlacklistRepository(BlacklistPort):
                         request.call_id, request.customer_ref, request.requested_by, request.reason,
                         request.context_excerpt, e.call_duration_s, e.insult_count, e.threat_count, e.sexual_count,
                         e.temperature_outliers, request.requested_at or now, request.evidence_snapshot_at or now,
+                        request.display_hint,
                     ))
                 except Exception as exc:
                     # 외래키는 call·requested_by 둘인데 call 은 인터랙터가 근거를 모으며 이미 확인했다

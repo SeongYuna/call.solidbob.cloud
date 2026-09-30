@@ -34,6 +34,7 @@ class SavedClosureItemSchema(BaseModel):
 class SavedClosureSchema(BaseModel):
     closure_id: StrField
     procedure: str
+    procedure_title: str | None = Field(default=None, description="규칙표의 절차 제목(2026-10-01). 규칙표에 없으면 null")
     verdict: str = Field(description="complete | incomplete — 차단이 아니라 경고다")
     detected: StrField = Field(description="true 면 상담원 발화 키워드로 자동 판정 — 부정 문맥을 모른다")
     reason: str | None = None

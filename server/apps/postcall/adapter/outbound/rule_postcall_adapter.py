@@ -17,8 +17,16 @@ from ...domain.services.summary_rules import Utterance, build_draft
 
 class RulePostcallAdapter(PostcallPort):
     async def summarize(self, call_id: str, segments: list[TranscriptEvent]) -> CallSummaryDraft:
+        return await self.summarize_with_flags(call_id, segments, frozenset())
+
+    async def summarize_with_flags(
+        self, call_id: str, segments: list[TranscriptEvent], flagged_segment_ids: frozenset[int]
+    ) -> CallSummaryDraft:
         finals = sorted((s for s in segments if s.is_final), key=lambda s: s.segment_id)
-        parts = build_draft([Utterance(speaker=s.speaker, text=s.text) for s in finals])
+        parts = build_draft([
+            Utterance(speaker=s.speaker, text=s.text, flagged=s.speaker == "agent" and s.segment_id in flagged_segment_ids)
+            for s in finals
+        ])
         return CallSummaryDraft(
             call_id=call_id,
             summary_text=parts.summary_text,

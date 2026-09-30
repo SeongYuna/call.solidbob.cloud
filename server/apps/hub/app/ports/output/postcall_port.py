@@ -18,3 +18,10 @@ class PostcallPort(ABC):
 
     @abstractmethod
     async def summarize(self, call_id: str, segments: list[TranscriptEvent]) -> CallSummaryDraft: ...
+
+    async def summarize_with_flags(
+        self, call_id: str, segments: list[TranscriptEvent], flagged_segment_ids: frozenset[int]
+    ) -> CallSummaryDraft:
+        """컴플라이언스 위반이 잡힌 발화 번호를 같이 받는 판(2026-10-01) — 위반 문장을 「안내」로 싣지 않으려고.
+        기본은 무시하고 `summarize` 로 — 모델 어댑터·테스트 스텁이 그대로 돈다. 규칙 어댑터가 덮어쓴다."""
+        return await self.summarize(call_id, segments)

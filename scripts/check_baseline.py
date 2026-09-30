@@ -24,8 +24,9 @@ nori 품사 필터가 들어가(`decisions/214`) 같은 BM25 구성의 run_id 9 
   NO_SAMPLES / NOT_IMPLEMENTED  표본이 없거나 모듈이 없다 — 통과도 실패도 아니다. 경고만 낸다
 
 절대 규칙(C-5 누락 · F-2 판정)은 평균이 아니라 **1건이라도 뚫리면 FAIL** 이다.
-⚠ CI(`test.yml` `ai` job)에는 아직 붙이지 않았다 — 러너에 Elasticsearch 도 지식베이스 색인도 없어
-검색 항목이 전부 「측정 불가」로 나온다. 붙이려면 ES 서비스 + `index_knowledge_base.py --to-es` 단계가 먼저다.
+CI(`test.yml` `server` job 「기준선 게이트」 step)에 붙어 있다(`decisions/134`) — 러너에 Elasticsearch 도 지식베이스 색인도 없어
+검색 항목은 「측정 불가」 경고로만 찍히고 C-5·F-2 만 판정한다. 검색 기준선은 동결 측정 때 ES 가 있는 곳에서 같은 스크립트로 본다.
+(2026-10-01 주석 정정 — 전에는 「아직 붙이지 않았다」로 낡아 있었다.)
 """
 from __future__ import annotations
 

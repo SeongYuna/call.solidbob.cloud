@@ -11,6 +11,8 @@ CallGuard 상담원 대시보드는 React(웹)다 ([팀 분업](/docs/07/): 조�
 프론트엔드를 전담한다. `_project/decisions/005`). 앱(Flutter)은 개발하지 않는다
 (단, 저장소 루트 `flutter/` 는 조서희 개인 실험 — 팀 스코프 예외, `_project/decisions/405`).
 
+> ⚠ **2026-09-30 예외 — 마감(10-27)까지 정성윤이 `apps/` 도 고친다**(`_project/decisions/137`, 사용자 지시). 아래 전담 문구는 그대로 두되, 그동안은 §4 티켓 규칙(넘겨받으면 `assignee`·본문에 적는다)만 지키면 된다. 조서희 님이 다시 붙으면 137 을 되돌린다.
+>
 > ⚠ **여기는 조서희 전담이다 — 저장소에서 유일하게 남은 담당 잠금이다.**
 > 2026-09-10 에 `ai/`·`server/`·`infra/` 의 담당 경계는 풀렸지만(`_project/decisions/302`),
 > **`apps/` 는 예외로 남겼다.** React·디자인 결정이 누적되는 곳이고 백엔드 셋과 기술 스택도
@@ -85,5 +87,5 @@ interface RecommendationCard {
   DNS·인증서에 걸리는 문제는 정성윤에게 넘긴다.
 - 개발은 로컬 `infra/docker-compose.yml`(PostgreSQL·ES) + `server/` 로 띄운다. **운영 주소를 개발 기본값으로 굳히지 않는다** —
   주소는 환경변수로 빼고, 로컬 기본값은 로컬 것으로 둔다.
-- ⚠ `services/call-mediator`(WebSocket)는 **아직 코드가 0줄**이다(`_project/STATE.md`). 콜 미디에이터 주소는 확정되지 않았으므로
-  `lib/ws/callMediatorClient.ts` 에 엔드포인트를 상수로 박기 전에 확인한다.
+- ~~⚠ `services/call-mediator`(WebSocket)는 아직 코드가 0줄이다~~ → **09-11 부터 운영에서 돈다**(`decisions/109`·`115`, 2026-10-01 정정).
+  주소는 `wss://server.solidbob.cloud/call-mediator`(런북 16-2) — 환경변수 `VITE_CALL_MEDIATOR_WS_URL` 로 넣고 상수로 박지 않는다.

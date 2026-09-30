@@ -22,10 +22,11 @@ ON CONFLICT ("call_id") DO NOTHING
 """
 
 
+# `display_hint`(뒤 4자리, `decisions/144`)는 처음 값이 없던 고객에게만 채운다 — 첫 방문 시각·상태는 덮지 않는다.
 _UPSERT_CUSTOMER = """
-INSERT INTO "customer" ("customer_id", "first_seen_at", "status")
-VALUES (%s, %s, 'active')
-ON CONFLICT ("customer_id") DO NOTHING
+INSERT INTO "customer" ("customer_id", "first_seen_at", "status", "display_hint")
+VALUES (%s, %s, 'active', %s)
+ON CONFLICT ("customer_id") DO UPDATE SET "display_hint" = COALESCE("customer"."display_hint", EXCLUDED."display_hint")
 """
 
 
@@ -40,7 +41,7 @@ class PostgresCallRepository(CallStartRecordPort):
         async with self._connect() as conn:
             async with conn.cursor() as cur:
                 if call.customer_id is not None:
-                    await cur.execute(_UPSERT_CUSTOMER, (call.customer_id, call.started_at))
+                    await cur.execute(_UPSERT_CUSTOMER, (call.customer_id, call.started_at, call.display_hint))
                 result = await cur.execute(
                     _INSERT_CALL,
                     (call.call_id, call.domain, call.customer_id, call.started_at, call.channel_count,

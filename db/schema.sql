@@ -6,9 +6,11 @@ CREATE TABLE "customer" (
     "customer_id" VARCHAR(64) NOT NULL,
     "first_seen_at" TIMESTAMPTZ NOT NULL,
     "status" VARCHAR(20) NOT NULL,
+    "display_hint" VARCHAR(8) NULL,
     PRIMARY KEY ("customer_id")
 );
 COMMENT ON COLUMN "customer"."customer_id" IS '**전화번호의 HMAC-SHA256(hex 64자)** — `blacklist_request.customer_ref` 와 같은 체계다. 평문 번호·실명을 저장하지 않는다. 통화 시작(`POST /hub/calls` 의 caller_phone)에서 만든다 (`decisions/304`, 2026-09-14 VARCHAR(40)→(64) — 40 자로는 HMAC 이 안 들어갔다)';
+COMMENT ON COLUMN "customer"."display_hint" IS '화면 표시용 뒤 4자리 `****1234`(`decisions/144`, 2026-10-01 — 316 일부 철회). 통화 시작에서 발신 번호로 만들고 그 뒤 번호는 버린다. 뒤 4자리만이라 번호를 되돌릴 수 없다. NULL = 번호가 없던 고객';
 
 -- 상담원 마스터 — 부록B H-4/H-5 리스크(감시 도구화)는 UI·집계 노출 문제이지 call.agent_id 존재 자체의 문제가 아니므로 최소 식별자만 둔다
 CREATE TABLE "agent" (
@@ -347,7 +349,7 @@ CREATE TABLE "blacklist_request" (
     FOREIGN KEY ("decided_by") REFERENCES "agent"("agent_id")
 );
 COMMENT ON COLUMN "blacklist_request"."customer_ref" IS '⚠ **전화번호의 HMAC-SHA256 이다. 평문을 넣지 않는다**(`decisions/205` ③) — 전화번호는 C-5 의 P4 이고, 자막에서 지운 값을 여기 평문으로 두면 마스킹을 앞단에 둔 의미가 사라진다. 키는 .env(SEC-2)';
-COMMENT ON COLUMN "blacklist_request"."display_hint" IS '⚠ **채우지 않는다**(`decisions/316`) — 전화번호 뒷자리도 P4 의 일부라 HMAC 으로 가린 것을 되돌리는 단서가 된다. 관리자는 call_id·마스킹된 자막으로 알아본다. 컬럼은 되돌릴 때를 위해 남긴다';
+COMMENT ON COLUMN "blacklist_request"."display_hint" IS '화면 표시용 뒤 4자리 `****1234` — `customer.display_hint` 를 요청 생성 때 옮겨 적는다(`decisions/144`, 2026-10-01). ~~채우지 않는다(`316`)~~ 는 일부 철회. 옛 행·번호 없던 통화는 NULL';
 COMMENT ON COLUMN "blacklist_request"."reason" IS '상담원이 적은 사유';
 COMMENT ON COLUMN "blacklist_request"."context_excerpt" IS '⚠ **마스킹된 자막**이다. 원문을 넣지 않는다 — MANUAL-5.5 · C-5 · SEC-1';
 COMMENT ON COLUMN "blacklist_request"."temperature_outliers" IS 'D-5 통화 온도 이상 구간 수(`decisions/203`). 점수가 아니라 건수다 — 부록 A-1. **NULL 은 「미측정」**이다 — 서버 요청 경로에 D-5 판정이 붙지 않아 셀 수 없었다(`decisions/316`). 0(「이상 없음」)과 다르다';

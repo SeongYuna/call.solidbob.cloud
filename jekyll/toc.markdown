@@ -18,6 +18,7 @@ permalink: /toc/
   <li><span class="num">3)</span><a href="/docs/04/">핵심 기술 난제</a></li>
   <li><span class="num">4)</span><a href="/docs/05/">데이터 확보 계획</a></li>
   <li><span class="num">5)</span><a href="/docs/16/">데이터베이스 ERD</a></li>
+  <li><span class="num">6)</span><a href="/docs/17/">회고 — 8스프린트, 안 된 것을 그대로</a></li>
 </ol>
 
 <h2>3. 주요 개발 수행 지침</h2>

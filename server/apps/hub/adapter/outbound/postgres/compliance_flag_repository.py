@@ -19,6 +19,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 
 from hub.app.dtos.compliance_finding_dto import ComplianceFinding
+from hub.app.ports.output.compliance_flag_query_port import ComplianceFlagQueryPort
 from hub.app.ports.output.compliance_flag_record_port import ComplianceFlagRecordPort
 from hub.app.ports.output.transcript_ingest_record_port import SegmentNotFoundError
 
@@ -50,8 +51,17 @@ VALUES (%s, %s, %s, %s, NULL, %s)
 # `compliance_flag.phrase` VARCHAR(200). 넘치면 DB 가 거부해 위반 전체를 잃는다 — 잘라서라도 남긴다.
 _PHRASE_MAX = 200
 
+_FLAGGED_SEGMENTS = 'SELECT DISTINCT "segment_id" FROM "compliance_flag" WHERE "call_id" = %s'
 
-class PostgresComplianceFlagRepository(ComplianceFlagRecordPort):
+
+class PostgresComplianceFlagRepository(ComplianceFlagRecordPort, ComplianceFlagQueryPort):
+    async def flagged_segment_ids(self, call_id: str) -> frozenset[int]:
+        async with self._connect() as conn:
+            async with conn.cursor() as cur:
+                await cur.execute(_FLAGGED_SEGMENTS, (call_id,))
+                rows = await cur.fetchall()
+        return frozenset(int(r[0]) for r in rows)
+
     def __init__(self, connect: ConnectionFactory) -> None:
         self._connect = connect
 

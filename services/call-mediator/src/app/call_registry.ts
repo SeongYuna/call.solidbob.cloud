@@ -84,6 +84,13 @@ export interface RegistryDeps {
   /** 채널을 닫을 때 남은 결과를 기다리는 최대 시간. */
   drainTimeoutMs?: number;
   /**
+   * 채널이 **모두** 닫힌 뒤 통화 상태(절차·상담원 발화·번호)를 메모리에 두는 시간(ms). 기본 `CALL_RETAIN_MS`.
+   * 2026-09-30 QA 2회차에서 잡았다 — `/dev` 페이지나 대본 재생기가 화자를 바꾸려고 채널을 닫았다 열면
+   * 그 사이 통화가 버려져 **F-2 절차와 상담원 발화가 사라지고 J-5 배정 판정이 두 번 기록됐다**(`_logs/2026-09-30-01`).
+   * 유예 안에 다시 열면 서버 통화 행만 다시 확인하고(`POST /hub/calls`, UPSERT) 상태는 그대로 잇는다. `0` 이면 바로 버린다.
+   */
+  callRetainMs?: number;
+  /**
    * 서버에 통화 행이 만들어진 직후 `started` 를 대시보드로 보낼까. 기본 false — 이유는
    * `announcePending` 과 같다(대시보드 파서가 모르는 `type` 에 오류 배너를 띄운다).
    * `call_id`를 잡을 다른 수단이 없는 짧은 통화의 `/close` 404 를 막는다(`w6-close-callid-missing`).
@@ -163,6 +170,9 @@ export const PROCEDURE_SCORE_FLOOR = 0.635;
  */
 export const INGEST_RETRY_DELAYS_MS: readonly number[] = [300, 1_000];
 
+/** 채널이 모두 닫힌 뒤 통화 상태를 잇는 유예 — 화자를 바꾸느라 채널을 닫았다 여는 데 5분이면 넉넉하다. */
+export const CALL_RETAIN_MS = 5 * 60_000;
+
 /** 다시 보내면 달라질 수 있는 실패인가. 4xx(401 토큰·409 통화 없음·422 계약)는 다시 보내도 같다. */
 export function isRetryableIngestError(error: unknown): boolean {
   if (!(error instanceof HubError)) {
@@ -193,6 +203,10 @@ interface CallState {
    * 「연달아」를 판정하지 않는다. `skip` 은 발동하지 않았거나 실패한 추천이다(연속에서 빠진다).
    */
   readonly customerTops: Map<number, TopEntry>;
+  /** 채널이 모두 닫힌 뒤 상태를 버리기까지의 타이머. 채널이 하나라도 열려 있으면 `null`. */
+  retainTimer: NodeJS.Timeout | null;
+  /** J-5 배정 판정을 이미 불렀나 — 유예 안에 다시 연 통화에서 두 번 기록하지 않는다. */
+  routed: boolean;
 }
 
 type TopEntry = { state: "pending" } | { state: "skip" } | { state: "done"; docId: string | null };
@@ -205,8 +219,15 @@ export class CallRegistry {
     this.deps = deps;
   }
 
+  /** 채널이 하나라도 열린 통화 수 — 유예 중(채널 0)인 통화는 세지 않는다(`/health` 의 `active_calls`). */
   get activeCalls(): number {
-    return this.calls.size;
+    let n = 0;
+    for (const call of this.calls.values()) {
+      if (call.channels.size > 0) {
+        n += 1;
+      }
+    }
+    return n;
   }
 
   async open(spec: ChannelSpec): Promise<OpenResult> {
@@ -231,7 +252,7 @@ export class CallRegistry {
 
     const call = this.callFor(spec);
     if (!(await call.started)) {
-      this.dropIfEmpty(call);
+      this.drop(call);
       return { ok: false, kind: "unavailable", reason: "서버에 통화를 열지 못했다(POST /hub/calls)" };
     }
     // 기다리는 사이 같은 화자가 먼저 붙었을 수 있다.
@@ -251,6 +272,13 @@ export class CallRegistry {
   private callFor(spec: ChannelSpec): CallState {
     const found = this.calls.get(spec.callId);
     if (found !== undefined) {
+      if (found.retainTimer !== null) {
+        // 유예 중이던 통화 — 상태(절차·상담원 발화·번호)는 잇고, 서버 통화 행만 다시 확인한다(닫혔을 수 있다).
+        clearTimeout(found.retainTimer);
+        found.retainTimer = null;
+        this.deps.log.info(`통화 유예에서 이어감 call=${spec.callId} 절차=${found.procedures.size} 상담원 발화=${found.agentFinals.length}`);
+        this.startOnServer(found, spec);
+      }
       return found;
     }
     const call: CallState = {
@@ -264,8 +292,27 @@ export class CallRegistry {
       agentFinals: [],
       closureChain: Promise.resolve(),
       customerTops: new Map(),
+      retainTimer: null,
+      routed: false,
     };
     this.calls.set(spec.callId, call);
+    this.startOnServer(call, spec);
+    // J-5 — 통화 행이 생긴 직후 배정 판정(`decisions/126`). **시연용 대리다** — 완성본은 교환기가 연결 전에 부른다(`320`).
+    // 교환기가 붙으면 이 호출을 지운다(안 지우면 판정이 두 번 기록된다). `started` 에 묶지 않는다 — 전사를 기다리게 하지 않고,
+    // 실패해도 통화는 막지 않는다(배정은 얇은 필터다, `204`). 2026-09-23 화면 표시 정했다 — `announceRouting`(`w6-routing-result-ui`).
+    // 유예 안에 다시 연 통화는 여기를 지나지 않는다 — 판정은 통화당 한 번이다(`routed`).
+    void call.started.then((started) => {
+      if (started && !call.routed) {
+        call.routed = true;
+        return this.decideRouting(spec.callId);
+      }
+      return undefined;
+    });
+    return call;
+  }
+
+  /** 서버에 통화 행을 만들거나(처음) 다시 확인한다(유예에서 이어감) — `POST /hub/calls` 는 UPSERT 다. */
+  private startOnServer(call: CallState, spec: ChannelSpec): void {
     const engine =
       (spec.source ?? "audio") === "text"
         ? spec.textProducer === "script"
@@ -299,11 +346,6 @@ export class CallRegistry {
           return false;
         },
       );
-    // J-5 — 통화 행이 생긴 직후 배정 판정(`decisions/126`). **시연용 대리다** — 완성본은 교환기가 연결 전에 부른다(`320`).
-    // 교환기가 붙으면 이 호출을 지운다(안 지우면 판정이 두 번 기록된다). `started` 에 묶지 않는다 — 전사를 기다리게 하지 않고,
-    // 실패해도 통화는 막지 않는다(배정은 얇은 필터다, `204`). 2026-09-23 화면 표시 정했다 — `announceRouting`(`w6-routing-result-ui`).
-    void call.started.then((started) => (started ? this.decideRouting(spec.callId) : undefined));
-    return call;
   }
 
   private async decideRouting(callId: string): Promise<void> {
@@ -320,7 +362,29 @@ export class CallRegistry {
     }
   }
 
+  /** 채널이 모두 닫혔으면 유예 타이머를 건다 — 유예가 끝나야 버린다(`callRetainMs`). */
   private dropIfEmpty(call: CallState): void {
+    if (call.channels.size !== 0 || this.calls.get(call.callId) !== call || call.retainTimer !== null) {
+      return;
+    }
+    const retainMs = this.deps.callRetainMs ?? CALL_RETAIN_MS;
+    if (retainMs <= 0) {
+      this.drop(call);
+      return;
+    }
+    const timer = setTimeout(() => {
+      call.retainTimer = null;
+      this.drop(call);
+    }, retainMs);
+    timer.unref?.();
+    call.retainTimer = timer;
+  }
+
+  private drop(call: CallState): void {
+    if (call.retainTimer !== null) {
+      clearTimeout(call.retainTimer);
+      call.retainTimer = null;
+    }
     if (call.channels.size === 0 && this.calls.get(call.callId) === call) {
       this.calls.delete(call.callId);
     }

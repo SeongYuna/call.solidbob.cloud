@@ -25,6 +25,7 @@ export function QaReviewTab(): ReactElement {
   if (rows.length === 0) {
     return (
       <section aria-label="QA 리뷰 큐">
+        <MockNotice />
         <p className="admin-empty">리뷰가 필요한 통화가 없습니다.</p>
       </section>
     );
@@ -32,6 +33,7 @@ export function QaReviewTab(): ReactElement {
 
   return (
     <section aria-label="QA 리뷰 큐">
+      <MockNotice />
       <p className="admin-help">
         상담 분위기가 "주의 필요"였거나 콜가드 경고가 뜬 통화입니다. 상담원
         평가가 아니라 <strong>다시 들어볼 통화를 고르는 목록</strong>입니다.
@@ -74,5 +76,18 @@ export function QaReviewTab(): ReactElement {
         </article>
       ) : null}
     </section>
+  );
+}
+
+/**
+ * 이 탭은 아직 예시 데이터(`mock/qaReviewFixtures.ts`)다 — 운영 통화가 아니다. QA 2회차(2026-09-30)에서
+ * 「하드코딩 같다」고 잡혔고 실제로 그렇다. 화면에 그 사실을 적는다 — 실제 값처럼 보이게 두지 않는다(절대 원칙 2).
+ */
+function MockNotice(): ReactElement {
+  return (
+    <p className="admin-help" role="note">
+      ⚠ 예시 데이터입니다 — 운영 통화가 아닙니다. 통화 목록·감정분석 API 가 붙기 전까지 화면 배치만 보여
+      줍니다.
+    </p>
   );
 }

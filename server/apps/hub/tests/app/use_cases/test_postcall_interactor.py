@@ -93,3 +93,37 @@ def test_돌려주는_초안과_같은_초안을_저장한다():
     draft = _run(_Spy(forged), record=record)
     assert record.saved == [draft]
     assert record.saved[0].call_id == "c_001" and record.saved[0].confirmed is False
+
+
+def test_위반_발화_번호를_요약_포트에_같이_넘긴다():
+    """2026-10-01 — 컴플라이언스가 잡은 상담원 발화가 「안내」로 요약에 실리지 않게. 조회가 죽어도 초안은 나온다."""
+    from hub.app.ports.output.postcall_port import PostcallPort as _P  # noqa: PLC0415
+
+    class _FlagSpy(_P):
+        def __init__(self):
+            self.got = None
+
+        async def summarize(self, call_id, segments):
+            raise AssertionError("summarize_with_flags 로 와야 한다")
+
+        async def summarize_with_flags(self, call_id, segments, flagged_segment_ids):
+            self.got = flagged_segment_ids
+            return CallSummaryDraft(call_id=call_id, summary_text="요약", inquiry_type=None, follow_up_actions=())
+
+    class _Flags:
+        async def flagged_segment_ids(self, call_id):
+            return frozenset({2})
+
+    class _Broken:
+        async def flagged_segment_ids(self, call_id):
+            raise RuntimeError("DB 없음")
+
+    port = _FlagSpy()
+    asyncio.run(PostcallInteractor(postcall=port, record=_Record(), flags=_Flags()).close(
+        PostcallCommand(call_id="c_001", segments=SEGMENTS)))
+    assert port.got == frozenset({2})
+
+    port = _FlagSpy()
+    asyncio.run(PostcallInteractor(postcall=port, record=_Record(), flags=_Broken()).close(
+        PostcallCommand(call_id="c_001", segments=SEGMENTS)))
+    assert port.got == frozenset()

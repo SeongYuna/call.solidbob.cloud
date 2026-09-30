@@ -184,12 +184,12 @@ export function DemoScenario(): ReactElement {
   const holdUntilRef = useRef(0);
   const [time, setTime] = useState(0);
   const [playing, setPlaying] = useState(false);
-  const [authorized, setAuthorized] = useState(false);
+  // 2026-10-01 — 원문 열람 토글을 걷었다(상담원 화면의 decisions/408 과 같은 이유, 적용 감사 16). 원문은 어디에도 저장되지 않는다
+  const authorized = false;
   const [revealAll, setRevealAll] = useState(false);
   const [openedIds, setOpenedIds] = useState<ReadonlySet<string>>(
     () => new Set(),
   );
-  const [includeOriginal, setIncludeOriginal] = useState(false);
 
   const toggleSpan = useCallback(
     (id: string, field: string, currentlyOpen: boolean, turnAt: number) => {
@@ -393,38 +393,10 @@ export function DemoScenario(): ReactElement {
                   전화번호 2건 · 상세주소 2건
                 </p>
               </div>
-              <div className="mt-3 flex flex-wrap gap-2">
-                <button
-                  type="button"
-                  className="rounded-full border border-line px-3 py-1 text-[12px] text-fg"
-                  aria-pressed={authorized}
-                  onClick={() => {
-                    setAuthorized(true);
-                  }}
-                >
-                  권한 확인 (데모)
-                </button>
-                <button
-                  type="button"
-                  className="rounded-full border border-line px-3 py-1 text-[12px] text-fg disabled:opacity-40"
-                  disabled={!authorized}
-                  aria-pressed={revealAll}
-                  onClick={() => {
-                    if (revealAll) {
-                      setRevealAll(false);
-                      setOpenedIds(new Set());
-                      return;
-                    }
-                    setRevealAll(true);
-                  }}
-                >
-                  원문 보기
-                </button>
-              </div>
               <p className="mt-3 m-0 text-[12px] leading-relaxed text-muted">
                 대화는 브라우저 안에서만 처리되는 시연 데이터이며 서버에
-                저장·전송되지 않습니다. 실제 운영에서는 원문 열람이 역할 기반
-                권한과 열람 기록으로 통제되어야 합니다.
+                저장·전송되지 않습니다. 가려진 개인정보는 열람할 수 없습니다 —
+                실제 운영에서도 원문은 저장되지 않아 되돌릴 수 없습니다(SEC-1).
               </p>
             </div>
             <ol className="mt-5 mb-0 flex flex-1 list-none flex-col gap-4 p-0">
@@ -497,11 +469,7 @@ export function DemoScenario(): ReactElement {
                     </p>
                   ) : null}
                   {activeStep.reportBox === true ? (
-                    <ReportBox
-                      authorized={authorized}
-                      includeOriginal={includeOriginal}
-                      onIncludeOriginal={setIncludeOriginal}
-                    />
+                    <ReportBox />
                   ) : null}
                 </>
               )}
@@ -543,15 +511,7 @@ export function DemoScenario(): ReactElement {
   );
 }
 
-function ReportBox({
-  authorized,
-  includeOriginal,
-  onIncludeOriginal,
-}: {
-  authorized: boolean;
-  includeOriginal: boolean;
-  onIncludeOriginal: (value: boolean) => void;
-}): ReactElement {
+function ReportBox(): ReactElement {
   return (
     <div className="mt-4 rounded-[14px] border border-line bg-page/50 px-4 py-3">
       <p className="m-0 text-[13px] font-semibold">리포트 개인정보 보호</p>
@@ -559,18 +519,6 @@ function ReportBox({
         PDF는 기본적으로 전화번호·주소 등 식별 정보가 마스킹된 상태로
         생성됩니다.
       </p>
-      <label className="mt-3 flex items-start gap-2 text-[12.5px] leading-relaxed text-muted">
-        <input
-          type="checkbox"
-          className="mt-0.5"
-          checked={includeOriginal}
-          disabled={!authorized}
-          onChange={(event) => {
-            onIncludeOriginal(event.target.checked);
-          }}
-        />
-        원문 포함해 생성 (권한이 확인된 사용자 전용, 위에서 권한 확인 필요)
-      </label>
       <button
         type="button"
         className="mt-3 rounded-full bg-amber-fill px-4 py-2 text-[13px] font-semibold text-[#1a1408]"

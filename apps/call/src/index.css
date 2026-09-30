@@ -426,6 +426,18 @@ button {
   white-space: nowrap;
 }
 
+/* 통화 ID — 운영 DB·관리자 화면과 맞춰 볼 수 있게 목록에 그대로 보인다(QA 2회차 관찰: 어느 통화인지 알 길이 없었다) */
+.call-history-id {
+  flex-basis: 100%;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--muted);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 10.5px;
+}
+
 .call-history-flag {
   font-size: 14px;
   line-height: 1;
@@ -1305,6 +1317,18 @@ button {
   font-size: 11.5px;
   font-weight: 500;
   line-height: 1.4;
+  flex: 1 1 240px;
+}
+
+.callguard-source {
+  white-space: nowrap;
+  opacity: 0.8;
+}
+
+.callguard-dismiss {
+  align-self: flex-start;
+  font-size: 12px;
+  line-height: 1;
 }
 
 .masked-span {

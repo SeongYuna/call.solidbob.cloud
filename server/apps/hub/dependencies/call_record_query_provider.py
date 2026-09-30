@@ -12,6 +12,8 @@ from hub.adapter.outbound.postgres.call_record_repository import PostgresCallRec
 from hub.adapter.outbound.postgres.connection import build_connection_factory
 from hub.app.ports.input.call_record_use_case import CallRecordUseCase
 from hub.app.ports.output.call_record_port import CallRecordPort
+from hub.app.ports.output.closure_gate_port import ClosureGatePort
+from hub.dependencies.closure_provider import get_closure_gate_port
 from hub.app.use_cases.call_record_interactor import CallRecordInteractor
 
 
@@ -25,5 +27,8 @@ def get_call_record_query_port(request: Request) -> CallRecordPort:
     return PostgresCallRecordRepository(build_connection_factory(settings))
 
 
-def get_call_record_use_case(record_port: CallRecordPort = Depends(get_call_record_query_port)) -> CallRecordUseCase:
-    return CallRecordInteractor(record_port=record_port)
+def get_call_record_use_case(
+    record_port: CallRecordPort = Depends(get_call_record_query_port),
+    gate: ClosureGatePort = Depends(get_closure_gate_port),
+) -> CallRecordUseCase:
+    return CallRecordInteractor(record_port=record_port, gate=gate)

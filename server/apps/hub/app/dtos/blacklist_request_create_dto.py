@@ -25,6 +25,7 @@ class CallEvidence:
     customer_ref: str | None  # `call.customer_id` — 발신 번호가 안 넘어온 통화면 None
     evidence: RequestEvidence
     context_excerpt: str  # 마스킹된 자막(`transcript_segment.text`)에서만 자른다
+    display_hint: str | None = None  # `customer.display_hint` — 뒤 4자리(`decisions/144`). 없으면 None
 
 
 @dataclass(frozen=True)

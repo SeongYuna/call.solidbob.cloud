@@ -15,7 +15,7 @@ import { getMockAgentAccount } from "./mock/agentAuth";
 import { useCallStore } from "./store/callStore";
 
 export function App(): ReactElement {
-  const { startCall, replay, leaveToStandby, manualSearch, endCall, wrapUp } =
+  const { startCall, replay, startNewCall, leaveToStandby, manualSearch, endCall, wrapUp } =
     useCallMediatorSession();
   const agentCall = useAgentCallSession();
   const agentAuth = useAgentAuth();
@@ -102,12 +102,12 @@ export function App(): ReactElement {
             <AppHeader
               onReplay={replay}
               onEndCall={endCall}
-              onStartNewCall={replay}
+              onStartNewCall={startNewCall}
               onLeaveToStandby={leaveToStandby}
             />
             <CallSummaryHost
               onClose={closeSummary}
-              onStartNewCall={replay}
+              onStartNewCall={startNewCall}
               onWrapUp={wrapUp}
             />
           </>

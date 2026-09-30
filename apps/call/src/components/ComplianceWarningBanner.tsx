@@ -1,12 +1,15 @@
 import type { ReactElement } from "react";
 
 interface ComplianceWarningBannerProps {
+  /** 머리말 — 기본 「권장 표현」. 값이 대체 표현이 아니라 조항 ID 면 「근거 조항」(`complianceLabel`). */
+  label?: string;
   detectedPhrase: string;
   suggestedPhrase: string;
   onDismiss: () => void;
 }
 
 export function ComplianceWarningBanner({
+  label = "권장 표현",
   detectedPhrase,
   suggestedPhrase,
   onDismiss,
@@ -22,7 +25,7 @@ export function ComplianceWarningBanner({
       </span>
       <div className="compliance-copy">
         <p className="compliance-head">
-          <span className="compliance-label">권장 표현</span>
+          <span className="compliance-label">{label}</span>
           <span className="compliance-detected">{detectedPhrase}</span>
         </p>
         <p className="compliance-suggest">{suggestedPhrase}</p>

@@ -30,7 +30,7 @@ class BlacklistRequestItemSchema(BaseModel):
     request_id: str
     call_id: str
     customer_ref: str = Field(description="발신 번호의 HMAC — 평문이 아니다")
-    display_hint: str | None = Field(default=None, description="⚠ 채우지 않는다 — 늘 null(decisions/316, 전화번호 뒷자리도 P4)")
+    display_hint: str | None = Field(default=None, description="화면 표시용 뒤 4자리 `****1234`(decisions/144 — 316 일부 철회). 발신 번호가 없던 통화·옛 행은 null")
     requested_by: str
     reason: str = Field(description="마스킹된 사유")
     context_excerpt: str = Field(description="마스킹된 자막에서 서버가 자른 것")
@@ -58,6 +58,7 @@ class BlacklistRequestItemSchema(BaseModel):
             decided_at=r.decided_at.isoformat() if r.decided_at else None,
             evidence_snapshot_at=r.evidence_snapshot_at.isoformat() if r.evidence_snapshot_at else "",
             decision_note=r.decision_note,
+            display_hint=r.display_hint,
         )
 
 

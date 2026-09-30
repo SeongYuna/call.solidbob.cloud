@@ -44,6 +44,21 @@ def test_발화_건수와_초안_표시가_붙는다():
     assert "발화 고객 2건 · 상담원 5건 (규칙 발췌 초안)" in build_draft(CALL).summary_text
 
 
+def test_위반이_잡힌_상담원_발화는_안내로_발췌하지_않는다():
+    """QA 2회차 관찰 — 「무조건 공제됩니다」(C-1)가 「상담원 안내」로 요약에 실렸다. flagged 발화는 후보에서 빠지고 건수에는 남는다."""
+    call = [
+        _u("customer", "전입신고 하려는데 어떤 서류가 필요한가요"),
+        Utterance(speaker="agent", text="지금 신청하시면 무조건 공제됩니다", flagged=True),
+        _u("agent", "신분증과 임대차계약서를 가지고 주민센터로 가시면 됩니다"),
+        Utterance(speaker="agent", text="위임장은 없어도 문자로 보내 드리겠습니다", flagged=True),
+    ]
+    s = build_draft(call)
+    assert "무조건 공제" not in s.summary_text
+    assert "상담원 안내: 신분증과 임대차계약서를 가지고 주민센터로 가시면 됩니다" in s.summary_text
+    assert s.follow_up_actions == ()  # 위반 발화의 약속은 후속조치로도 뽑지 않는다
+    assert "상담원 3건" in s.summary_text  # 건수는 사실 그대로
+
+
 def test_발췌할_발화가_없어도_요약이_비지_않는다():
     s = build_draft([_u("customer", "네"), _u("agent", "네")]).summary_text
     assert s == "발화 고객 1건 · 상담원 1건 (규칙 발췌 초안)"
