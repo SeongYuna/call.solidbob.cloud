@@ -42,6 +42,12 @@ export class RealCallMediatorClient implements CallMediatorClient {
   private closedByUser = false;
   private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
   private reconnectAttempts = 0;
+  /**
+   * 이 화면이 보는 통화. `?call_id=` 로 열었으면 그 값, 아니면 **처음 받은 메시지의 통화**에 묶인다(2026-10-01).
+   * 콜 미디에이터의 `/ws` 는 `call_id` 없이 열면 **모든 통화**를 보낸다 — 10-01 QA 3회차에서 재생 통화 6건과 화자 분리
+   * 시험 통화가 한 화면에 섞여, 다른 통화의 콜가드 핀이 같은 발화 번호의 줄에 붙었다. 다른 통화의 메시지는 버린다.
+   */
+  private boundCallId: string | null = null;
 
   constructor(private readonly url: string) {}
 
@@ -55,6 +61,7 @@ export class RealCallMediatorClient implements CallMediatorClient {
     this.closedByUser = false;
     this.reconnectAttempts = 0;
     this.listeners = listeners;
+    this.boundCallId = callIdOfSubscription(this.url);
     this.open();
   }
 
@@ -193,6 +200,15 @@ export class RealCallMediatorClient implements CallMediatorClient {
     if (message === null) {
       listeners.onError("알 수 없는 콜 미디에이터 메시지입니다.");
       return;
+    }
+
+    const frameCallId = callIdOfFrame(parsed);
+    const decision = bindOrFilter(this.boundCallId, frameCallId);
+    if (decision === "drop") {
+      return; // 다른 통화의 메시지 — 이 화면 것이 아니다
+    }
+    if (decision === "bind") {
+      this.boundCallId = frameCallId;
     }
 
     if (message.kind === "started") {
@@ -765,6 +781,43 @@ function readDomain(value: unknown): DemoDomain | undefined {
     return str;
   }
   return undefined;
+}
+
+/** 구독 주소의 `?call_id=` — 없으면 null(모든 통화를 받는 구독이라 첫 메시지에 묶는다). */
+export function callIdOfSubscription(url: string): string | null {
+  try {
+    const value = new URL(url).searchParams.get("call_id");
+    return value !== null && value.length > 0 ? value : null;
+  } catch {
+    return null;
+  }
+}
+
+/** 프레임의 `payload.call_id`(문자열이면). 없으면 null — 통화를 가를 수 없는 메시지는 통과시킨다. */
+export function callIdOfFrame(frame: unknown): string | null {
+  if (typeof frame !== "object" || frame === null) {
+    return null;
+  }
+  const payload = (frame as { payload?: unknown }).payload;
+  if (typeof payload !== "object" || payload === null) {
+    return null;
+  }
+  const id = (payload as { call_id?: unknown }).call_id;
+  return typeof id === "string" && id.length > 0 ? id : null;
+}
+
+/**
+ * 묶인 통화와 프레임의 통화를 견준다 — `bind`(처음 본 통화에 묶는다) · `drop`(다른 통화) · `keep`(같거나 가를 수 없음).
+ * 순수 함수라 테스트가 바로 본다.
+ */
+export function bindOrFilter(bound: string | null, frameCallId: string | null): "bind" | "drop" | "keep" {
+  if (frameCallId === null) {
+    return "keep";
+  }
+  if (bound === null) {
+    return "bind";
+  }
+  return bound === frameCallId ? "keep" : "drop";
 }
 
 /** 계약 위반을 한 번만 경고한다 — 메시지마다 찍으면 콘솔이 넘친다. 테스트가 되돌릴 수 있게 export. */

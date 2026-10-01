@@ -1,8 +1,8 @@
 ---
 title: "시연 시나리오·리허설 — 실제로 한 통 걸어 본다"
-assignee: "조서희"
+assignee: "정성윤"
 role: "app"
-status: "todo"
+status: "in-progress"
 sprint: 8
 priority: 85
 date: 2026-09-15
@@ -49,3 +49,8 @@ paths:
 > ① **운영 `document` 테이블은 차 있다**(09-19 SSM 실측 98행) — 이 걱정은 닫혔다 ② `admin_account` 는 **행은 있고 `agent_id` 가 NULL** 이라
 > 승인·해제가 409 다 → [w6-admin-agent-mapping](/backlog/w6-admin-agent-mapping/) ③ 화자 분리 실검증 · **STT 캡(일 600초 ≈ 4통화)** →
 > [w7-demo-infra-readiness](/backlog/w7-demo-infra-readiness/). 합성 통화로 시연하면 모달이 자막을 가린다 → [w7-call-ui-loose-ends](/backlog/w7-call-ui-loose-ends/).
+
+## 2026-10-01 — 착수 (정성윤)
+
+**정성윤이 넘겨받았다**(`decisions/137`). 대본 `_project/demo-script.md`(7단계, 개인정보 6줄 포함) · 발화 주입 `services/call-mediator/scripts/demo_text_call.mjs act1~act4` · 운영에서 act3·act4 를 돌려 캡처(`jekyll/assets/qa/2026-10-01-*`). 완료 조건 1·3·4 는 채웠고, **2(운영 주소 리허설 한 통 끝까지)와 녹화**가 남았다 — 10-01 QA 3회차에서 `?call_id=` 없이 연 화면이 모든 통화를 받아 섞이는 것을 고쳤고(`realCallMediatorClient.ts`), 그 배포 뒤 1막부터 끝까지 한 번 돌리고 두 번 녹화한다.
+

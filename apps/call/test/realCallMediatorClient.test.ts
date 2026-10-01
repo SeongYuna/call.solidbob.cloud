@@ -8,7 +8,7 @@
  * 형식 그대로다")가 실측한 방송 payload와 `ports.ts`의 타입 정의를 따랐다.
  */
 import { describe, expect, it } from "vitest";
-import { contractWarnings, parseCallMediatorMessage } from "../src/lib/ws/realCallMediatorClient";
+import { bindOrFilter, callIdOfFrame, callIdOfSubscription, contractWarnings, parseCallMediatorMessage } from "../src/lib/ws/realCallMediatorClient";
 
 describe("parseCallMediatorMessage — 알 수 없는 메시지", () => {
   it("타입 태그가 없거나 모르는 값이면 null — 화면이 「알 수 없는 메시지」 오류로 처리한다", () => {
@@ -227,5 +227,29 @@ describe("parseCallMediatorMessage — closure(필요서류 판정 종료)", () 
         },
       }),
     ).toBeNull();
+  });
+});
+
+
+describe("한 화면은 한 통화만 본다 (2026-10-01 — /ws 가 call_id 없이 열리면 모든 통화를 보낸다)", () => {
+  it("구독 주소의 call_id 를 읽는다", () => {
+    expect(callIdOfSubscription("wss://x/call-mediator/ws?call_id=demo-1")).toBe("demo-1");
+    expect(callIdOfSubscription("wss://x/call-mediator/ws")).toBeNull();
+    expect(callIdOfSubscription("not a url")).toBeNull();
+  });
+
+  it("프레임의 payload.call_id 를 읽고, 없으면 null", () => {
+    expect(callIdOfFrame({ type: "transcript", payload: { call_id: "a" } })).toBe("a");
+    expect(callIdOfFrame({ type: "transcript", payload: { call_id: "" } })).toBeNull();
+    expect(callIdOfFrame({ type: "x" })).toBeNull();
+    expect(callIdOfFrame("junk")).toBeNull();
+  });
+
+  it("처음 본 통화에 묶이고, 다른 통화는 버리고, 통화를 모르는 메시지는 통과한다", () => {
+    expect(bindOrFilter(null, "a")).toBe("bind");
+    expect(bindOrFilter("a", "a")).toBe("keep");
+    expect(bindOrFilter("a", "b")).toBe("drop");
+    expect(bindOrFilter("a", null)).toBe("keep");
+    expect(bindOrFilter(null, null)).toBe("keep");
   });
 });
