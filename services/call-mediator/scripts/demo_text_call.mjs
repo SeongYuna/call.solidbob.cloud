@@ -8,7 +8,8 @@
  *
  *   act1 (기본) — 인사 → 초본 문의(필요서류 카드) → 개인정보 7종 마스킹 → 폭언·위협(콜 가드) → 상담원 위반 셋(컴플라이언스)
  *                 → 상담원 서류 안내(체크리스트 1/1) → 과탐지 없음. 화면에서 통화 종료·요약·블랙리스트 요청은 사람이 누른다.
- *   act2         — 같은 발신 번호로 다시 건다(관리자가 승인한 뒤). 통화 시작 직후 「배정 판정 기록됨」 배너가 뜬다.
+ *   act2         — 같은 발신 번호로 다시 건다(관리자가 승인한 뒤). 통화 시작 직후 「배정 판정 기록됨」 배너가 뜬다
+ *   act3         — 폭언 + 위기 신호 한 통화(QA 캡처용) · act4 — 상담원만 말하는 추천 0건 통화(통화 종료·요약 확인용).
  *   --auto       — Enter 없이 줄마다 정해진 간격으로 보낸다(녹화용). 없으면 Enter 로 한 줄씩.
  *
  * 토큰은 채팅·문서·커밋에 붙여 넣지 않는다. 발신 번호는 실존하지 않는 `010-0000-XXXX` 만 쓴다.
@@ -20,7 +21,7 @@ import { WebSocket } from "ws";
 const BASE = process.env.CALL_MEDIATOR_URL ?? "wss://server.solidbob.cloud/call-mediator";
 const TOKEN = (process.env.CALL_MEDIATOR_INGEST_TOKEN ?? "").trim();
 const args = process.argv.slice(2);
-const ACT = args.includes("act2") ? "act2" : "act1";
+const ACT = ["act2", "act3", "act4"].find((a) => args.includes(a)) ?? "act1";
 const AUTO = args.includes("--auto");
 const argOf = (flag, fallback) => {
   const i = args.indexOf(flag);
@@ -55,7 +56,21 @@ const ACT2 = [
   ["customer", "아까 전화했던 사람인데요 초본 말고 등본도 되나요", 8],
   ["agent", "네 등본도 같은 신분증으로 발급됩니다", 5],
 ];
-const LINES = ACT === "act2" ? ACT2 : ACT1;
+// act3 — 위기 신호·폭언이 한 통화에(QA 캡처용, `w6-qa-ui-defects-three`): 위기 신호(5.4)가 폭언 핀에 덮이지 않고 위로 온다
+const ACT3 = [
+  ["agent", "안녕하세요 다산콜센터입니다", 4],
+  ["customer", "수도요금 고지서가 잘못 나온 것 같아요", 6],
+  ["customer", "이 멍청한 것들이 일을 어떻게 하는 거야", 6],
+  ["customer", "요즘 너무 힘들어서 그냥 다 끝내고 싶어요", 8],
+  ["agent", "많이 힘드셨겠어요 도움받으실 수 있는 곳을 안내해 드릴게요", 4],
+];
+// act4 — 추천 0건 통화(`w6-close-callid-missing`): 고객 발화 없이 상담원만. 통화 종료 → 요약이 되는가
+const ACT4 = [
+  ["agent", "안녕하세요 다산콜센터입니다", 4],
+  ["agent", "여보세요 들리시나요", 4],
+  ["agent", "연결이 끊긴 것 같습니다 다시 전화 주세요", 3],
+];
+const LINES = ACT === "act2" ? ACT2 : ACT === "act3" ? ACT3 : ACT === "act4" ? ACT4 : ACT1;
 const LABEL = { agent: "상담원", customer: "고객" };
 
 if (!TOKEN) {
