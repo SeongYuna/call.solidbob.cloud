@@ -77,7 +77,7 @@ test 스크립트 없음, `test/` 디렉터리도 없음) — "파서 테스트 
 
 ## 2026-10-01 — 추천 0건 통화 운영 확인 (정성윤)
 
-act4(`demo-act4-01`, `services/call-mediator/scripts/demo_text_call.mjs act4` — 상담원 발화 셋뿐, 고객 줄 없음)를 운영(server `0.1.44` · call-mediator `0.2.12`)에서 돌렸다 — 캡처 `jekyll/assets/qa/2026-10-01-act4-agent-only.png`. 자막 세 줄, 필요서류 카드 **0건**, 헤더 `연결됨`. 추천이 하나도 없는데도 화면이 통화에 묶였다(`started`) — 같은 번호 `010-0000-0901` 이 블랙리스트라 「배정 판정」 배너(`demo-A03`)까지 떴다.
+act4(`demo-act4-01`, `services/call-mediator/scripts/demo_text_call.mjs act4` — 상담원 발화 셋뿐, 고객 줄 없음)를 운영(server `0.1.44` · call-mediator `0.2.12`)에서 돌렸다 — 캡처는 **정성윤 로컬 보관**(`data/processed/qa-captures/`, gitignore — 10-01 저녁 사용자 지시로 공개 사이트에서 뺐다). 자막 세 줄, 필요서류 카드 **0건**, 헤더 `연결됨`. 추천이 하나도 없는데도 화면이 통화에 묶였다(`started`) — 같은 번호 `010-0000-0901` 이 블랙리스트라 「배정 판정」 배너(`demo-A03`)까지 떴다.
 
 **통화 종료 → `/close` 200 → 요약 확정은 이 캡처에 없다** — 녹화 때 act4 끝에 「통화 종료」를 눌러 본다. 완료 조건 2 의 운영 확인은 09-30 Q-50~53(추천 있는 통화) 그대로다.
 

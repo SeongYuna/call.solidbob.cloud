@@ -59,7 +59,7 @@ paths:
 
 ## 2026-10-01 — 운영에서 눈으로 봄 (정성윤)
 
-act3(`demo-act3-01`, `services/call-mediator/scripts/demo_text_call.mjs act3`, 운영 server `0.1.44` · call-mediator `0.2.12`)으로 ②·③을 운영 화면에서 확인했다 — 캡처 `jekyll/assets/qa/2026-10-01-act3-distress-pin.png` · `2026-10-01-act3-black-consumer-mock.png`.
+act3(`demo-act3-01`, `services/call-mediator/scripts/demo_text_call.mjs act3`, 운영 server `0.1.44` · call-mediator `0.2.12`)으로 ②·③을 운영 화면에서 확인했다 — 캡처는 **정성윤 로컬 보관**(`data/processed/qa-captures/`, gitignore) — 10-01 저녁 사용자 지시로 공개 사이트(`jekyll/assets/qa/`)에서 뺐다. 결과는 아래 글로 남긴다.
 
 - ② 「이 멍청한 놈이…」 줄에 「🚫 상담원 보호 알림」(5.1 「멍청한」 인용), 「요즘 너무 힘들어서 그냥 다 끝내고 싶어요」 줄에 **「🆘 위기 신호」(5.4 「다 끝내고 싶」 인용)가 따로** 떴다 — 덮이지 않는다. 09-30 에 대본에 없어 못 본 것을 이제 봤다.
 - ③ 통화 후 처리 맨 아래 「블랙컨슈머로 분류됨 · 관리자 알림 연동 전」. **09-30 의 「mock 모드 전용 배너라 실서버 QA 에 나오지 않는다」는 틀렸다** — 실서버에서도 뜬다(분류는 화면 규칙이고 알림만 연동 전). 문구 자체는 맞게 나오니 결과는 같다.

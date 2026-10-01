@@ -52,5 +52,5 @@ paths:
 
 ## 2026-10-01 — 착수 (정성윤)
 
-**정성윤이 넘겨받았다**(`decisions/137`). 대본 `_project/demo-script.md`(7단계, 개인정보 6줄 포함) · 발화 주입 `services/call-mediator/scripts/demo_text_call.mjs act1~act4` · 운영에서 act3·act4 를 돌려 캡처(`jekyll/assets/qa/2026-10-01-*`). 완료 조건 1·3·4 는 채웠고, **2(운영 주소 리허설 한 통 끝까지)와 녹화**가 남았다 — 10-01 QA 3회차에서 `?call_id=` 없이 연 화면이 모든 통화를 받아 섞이는 것을 고쳤고(`realCallMediatorClient.ts`), 그 배포 뒤 1막부터 끝까지 한 번 돌리고 두 번 녹화한다.
+**정성윤이 넘겨받았다**(`decisions/137`). 대본 `_project/demo-script.md`(7단계, 개인정보 6줄 포함) · 발화 주입 `services/call-mediator/scripts/demo_text_call.mjs act1~act4` · 운영에서 act3·act4 를 돌려 캡처(정성윤 로컬 `data/processed/qa-captures/`, 공개하지 않는다). 완료 조건 1·3·4 는 채웠고, **2(운영 주소 리허설 한 통 끝까지)와 녹화**가 남았다 — 10-01 QA 3회차에서 `?call_id=` 없이 연 화면이 모든 통화를 받아 섞이는 것을 고쳤고(`realCallMediatorClient.ts`), 그 배포 뒤 1막부터 끝까지 한 번 돌리고 두 번 녹화한다.
 
