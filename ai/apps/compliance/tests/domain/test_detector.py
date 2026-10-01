@@ -4,11 +4,14 @@
 from __future__ import annotations
 
 import asyncio
+import re
+from pathlib import Path
 
 import pytest
 
 from compliance.adapter.outbound.rule_compliance_adapter import RuleComplianceAdapter
 from compliance.domain.services.detector import detect
+from compliance.domain.value_objects.rules import RULES
 
 
 def codes(text: str) -> set[str]:
@@ -90,3 +93,42 @@ def test_adapter_carries_alternative_source_and_no_score_fields():
     (f,) = asyncio.run(RuleComplianceAdapter().detect("제가 알기로는 그래요"))
     assert f.rule_code == "C-3" and f.alternative_source.doc_id == "DASAN-MANUAL-1.4"
     assert set(vars(f)) == {"rule_code", "phrase", "alternative_source"}  # 등급·점수 필드가 없다(부록 A-1)
+
+
+@pytest.mark.parametrize(
+    "text, title",
+    [
+        ("이건 무조건 승인 나요", "소관 부서 확인 후 안내드리겠습니다 (민원응대매뉴얼 1.4)"),
+        ("틀림없이 이번 달에 지급돼요", "소관 부서 확인 후 안내드리겠습니다 (민원응대매뉴얼 1.4)"),
+        ("제가 알기로는 온라인으로만 돼요", "확인 후 다시 안내드리겠습니다 (민원응대매뉴얼 1.4)"),
+    ],
+)
+def test_adapter_title_is_manual_phrase_when_clause_has_one(text, title):
+    """화면이 `title` 을 「권장 표현」 자리에 그대로 띄운다 — 조항 ID 가 아니라 매뉴얼 문장이 가야 한다."""
+    (f,) = asyncio.run(RuleComplianceAdapter().detect(text))
+    assert f.alternative_source.title == title and f.alternative_source.doc_id == "DASAN-MANUAL-1.4"
+
+
+@pytest.mark.parametrize(
+    "text, doc_id",
+    [
+        ("과태료는 사만원 정도 나올 거예요", "DASAN-MANUAL-1.6"),  # 지침만 있는 조항
+        ("주민등록번호 뒷자리 불러주시겠어요", "DASAN-MANUAL-1.2"),  # 금지만 있는 조항
+        ("열이 그 정도면 괜찮으실 거예요", "DASAN-MANUAL-4.1"),
+        ("대리 발급으로 바로 처리해드릴게요", "DASAN-MANUAL-3.1"),  # 규칙표 밖(안내 누락) 판정
+    ],
+)
+def test_adapter_title_stays_clause_id_when_clause_has_no_phrase(text, doc_id):
+    """조항에 권장 문장이 없으면 **지어내지 않는다** — 조항 ID 그대로(화면은 「근거 조항」으로 가른다)."""
+    (f,) = asyncio.run(RuleComplianceAdapter().detect(text))
+    assert f.alternative_source.title == f.alternative_source.doc_id == doc_id
+
+
+def test_alternative_phrases_are_verbatim_in_their_manual_clause():
+    """권장 문장이 지식베이스와 두 벌로 갈라지지 않게 — 규칙표의 문장은 가리키는 조항 본문에 글자 그대로 있어야 한다."""
+    manual = (Path(__file__).resolve().parents[5] / "knowledge-base" / "dasan" / "manual" / "MANUAL.md").read_text(encoding="utf-8")
+    clauses = {m.group(1): m.group(2) for m in re.finditer(r"<!-- id: (\S+) -->(.*?)(?=<!-- id: |\Z)", manual, re.S)}
+    with_phrase = [r for r in RULES if r.alternative_phrase is not None]
+    assert with_phrase  # 0건이면 이 테스트가 아무것도 안 본다
+    for rule in with_phrase:
+        assert rule.alternative_phrase in clauses[rule.alternative_doc_id], (rule.pattern, rule.alternative_doc_id)

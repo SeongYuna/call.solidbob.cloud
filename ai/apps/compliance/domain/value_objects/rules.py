@@ -11,6 +11,8 @@
 | C-4 | 4.1 | 의학적 안심 발언(「별거 아닐 거예요」). `decisions/211`(2026-09-22)로 **기획서가 이 뜻이 됐다** — 전에는 기획서 C-4 가 「권장 대체 표현 제시」였고 골든셋(GS-312)이 먼저 이 갈래에 C-4 를 붙였다 |
 
 **C-4 대체 표현 제시는 코드마다 근거 조항(`alternative_doc_id`)으로 한다** — 문장을 지어내지 않고 조항을 가리킨다.
+조항에 **권장 문장이 그대로 적혀 있을 때만** 그 문장을 함께 싣는다(`alternative_phrase`, 2026-10-02) — 지금은 1.4 표의 두 줄뿐이다.
+조항이 지침·금지만 적은 갈래(1.2·1.6·3.x·4.1·4.3)는 `None` 으로 두고 조항만 가리킨다. 문장이 조항과 어긋나면 테스트가 실패한다.
 
 ⚠ **이 규칙은 골든셋 문장을 본 뒤에 썼다.** 문구를 그대로 옮기지 않고 조항의 갈래로 일반화했지만, 골든셋 값은
 **상한이지 성능이 아니다**(C-6 콜 가드와 같은 경고). 실제 상담원 발화(AI Hub 다산)에서의 과탐지를 따로 잰다.
@@ -38,17 +40,22 @@ class Rule:
     alternative_doc_id: str  # C-4 대체 표현의 근거 조항
     needs_request: bool = False  # C-2: 요청 동사가 같은 발화에 있어야 한다
     needs_health: bool = False  # C-4: 건강 문맥 단어가 같은 발화에 있어야 한다
+    alternative_phrase: str | None = None  # 근거 조항에 적힌 권장 문장 그대로. 조항에 문장이 없으면 None
 
+
+# MANUAL-1.4 「권장 대체 표현」 표의 오른쪽 칸을 **글자 그대로** 옮겼다 — 고치려면 매뉴얼을 먼저 고친다
+PHRASE_CONFIRM_WITH_DEPT = "소관 부서 확인 후 안내드리겠습니다"  # ← "무조건 처리됩니다"
+PHRASE_CHECK_AND_RETURN = "확인 후 다시 안내드리겠습니다"  # ← "제가 알기로는..."
 
 RULES: tuple[Rule, ...] = (
     # ── C-1 확정적 보장 (MANUAL-1.1, 대체 표현 1.4) ───────────────────────────
-    Rule("C-1", r"무조건", "DASAN-MANUAL-1.4"),
+    Rule("C-1", r"무조건", "DASAN-MANUAL-1.4", alternative_phrase=PHRASE_CONFIRM_WITH_DEPT),
     # 「100%」 는 **결과를 보장할 때만** — 「피해금액의 100%를 지급」·「100% 이상 구입」 같은 비율 안내는 뺀다(실제 발화 개발 절반)
-    Rule("C-1", r"100\s*(%|퍼센트|퍼)(?!\s*(이상|이하|를|을|의|까지|로|만큼)).{0,10}?(되|됩|처리|해결|환불|환급|가능|끝|나)", "DASAN-MANUAL-1.4"),
-    Rule("C-1", r"확실(히|하게)", "DASAN-MANUAL-1.4"),
-    Rule("C-1", r"틀림\s*없(이|어요|습니다)", "DASAN-MANUAL-1.4"),
-    Rule("C-1", r"반드시\s*(처리|해결|되|됩|나오|받으실)", "DASAN-MANUAL-1.4"),
-    Rule("C-1", r"(보장|장담)\s*(해\s*드|합니다|드려|드립|할\s*수\s*있)", "DASAN-MANUAL-1.4"),
+    Rule("C-1", r"100\s*(%|퍼센트|퍼)(?!\s*(이상|이하|를|을|의|까지|로|만큼)).{0,10}?(되|됩|처리|해결|환불|환급|가능|끝|나)", "DASAN-MANUAL-1.4", alternative_phrase=PHRASE_CONFIRM_WITH_DEPT),
+    Rule("C-1", r"확실(히|하게)", "DASAN-MANUAL-1.4", alternative_phrase=PHRASE_CONFIRM_WITH_DEPT),
+    Rule("C-1", r"틀림\s*없(이|어요|습니다)", "DASAN-MANUAL-1.4", alternative_phrase=PHRASE_CONFIRM_WITH_DEPT),
+    Rule("C-1", r"반드시\s*(처리|해결|되|됩|나오|받으실)", "DASAN-MANUAL-1.4", alternative_phrase=PHRASE_CONFIRM_WITH_DEPT),
+    Rule("C-1", r"(보장|장담)\s*(해\s*드|합니다|드려|드립|할\s*수\s*있)", "DASAN-MANUAL-1.4", alternative_phrase=PHRASE_CONFIRM_WITH_DEPT),
     # ── C-1 금액·기간 단정 (MANUAL-1.6) ───────────────────────────────────────
     # 금액 단정은 **개별 산정 금액을 예단할 때**다(MANUAL-1.6 「개별 조회와 심사에 따라 달라진다」). 「기본요금은 1,250원입니다」 같은
     # **고정 요금 안내는 위반이 아니다** — 첫 판이 `입니다` 까지 잡아 실제 상담원 발화 9,881건 중 158건을 잘못 잡았다(2026-09-15)
@@ -63,7 +70,7 @@ RULES: tuple[Rule, ...] = (
     Rule("C-2", r"카드\s*(번호|뒷\s*자리|앞\s*자리|유효\s*기간|cvc|CVC)", "DASAN-MANUAL-1.2", needs_request=True),
     Rule("C-2", r"보안\s*카드", "DASAN-MANUAL-1.2", needs_request=True),
     # ── C-3 근거 없는 안내 · 비공식 정보 (MANUAL-1.3, 1.5, 4.3) ────────────────
-    Rule("C-3", r"제가\s*알기로(는)?", "DASAN-MANUAL-1.4"),
+    Rule("C-3", r"제가\s*알기로(는)?", "DASAN-MANUAL-1.4", alternative_phrase=PHRASE_CHECK_AND_RETURN),
     Rule("C-3", r"제가\s*(따로|개인적으로|직접)\s*(확인|알아보)(해서|하고|해)?\s*(알려|안내|연락)", "DASAN-MANUAL-4.3"),
     Rule("C-3", r"(동선|다녀가신|다녀간|방문한\s*곳).{0,20}(알려|안내|말씀)\s*드릴", "DASAN-MANUAL-4.3"),
     # ── C-3 서류를 면제·추측으로 안내 (MANUAL-3.1, 1.3) ───────────────────────

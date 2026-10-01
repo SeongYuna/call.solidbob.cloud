@@ -38,6 +38,7 @@ class Detection:
     start: int
     end: int
     alternative_doc_id: str
+    alternative_phrase: str | None = None  # 근거 조항에 적힌 권장 문장. 조항에 문장이 없는 갈래는 None
 
 
 def detect(agent_utterance: str) -> list[Detection]:
@@ -55,7 +56,7 @@ def detect(agent_utterance: str) -> list[Detection]:
         for m in rx.finditer(text):
             if rule.code == "C-1" and any(s <= m.start() < e for s, e in exempt_c1):
                 continue
-            found.append(Detection(rule.code, m.group(0), m.start(), m.end(), rule.alternative_doc_id))
+            found.append(Detection(rule.code, m.group(0), m.start(), m.end(), rule.alternative_doc_id, rule.alternative_phrase))
 
     # 대리 신청을 처리해 주겠다면서 위임장·신분증을 말하지 않았다 (MANUAL-3.1)
     m = _PROXY_ACTION.search(text)
