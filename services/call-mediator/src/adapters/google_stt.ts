@@ -6,7 +6,11 @@
  * 거기서 잰 지연(첫 interim 962ms, 발화 종료 후 final +346ms)이 이 경로의 기준선이라,
  * 모델·옵션을 바꾸면 그 수치를 다시 재야 한다.
  *
- * A-4 발화 구간은 구글 끝점 검출에 맡긴다 — `is_final` 이 발화 경계다. 따로 VAD 를 두지 않는다.
+ * A-4 발화 구간 — ~~구글 끝점 검출에 맡긴다~~ **로컬 에너지 끝점 검출을 둔다(2026-10-01).** 기본 모델·ko-KR 스트리밍은
+ * 발화 사이 10초 무음에도 final 을 주지 않고 **스트림이 끝날 때 한 번** 줬다(운영 실측 — `google-stt` 통화 5건 전부 화자당
+ * final 1개, `real-stt-01` 은 60초 네 턴이 한 줄). 그래서 말한 뒤 `silenceMs` 만큼 조용하면 스트림을 닫아 final 을 받고,
+ * 다음 소리에서 새 스트림을 연다(교대 로직 그대로). 무음 구간은 보내지 않아 STT 캡(COST-1)도 아낀다.
+ * 화자 분리(`speaker=auto`)는 끝점 검출을 끈다 — 스트림마다 화자 번호가 새로 매겨져 구간을 이을 수 없다.
  *
  * **스트림 한 개는 약 5분이 한도다**(구글이 `OUT_OF_RANGE` 로 끊는다). 통화는 그보다 길 수 있어
  * 교대한다: 오디오가 `rotateAfterMs` 를 넘기면 다음 final 에서, `hardLimitMs` 를 넘기면 즉시
@@ -37,6 +41,34 @@ export type RecognizeStreamFactory = (sampleRate: number, diarize: boolean) => R
 export interface RotationOptions {
   rotateAfterMs: number;
   hardLimitMs: number;
+  /** A-4 로컬 끝점 검출. 없으면(테스트·화자 분리) 구글에 맡긴다 — 그러면 final 은 스트림 끝에만 온다. */
+  endpoint?: EndpointOptions | null;
+}
+
+/** 발화 끝 판정 — 소리의 RMS(int16) 로만 본다. 모델도 네트워크도 없다. */
+export interface EndpointOptions {
+  /** 이 RMS 미만이면 무음. 디지털 무음 0 · 조용한 방 50~200 · 말소리 1,000~5,000 */
+  threshold: number;
+  /** 말한 뒤 이만큼 무음이 이어지면 발화 끝 */
+  silenceMs: number;
+  /** 이보다 짧은 소리는 발화로 치지 않는다(기침·클릭) */
+  minSpeechMs: number;
+}
+
+export const DEFAULT_ENDPOINT: EndpointOptions = { threshold: 400, silenceMs: 700, minSpeechMs: 250 };
+
+/** 청크의 RMS(int16 LE). */
+export function rmsOf(chunk: Buffer): number {
+  const n = Math.floor(chunk.byteLength / 2);
+  if (n === 0) {
+    return 0;
+  }
+  let sum = 0;
+  for (let i = 0; i < n; i += 1) {
+    const v = chunk.readInt16LE(i * 2);
+    sum += v * v;
+  }
+  return Math.sqrt(sum / n);
 }
 
 /** 구글 권장 한 메시지 오디오 상한은 25KB 다. 넉넉히 자른다. */
@@ -69,7 +101,10 @@ export class GoogleSttEngine implements SttEngine {
   private readonly factory: RecognizeStreamFactory;
   private readonly rotation: RotationOptions;
 
-  constructor(factory: RecognizeStreamFactory, rotation: RotationOptions = { rotateAfterMs: 240_000, hardLimitMs: 280_000 }) {
+  constructor(
+    factory: RecognizeStreamFactory,
+    rotation: RotationOptions = { rotateAfterMs: 240_000, hardLimitMs: 280_000, endpoint: DEFAULT_ENDPOINT },
+  ) {
     this.factory = factory;
     this.rotation = rotation;
   }
@@ -100,6 +135,9 @@ class RotatingStream implements SttStream {
   private readonly diarize: boolean;
   /** 화자 분리 — 이 시각(채널 기준 ms)까지 끝난 단어는 이미 보냈다. */
   private diarizedUntilMs = 0;
+  /** 끝점 검출 — 지금 스트림에서 들린 말소리(ms) · 마지막 말소리 뒤 이어진 무음(ms). */
+  private speechMs = 0;
+  private silenceRunMs = 0;
 
   constructor(
     factory: RecognizeStreamFactory,
@@ -119,14 +157,33 @@ class RotatingStream implements SttStream {
     if (this.ended || this.fatal) {
       return;
     }
+    const endpoint = this.diarize ? null : (this.rotation.endpoint ?? null);
     for (let offset = 0; offset < pcm.byteLength; offset += MAX_CHUNK_BYTES) {
       const chunk = pcm.subarray(offset, Math.min(offset + MAX_CHUNK_BYTES, pcm.byteLength));
+      const chunkMs = (chunk.byteLength / (this.sampleRate * 2)) * 1000;
       if (this.current !== null && this.sentMs - this.current.baseMs >= this.rotation.hardLimitMs) {
         this.retire(this.current);
       }
+      if (endpoint !== null) {
+        const loud = rmsOf(chunk) >= endpoint.threshold;
+        if (loud) {
+          this.speechMs += chunkMs;
+          this.silenceRunMs = 0;
+        } else {
+          this.silenceRunMs += chunkMs;
+        }
+        if (this.current !== null && this.speechMs >= endpoint.minSpeechMs && this.silenceRunMs >= endpoint.silenceMs) {
+          this.retire(this.current); // 발화 끝 — 스트림을 닫아야 구글이 final 을 돌려준다
+          this.speechMs = 0;
+        }
+        if (this.current === null && !loud) {
+          this.sentMs += chunkMs; // 무음은 보내지 않는다 — 시각만 흐른다
+          continue;
+        }
+      }
       const leg = this.current ?? this.openLeg();
       leg.stream.write(chunk);
-      this.sentMs += (chunk.byteLength / (this.sampleRate * 2)) * 1000;
+      this.sentMs += chunkMs;
     }
   }
 

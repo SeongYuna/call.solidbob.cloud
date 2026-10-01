@@ -3,7 +3,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { EventEmitter } from "node:events";
-import { GoogleSttEngine, type RecognizeStream } from "../src/adapters/google_stt.ts";
+import { GoogleSttEngine, rmsOf, type EndpointOptions, type RecognizeStream } from "../src/adapters/google_stt.ts";
 import type { SttResult } from "../src/app/ports.ts";
 import { silence } from "./fakes.ts";
 
@@ -37,7 +37,7 @@ class FakeRecognizeStream extends EventEmitter implements RecognizeStream {
   }
 }
 
-function setup(rotateAfterMs: number, hardLimitMs: number) {
+function setup(rotateAfterMs: number, hardLimitMs: number, endpoint: EndpointOptions | null = null, diarize = false) {
   const streams: FakeRecognizeStream[] = [];
   const engine = new GoogleSttEngine(
     () => {
@@ -45,18 +45,22 @@ function setup(rotateAfterMs: number, hardLimitMs: number) {
       streams.push(stream);
       return stream;
     },
-    { rotateAfterMs, hardLimitMs },
+    { rotateAfterMs, hardLimitMs, endpoint },
   );
   const results: SttResult[] = [];
   const fatals: string[] = [];
   let ended = false;
-  const stt = engine.open(16000, {
-    onResult: (result) => results.push(result),
-    onFatal: (message) => fatals.push(message),
-    onEnd: () => {
-      ended = true;
+  const stt = engine.open(
+    16000,
+    {
+      onResult: (result) => results.push(result),
+      onFatal: (message) => fatals.push(message),
+      onEnd: () => {
+        ended = true;
+      },
     },
-  });
+    { diarize },
+  );
   return { streams, results, fatals, stt, isEnded: () => ended };
 }
 
@@ -209,6 +213,73 @@ test("화자 분리를 안 켜면 설정·결과가 지금과 같다 (V4 측정 
     return new FakeRecognizeStream();
   });
   const stt = engine.open(16000, { onResult: () => {}, onFatal: () => {}, onEnd: () => {} });
-  stt.write(silence(0.1));
+  stt.write(tone(0.1)); // 기본 설정은 끝점 검출이 켜져 있어 무음으로는 스트림이 안 열린다(2026-10-01)
   assert.deepEqual(flags, [false]);
 });
+
+// --- A-4 로컬 끝점 검출 (2026-10-01) — 구글 기본 모델은 final 을 스트림 끝에만 줬다(운영 실측) ---
+
+/** 말소리 흉내 — 진폭 3,000 의 사각파(RMS 3,000). */
+function tone(seconds: number, sampleRate = 16000): Buffer {
+  const n = Math.round(seconds * sampleRate);
+  const out = Buffer.alloc(n * 2);
+  for (let i = 0; i < n; i += 1) {
+    out.writeInt16LE(i % 40 < 20 ? 3000 : -3000, i * 2);
+  }
+  return out;
+}
+
+const EP: EndpointOptions = { threshold: 400, silenceMs: 700, minSpeechMs: 250 };
+
+test("rmsOf — 무음은 0, 사각파는 진폭 그대로", () => {
+  assert.equal(rmsOf(silence(0.1)), 0);
+  assert.equal(Math.round(rmsOf(tone(0.1))), 3000);
+});
+
+test("끝점 — 말한 뒤 700ms 무음이면 스트림을 닫고(final 을 받으려고), 다음 소리에서 새 스트림을 연다. 시각은 이어진다", () => {
+  const { streams, results, stt } = setup(60_000, 120_000, EP);
+  stt.write(tone(0.5));
+  assert.equal(streams.length, 1);
+  stt.write(silence(0.8));
+  assert.equal(streams[0]!.ended, true, "700ms 무음 뒤 닫힌다");
+  stt.write(silence(0.5));
+  assert.equal(streams.length, 1, "무음은 새 스트림을 열지 않는다");
+  stt.write(tone(0.2));
+  assert.equal(streams.length, 2);
+  streams[1]!.result("두 번째", true, 0.1);
+  // 0.5 + 0.8 + 0.5 = 1,800ms 가 지난 뒤 열렸고, 그 스트림 기준 100ms 에 끝났다.
+  assert.equal(results.at(-1)?.audioEndMs, 1900);
+});
+
+test("끝점 — 앞머리 무음은 스트림을 열지 않고 시각만 흐른다", () => {
+  const { streams, results, stt } = setup(60_000, 120_000, EP);
+  stt.write(silence(1));
+  assert.equal(streams.length, 0);
+  stt.write(tone(0.1));
+  assert.equal(streams.length, 1);
+  streams[0]!.result("첫", true, 0.05);
+  assert.equal(results.at(-1)?.audioEndMs, 1050);
+});
+
+test("끝점 — minSpeechMs 미만의 짧은 소리 뒤 무음은 발화 끝이 아니다", () => {
+  const { streams, stt } = setup(60_000, 120_000, EP);
+  stt.write(tone(0.1));
+  stt.write(silence(1));
+  assert.equal(streams[0]!.ended, false);
+});
+
+test("끝점 — 화자 분리(diarize) 에서는 끝점 검출을 하지 않는다", () => {
+  const { streams, stt } = setup(60_000, 120_000, EP, true);
+  stt.write(tone(0.5));
+  stt.write(silence(1));
+  assert.equal(streams.length, 1);
+  assert.equal(streams[0]!.ended, false);
+});
+
+test("끝점 — 옵션이 없으면(기존 동작) 무음도 그대로 보낸다", () => {
+  const { streams, stt } = setup(60_000, 120_000, null);
+  stt.write(silence(1));
+  assert.equal(streams.length, 1);
+  assert.equal(streams[0]!.bytes, 32000);
+});
+
