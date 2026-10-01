@@ -2,7 +2,7 @@
 title: "분류기·NER 대조군 실측 — KcELECTRA vs klue/roberta-base"
 assignee: "류준"
 role: "ai"
-status: "done"
+status: "cancelled"
 sprint: 5
 note: "닫음(2026-09-18) — 측정 불가: 모델을 학습하지 않는다(decisions/210). 파인튜닝 전제가 사라져 대조군 비교를 할 수 없다"
 priority: 54
@@ -51,3 +51,7 @@ NER 로 쓰려면 개체명 데이터로 파인튜닝해야 한다.
 
 **다음에 필요한 것**: ① 학습용 라벨 데이터 출처(KLUE-NER 공개셋 · 컴플라이언스는 직접 라벨링 여부) ② 학습 모델 업로드 위치·버전 표기([미결](/open-items/) 09-14 항목).
 그게 정해지면 비교는 오류 주입기(`measure_error_tolerance.py`)와 같은 틀로 0%·10% 에서 한 번에 잰다.
+
+## 2026-10-01 — `done` → `cancelled` (정성윤, 최종 점검)
+
+본문이 「착수하지 못했다」 인데 상태가 `done` 이었다 — 완료 조건 넷이 전부 미충족이다. 비교 자체를 하지 않기로 한 것이므로(`decisions/210` 학습하지 않는다 · 규칙 v1 + 사전학습 NER 이 최종) `cancelled` 가 맞다. `137` 로 넘겨받아 상태만 고친다.

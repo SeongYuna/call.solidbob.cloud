@@ -55,7 +55,24 @@ class ModelPostcallAdapter(PostcallPort):
         self.last_detail = PostcallDetail()
 
     async def summarize(self, call_id: str, segments: list[TranscriptEvent]) -> CallSummaryDraft:
-        draft = await self._fallback.summarize(call_id, segments)
+        return await self._summarize(call_id, segments, frozenset())
+
+    async def summarize_with_flags(
+        self, call_id: str, segments: list[TranscriptEvent], flagged_segment_ids: frozenset[int]
+    ) -> CallSummaryDraft:
+        """컴플라이언스 위반이 잡힌 상담원 발화 번호를 받는다(2026-10-02, `decisions/146`).
+
+        규칙 초안에는 그대로 넘기고(`decisions/306` 의 10-01 보강), **모델에게도 그 줄을 주지 않는다** — 줄을 주면 모델이
+        위반 문장을 정상 「안내」 로 매끄럽게 요약한다(10-02 운영 노드 시험: 「주민등록번호 열세 자리 전부 불러 주세요」 가
+        「본인 확인 안내」 가 됐다). 판정은 규칙이 이미 했고, 모델은 그 줄을 모르는 채로 설명만 쓴다(절대 원칙 9).
+        """
+        return await self._summarize(call_id, segments, frozenset(flagged_segment_ids))
+
+    async def _summarize(self, call_id: str, segments: list[TranscriptEvent], flagged: frozenset[int]) -> CallSummaryDraft:
+        if flagged:
+            draft = await self._fallback.summarize_with_flags(call_id, segments, flagged)
+        else:
+            draft = await self._fallback.summarize(call_id, segments)
         finals = sorted((s for s in segments if s.is_final and s.text.strip()), key=lambda s: s.segment_id)
         detail = PostcallDetail()
 
@@ -71,8 +88,8 @@ class ModelPostcallAdapter(PostcallPort):
                     log.warning("유형 제안 검색 실패: %s", type(e).__name__)
 
         summary_text = draft.summary_text
-        if self._chat is not None and finals:
-            lines = [(s.speaker, s.text) for s in finals]
+        lines = [(s.speaker, s.text) for s in finals if not (s.speaker == "agent" and s.segment_id in flagged)]
+        if self._chat is not None and lines:
             try:
                 res = await asyncio.to_thread(self._chat.chat, build_messages(lines))
                 detail.raw_summary, detail.elapsed_ms = res.content, res.elapsed_ms

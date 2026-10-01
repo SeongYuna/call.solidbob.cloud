@@ -1,0 +1,68 @@
+# Requirement: D-1, SEC-2
+# Ollama — 통화 후 요약(D-1) 모델을 **CPU 로** 돌린다 (`_project/decisions/146`, 2026-10-02).
+#
+# 런북 14장의 원안은 GPU(g4dn) + EXAONE 이었다. 운영은 GPU 가 없고(계정 G 계열 한도 0) 모델은 kanana(`decisions/207`)다.
+# 그래서 `runtimeClassName: nvidia` 와 NVIDIA 환경변수가 없다.
+#
+# ⚠ **이미지가 크다**(압축 3.75GB, 풀면 약 8GB). 디스크 30GB 일 때 이 이미지를 받자 사용률이 62% → 91% 로 뛰었다(10-02).
+#   루트 볼륨을 60GB 로 늘린 뒤에 적용한다 — 순서를 바꾸면 kubelet 이 파드를 쫓아낸다.
+# ⚠ **인터넷에 열지 않는다**(infra/CLAUDE.md §1-4) — 인증이 없다. ClusterIP 뿐이고 Ingress 에 넣지 않는다.
+#
+# 모델은 이미지에 없다. 한 번 등록하면 노드의 /opt/callguard/ollama 에 남는다(런북 14-2):
+#   kubectl -n callguard exec deploy/ollama -- ollama pull hf.co/gchrisoh/kanana-1.5-2.1b-instruct-2505-Q4_K_M-GGUF
+#   kubectl -n callguard exec deploy/ollama -- sh -c 'printf "FROM hf.co/gchrisoh/kanana-1.5-2.1b-instruct-2505-Q4_K_M-GGUF\nPARAMETER stop \"<|eot_id|>\"\nPARAMETER stop \"<|end_of_text|>\"\n" > /tmp/Modelfile && ollama create kanana-1.5-2.1b-instruct:q4_k_m -f /tmp/Modelfile'
+# 서버는 `OLLAMA_URL=http://ollama:11434` 와 `POSTCALL_MODEL=kanana-1.5-2.1b-instruct:q4_k_m` 이 둘 다 있을 때만 요약을 모델로 쓴다.
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ollama
+spec:
+  replicas: 1
+  # 모델 폴더를 hostPath 로 쓴다 — 새 파드가 뜨기 전에 옛 파드를 내린다(두 파드가 같은 폴더를 잡지 않게).
+  strategy: { type: Recreate }
+  selector:
+    matchLabels: { app: ollama }
+  template:
+    metadata:
+      labels: { app: ollama }
+    spec:
+      containers:
+        - name: ollama
+          image: ollama/ollama:0.35.0
+          imagePullPolicy: IfNotPresent
+          env:
+            - { name: OLLAMA_HOST, value: "0.0.0.0:11434" }
+            # 통화 후 요약은 드물게 온다. 30분 쓰지 않으면 모델(올린 상태 실측 약 2.7GB)을 내려 메모리를 돌려준다.
+            - { name: OLLAMA_KEEP_ALIVE, value: "30m" }
+            # 요약 둘이 겹치면 코어를 나눠 써 둘 다 느려진다 — 하나씩 처리한다.
+            - { name: OLLAMA_NUM_PARALLEL, value: "1" }
+            - { name: OLLAMA_MAX_LOADED_MODELS, value: "1" }
+          ports:
+            - { containerPort: 11434, protocol: TCP }
+          readinessProbe:
+            httpGet: { path: /, port: 11434 }
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          resources:
+            # 상한을 둔다 — 넘으면 이 파드가 죽지 서버·검색 엔진이 죽지 않는다.
+            # 10-02 실측: 요약 다섯 건을 돌린 뒤 2,690Mi 였다(19줄 통화까지). 3Gi 는 여유가 300Mi 뿐이라 4Gi 로 둔다.
+            requests: { cpu: 100m, memory: 256Mi }
+            limits:   { memory: 4Gi }
+          volumeMounts:
+            - { name: ollama-models, mountPath: /root/.ollama }
+      volumes:
+        - name: ollama-models
+          hostPath:
+            path: /opt/callguard/ollama
+            type: DirectoryOrCreate
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ollama
+spec:
+  type: ClusterIP   # 내부 전용. NodePort·LoadBalancer·Ingress 금지
+  selector: { app: ollama }
+  ports:
+    - { port: 11434, targetPort: 11434 }

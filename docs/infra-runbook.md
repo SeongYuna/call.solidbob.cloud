@@ -35,6 +35,12 @@
 > 모델(NER · KoE5 임베딩)은 **지금의 `t3.large` 에 CPU 로** 싣는다. 리랭커·생성 모델은 싣지 않는다. GPU 인스턴스는 만들지 않으므로
 > 11 · 14 · 21장의 GPU 절차는 계속 실물에 적용되지 않는다. 실물 절차는 11장 끝 「실물 — CPU 노드에 모델 싣기」다.
 >
+> **인스턴스 정정 (2026-10-02, 여섯 번째).** 운영 노드는 이제 **`c7i.2xlarge`**(8 vCPU = 물리 4코어 · 메모리 15.7GB)이고,
+> **루트 볼륨은 60GB**, **고정 IP `3.38.62.188`**(`eipalloc-09b86da9e8962b5ab`)가 붙어 있다(`_project/decisions/146`). 인스턴스 ID 는 그대로다.
+> 위 정정들의 `t3.large` · 아래 대조표의 「탄력적 IP 없다」 는 그 날짜의 사실이다. 올린 이유는 통화 후 요약 모델(Ollama, CPU)이다 —
+> `t3.large` 는 물리 코어가 1개라 요약 한 건에 18~53초가 걸렸다. **GPU 는 여전히 없다** — 11 · 21장의 GPU 절차는 계속 적용되지 않고,
+> 14장은 머리의 10-02 주석대로 CPU 판으로 읽는다. 등급을 내리려면 정지 → 유형 변경 → 기동(약 1분 중단, 주소는 고정 IP 라 그대로).
+>
 > 나머지 장 — 특히 13(클론) · 16-2(Caddy) — 은 원안 그대로다. 클러스터 구성의 정본은
 > `infra/k8s/base/` 다(라이브 클러스터와 `kubectl diff` 차이 0, 2026-09-08).
 
@@ -133,8 +139,8 @@
 > |---|---|---|
 > | 1 | 키 페어 `assist-key` | **`callguard-key`** (`.pem` 파일명도 같다) |
 > | 7 | RDS `callguard-pg` | 그대로 — `db.t4g.micro` · PostgreSQL **17.11** |
-> | 8 | EC2 `assist-gpu-01`, g4dn.xlarge, Ubuntu DLAMI | **`i-034cda2423f65c8bd`** · **`t3.large`**(GPU 없음) · **Amazon Linux 2023** · `ap-northeast-2b` · **Name 태그 없음** |
-> | 11 | 탄력적 IP 1개 | **없다** — 공인 IP 는 재시작 때 바뀐다(DNS 는 클라우드플레어가 가리킨다) |
+> | 8 | EC2 `assist-gpu-01`, g4dn.xlarge, Ubuntu DLAMI | **`i-034cda2423f65c8bd`** · **`t3.large`**(GPU 없음) · **Amazon Linux 2023** · `ap-northeast-2b` · **Name 태그 없음** → **2026-10-02: `c7i.2xlarge`** · 루트 볼륨 60GB(`decisions/146`) |
+> | 11 | 탄력적 IP 1개 | **없다** — 공인 IP 는 재시작 때 바뀐다(DNS 는 클라우드플레어가 가리킨다) → **2026-10-02: 붙였다** — `3.38.62.188`(`eipalloc-09b86da9e8962b5ab`), 클라우드플레어 `server` A 레코드도 이 주소다 |
 > | 12 | AMI `assist-gpu-baseline` | **아직 없다**(20장 — 인스턴스가 죽으면 복구 경로가 없다) |
 > | — | 네임스페이스 `assist` | **`callguard`** (k3s) |
 >
@@ -1110,6 +1116,14 @@ sudo k3s ctr images ls | grep assist
 ---
 
 ## 14. Ollama + EXAONE
+
+> ⚠ **2026-10-02 — 운영은 이 장의 원안과 다르다(`_project/decisions/146`).** GPU 가 없어(계정 G 계열 한도 0) Ollama 를 **CPU 로** 올리고,
+> 모델은 kanana(`decisions/207`)이며 쓰는 곳은 **통화 후 요약(D-1) 하나**다. 정본은 `infra/k8s/base/ollama.yaml` 이다 —
+> `runtimeClassName: nvidia`·NVIDIA 환경변수·PVC 가 없고 모델은 노드의 `/opt/callguard/ollama`(hostPath)에 남는다.
+> **이미지가 압축 3.75GB 라 루트 볼륨 60GB 가 먼저다**(30GB 에서 받자 디스크가 91% 가 됐다). 모델 등록 명령은 그 파일 머리말에 있다.
+> 서버는 `OLLAMA_URL` + `POSTCALL_MODEL` 로 요약만 켠다(`GENERATION_MODEL` 은 비워 둔다 — 카드 생성까지 켜진다).
+> **10-02 오후 — 60GB · `c7i.2xlarge` 로 올린 뒤 임시 파드로 쟀다**: 요약 한 건 2.5~8.0초(5~19줄, 각 1회, 하네스 값 아님), 모델을 올린 파드 메모리 2,690Mi —
+> 그래서 상한은 4Gi 다. 모델 파일은 이미 `/opt/callguard/ollama` 에 있다(1.5GB). 정식 배포는 아직이다(`decisions/146` 갱신 절).
 
 ### 14-1. 배포
 
