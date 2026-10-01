@@ -1,0 +1,104 @@
+{
+  "domain_routing": "측정 불가 — 모듈 미구현",
+  "retrieval": {
+    "recall_at_k": 0.9705882352941176,
+    "mrr": 0.8745098039215686,
+    "n": 102
+  },
+  "no_answer": {
+    "n": 23,
+    "abstained": 0,
+    "top1_score_min": 0.5883173,
+    "top1_score_median": 0.64183545,
+    "top1_score_max": 0.761223
+  },
+  "trigger": "측정 불가 — 모듈 미구현",
+  "compliance": {
+    "precision": 1.0,
+    "recall": 1.0,
+    "tp": 14,
+    "fp": 0,
+    "fn": 0
+  },
+  "call_guard": {
+    "precision": 1.0,
+    "recall": 1.0,
+    "tp": 9,
+    "fp": 0,
+    "fn": 0,
+    "n": 15,
+    "type_accuracy": 1.0,
+    "distress_misrouted": 0,
+    "distress_misrouted_items": [],
+    "distress_missed": 0,
+    "distress_missed_items": []
+  },
+  "masking": {
+    "miss_count": 0,
+    "missed_items": [],
+    "absolute_rule_passed": true,
+    "pattern_mismatch_count": 0,
+    "pattern_mismatch_items": [],
+    "over_masking_rate": 0.0,
+    "n": 40
+  },
+  "closure_gate": {
+    "accuracy": 1.0,
+    "absolute_rule_passed": true,
+    "failed_items": [],
+    "n": 99
+  },
+  "call_temperature": "측정 불가 — 골든셋에 채점 대상이 없다",
+  "generation": "측정 불가 — 생성 포트를 이 실행에 꽂지 않았다(모델 서버 Ollama 가 있어야 돈다 — run_eval.py --ollama-url, 또는 scripts/eval_generation.py)",
+  "asr": "측정 불가 — 하네스에 STT 포트가 없고(STT 는 콜 미디에이터에 있다) 골든셋에 음성·정답 전사가 없다(등급별 WER/CER 은 scripts/measure_a5_proficiency.py 가 따로 잰다)",
+  "postcall": {
+    "summarizer": "RulePostcallAdapter",
+    "masked_input": true,
+    "n_calls": 10,
+    "key_items": 60,
+    "key_items_hit": 53,
+    "coverage_macro": 0.877142857142857,
+    "coverage_micro": 0.8833333333333333,
+    "summary_chars_median": 373.0,
+    "coverage_by_kind": {
+      "문의": "10/10",
+      "서류": "23/23",
+      "안내": "4/10",
+      "조치": "9/10",
+      "요청": "7/7"
+    },
+    "per_call": {
+      "PC-01": 0.6,
+      "PC-02": 1.0,
+      "PC-03": 0.857,
+      "PC-04": 0.6,
+      "PC-05": 1.0,
+      "PC-06": 0.857,
+      "PC-07": 1.0,
+      "PC-08": 1.0,
+      "PC-09": 1.0,
+      "PC-10": 0.857
+    },
+    "missed": {
+      "PC-01": [
+        "다른 지역 거주자는 대출 범위 제한",
+        "방문할 도서관에서 다시 확인"
+      ],
+      "PC-03": [
+        "감면 여부·금액은 소관 부서 심사로 정해짐"
+      ],
+      "PC-04": [
+        "재검침 필요 여부는 검침 이력을 보고 소관 부서가 정함",
+        "조정 여부·금액은 심사로 정해짐"
+      ],
+      "PC-06": [
+        "사전납부 감경 제도"
+      ],
+      "PC-10": [
+        "장애인 우대용이면 장애인등록증 추가"
+      ]
+    },
+    "type_accuracy": 1.0,
+    "type_null": 0
+  }
+}

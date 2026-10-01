@@ -1055,10 +1055,13 @@ Environment Variables → **Production 만** → Deployments → Redeploy(`VITE_
 
 ### 2026-10-01 — 완성 절차 뒤 남은 것 (정성윤)
 
-- [ ] **배포 + 마이그레이션** — 커밋 → PR → 머지 → `db/migrations/2026-10-01-customer-display-hint.sql` 을 **이미지보다 먼저**(`scratchpad/apply-migration.sh`, `!` 로) → server `0.1.44` · call-mediator `0.2.12` 릴리스 → Vercel 셋. 배포 뒤 Q-29·Q-55·Q-42 재개·재연결·뒤 4자리·지난 통화 제목·요약 위반 제외를 눈으로
-- [ ] **눈 확인 둘** — SYN-007 재생 시 「배정 판정 기록됨」 배너(`w6-routing-result-ui`) · 입사일 입력 → 목록 갱신(`w6-admin-agent-hired-on-ui`)
+- [x] ~~배포 + 마이그레이션~~ — 10-01 PR #157(마이그레이션 → 0.1.44 · 0.2.12) · #158(화면 수정) · #159(측정 폴백·룰셋) 끝. QA 3회차 ✅: Q-29·Q-42 재개·뒤 4자리·요약 위반 제외·배정 배너·입사일·위기 신호 핀. **지난 통화 제목·카드 하나**(#158)는 아직 다시 안 봤다
+- [x] ~~눈 확인 둘~~ — 배정 배너(QA 3회차 + act4 `demo-A03`) · 입사일 → 목록·근속 연차(#158) ✅
+- [ ] **네 번째 배포 뒤 재확인** — 화면 통화 섞임 수정(`realCallMediatorClient.ts` `?call_id=` 묶기) · 지난 통화 보기 제목/카드 하나
+- [ ] **녹화 때 찍을 것** — 콜 라우팅 보호 카드의 온도 「미측정」(`w6-qa-ui-defects-three` ①) · act4 통화 종료 → 요약 확정(`w6-close-callid-missing` 조건 2)
+- [ ] **「여보세요」 과잉 마스킹** — act4 에서 「여보세요 들리시나요」→「*** 요 들리시나요」. 원인(「여보세」를 이름으로 본 NER 추정)은 재지 않았다. 누락 0 > 과잉 억제(원칙 3)라 발표 뒤. 대본 1막·2막 첫 줄은 「안녕하세요 다산콜센터입니다」라 안 걸린다
 - [ ] **시연 영상** — `_project/demo-script.md`, 두 번 녹화 → `w8-demo-rehearsal` done
-- [ ] **`apps` CI 잡을 룰셋 필수 검사에 올린다** — 첫 초록 뒤(`ruleset-main.json` 같이)
+- [x] ~~`apps` CI 잡을 룰셋 필수 검사에 올린다~~ — PR #159(10-01), `ruleset-main.json` 같이
 - [ ] **회고 단락 셋** — 류준·장민석·조서희가 `docs/17` 에 직접
 - [ ] **발표일·형식** — 정해지면 `129`·`w8-presentation` 에 적고 초안(`_project/__008`)을 그 틀로
 - [ ] **종료 정리** — 발표 뒤(`w8-project-closeout`): 남길 것 결정 → 자원 내림 → 키 폐기 → 청구서 0 확인. AWS 잔재도 그때
