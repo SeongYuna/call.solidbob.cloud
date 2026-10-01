@@ -301,10 +301,17 @@ def _git_commit() -> str | None:
     HEAD 는 확장 이전인데 수치는 확장 이후 것이었다. 재현 불가를 재현 가능한 것처럼
     적지 않는다(절대 원칙 10).
     """
-    r = subprocess.run(["git", "-C", str(ROOT), "rev-parse", "HEAD"],
-                       capture_output=True, text=True)
+    # git 이 없는 곳(운영 노드의 측정 파드, 2026-10-01)에서는 호출자가 `EVAL_GIT_COMMIT` 로 넘긴 값을 쓴다 —
+    # tarball 로 받은 코드라 워킹트리 검사도 없다. 넘기지 않으면 None(지어내지 않는다)
+    try:
+        r = subprocess.run(["git", "-C", str(ROOT), "rev-parse", "HEAD"],
+                           capture_output=True, text=True)
+    except FileNotFoundError:
+        env_commit = os.environ.get("EVAL_GIT_COMMIT", "").strip()
+        return env_commit[:40] or None
     if r.returncode != 0 or not r.stdout.strip():
-        return None
+        env_commit = os.environ.get("EVAL_GIT_COMMIT", "").strip()
+        return env_commit[:40] or None
     commit = r.stdout.strip()
     dirty = subprocess.run(["git", "-C", str(ROOT), "status", "--porcelain"],
                            capture_output=True, text=True)

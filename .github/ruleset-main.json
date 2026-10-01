@@ -59,6 +59,18 @@
           {
             "context": "tag-check",
             "integration_id": 15368
+          },
+          {
+            "context": "apps (call)",
+            "integration_id": 15368
+          },
+          {
+            "context": "apps (admin)",
+            "integration_id": 15368
+          },
+          {
+            "context": "apps (platform)",
+            "integration_id": 15368
           }
         ]
       }
