@@ -54,3 +54,6 @@ paths:
 
 **정성윤이 넘겨받았다**(`decisions/137`). 대본 `_project/demo-script.md`(7단계, 개인정보 6줄 포함) · 발화 주입 `services/call-mediator/scripts/demo_text_call.mjs act1~act4` · 운영에서 act3·act4 를 돌려 캡처(정성윤 로컬 `data/processed/qa-captures/`, 공개하지 않는다). 완료 조건 1·3·4 는 채웠고, **2(운영 주소 리허설 한 통 끝까지)와 녹화**가 남았다 — 10-01 QA 3회차에서 `?call_id=` 없이 연 화면이 모든 통화를 받아 섞이는 것을 고쳤고(`realCallMediatorClient.ts`), 그 배포 뒤 1막부터 끝까지 한 번 돌리고 두 번 녹화한다.
 
+## 2026-10-01 저녁 — 통화 묶기 확인 (정성윤)
+
+`https://call.solidbob.cloud/?call_id=check-mix-01` 로 연 화면에 act4(`--call-id check-mix-01`)를 넣고, 다른 ID(`check-mix-02`)로 act3 를 동시에 넣었다. 화면에는 act4 의 상담원 세 줄만 있고 act3 의 폭언 줄·🚫·🆘 핀은 없다(캡처 로컬 보관). 대기화면 최근 상담기록에는 두 통화가 다 올라온다 — 목록은 상담원이 받은 통화 전부를 보여 주는 것이라 맞다. 「여보세요」 → `***` 과잉 마스킹은 이번에도 같았다(미결).
