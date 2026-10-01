@@ -292,10 +292,13 @@ def _wire_generation(app: FastAPI, settings: Settings) -> str | None:
 def _wire_postcall_model(app: FastAPI, settings: Settings) -> str | None:
     """D-1 모델 요약 · D-2 유형 제안을 규칙 발췌 초안(`decisions/306`) **위에** 얹는다(`w7-postcall-spoke`).
 
-    **생성과 같은 스위치다** — `OLLAMA_URL` 과 `GENERATION_MODEL` 이 둘 다 있어야 켠다. 검색 스포크가 꽂혀 있으면 D-2 에 쓴다.
-    안 켜면 규칙 초안(유형 None)이 그대로다. 요약·유형은 전부 **초안**이고 `confirmed` 는 False 다.
+    `OLLAMA_URL` 과 **모델 이름**이 있어야 켠다. 모델 이름은 `POSTCALL_MODEL` 이 먼저고, 없으면 `GENERATION_MODEL` 이다
+    (2026-10-02, `decisions/146` — 전에는 생성과 같은 스위치 하나였다). `POSTCALL_MODEL` 만 넣으면 **요약만** 켜지고
+    B-4 카드 생성은 꺼진 채다 — CPU 노드에서 추천마다 모델을 부르지 않으려고 갈랐다. 검색 스포크가 꽂혀 있으면 D-2 에 쓴다.
+    안 켜면 규칙 초안이 그대로다. 요약·유형은 전부 **초안**이고 `confirmed` 는 False 다.
     """
-    if not (settings.ollama_url and settings.generation_model):
+    model = settings.postcall_model or settings.generation_model
+    if not (settings.ollama_url and model):
         return None
     sys.path.insert(0, str(AI_APPS))
     sys.path.insert(0, str(AI_APPS.parent))
@@ -314,7 +317,7 @@ def _wire_postcall_model(app: FastAPI, settings: Settings) -> str | None:
         build_postcall_provider(
             RulePostcallAdapter(),
             ollama_url=settings.ollama_url,
-            model=settings.generation_model,
+            model=model,
             retrieval=retrieval_factory() if retrieval_factory else None,
         ),
     )

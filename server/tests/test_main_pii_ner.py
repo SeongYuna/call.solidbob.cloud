@@ -99,3 +99,22 @@ def test_생성_모델까지_넣으면_꽂힌다(monkeypatch):
     finally:
         app.dependency_overrides.pop(get_generation_port, None)
         app.dependency_overrides.pop(get_postcall_port, None)
+
+def test_요약_모델만_넣으면_요약만_꽂히고_카드_생성은_꺼진_채다(monkeypatch):
+    """2026-10-02 `decisions/146` — `POSTCALL_MODEL` 은 D-1 요약만 켠다. B-4 생성까지 켜지면 추천마다 모델을 부른다."""
+    from hub.dependencies.generation_provider import get_generation_port
+    from hub.dependencies.postcall_provider import get_postcall_port
+
+    app.dependency_overrides.pop(get_generation_port, None)
+    app.dependency_overrides.pop(get_postcall_port, None)
+    monkeypatch.setenv("OLLAMA_URL", "http://ollama:11434")
+    monkeypatch.delenv("GENERATION_MODEL", raising=False)
+    monkeypatch.setenv("POSTCALL_MODEL", "kanana-1.5-2.1b-instruct:q4_k_m")
+    try:
+        with TestClient(app) as client:
+            spokes = client.get("/health").json()["spokes"]
+        assert "postcall_model" in spokes and "generation" not in spokes
+        assert get_generation_port not in app.dependency_overrides
+    finally:
+        app.dependency_overrides.pop(get_generation_port, None)
+        app.dependency_overrides.pop(get_postcall_port, None)

@@ -105,6 +105,10 @@ class Settings:
     # 붙어 추천 지연이 늘어난다 — 그래서 모델 이름을 따로 넣어야 켠다.
     ollama_url: str | None = None
     generation_model: str | None = None
+    # --- D-1 통화 후 모델 요약만 켜는 스위치 (2026-10-02, `decisions/146`) ---
+    # `GENERATION_MODEL` 은 B-4 카드 생성과 D-1 요약을 **함께** 켠다 — 카드 생성은 추천마다 모델을 불러 실시간 경로가 느려진다.
+    # CPU 노드에서는 요약만 켜야 하므로 이름을 따로 받는다. 이 키가 있으면 요약은 이 모델로, 카드는 스니펫 그대로다.
+    postcall_model: str | None = None
 
     # --- 읽기 경로 문 (2026-09-22, `decisions/322`) — 통화 목록·전사·통화 기록·수동 검색 ---
     # 토큰은 늘 받는다(틀리면 401). true 면 **토큰 없는 요청도 401**. 상담원 화면이 토큰을 싣기 시작한 뒤 켠다 —
@@ -165,6 +169,7 @@ def load_settings() -> Settings:
         retrieval_rerank_model_dir=_env("RETRIEVAL_RERANK_MODEL_DIR"),
         ollama_url=_env("OLLAMA_URL"),
         generation_model=_env("GENERATION_MODEL"),
+        postcall_model=_env("POSTCALL_MODEL"),
         read_auth_required=(_env("READ_AUTH_REQUIRED") or "").strip().lower() in ("1", "true", "yes"),
         app_version=_env("APP_VERSION"),
     )
