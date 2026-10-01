@@ -1122,8 +1122,11 @@ sudo k3s ctr images ls | grep assist
 > `runtimeClassName: nvidia`·NVIDIA 환경변수·PVC 가 없고 모델은 노드의 `/opt/callguard/ollama`(hostPath)에 남는다.
 > **이미지가 압축 3.75GB 라 루트 볼륨 60GB 가 먼저다**(30GB 에서 받자 디스크가 91% 가 됐다). 모델 등록 명령은 그 파일 머리말에 있다.
 > 서버는 `OLLAMA_URL` + `POSTCALL_MODEL` 로 요약만 켠다(`GENERATION_MODEL` 은 비워 둔다 — 카드 생성까지 켜진다).
-> **10-02 오후 — 60GB · `c7i.2xlarge` 로 올린 뒤 임시 파드로 쟀다**: 요약 한 건 2.5~8.0초(5~19줄, 각 1회, 하네스 값 아님), 모델을 올린 파드 메모리 2,690Mi —
-> 그래서 상한은 4Gi 다. 모델 파일은 이미 `/opt/callguard/ollama` 에 있다(1.5GB). 정식 배포는 아직이다(`decisions/146` 갱신 절).
+> **10-02 새벽 — 60GB · `c7i.2xlarge` 로 올린 뒤 임시 파드로 쟀다**: 요약 한 건 2.5~8.0초(5~19줄, 각 1회, 하네스 값 아님), 모델을 올린 파드 메모리 2,690Mi —
+> 그래서 상한은 4Gi 다. 모델 파일은 이미 `/opt/callguard/ollama` 에 있다(1.5GB). ~~정식 배포는 아직이다~~ → **10-02 새벽(04:30경) 배포했다**(PR #163 · server `0.1.45` ·
+> `server-env` 에 `OLLAMA_URL`·`POSTCALL_MODEL` · `/health` `spokes` 에 `postcall_model`). 운영 실측: 통화 종료 요약 첫 요청 14.5초(모델 올리기 포함) · 그 뒤 3.7초(`decisions/146` 갱신 절).
+> 모델은 내리지 않는다(`OLLAMA_KEEP_ALIVE=-1` — 30분 유휴 뒤 내리게 했더니 그 뒤 첫 요약이 14.5초였다). 파드가 새로 뜬 직후 첫 요청만 모델을 올린다.
+> **끄는 법**: `server-env` 에서 `POSTCALL_MODEL` 을 지우고 `kubectl -n callguard rollout restart deploy/callguard-server` — 규칙 초안으로 돌아간다.
 
 ### 14-1. 배포
 

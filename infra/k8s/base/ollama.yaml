@@ -33,8 +33,9 @@ spec:
           imagePullPolicy: IfNotPresent
           env:
             - { name: OLLAMA_HOST, value: "0.0.0.0:11434" }
-            # 통화 후 요약은 드물게 온다. 30분 쓰지 않으면 모델(올린 상태 실측 약 2.7GB)을 내려 메모리를 돌려준다.
-            - { name: OLLAMA_KEEP_ALIVE, value: "30m" }
+            # 모델을 내리지 않는다(-1). 30m 이었을 때 쉰 뒤 첫 요약이 14.5초 걸렸다(10-02 운영 실측, 올라와 있으면 3.7초).
+            # 대신 메모리 약 2.2~2.7GB 를 상시 쓴다. ⚠ 파드가 새로 뜬 직후의 첫 요청은 여전히 모델을 올린다.
+            - { name: OLLAMA_KEEP_ALIVE, value: "-1" }
             # 요약 둘이 겹치면 코어를 나눠 써 둘 다 느려진다 — 하나씩 처리한다.
             - { name: OLLAMA_NUM_PARALLEL, value: "1" }
             - { name: OLLAMA_MAX_LOADED_MODELS, value: "1" }
