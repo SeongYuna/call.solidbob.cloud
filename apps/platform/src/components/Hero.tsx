@@ -53,7 +53,7 @@ export function Hero(): ReactElement {
             </a>
           </div>
           <p className="mt-10 text-[12.5px] text-muted">
-            5개 언어 동시 통번역
+            서툰 한국어도 그대로 자막으로 · 숙련도별 정확도 실측
             <span className="mx-2 text-line" aria-hidden="true">
               ·
             </span>
