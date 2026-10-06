@@ -50,6 +50,7 @@ from hub.adapter.inbound.api.v1.call_start_router import call_start_router  # no
 from hub.adapter.inbound.api.v1.card_feedback_router import card_feedback_router  # noqa: E402
 from hub.adapter.inbound.api.v1.closure_router import closure_router  # noqa: E402
 from hub.adapter.inbound.api.v1.compliance_router import compliance_router  # noqa: E402
+from hub.adapter.inbound.api.v1.customer_briefing_router import customer_briefing_router  # noqa: E402
 from hub.adapter.inbound.api.v1.knowledge_gap_query_router import (  # noqa: E402
     knowledge_gap_query_router,
 )
@@ -75,7 +76,7 @@ from hub.dependencies.read_guard import read_guard_state, require_reader  # noqa
 SPOKES: list[str] = []  # 스포크를 꽂을 때 이름을 추가한다 — /health 가 그대로 보고한다
 
 # `server/` 안에 사는 규칙 기반 스포크. 프로바이더 기본값이라 조건 없이 붙는다.
-_BUILTIN_SPOKES = ("masking", "closure_gate", "postcall")
+_BUILTIN_SPOKES = ("masking", "closure_gate", "postcall", "briefing")
 
 AI_APPS = Path(__file__).resolve().parent.parent / "ai" / "apps"
 
@@ -455,6 +456,7 @@ app.include_router(call_guard_check_router, dependencies=_INGEST_ONLY)
 app.include_router(call_guard_flag_list_router)
 app.include_router(call_list_router, dependencies=_READERS)
 app.include_router(call_record_router, dependencies=_READERS)
+app.include_router(customer_briefing_router, dependencies=_READERS)
 app.include_router(call_start_router, dependencies=_INGEST_ONLY)
 app.include_router(card_feedback_router)
 app.include_router(closure_router, dependencies=_INGEST_ONLY)
