@@ -4,7 +4,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from briefing_check import score  # noqa: E402
+from briefing_check import phone_for, score  # noqa: E402
 
 
 def _r(sid, cat, source="model", run=1, expected="서류 보완"):
@@ -24,3 +24,18 @@ def test_unstable_when_category_changes_across_runs():
 def test_missing_category_is_a_miss_not_an_error():
     s = score([_r("SYN-302", None)])
     assert s["n"] == 1 and s["match"] == 0
+
+
+def test_timeouts_counted_separately():
+    r = _r("SYN-302", None)
+    r["status"] = None
+    ok = _r("SYN-304", "컴플레인", expected="컴플레인")
+    ok["status"] = "ready"
+    assert score([r, ok])["timeouts"] == 1
+
+
+def test_phone_for_unique_per_stamp_and_valid():
+    a, b = phone_for("20261006123015", 1, 0), phone_for("20261006123116", 1, 0)
+    assert a != b
+    for n in (a, b):
+        assert len(n) == 11 and n.startswith("010") and n.isdigit()

@@ -39,8 +39,14 @@ def score(results: list[dict]) -> dict:
         cats[r["script"]].add(r.get("category"))
         if r.get("category") is not None and r.get("category") == r["expected"]:
             match += 1
-    return {"n": len(results), "match": match, "by_source": dict(by_source),
+    return {"n": len(results), "match": match,
+            "timeouts": sum(1 for r in results if r.get("status") is None), "by_source": dict(by_source),
             "unstable": sorted(s for s, c in cats.items() if len(c) > 1)}
+
+
+def phone_for(stamp_digits: str, run: int, k: int) -> str:
+    """호출(invocation)마다 다른 11자리 가짜 번호 — 앞 호출의 통화가 지난 통화로 섞이지 않게 한다."""
+    return f"010{int(stamp_digits) % 9973:04d}{run % 100:02d}{k % 100:02d}"
 
 
 def _replay(path: Path, call_id: str, phone: str, args, ring: int = 0, close: bool = True) -> subprocess.Popen:
@@ -54,7 +60,7 @@ def _replay(path: Path, call_id: str, phone: str, args, ring: int = 0, close: bo
     return subprocess.Popen(cmd, cwd=REPLAY.parents[1], env=env)
 
 
-def _briefing(core_url: str, call_id: str, deadline: float) -> tuple[dict | None, float]:
+def _briefing(core_url: str, call_id: str, deadline: float, proc: subprocess.Popen | None = None) -> tuple[dict | None, float]:
     token = os.environ.get("INGEST_SERVICE_TOKEN", "").strip()
     headers = {"authorization": f"Bearer {token}"} if token else {}
     t0 = time.monotonic()
@@ -65,7 +71,9 @@ def _briefing(core_url: str, call_id: str, deadline: float) -> tuple[dict | None
                 return json.loads(resp.read()), (time.monotonic() - t0) * 1000
         except urllib.error.HTTPError as e:
             if e.code != 404:   # 404 = 통화가 아직 안 만들어졌다 — 다시 본다
-                raise
+                if proc is not None:
+                    proc.terminate()
+                raise SystemExit(f"브리핑 API {e.code} — 토큰(INGEST_SERVICE_TOKEN)·서버 주소를 확인하세요")
         time.sleep(0.3)
     return None, (time.monotonic() - t0) * 1000
 
@@ -84,24 +92,30 @@ def main() -> None:
         d = json.loads(f.read_text())
         loaded[d["id"]] = (f, d)
     currents = [(sid, s) for sid, (_, s) in loaded.items() if s.get("expected", {}).get("briefing", {}).get("role") == "current"]
-    stamp = datetime.now().strftime("%Y%m%dT%H%M")
+    stamp = datetime.now().strftime("%Y%m%dT%H%M%S")
     results = []
     for run in range(1, args.repeat + 1):
         for k, (sid, script) in enumerate(currents):
-            phone = f"010000{run:02d}{k:03d}"   # 회차·고객마다 다른 가짜 번호
+            phone = phone_for(stamp.replace("T", ""), run, k)   # 호출·회차·고객마다 다른 가짜 번호
             for prior_id in script["expected"]["briefing"]["prior"]:
                 proc = _replay(loaded[prior_id][0], f"brief-{prior_id.lower()}-{stamp}-r{run}", phone, args)
                 if proc.wait() != 0:
                     raise SystemExit(f"{prior_id} 재생 실패")
             call_id = f"brief-{sid.lower()}-{stamp}-r{run}"
             proc = _replay(loaded[sid][0], call_id, phone, args, ring=args.ring_seconds, close=False)
-            body, ms = _briefing(args.core_url, call_id, time.monotonic() + args.ring_seconds)
-            proc.wait()
+            body, ms = _briefing(args.core_url, call_id, time.monotonic() + args.ring_seconds, proc)
+            try:
+                rc = proc.wait(timeout=600)
+            except subprocess.TimeoutExpired:
+                proc.kill()
+                rc = -1
+            if rc != 0:
+                print(f"  ⚠ {sid} 재생 종료 코드 {rc}")
             purpose = (body or {}).get("purpose") or {}
             results.append({"script": sid, "run": run, "expected": script["expected"]["briefing"]["purpose_category"],
                             "status": (body or {}).get("status"), "category": purpose.get("category"),
                             "source": purpose.get("source"), "text": purpose.get("text"),
-                            "lines": (body or {}).get("briefing_lines"), "ms_until_ready": round(ms)})
+                            "lines": (body or {}).get("briefing_lines"), "ms_until_ready": round(ms), "replay_ok": rc == 0})
             print(f"  r{run} {sid}: {purpose.get('category')} ({purpose.get('source')}) · 기대 {results[-1]['expected']} · {round(ms)}ms")
     s = score(results)
     OUT.mkdir(parents=True, exist_ok=True)
