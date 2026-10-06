@@ -43,6 +43,7 @@ from typing import Any, Callable
 
 from hub.app.ports.output.call_guard_port import CallGuardPort
 from hub.app.ports.output.compliance_port import CompliancePort
+from hub.app.ports.output.customer_briefing_port import CustomerBriefingPort
 from hub.app.ports.output.generation_port import GenerationPort
 from hub.app.ports.output.masking_port import MaskingPort
 from hub.app.ports.output.postcall_port import PostcallPort
@@ -235,6 +236,24 @@ def build_postcall_provider(
 
         chat = OllamaChat(ollama_url, model=model, num_predict=160, timeout_s=30)  # 통화 후 처리 — 실시간 예산 밖이라 길게 둔다
     port = ModelPostcallAdapter(fallback, chat=chat, retrieval=retrieval)
+    return lambda: port
+
+
+def build_briefing_provider(
+    fallback: CustomerBriefingPort,
+    *,
+    ollama_url: str | None,
+    model: str | None,
+) -> Callable[[], CustomerBriefingPort]:
+    """`get_customer_briefing_port` 를 대체할 프로바이더(F-3, `decisions/220`). `fallback` 은 서버 규칙 브리핑 — 합성 루트가 넘긴다."""
+    from customer_briefing.adapter.outbound.model_briefing_adapter import ModelBriefingAdapter
+
+    chat = None
+    if ollama_url and model:
+        from generation.adapter.outbound.ollama_chat import OllamaChat
+
+        chat = OllamaChat(ollama_url, model=model, num_predict=200, timeout_s=10)
+    port = ModelBriefingAdapter(fallback, chat=chat, timeout_s=10.0)
     return lambda: port
 
 

@@ -1,0 +1,103 @@
+{
+  "id": "SYN-301",
+  "version": "dasan-briefing",
+  "source": "synthetic",
+  "generated_by": "Claude Code (claude-opus-5-5) · 2026-10-06 · 사람 검토 전",
+  "title": "가족 대신 주민등록초본 발급 문의 (서류 하나 안내 누락)",
+  "length_class": "medium",
+  "turn_count": 9,
+  "caller_number": "01000000301",
+  "agent_persona": "A01",
+  "customer_persona": "C03",
+  "procedure": {
+    "doc_ids": [
+      "DASAN-TERM-4.3"
+    ],
+    "required_documents": [
+      "신분증"
+    ]
+  },
+  "turns": [
+    {
+      "seq": 1,
+      "speaker": "agent",
+      "text": "네, 한별시 통합민원콜센터입니다. 무엇을 도와드릴까요?",
+      "tone": "calm"
+    },
+    {
+      "seq": 2,
+      "speaker": "customer",
+      "text": "어머니 대신 주민등록초본을 떼려고 하는데요. 제가 가서 발급받을 수 있나요?",
+      "tone": "calm"
+    },
+    {
+      "seq": 3,
+      "speaker": "agent",
+      "text": "네, 초본은 본인이 아니어도 대리 발급이 가능합니다. 위임장이 꼭 필요해요.",
+      "tone": "calm"
+    },
+    {
+      "seq": 4,
+      "speaker": "customer",
+      "text": "위임장은 어머니가 직접 써 주시면 되나요?",
+      "tone": "calm"
+    },
+    {
+      "seq": 5,
+      "speaker": "agent",
+      "text": "네, 어머니께서 직접 작성해서 주시면 됩니다. 양식은 주민센터에 있어요.",
+      "tone": "calm"
+    },
+    {
+      "seq": 6,
+      "speaker": "customer",
+      "text": "알겠습니다. 그럼 위임장만 챙겨서 내일 가면 되죠?",
+      "tone": "calm"
+    },
+    {
+      "seq": 7,
+      "speaker": "agent",
+      "text": "네, 위임장 챙겨서 방문하시면 됩니다. 더 궁금하신 점 있으세요?",
+      "tone": "calm"
+    },
+    {
+      "seq": 8,
+      "speaker": "customer",
+      "text": "아니요, 감사합니다.",
+      "tone": "calm"
+    },
+    {
+      "seq": 9,
+      "speaker": "agent",
+      "text": "네, 감사합니다.",
+      "tone": "calm"
+    }
+  ],
+  "expected": {
+    "pii_by_pattern": {},
+    "compliance": [],
+    "call_guard_by_type": {},
+    "customer_non_calm_turns": [],
+    "call_temperature": {
+      "customer_expected_outlier_turns": [],
+      "customer_calm_turns": [
+        2,
+        4,
+        6,
+        8
+      ],
+      "customer_turns": 4,
+      "note": "의도한 연기에서 나온 기대값이다 — 측정값이 아니다. raised·tense 는 채점에서 뺀다"
+    },
+    "briefing": {
+      "role": "prior",
+      "for": "SYN-302"
+    }
+  },
+  "notes": [
+    "고객 A 의 지난 통화 — SYN-302 가 이어받는다(같은 발신 번호)",
+    "절차: DASAN-TERM-4.3(필요서류 규칙 있음, 필수 = 신분증 하나). 상담원이 위임장만 말하고 신분증·주민등록증·운전면허증·여권·외국인등록증 어느 말도 하지 않아 F-2 가 incomplete(missing 신분증)를 남기도록 썼다 — 조항 3 절 「위임인 신분증 사본, 대리인 신분증」 을 빠뜨린 통화다",
+    "검색이 4.3 을 1순위로 뽑는지는 대본으로 보장되지 않는다 — 실행 뒤 closure 행을 확인한다",
+    "개인정보는 없다(가짜 값조차 쓰지 않았다)"
+  ]
+}

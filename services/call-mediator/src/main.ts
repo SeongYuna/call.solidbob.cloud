@@ -57,6 +57,8 @@ const registry = new CallRegistry({
   announcePending: true,
   // C-6 콜 가드 메시지 — 검사·저장은 늘 돈다(w4-call-guard-wiring)
   announceCallGuard: true,
+  // C-6 베타 — 폭언 대응 단계 메시지(decisions/221). 기본 꺼짐 — CALL_GUARD_INTERVENTION_BETA=1 일 때만. 운영 매니페스트에 넣지 않는다
+  announceCallGuardIntervention: config.callGuardInterventionBeta,
   // F-2 필요서류 판정 메시지 — 판정·저장은 늘 돈다. 새 closure 형식(procedure·complete/incomplete)
   announceClosure: true,
   // C-1~C-4 컴플라이언스 메시지 — 2026-09-22 켰다. apps/call 파서가 main 에 들어왔다(349b18b, 조서희). 검사·저장은 늘 돈다.

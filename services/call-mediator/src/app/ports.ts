@@ -191,12 +191,25 @@ export interface StartedPayload {
   call_id: string;
 }
 
+/** C-6 베타 — 폭언 대응 단계(`decisions/221`). 값은 전부 문자열, `announcement` 만 null 가능. */
+export interface CallGuardInterventionPayload {
+  call_id: string;
+  segment_id: string;
+  stage: "warning" | "final_warning" | "end_suggested";
+  abuse_count: string;
+  pause_ms: string;
+  announcement: string | null;
+  source_doc_id: string;
+  beta: "true";
+}
+
 export type CallMediatorMessage =
   | { type: "transcript"; payload: MaskedTranscript }
   | { type: "started"; payload: StartedPayload }
   | { type: "recommendation_pending"; payload: RecommendationPending }
   | { type: "recommendation"; payload: RecommendPayload }
   | { type: "call_guard"; payload: CallGuardPayload }
+  | { type: "call_guard_intervention"; payload: CallGuardInterventionPayload }
   | { type: "compliance"; payload: CompliancePayload }
   | { type: "compliance_unavailable"; payload: ComplianceUnavailable }
   | { type: "closure"; payload: ClosurePayload }

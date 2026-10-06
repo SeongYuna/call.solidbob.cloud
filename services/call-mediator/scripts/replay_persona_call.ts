@@ -5,7 +5,7 @@
  *
  *   node scripts/replay_persona_call.ts --list
  *   node scripts/replay_persona_call.ts SYN-004 [--url ws://localhost:8080] [--speak [say|google]] [--watch] [--speed 1] [--dry-run]
- *       [--close --core-url http://localhost:8000] [--save-ws /경로/frames.jsonl] [--final-timeout 20]
+ *       [--close --core-url http://localhost:8000] [--save-ws /경로/frames.jsonl] [--final-timeout 20] [--ring-seconds 15]
  *   node scripts/replay_persona_call.ts --prefetch [SYN-004]      # 재생 없이 Google TTS 캐시만 채운다(전 대본 또는 하나)
  *
  * - 두 화자를 **채널 둘**로 연다(`speaker=agent` · `speaker=customer`, `channels=2`) — 데모의 물리 2채널과 같은 모양이다.
@@ -42,9 +42,9 @@
  * 있으면 그것이 이긴다. **실제 시민 번호를 넣지 않는다.**
  */
 import { execFileSync, spawn, type ChildProcess } from "node:child_process";
-import { createWriteStream, type WriteStream } from "node:fs";
+import { createWriteStream, realpathSync, type WriteStream } from "node:fs";
 import { readdir, readFile } from "node:fs/promises";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import { WebSocket } from "ws";
 import { gapBefore, planTurn, readTurns, sayRate, type ScriptTurn, type Speaker } from "./persona_replay/plan.ts";
 import { pickVoice } from "./persona_replay/google_voices.ts";
@@ -94,6 +94,8 @@ interface Args {
   saveWs: string;
   /** 마지막 확정이 `/ws` 로 돌아오길 기다리는 상한(ms) */
   finalTimeoutMs: number;
+  /** 통화 채널을 연 뒤 첫 발화를 미루는 시간(ms). 기본 0(지금과 같음) */
+  ringMs: number;
 }
 
 /** `/ws` 로 받은 확정 자막 — 서버가 마스킹해 돌려준 것. 통화 후 요약 요청에 이것만 싣는다. */
@@ -125,7 +127,7 @@ interface Script {
 
 const sleep = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, Math.max(0, ms)));
 
-function parseArgs(argv: string[]): Args {
+export function parseArgs(argv: string[]): Args {
   const args: Args = {
     target: "",
     url: "ws://localhost:8080",
@@ -140,6 +142,7 @@ function parseArgs(argv: string[]): Args {
     coreUrl: "",
     saveWs: "",
     finalTimeoutMs: 20_000,
+    ringMs: 0,
   };
   for (let i = 0; i < argv.length; i += 1) {
     const flag = argv[i];
@@ -182,6 +185,9 @@ function parseArgs(argv: string[]): Args {
     } else if (flag === "--final-timeout") {
       args.finalTimeoutMs = Number(value) * 1000;
       i += 1;
+    } else if (flag === "--ring-seconds") {
+      args.ringMs = Number(value) * 1000;
+      i += 1;
     } else if (flag !== undefined && !flag.startsWith("--")) {
       args.target = flag;
     }
@@ -191,6 +197,9 @@ function parseArgs(argv: string[]): Args {
   }
   if (!(args.finalTimeoutMs > 0)) {
     throw new Error("--final-timeout 은 0 보다 큰 초다");
+  }
+  if (!Number.isFinite(args.ringMs) || args.ringMs < 0) {
+    throw new Error("--ring-seconds 는 0 이상의 초다");
   }
   if (args.saveWs.startsWith("--")) {
     throw new Error("--save-ws 는 저장할 파일 경로가 있어야 한다");
@@ -517,6 +526,11 @@ async function main(): Promise<void> {
     }
   }
   const sockets = args.dryRun ? null : await openSpeakers(args, callId, phone);
+  if (args.ringMs > 0 && !args.dryRun) {
+    // 벨이 울리는 시간 — 통화는 이미 열려 `started` 가 나갔다. 그동안 화면이 고객 브리핑(F-3, decisions/220)을 받는다
+    console.log(`  ☎ 벨 ${args.ringMs / 1000}초 — 첫 발화를 미룬다`);
+    await sleep(args.ringMs);
+  }
   let stopped = false;
   process.once("SIGINT", () => {
     stopped = true;
@@ -618,7 +632,19 @@ async function main(): Promise<void> {
   }
 }
 
-main().catch((error: unknown) => {
-  console.error(`실패: ${error instanceof Error ? error.message : String(error)}`);
-  process.exit(1);
-});
+function isEntry(): boolean {
+  const argv1 = process.argv[1];
+  if (!argv1) return false;
+  try {
+    return import.meta.url === pathToFileURL(realpathSync(argv1)).href;
+  } catch {
+    return false;
+  }
+}
+
+if (isEntry()) {
+  main().catch((error: unknown) => {
+    console.error(`실패: ${error instanceof Error ? error.message : String(error)}`);
+    process.exit(1);
+  });
+}
