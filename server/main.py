@@ -325,6 +325,29 @@ def _wire_postcall_model(app: FastAPI, settings: Settings) -> str | None:
     return "postcall_model"
 
 
+def _wire_briefing_model(app: FastAPI, settings: Settings) -> str | None:
+    """F-3 통화 수신 전 브리핑의 모델 겹(`decisions/220`). 요약과 **같은 조건**이다 — 새 키 없음.
+    안 켜면 규칙 브리핑(`server/apps/briefing`)이 그대로 나간다."""
+    model = settings.postcall_model or settings.generation_model
+    if not (settings.ollama_url and model):
+        return None
+    sys.path.insert(0, str(AI_APPS))
+    sys.path.insert(0, str(AI_APPS.parent))
+    try:
+        from provider import build_briefing_provider  # noqa: PLC0415
+    except (ModuleNotFoundError, ImportError):
+        return None
+
+    from briefing.adapter.outbound.rule_briefing_adapter import RuleBriefingAdapter  # noqa: PLC0415
+    from hub.dependencies.customer_briefing_provider import get_customer_briefing_port  # noqa: PLC0415
+
+    app.dependency_overrides.setdefault(
+        get_customer_briefing_port,
+        build_briefing_provider(RuleBriefingAdapter(), ollama_url=settings.ollama_url, model=model),
+    )
+    return "briefing_model"
+
+
 def _wire_compliance(app: FastAPI) -> str | None:
     """`ai/` 의 컴플라이언스 탐지(C-1~C-4)를 꽂는다. 콜 가드와 같다 — 규칙표뿐이라 설정 조건이 없다.
 
@@ -401,6 +424,7 @@ async def lifespan(app: FastAPI):
         _wire_pii_ner(app, settings),
         _wire_generation(app, settings),
         _wire_postcall_model(app, settings),
+        _wire_briefing_model(app, settings),
         _wire_uploads(app, settings),
     ):
         if wired:
