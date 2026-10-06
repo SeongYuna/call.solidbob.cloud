@@ -95,7 +95,9 @@ def test_발신_번호를_식별자로_바꿔_싣고_번호는_싣지_않는다(
     call = asyncio.run(CallStartInteractor(record, customer_ref=ref).start(_cmd(caller_phone="010-1234-5678")))
     assert ref.phones == ["010-1234-5678"]
     assert call.customer_id == "r" * 64
-    assert "010" not in repr(record.calls[0])
+    # "010" 세 글자만 보면 repr 에 든 시작 시각(마이크로초 840108 등)에 우연히 걸린다(2026-10-06 main CI) — 번호 꼴로 본다
+    for leaked in ("010-1234-5678", "1234-5678", "01012345678", "12345678"):
+        assert leaked not in repr(record.calls[0])
 
 
 def test_번호가_없거나_키가_없으면_고객을_잇지_않는다():
