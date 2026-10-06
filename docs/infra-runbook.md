@@ -1039,6 +1039,29 @@ ADMIN_ACCESS_TOKEN=… .venv/bin/python scripts/persona_sim/seed_demo_agents.py 
 서버 쪽 ④(토큰이 없어도 잠그는 fail-closed)는 `w6-ingest-guard-fail-closed` 로 넣었다 — **없으면 서버는 뜨지만 쓰기 경로가 닫힌다**(401).
 기동 거부가 아닌 이유: 업로드 문(`110`)·`/close`(`315`)와 같은 모양이고, 키 하나 때문에 읽기 경로·관리자 화면까지 죽이지 않는다.
 
+#### 12-2-d. 전사 본문 암호화 키 — `TRANSCRIPT_ENC_KEY` (2026-10-06 추가, `decisions/326`)
+
+server `0.1.46` 부터 `transcript_segment.text` 에 **마스킹본을 AES-256-GCM 으로 싸서** 넣는다. 키가 없으면 지금처럼 마스킹본 평문이고
+`/health` 의 `transcript_encryption` 이 `"unset"` 이다. **키를 잃으면 암호화된 전사를 되돌릴 수 없다** — 넣기 전에 따로 보관할 곳부터 정한다.
+**형식이 틀리면 서버가 뜨지 않는다**(배포가 실패하고 앞 파드가 남는다). 옛 이미지는 이 키를 읽지 않으므로 먼저 넣어도 무해하다.
+
+```bash
+K="sudo k3s kubectl -n callguard"
+TS=$(date +%Y%m%d-%H%M%S); sudo mkdir -p /root/secret-backups/$TS
+$K get secret server-env -o yaml | sudo tee /root/secret-backups/$TS/server-env.yaml >/dev/null
+KEY=$(openssl rand -base64 32)                                    # 값을 찍지 않는다 — 아래 보관 후 unset
+# ① 키를 시크릿 밖에도 보관한다(SSM Parameter Store SecureString 등). 이 단계를 건너뛰면 클러스터와 함께 잃는다
+# ② 넣고 재시작
+$K patch secret server-env --type merge -p "{\"stringData\":{\"TRANSCRIPT_ENC_KEY\":\"$KEY\"}}"
+unset KEY
+$K rollout restart deploy/callguard-server && $K rollout status deploy/callguard-server --timeout=180s
+# ③ 확인
+curl -s https://server.solidbob.cloud/health | grep -o '"transcript_encryption":"[a-z]*"'   # on
+```
+
+확인 뒤 19장 11번(통화 → 전사 → 조회)을 한 번 돌린다 — 응답 `text` 가 **마스킹본**이어야 한다(서버가 풀어서 준다).
+DB 를 직접 보면 `enc:v1:…` 이다. **키를 지우지 않는다** — 지우면 이미 암호화된 행의 지난 통화 보기·블랙리스트 근거가 500 이다.
+
 ### 12-3. 영속 볼륨
 
 k3s 는 `local-path` 프로비저너를 기본 내장하고 있습니다. **EBS 루트(150GiB)에 저장되므로 인스턴스를 중지해도 살아남습니다.**
@@ -1816,6 +1839,8 @@ curl -s $B/health
 #    상담원 화면이 상담원 토큰을 싣기 시작하면(`w6-read-path-token-ui`) server-env 에 READ_AUTH_REQUIRED=true → "locked".
 #    0.1.35 부터 `"version"` 도 나온다 — 떠 있는 이미지 태그(빌드 인자 APP_VERSION). kustomization 의 newTag 와 같아야 한다.
 #    "unknown" 이면 태그 없이 구운 이미지다(로컬 빌드) — 운영에서 나오면 release.yml 의 build-args 를 본다.
+#    0.1.46 부터 `"transcript_encryption"` 도 나온다(`decisions/326`) — "on" 이면 전사 본문을 암호화해 저장한다.
+#    "unset" 이면 키가 없어 마스킹본 평문으로 저장 중이다(12-2-d).
 
 # 9-1. 설정이 아니라 «실제로 붙는가» (server 0.1.19+, 2026-09-19 추가)
 #      기대: 200 + {"status":"ok","checks":{"postgres":{"ok":true,...},"elasticsearch":{"ok":true,...}}}

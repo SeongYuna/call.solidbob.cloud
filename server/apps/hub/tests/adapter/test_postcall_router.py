@@ -108,3 +108,16 @@ def test_통화가_없으면_404_이미_확정된_요약이면_409다():
                 assert client.post("/hub/calls/c_001/close", json=BODY).status_code == code
     finally:
         app.dependency_overrides.clear()
+
+
+def test_화면이_보낸_원문_번호는_요약에_실리지_않는다():
+    """`decisions/326` — 상담원 화면이 원문을 보여 주므로 `/close` 본문에 원문 번호가 올 수 있다.
+    기본 배선(규칙 마스킹 + 규칙 발췌 초안)에서 응답 요약에 원래 번호가 나오면 그 초안이 그대로 저장된 것이다."""
+    body = {"call_id": "c_001", "segments": [
+        {"segment_id": 1, "speaker": "customer", "text": "제 번호는 01012345678 이고 카드를 잃어버렸어요", "is_final": True},
+        {"segment_id": 2, "speaker": "agent", "text": "분실 신고 도와드리겠습니다", "is_final": True}]}
+    with TestClient(app) as client:
+        r = client.post("/hub/calls/c_001/close", json=body)
+    assert r.status_code == 200
+    assert "01012345678" not in r.json()["summary_text"]
+    assert "***********" in r.json()["summary_text"]

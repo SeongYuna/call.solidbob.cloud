@@ -7,6 +7,9 @@
    이미 MaskingPort 를 거친 것이다. 원문(`TranscriptIngestCommand.raw_text`)은 인터랙터 밖으로
    나오지 않으므로 여기서는 손에 넣을 방법 자체가 없다. `transcript_segment.text` 컬럼 주석과 같은 규칙이다.
 
+   **마스킹본을 다시 암호화해 넣는다**(`decisions/326`) — 키(`TRANSCRIPT_ENC_KEY`)가 없으면 마스킹본 평문 그대로다.
+   마스킹 구간(`masking_event`)은 위치·패턴뿐이라 값이 없다 — 암호화하지 않는다.
+
 2. **interim 은 저장하지 않는다.** [7.3절](/docs/07/)이 정한 규칙 —
    *"DB에는 `is_final: true`만 저장 — interim까지 저장하면 통화 1건에 수천 행이 쌓인다."*
    [V4 실측](/docs/05/)상 20초 발화에 interim 이 199건 온다. 화면은 `segment_id` 로 교체해 보여주고,
@@ -28,6 +31,7 @@ from hub.app.ports.output.transcript_ingest_record_port import (
     TranscriptIngestRecordPort,
 )
 
+from ..transcript_text_cipher import TranscriptTextCipher
 from .connection import ConnectionFactory
 
 # PostgreSQL SQLSTATE `foreign_key_violation`. psycopg 를 import 하지 않고 코드로 가린다 —
@@ -58,8 +62,10 @@ VALUES (%s, %s, %s, %s, %s, %s)
 
 
 class PostgresTranscriptSegmentRepository(TranscriptIngestRecordPort):
-    def __init__(self, connect: ConnectionFactory) -> None:
+    def __init__(self, connect: ConnectionFactory, *, cipher: TranscriptTextCipher | None = None) -> None:
         self._connect = connect
+        # 없으면 키 없는 암호화기 — 마스킹본 평문 그대로 쓴다. 프로바이더는 늘 설정으로 만든 것을 넘긴다
+        self._cipher = cipher or TranscriptTextCipher(None)
 
     async def record(self, event: TranscriptEvent) -> None:
         if not event.is_final:
@@ -75,7 +81,7 @@ class PostgresTranscriptSegmentRepository(TranscriptIngestRecordPort):
                             event.segment_id,
                             event.call_id,
                             event.speaker,
-                            event.text,  # 마스킹 완료본 (SEC-1)
+                            self._cipher.seal(event.text),  # 마스킹 완료본(SEC-1)을 암호화해서 (decisions/326)
                             event.is_final,
                             event.utterance_end_ms,
                             now,

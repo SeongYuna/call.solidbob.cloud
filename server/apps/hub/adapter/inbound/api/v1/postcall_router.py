@@ -16,8 +16,7 @@ from hub.adapter.inbound.api.schemas.postcall_schema import (
     FollowUpActionSchema,
     PostcallRequest,
 )
-from hub.app.dtos.postcall_dto import PostcallCommand
-from hub.app.dtos.transcript_dto import TranscriptEvent
+from hub.app.dtos.postcall_dto import PostcallCommand, PostcallSegment
 from hub.app.ports.input.postcall_use_case import PostcallUseCase
 from hub.app.ports.output.postcall_record_port import SummaryAlreadyConfirmedError
 from hub.app.ports.output.transcript_ingest_record_port import CallNotStartedError
@@ -47,12 +46,12 @@ async def close_call(
         draft = await use_case.close(
             PostcallCommand(
                 call_id=call_id,
+                # 화면이 보낸 자막은 원문일 수 있다(`decisions/326`) — 인터랙터가 요약 전에 가린다
                 segments=tuple(
-                    TranscriptEvent(
-                        call_id=call_id,
+                    PostcallSegment(
                         segment_id=s.segment_id,
                         speaker=s.speaker,
-                        text=s.text,
+                        raw_text=s.text,
                         is_final=s.is_final,
                         utterance_end_ms=s.utterance_end_ms,
                     )

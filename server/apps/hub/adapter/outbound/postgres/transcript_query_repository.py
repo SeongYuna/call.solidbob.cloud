@@ -5,6 +5,7 @@
 페이지 경계에서 순서가 어긋난다.
 
 **마스킹 완료본만 나간다** (SEC-1). `transcript_segment.text` 에 원문이 없으므로 구조적으로 보장된다.
+저장된 값은 암호화돼 있을 수 있다(`decisions/326`) — 여기서 풀어 마스킹본으로 돌려준다. 못 풀면 실패한다(암호문을 내보내지 않는다).
 """
 
 from __future__ import annotations
@@ -12,6 +13,7 @@ from __future__ import annotations
 from hub.app.dtos.transcript_dto import MaskedSpan, TranscriptEvent
 from hub.app.ports.output.transcript_query_port import TranscriptQueryPort
 
+from ..transcript_text_cipher import TranscriptTextCipher
 from .connection import ConnectionFactory
 
 _LIST = """
@@ -35,8 +37,9 @@ ORDER BY "segment_id", "span_start"
 
 
 class PostgresTranscriptQueryRepository(TranscriptQueryPort):
-    def __init__(self, connect: ConnectionFactory) -> None:
+    def __init__(self, connect: ConnectionFactory, *, cipher: TranscriptTextCipher | None = None) -> None:
         self._connect = connect
+        self._cipher = cipher or TranscriptTextCipher(None)
 
     async def list_segments(self, call_id: str, limit: int, offset: int) -> list[TranscriptEvent]:
         async with self._connect() as conn:
@@ -63,7 +66,7 @@ class PostgresTranscriptQueryRepository(TranscriptQueryPort):
                 call_id=call_id,
                 segment_id=r[0],
                 speaker=r[1],
-                text=r[2],  # 마스킹 완료본 (SEC-1)
+                text=self._cipher.unseal(r[2]),  # 마스킹 완료본 (SEC-1) — 암호화된 행은 푼다(decisions/326)
                 is_final=bool(r[3]),
                 utterance_end_ms=r[4],
                 masked=tuple(spans.get(r[0], ())),

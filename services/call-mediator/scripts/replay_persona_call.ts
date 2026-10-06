@@ -17,10 +17,11 @@
  *   `GOOGLE_TTS_API_KEY` 뿐이고(`.env`), 월 문자 한도 `GOOGLE_TTS_MAX_CHARS_PER_MONTH`(기본 900,000)를 넘기면 부르기 전에 멈춘다
  *   (`persona_replay/tts_budget.ts`, COST-1 과 같은 2단 가드). 키가 없는데 캐시도 없으면 **`say` 로 조용히 넘어가지 않고** 실패한다.
  *   발급·설정·비용은 `scripts/persona_sim/TTS.md`.
- * - `--watch` 는 `/ws?call_id=` 를 함께 열어 대시보드가 받는 것(마스킹된 자막·카드·콜 가드·필요서류)을 찍는다.
+ * - `--watch` 는 `/ws?call_id=` 를 함께 열어 대시보드가 받는 것(자막·카드·콜 가드·필요서류)을 찍는다.
  *   추천 줄에는 카드 제목과 함께 **지연 구간**(`retrieval_ms`·`generation_ms`·`internal_latency_ms`·`e2e_latency_ms`)을 찍는다
- *   (`persona_replay/ws_view.ts`). `--save-ws <경로>` 는 `/ws` 로 받은 프레임을 그대로 jsonl 로 남긴다 — 마스킹본뿐이지만
- *   운영에서 뜬 것은 저장소 밖(또는 gitignore 인 `data/`)에 둔다.
+ *   (`persona_replay/ws_view.ts`). `--save-ws <경로>` 는 `/ws` 로 받은 프레임을 그대로 jsonl 로 남긴다 —
+ *   ⚠ **2026-10-06 부터 `/ws` 자막은 원문이다**(`decisions/326` — 상담원 화면이 원문을 보여 준다). 합성 대본이라도
+ *   저장소 밖(또는 gitignore 인 `data/`)에 둔다.
  * - **마지막 턴을 확인하고 닫는다**(2026-09-22, `w6-replay-last-turn`). `/ws` 를 열 수 있으면(`--watch`·`--close`·`--save-ws`,
  *   또는 뷰 토큰이 있거나 루프백 주소) 보낸 확정이 화자별로 전부 `/ws` 로 돌아올 때까지 기다린 뒤 `{"type":"end"}` 를 보낸다.
  *   `--final-timeout`(기본 20초) 안에 안 돌아오면 **경고를 찍고 종료 코드 1** 로 끝낸다 — 조용히 닫지 않는다
@@ -296,7 +297,8 @@ function watch(args: Args, callId: string, view: ViewOptions): Promise<WebSocket
   return open(`${args.url}/ws?call_id=${encodeURIComponent(callId)}`, bearer(process.env.CALL_MEDIATOR_VIEW_TOKEN)).then((ws) => {
     ws.on("message", (data) => {
       const raw = data.toString();
-      // 받은 그대로 남긴다 — 마스킹본만 오는 문이다(SEC-1). 받은 시각은 이 머신 시계다
+      // 받은 그대로 남긴다 — 자막은 원문이다(decisions/326, 2026-10-06 전에는 마스킹본). 받은 시각은 이 머신 시계다
+      // `--close` 는 이 자막(원문)으로 요약을 부른다 — 서버가 요약 전에 다시 가린다(postcall 인터랙터)
       save?.write(`${JSON.stringify({ received_at: new Date().toISOString(), frame: raw })}\n`);
       const message = JSON.parse(raw) as { type: string; payload: Record<string, unknown> };
       const p = message.payload;

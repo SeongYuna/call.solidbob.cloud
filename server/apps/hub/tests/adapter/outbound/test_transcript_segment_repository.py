@@ -355,3 +355,42 @@ def test_실제_DB에서_같은_번호를_다른_화자로_덮으면_거절되�
     conflicted, row = asyncio.run(scenario())
     assert conflicted is True
     assert tuple(row) == ("agent", "안녕하세요 다산콜센터입니다.")
+
+
+@pytest.mark.integration
+def test_실제_DB에_암호문으로_저장되고_읽을_때_마스킹본으로_돌아온다(integration_settings):
+    """`decisions/326` — 컬럼에는 암호문만 남고(마스킹본도 비치지 않는다), 지난 통화 보기는 마스킹본을 돌려준다.
+    암호화 전에 쌓인 평문 행도 같은 통화 안에서 함께 읽힌다."""
+    import asyncio
+    import base64
+
+    from hub.adapter.outbound.postgres.connection import build_connection_factory
+    from hub.adapter.outbound.postgres.transcript_query_repository import PostgresTranscriptQueryRepository
+    from hub.adapter.outbound.transcript_text_cipher import TranscriptTextCipher
+
+    connect = build_connection_factory(integration_settings)
+    cipher = TranscriptTextCipher(base64.b64encode(bytes(range(32))).decode("ascii"))
+    call_id = "it_enc_001"
+
+    async def scenario():
+        await _reset_calls(connect, call_id)
+        # 1번은 암호화 전에 쌓인 옛 행, 2번은 암호화해서 쓴 새 행
+        await PostgresTranscriptSegmentRepository(connect).record(
+            TranscriptEvent(call_id=call_id, segment_id=1, speaker="agent", text="무엇을 도와드릴까요",
+                            is_final=True, utterance_end_ms=900))
+        await PostgresTranscriptSegmentRepository(connect, cipher=cipher).record(
+            TranscriptEvent(call_id=call_id, segment_id=2, speaker="customer", text=MASKED, is_final=True,
+                            utterance_end_ms=2600, masked=(MaskedSpan(type="P4", span=(6, 17)),)))
+        async with connect() as conn:
+            async with conn.cursor() as cur:
+                await cur.execute("SELECT text FROM transcript_segment WHERE call_id=%s AND segment_id=2", (call_id,))
+                stored = (await cur.fetchone())[0]
+        rows = await PostgresTranscriptQueryRepository(connect, cipher=cipher).list_segments(call_id, 10, 0)
+        return stored, rows
+
+    stored, rows = asyncio.run(scenario())
+
+    assert stored.startswith(TranscriptTextCipher.PREFIX)
+    assert MASKED not in stored and RAW_PHONE not in stored
+    assert [r.text for r in rows] == ["무엇을 도와드릴까요", MASKED]
+    assert rows[1].masked == (MaskedSpan(type="P4", span=(6, 17)),)

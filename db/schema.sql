@@ -65,7 +65,7 @@ CREATE TABLE "transcript_segment" (
     FOREIGN KEY ("call_id") REFERENCES "call"("call_id")
 );
 COMMENT ON COLUMN "transcript_segment"."segment_id" IS '통화 안에서의 순번. **통화를 넘어 유일하지 않다** — call_id 와 함께 써야 한다';
-COMMENT ON COLUMN "transcript_segment"."text" IS '마스킹 완료본만 — 원문 저장 금지 (SEC-1)';
+COMMENT ON COLUMN "transcript_segment"."text" IS '마스킹 완료본만 — 원문 저장 금지 (SEC-1). TRANSCRIPT_ENC_KEY 가 있으면 그 마스킹본을 AES-256-GCM 으로 싼 `enc:v1:…` 다(`decisions/326`)';
 
 -- C-5 마스킹 이벤트 — 세그먼트당 여러 개 가능해 분리 (1NF)
 CREATE TABLE "masking_event" (

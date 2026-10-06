@@ -120,6 +120,10 @@ export class FakeHub implements HubPort {
   failRouting: number | null = null;
   ingestDelayMs = 0;
   fired = true;
+  /** 전사 응답의 `masked` 구간. 기본은 빈 배열 — 화면으로 그대로 가는지 볼 때 채운다(`decisions/326`). */
+  maskedSpans: unknown[] = [];
+  /** 길이를 보존하지 않는 마스킹(숫자 덩어리 → `*` 하나)을 흉내 낸다 — 화면에 원문을 싣지 않아야 하는 경우. */
+  maskShrinks = false;
 
   /** 서버에 이미 저장된 가장 큰 발화 번호 — 다시 연 통화를 흉내 낸다(`w6-segment-id-reuse`). */
   lastSegmentId = 0;
@@ -156,8 +160,8 @@ export class FakeHub implements HubPort {
       call_id: raw.call_id,
       segment_id: String(raw.segment_id),
       speaker: raw.speaker,
-      text: raw.text.replace(/\d/g, "*"),
-      masked: [],
+      text: this.maskShrinks ? raw.text.replace(/\d+/g, "*") : raw.text.replace(/\d/g, "*"),
+      masked: this.maskedSpans,
       is_final: String(raw.is_final),
       utterance_end_ms: String(raw.utterance_end_ms),
     };

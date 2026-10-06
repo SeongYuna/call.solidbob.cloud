@@ -96,8 +96,10 @@ test("생산자 오디오 → STT → 서버 → 대시보드: 대시보드 파�
       assert.ok(key in transcript.payload, `${key} 가 없다 — 대시보드가 이 이벤트를 버린다`);
     }
     assert.ok(allLeavesStringOrNull(transcript.payload), "문자열 아닌 값이 있다 — 대시보드가 alert 를 띄운다");
-    assert.equal(transcript.payload["text"], "전화번호는 ***-****-****");
-    assert.ok(!JSON.stringify(received).includes("1234"), "원문이 대시보드로 갔다");
+    // 상담원 화면은 원문을 본다(decisions/326) — 자막 밖의 메시지(추천 등)에는 원문이 없다
+    assert.equal(transcript.payload["text"], "전화번호는 010-1234-5678");
+    const others = received.filter((m) => (m as { type: string }).type !== "transcript");
+    assert.ok(!JSON.stringify(others).includes("1234"), "자막 밖의 메시지에 원문이 있다");
 
     const recommendation = received.find((m) => (m as { type: string }).type === "recommendation") as {
       payload: Record<string, unknown>;
@@ -360,7 +362,7 @@ test("GET /dev · /call-mediator/dev — 페이지를 CSP·틀 금지·캐시 �
   }
 });
 
-test("/dev/text — 글자가 서버 마스킹을 거쳐 대시보드로 간다", async () => {
+test("/dev/text — 글자가 서버(마스킹·저장)를 거친 뒤 대시보드로 간다 — 화면은 원문(decisions/326)", async () => {
   const gw = await startCallMediator();
   try {
     const dashboard = await connect(`ws://${gw.base}/dashboard`); // 조서희 님 대시보드 경로 별칭
@@ -374,9 +376,10 @@ test("/dev/text — 글자가 서버 마스킹을 거쳐 대시보드로 간다"
     await waitFor(() => received.filter((m) => m.type === "transcript").length >= 2 && received.some((m) => m.type === "recommendation"));
 
     assert.equal(gw.hub.calls[0]?.stt_engine, "web-speech");
-    assert.ok(!JSON.stringify(received).includes("1234"), "원문이 대시보드로 갔다");
+    assert.ok(!JSON.stringify(received.filter((m) => m.type !== "transcript")).includes("1234"), "자막 밖의 메시지에 원문이 있다");
     const final = received.find((m) => m.type === "transcript" && m.payload["is_final"] === "true");
-    assert.equal(final?.payload["text"], "제 번호는 ***-****-**** 이에요");
+    assert.equal(final?.payload["text"], "제 번호는 010-1234-5678 이에요");
+    assert.equal(gw.hub.recommended[0]?.text, "제 번호는 ***-****-**** 이에요", "하류는 서버 마스킹본");
     assert.ok(received.every((m) => allLeavesStringOrNull(m.payload)));
 
     const closed = nextClose(dev);

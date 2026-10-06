@@ -18,7 +18,7 @@ import os
 import pytest
 
 # `core/config.py` 가 읽는 접두어들. 설정을 읽는 곳이 거기 하나뿐이라 목록이 짧게 유지된다.
-_MANAGED_PREFIXES = ("POSTGRES_", "DATABASE_", "ELASTICSEARCH_", "GOOGLE_", "STT_", "AWS_")
+_MANAGED_PREFIXES = ("POSTGRES_", "DATABASE_", "ELASTICSEARCH_", "GOOGLE_", "STT_", "AWS_", "TRANSCRIPT_")
 
 # integration 테스트 전용 DB. 위 접두어에 걸리지 않는 이름이라 격리 픽스처가 걷어내지 않는다.
 # CI(`test.yml` 의 `server` job)가 매번 새로 띄운 PostgreSQL 에 현재 `db/schema.sql` 을 넣고 여기에 준다.

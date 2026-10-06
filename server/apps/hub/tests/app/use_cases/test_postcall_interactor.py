@@ -5,15 +5,24 @@ import asyncio
 
 import pytest
 
-from hub.app.dtos import CallSummaryDraft, FollowUpAction, TranscriptEvent
-from hub.app.dtos.postcall_dto import PostcallCommand
+from hub.app.dtos import CallSummaryDraft, FollowUpAction, MaskedSpan
+from hub.app.dtos.postcall_dto import PostcallCommand, PostcallSegment
 from hub.app.ports.output import PostcallPort, PostcallRecordPort
+from hub.app.ports.output.masking_port import MaskingPort
 from hub.app.use_cases.postcall_interactor import PostcallInteractor
 
 SEGMENTS = (
-    TranscriptEvent(call_id="c_001", segment_id=1, speaker="customer", text="카드를 잃어버렸어요", is_final=True),
-    TranscriptEvent(call_id="c_001", segment_id=2, speaker="agent", text="분실 신고 도와드리겠습니다", is_final=True),
+    PostcallSegment(segment_id=1, speaker="customer", raw_text="카드를 잃어버렸어요", is_final=True),
+    PostcallSegment(segment_id=2, speaker="agent", raw_text="분실 신고 도와드리겠습니다", is_final=True),
 )
+
+
+class _DigitMasking(MaskingPort):
+    """숫자를 같은 길이의 `*` 로 — 배선만 본다(무엇을 가릴지는 masking 스포크가 채점받는다)."""
+
+    def mask(self, text):
+        spans = tuple(MaskedSpan(type="P4", span=(i, i + 1)) for i, ch in enumerate(text) if ch.isdigit())
+        return "".join("*" if ch.isdigit() else ch for ch in text), spans
 
 
 class _Spy(PostcallPort):
@@ -37,7 +46,7 @@ class _Record(PostcallRecordPort):
 
 
 def _run(port, segments=SEGMENTS, record=None):
-    return asyncio.run(PostcallInteractor(postcall=port, record=record or _Record()).close(
+    return asyncio.run(PostcallInteractor(postcall=port, record=record or _Record(), masking=_DigitMasking()).close(
         PostcallCommand(call_id="c_001", segments=segments)))
 
 
@@ -119,11 +128,32 @@ def test_위반_발화_번호를_요약_포트에_같이_넘긴다():
             raise RuntimeError("DB 없음")
 
     port = _FlagSpy()
-    asyncio.run(PostcallInteractor(postcall=port, record=_Record(), flags=_Flags()).close(
+    asyncio.run(PostcallInteractor(postcall=port, record=_Record(), masking=_DigitMasking(), flags=_Flags()).close(
         PostcallCommand(call_id="c_001", segments=SEGMENTS)))
     assert port.got == frozenset({2})
 
     port = _FlagSpy()
-    asyncio.run(PostcallInteractor(postcall=port, record=_Record(), flags=_Broken()).close(
+    asyncio.run(PostcallInteractor(postcall=port, record=_Record(), masking=_DigitMasking(), flags=_Broken()).close(
         PostcallCommand(call_id="c_001", segments=SEGMENTS)))
     assert port.got == frozenset()
+
+
+def test_화면이_보낸_원문_자막은_요약_전에_가린다():
+    """2026-10-06(`decisions/326`) — 상담원 화면은 원문을 보여 주고, `/close` 는 그 화면의 자막을 받는다.
+    요약 포트(모델 포함)에도, 저장되는 초안에도 원문 번호가 닿으면 안 된다."""
+
+    class _Echo(PostcallPort):
+        def __init__(self):
+            self.seen = []
+
+        async def summarize(self, call_id, segments):
+            self.seen = [(s.text, s.masked) for s in segments]
+            return CallSummaryDraft(call_id=call_id, summary_text=" / ".join(s.text for s in segments))
+
+    raw = (PostcallSegment(segment_id=7, speaker="customer", raw_text="제 번호는 01012345678 입니다", is_final=True),)
+    port, record = _Echo(), _Record()
+    draft = _run(port, raw, record)
+    assert port.seen[0][0] == "제 번호는 *********** 입니다"
+    assert len(port.seen[0][1]) == 11  # 구간도 같이 넘어간다
+    assert "01012345678" not in draft.summary_text
+    assert "01012345678" not in record.saved[0].summary_text
