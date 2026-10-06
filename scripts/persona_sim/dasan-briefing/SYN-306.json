@@ -1,0 +1,83 @@
+{
+  "id": "SYN-306",
+  "version": "dasan-briefing",
+  "source": "synthetic",
+  "generated_by": "Claude Code (claude-opus-5-5) · 2026-10-06 · 사람 검토 전",
+  "title": "저번에 여권 신청했는데 어떻게 됐어요",
+  "length_class": "short",
+  "turn_count": 6,
+  "caller_number": "01000000303",
+  "agent_persona": "A01",
+  "customer_persona": "C04",
+  "procedure": {
+    "doc_ids": [
+      "DASAN-TERM-4.23"
+    ],
+    "required_documents": []
+  },
+  "turns": [
+    {
+      "seq": 1,
+      "speaker": "agent",
+      "text": "네, 한별시 통합민원콜센터입니다. 무엇을 도와드릴까요?",
+      "tone": "calm"
+    },
+    {
+      "seq": 2,
+      "speaker": "customer",
+      "text": "저번에 여권 신청했는데요, 어떻게 됐어요?",
+      "tone": "calm"
+    },
+    {
+      "seq": 3,
+      "speaker": "agent",
+      "text": "네, 지난번 문의하신 여권 건 확인해 보겠습니다. 잠시만 기다려 주세요.",
+      "tone": "calm"
+    },
+    {
+      "seq": 4,
+      "speaker": "customer",
+      "text": "네, 문자 안 왔어요. 그래서 전화했어요.",
+      "tone": "calm"
+    },
+    {
+      "seq": 5,
+      "speaker": "agent",
+      "text": "확인해 보니 접수 처리 중입니다. 결과가 나오면 다시 문자 보내 드리겠습니다.",
+      "tone": "calm"
+    },
+    {
+      "seq": 6,
+      "speaker": "customer",
+      "text": "알겠어요. 감사합니다.",
+      "tone": "calm"
+    }
+  ],
+  "expected": {
+    "pii_by_pattern": {},
+    "compliance": [],
+    "call_guard_by_type": {},
+    "customer_non_calm_turns": [],
+    "call_temperature": {
+      "customer_expected_outlier_turns": [],
+      "customer_calm_turns": [
+        2,
+        4,
+        6
+      ],
+      "customer_turns": 3,
+      "note": "의도한 연기에서 나온 기대값이다 — 측정값이 아니다. raised·tense 는 채점에서 뺀다"
+    },
+    "briefing": {
+      "role": "current",
+      "purpose_category": "후속 확인",
+      "prior": [
+        "SYN-305"
+      ]
+    }
+  },
+  "notes": [
+    "정답 목적은 브리핑을 한 번도 돌리기 전에 적었다(대본 작성자의 상한 라벨)",
+    "브리핑은 이 통화의 첫 고객 발화를 보지 못한다 — 지난 통화의 후속조치(문자 안내 약속)만으로 맞혀야 한다"
+  ]
+}

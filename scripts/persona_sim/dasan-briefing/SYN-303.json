@@ -1,0 +1,112 @@
+{
+  "id": "SYN-303",
+  "version": "dasan-briefing",
+  "source": "synthetic",
+  "generated_by": "Claude Code (claude-opus-5-5) · 2026-10-06 · 사람 검토 전",
+  "title": "단수 처리 지연 불만 (고객 톤 raised, 욕설 없음)",
+  "length_class": "medium",
+  "turn_count": 9,
+  "caller_number": "01000000302",
+  "agent_persona": "A01",
+  "customer_persona": "C03",
+  "procedure": {
+    "doc_ids": [
+      "DASAN-TERM-3.11"
+    ],
+    "required_documents": []
+  },
+  "turns": [
+    {
+      "seq": 1,
+      "speaker": "agent",
+      "text": "네, 한별시 통합민원콜센터입니다. 무엇을 도와드릴까요?",
+      "tone": "calm"
+    },
+    {
+      "seq": 2,
+      "speaker": "customer",
+      "text": "우리 동네 단수가 벌써 사흘째인데 처리가 왜 이렇게 늦어요?",
+      "tone": "raised"
+    },
+    {
+      "seq": 3,
+      "speaker": "agent",
+      "text": "불편이 크시겠습니다. 단수가 발생한 주소를 알려 주시겠어요?",
+      "tone": "calm"
+    },
+    {
+      "seq": 4,
+      "speaker": "customer",
+      "text": "한별구 샘터로 일대요. 접수한 지 한참인데 연락이 한 번도 없었어요.",
+      "tone": "raised"
+    },
+    {
+      "seq": 5,
+      "speaker": "agent",
+      "text": "확인해 보니 접수는 되어 있습니다. 복구 시각을 지금 확정해 드리기는 어렵습니다.",
+      "tone": "calm"
+    },
+    {
+      "seq": 6,
+      "speaker": "customer",
+      "text": "그럼 언제 되는지도 모른다는 거예요? 너무하네요.",
+      "tone": "raised"
+    },
+    {
+      "seq": 7,
+      "speaker": "agent",
+      "text": "충분히 답답하실 것 같습니다. 담당 부서에서 오늘 중 회신드리겠습니다.",
+      "tone": "calm"
+    },
+    {
+      "seq": 8,
+      "speaker": "customer",
+      "text": "오늘 중이요? 알겠어요, 기다려 볼게요.",
+      "tone": "tense"
+    },
+    {
+      "seq": 9,
+      "speaker": "agent",
+      "text": "네, 감사합니다.",
+      "tone": "calm"
+    }
+  ],
+  "expected": {
+    "pii_by_pattern": {},
+    "compliance": [],
+    "call_guard_by_type": {},
+    "customer_non_calm_turns": [
+      {
+        "seq": 2,
+        "tone": "raised"
+      },
+      {
+        "seq": 4,
+        "tone": "raised"
+      },
+      {
+        "seq": 6,
+        "tone": "raised"
+      },
+      {
+        "seq": 8,
+        "tone": "tense"
+      }
+    ],
+    "call_temperature": {
+      "customer_expected_outlier_turns": [],
+      "customer_calm_turns": [],
+      "customer_turns": 4,
+      "note": "의도한 연기에서 나온 기대값이다 — 측정값이 아니다. raised·tense 는 채점에서 뺀다"
+    },
+    "briefing": {
+      "role": "prior",
+      "for": "SYN-304"
+    }
+  },
+  "notes": [
+    "고객 B 의 지난 통화 — 톤은 raised·tense 까지만, 욕설·폭언·성적 표현 없음(decisions/209 4항) — call_guard 플래그는 생기지 않는 것이 정상이다",
+    "후속조치: 상담원 「오늘 중 회신드리겠습니다」 — D-1 규칙 초안의 약속 어미(드리겠습니다) + 동사 「회신」 에 걸려 follow_up_action 이 남는다(summary_rules._PROMISE·_FOLLOW_UP_VERBS)",
+    "3.11(단수·수질 이상 안내)은 필요서류 조항이 아니라 closure 판정은 생기지 않는다 — 이 고객의 재료는 후속조치와 톤이다"
+  ]
+}

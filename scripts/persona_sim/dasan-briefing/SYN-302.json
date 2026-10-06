@@ -1,0 +1,98 @@
+{
+  "id": "SYN-302",
+  "version": "dasan-briefing",
+  "source": "synthetic",
+  "generated_by": "Claude Code (claude-opus-5-5) · 2026-10-06 · 사람 검토 전",
+  "title": "지난번 안내대로 갔더니 서류가 없어 돌려보내졌다",
+  "length_class": "short",
+  "turn_count": 8,
+  "caller_number": "01000000301",
+  "agent_persona": "A01",
+  "customer_persona": "C03",
+  "procedure": {
+    "doc_ids": [
+      "DASAN-TERM-4.3"
+    ],
+    "required_documents": [
+      "신분증"
+    ]
+  },
+  "turns": [
+    {
+      "seq": 1,
+      "speaker": "agent",
+      "text": "네, 한별시 통합민원콜센터입니다. 무엇을 도와드릴까요?",
+      "tone": "calm"
+    },
+    {
+      "seq": 2,
+      "speaker": "customer",
+      "text": "지난번에 안내받고 갔는데 서류 하나가 없다고 돌려보내졌어요.",
+      "tone": "calm"
+    },
+    {
+      "seq": 3,
+      "speaker": "agent",
+      "text": "불편을 드려 죄송합니다. 어떤 서류를 발급받으려고 하셨나요?",
+      "tone": "calm"
+    },
+    {
+      "seq": 4,
+      "speaker": "customer",
+      "text": "어머니 주민등록초본이요. 위임장만 가져갔는데 신분증도 있어야 한다고 하더라고요.",
+      "tone": "calm"
+    },
+    {
+      "seq": 5,
+      "speaker": "agent",
+      "text": "네, 대리 발급은 위임장과 함께 위임하신 분 신분증 사본, 대리인 신분증이 필요합니다.",
+      "tone": "calm"
+    },
+    {
+      "seq": 6,
+      "speaker": "customer",
+      "text": "아, 그걸 처음에 말씀해 주셨으면 좋았을 텐데요. 다시 챙겨 갈게요.",
+      "tone": "calm"
+    },
+    {
+      "seq": 7,
+      "speaker": "agent",
+      "text": "네, 다시 한 번 안내드렸습니다. 꼭 세 가지 챙겨 가세요.",
+      "tone": "calm"
+    },
+    {
+      "seq": 8,
+      "speaker": "customer",
+      "text": "알겠습니다.",
+      "tone": "calm"
+    }
+  ],
+  "expected": {
+    "pii_by_pattern": {},
+    "compliance": [],
+    "call_guard_by_type": {},
+    "customer_non_calm_turns": [],
+    "call_temperature": {
+      "customer_expected_outlier_turns": [],
+      "customer_calm_turns": [
+        2,
+        4,
+        6,
+        8
+      ],
+      "customer_turns": 4,
+      "note": "의도한 연기에서 나온 기대값이다 — 측정값이 아니다. raised·tense 는 채점에서 뺀다"
+    },
+    "briefing": {
+      "role": "current",
+      "purpose_category": "서류 보완",
+      "prior": [
+        "SYN-301"
+      ]
+    }
+  },
+  "notes": [
+    "정답 목적은 브리핑을 한 번도 돌리기 전에 적었다(대본 작성자의 상한 라벨)",
+    "브리핑은 이 통화의 첫 고객 발화를 보지 못한다(벨 시간에 만든다) — 지난 통화(SYN-301)의 서류 보완 판정(closure incomplete)만으로 맞혀야 한다"
+  ]
+}

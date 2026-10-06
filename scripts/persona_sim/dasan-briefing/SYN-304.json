@@ -1,0 +1,93 @@
+{
+  "id": "SYN-304",
+  "version": "dasan-briefing",
+  "source": "synthetic",
+  "generated_by": "Claude Code (claude-opus-5-5) · 2026-10-06 · 사람 검토 전",
+  "title": "연락 준다더니 이틀째 연락이 없다",
+  "length_class": "short",
+  "turn_count": 6,
+  "caller_number": "01000000302",
+  "agent_persona": "A01",
+  "customer_persona": "C03",
+  "procedure": {
+    "doc_ids": [
+      "DASAN-TERM-3.11"
+    ],
+    "required_documents": []
+  },
+  "turns": [
+    {
+      "seq": 1,
+      "speaker": "agent",
+      "text": "네, 한별시 통합민원콜센터입니다. 무엇을 도와드릴까요?",
+      "tone": "calm"
+    },
+    {
+      "seq": 2,
+      "speaker": "customer",
+      "text": "그때 연락 준다더니 이틀째 아무 연락이 없어요.",
+      "tone": "raised"
+    },
+    {
+      "seq": 3,
+      "speaker": "agent",
+      "text": "죄송합니다. 단수 건 말씀이시죠? 지금 처리 상황을 확인해 보겠습니다.",
+      "tone": "calm"
+    },
+    {
+      "seq": 4,
+      "speaker": "customer",
+      "text": "네, 샘터로 단수요. 이게 몇 번째인지 모르겠어요.",
+      "tone": "raised"
+    },
+    {
+      "seq": 5,
+      "speaker": "agent",
+      "text": "확인했습니다. 복구 작업은 진행 중이고, 담당 부서에 다시 요청해 두었습니다.",
+      "tone": "calm"
+    },
+    {
+      "seq": 6,
+      "speaker": "customer",
+      "text": "알겠어요. 이번엔 꼭 연락 주세요.",
+      "tone": "tense"
+    }
+  ],
+  "expected": {
+    "pii_by_pattern": {},
+    "compliance": [],
+    "call_guard_by_type": {},
+    "customer_non_calm_turns": [
+      {
+        "seq": 2,
+        "tone": "raised"
+      },
+      {
+        "seq": 4,
+        "tone": "raised"
+      },
+      {
+        "seq": 6,
+        "tone": "tense"
+      }
+    ],
+    "call_temperature": {
+      "customer_expected_outlier_turns": [],
+      "customer_calm_turns": [],
+      "customer_turns": 3,
+      "note": "의도한 연기에서 나온 기대값이다 — 측정값이 아니다. raised·tense 는 채점에서 뺀다"
+    },
+    "briefing": {
+      "role": "current",
+      "purpose_category": "컴플레인",
+      "prior": [
+        "SYN-303"
+      ]
+    }
+  },
+  "notes": [
+    "정답 목적은 브리핑을 한 번도 돌리기 전에 적었다(대본 작성자의 상한 라벨)",
+    "브리핑은 이 통화의 첫 고객 발화를 보지 못한다 — 지난 통화의 후속조치(회신 약속)와 고객 톤 raised 만으로 맞혀야 한다",
+    "라벨이 「후속 확인」 과 갈릴 수 있다: 약속한 회신이 없었다는 항의라 컴플레인으로 적었다. 이 경계가 모델의 흔들림 지점이다"
+  ]
+}
