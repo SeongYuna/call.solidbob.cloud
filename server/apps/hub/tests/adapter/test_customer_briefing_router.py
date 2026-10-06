@@ -28,7 +28,8 @@ def _get(facts, call_id="now"):
     reset_briefing_cache()
     app.dependency_overrides[get_briefing_facts_port] = lambda: _Facts(facts)
     try:
-        return TestClient(app).get(f"/hub/calls/{call_id}/briefing")
+        with TestClient(app) as client:  # lifespan 이 app.state.settings 를 채운다(읽기 문이 읽는다)
+            return client.get(f"/hub/calls/{call_id}/briefing")
     finally:
         app.dependency_overrides.pop(get_briefing_facts_port, None)
 

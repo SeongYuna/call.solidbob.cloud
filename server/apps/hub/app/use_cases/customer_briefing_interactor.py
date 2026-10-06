@@ -24,22 +24,38 @@ class BriefingCache:
         self._inflight: dict[str, asyncio.Future] = {}
 
     async def get_or_create(self, call_id: str, factory: Callable[[], Awaitable[CustomerBriefing]]) -> CustomerBriefing:
-        if call_id in self._done:
-            self._done.move_to_end(call_id)
-            return self._done[call_id]
-        if call_id in self._inflight:
-            return await self._inflight[call_id]
+        while True:
+            if call_id in self._done:
+                self._done.move_to_end(call_id)
+                return self._done[call_id]
+            inflight = self._inflight.get(call_id)
+            if inflight is None:
+                break
+            try:
+                # shield — 기다리는 쪽이 취소돼도(클라이언트 끊김) 공유 future 는 취소되지 않는다
+                return await asyncio.shield(inflight)
+            except asyncio.CancelledError:
+                task = asyncio.current_task()
+                if inflight.cancelled() and not (task is not None and task.cancelling()):
+                    continue  # 만든 쪽이 취소됐다 — 내가 새로 만든다
+                raise
         fut: asyncio.Future = asyncio.get_running_loop().create_future()
         self._inflight[call_id] = fut
         try:
             result = await factory()
-        except BaseException as exc:
-            fut.set_exception(exc)
-            fut.exception()  # 기다리는 쪽이 없어도 「처리 안 된 예외」 경고가 나지 않게
+        except asyncio.CancelledError:
+            fut.cancel()  # 기다리는 쪽에 취소 예외를 「자기 취소」처럼 넘기지 않고 재시도하게 한다
+            raise
+        except Exception as exc:
+            if not fut.done():
+                fut.set_exception(exc)
+                fut.exception()  # 기다리는 쪽이 없어도 「처리 안 된 예외」 경고가 나지 않게
             raise
         finally:
-            self._inflight.pop(call_id, None)
-        fut.set_result(result)
+            if self._inflight.get(call_id) is fut:
+                del self._inflight[call_id]
+        if not fut.done():
+            fut.set_result(result)
         self._done[call_id] = result
         if len(self._done) > self._max:
             self._done.popitem(last=False)

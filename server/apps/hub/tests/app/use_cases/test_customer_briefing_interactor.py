@@ -75,3 +75,73 @@ def test_concurrent_requests_compose_once():
 
     a, b = asyncio.run(go())
     assert c.calls == 1 and a == b
+
+
+class _GatedComposer(CustomerBriefingPort):
+    def __init__(self):
+        self.calls = 0
+        self.gate = None
+
+    async def compose(self, facts):
+        self.calls += 1
+        if self.calls == 1:
+            await self.gate.wait()
+        return BriefingComposition(BriefingPurpose("후속 확인", "확인 전화로 보입니다", "model"), ("줄1",))
+
+
+def test_cancelled_waiter_does_not_break_owner_or_cache():
+    c = _GatedComposer()
+    it = _it(BriefingFacts("now", True, (PRIOR,)), c)
+
+    async def go():
+        c.gate = asyncio.Event()
+        owner = asyncio.create_task(it.get("now"))
+        await asyncio.sleep(0.01)
+        waiter = asyncio.create_task(it.get("now"))
+        await asyncio.sleep(0.01)
+        waiter.cancel()
+        await asyncio.sleep(0)
+        c.gate.set()
+        got = await owner
+        again = await it.get("now")
+        return got, again
+
+    got, again = asyncio.run(go())
+    assert got.status == "ready" and again == got and c.calls == 1
+
+
+def test_cancelled_owner_lets_waiter_compose_itself():
+    c = _GatedComposer()
+    it = _it(BriefingFacts("now", True, (PRIOR,)), c)
+
+    async def go():
+        c.gate = asyncio.Event()
+        owner = asyncio.create_task(it.get("now"))
+        await asyncio.sleep(0.01)
+        waiter = asyncio.create_task(it.get("now"))
+        await asyncio.sleep(0.01)
+        owner.cancel()
+        return await waiter
+
+    b = asyncio.run(go())
+    assert b.status == "ready" and c.calls == 2
+
+
+def test_failure_is_not_cached():
+    class _Flaky(BriefingFactsPort):
+        def __init__(self):
+            self.n = 0
+
+        async def collect(self, call_id):
+            self.n += 1
+            return None if self.n == 1 else BriefingFacts("now", True)
+
+    f = _Flaky()
+    it = CustomerBriefingInteractor(f, _Composer(), BriefingCache(), now=lambda: T)
+
+    async def go():
+        with pytest.raises(BriefingCallNotFound):
+            await it.get("now")
+        return await it.get("now")
+
+    assert asyncio.run(go()).status == "first_contact" and f.n == 2
