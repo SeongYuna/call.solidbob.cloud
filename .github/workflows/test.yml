@@ -87,7 +87,8 @@ jobs:
 
       - name: 테스트 의존성 설치
         # 버전은 server/requirements.txt 의 고정값과 같게 유지한다. psycopg 는 integration 테스트용.
-        run: pip install pytest==9.1.1 fastapi==0.141.1 httpx==0.28.1 import-linter==2.13 "psycopg[binary]==3.2.10"
+        # cryptography 는 전사 본문 암호화(decisions/326) — 합성 루트가 기동 때 import 한다
+        run: pip install pytest==9.1.1 fastapi==0.141.1 httpx==0.28.1 import-linter==2.13 "psycopg[binary]==3.2.10" cryptography==50.0.1
 
       - name: 테스트 실행
         run: pytest
