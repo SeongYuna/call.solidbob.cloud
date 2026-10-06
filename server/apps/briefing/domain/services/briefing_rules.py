@@ -47,18 +47,3 @@ def rule_lines(facts: BriefingFacts) -> tuple[str, ...]:
         lines.append("블랙리스트 적용 중")
     return tuple(lines[:3])
 
-
-def facts_text(facts: BriefingFacts) -> str:
-    """모델에게 주는 재료 — 날짜·유형·요약·후속조치·미완료 절차·콜 가드 범주. **통화 ID·고객 ID 는 넣지 않는다.**"""
-    out = []
-    for i, c in enumerate(facts.prior_calls, start=1):
-        out.append(f"[지난 통화 {i}] {_day(c)} · 유형 {c.inquiry_type or '미정'} · 요약 {c.summary_text or '없음'}")
-        if c.open_follow_ups:
-            out.append("  후속조치: " + "; ".join(c.open_follow_ups))
-        if c.incomplete_procedures:
-            out.append("  서류 안내 미완료 절차: " + ", ".join(c.incomplete_procedures))
-        if c.call_guard_categories:
-            out.append("  고객 쪽 신호: " + ", ".join(c.call_guard_categories))
-    if facts.blacklisted:
-        out.append("블랙리스트 적용 중")
-    return "\n".join(out)

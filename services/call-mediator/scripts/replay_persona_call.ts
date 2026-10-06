@@ -42,9 +42,9 @@
  * 있으면 그것이 이긴다. **실제 시민 번호를 넣지 않는다.**
  */
 import { execFileSync, spawn, type ChildProcess } from "node:child_process";
-import { createWriteStream, type WriteStream } from "node:fs";
+import { createWriteStream, realpathSync, type WriteStream } from "node:fs";
 import { readdir, readFile } from "node:fs/promises";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import { WebSocket } from "ws";
 import { gapBefore, planTurn, readTurns, sayRate, type ScriptTurn, type Speaker } from "./persona_replay/plan.ts";
 import { pickVoice } from "./persona_replay/google_voices.ts";
@@ -632,7 +632,17 @@ async function main(): Promise<void> {
   }
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+function isEntry(): boolean {
+  const argv1 = process.argv[1];
+  if (!argv1) return false;
+  try {
+    return import.meta.url === pathToFileURL(realpathSync(argv1)).href;
+  } catch {
+    return false;
+  }
+}
+
+if (isEntry()) {
   main().catch((error: unknown) => {
     console.error(`실패: ${error instanceof Error ? error.message : String(error)}`);
     process.exit(1);

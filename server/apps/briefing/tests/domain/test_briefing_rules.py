@@ -1,7 +1,7 @@
 # Requirement: F-3
 from datetime import datetime, timezone
 
-from briefing.domain.services.briefing_rules import facts_text, rule_lines, rule_purpose
+from briefing.domain.services.briefing_rules import rule_lines, rule_purpose
 from hub.app.dtos.customer_briefing_dto import BRIEFING_PURPOSES, BriefingFacts, PriorCall
 
 T = datetime(2026, 10, 5, 5, 2, tzinfo=timezone.utc)  # KST 10-05 14:02
@@ -60,8 +60,3 @@ def test_rule_lines_without_summaries():
     lines = rule_lines(_facts(_call(summary_text=None, inquiry_type=None, incomplete_procedures=("DASAN-TERM-4.1",))))
     assert lines and all("None" not in line for line in lines)
     assert "DASAN-TERM-4.1" in " ".join(lines)
-
-
-def test_facts_text_carries_summaries_and_dates_but_no_ids():
-    text = facts_text(_facts(_call()))
-    assert "위임 등본" in text and "10-05" in text and "p1" not in text

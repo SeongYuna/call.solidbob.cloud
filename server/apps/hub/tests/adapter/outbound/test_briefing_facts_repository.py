@@ -82,7 +82,7 @@ def test_prior_calls_exclude_current():
     ])
     facts = _collect(repo, "now")
     sql, args = cur.calls[1]
-    assert '"call_id" <> %s' in sql and '"started_at" < %s' in sql and args == ("hmac", "now", T)
+    assert '"call_id" <> %s' in sql and '"started_at" < %s' in sql and args == ("hmac", "now", T, 5)
     assert facts.customer_identified and facts.blacklisted
     pc = facts.prior_calls[0]
     assert pc.call_id == "p1" and pc.summary_confirmed is True

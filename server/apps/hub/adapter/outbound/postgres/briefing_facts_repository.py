@@ -21,7 +21,7 @@ _PRIOR = """
 SELECT "call_id", "started_at", "inquiry_type", "summary_text", "summary_confirmed_at"
 FROM "call"
 WHERE "customer_id" = %s AND "call_id" <> %s AND "started_at" < %s
-ORDER BY "started_at" DESC LIMIT 5
+ORDER BY "started_at" DESC, "call_id" DESC LIMIT %s
 """
 _FOLLOW_UPS = """
 SELECT "call_id", "action_text" FROM "follow_up_action"
@@ -52,7 +52,7 @@ class PostgresBriefingFactsRepository(BriefingFactsPort):
                 customer_id, started_at = current
                 if customer_id is None:
                     return BriefingFacts(call_id=call_id, customer_identified=False)
-                await cur.execute(_PRIOR, (customer_id, call_id, started_at))
+                await cur.execute(_PRIOR, (customer_id, call_id, started_at, MAX_PRIOR_CALLS))
                 prior_rows = await cur.fetchall()
                 ids = [r[0] for r in prior_rows]
                 follow_ups, closures, guards = [], [], []
