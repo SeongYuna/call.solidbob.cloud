@@ -40,7 +40,7 @@ class _Chat:
 
 
 def _good(**over):
-    p = {"category": "컴플레인", "purpose": "회신이 없어 다시 건 것으로 보입니다", "lines": ["지난 통화 10-05 상하수도"]}
+    p = {"category": "후속 확인", "purpose": "회신이 없어 다시 건 것으로 보입니다", "lines": ["지난 통화 10-05 상하수도"]}
     p.update(over)
     return p
 
@@ -51,7 +51,11 @@ def _run(adapter):
 
 def test_model_output_used_when_clean():
     c = _run(ModelBriefingAdapter(_Rule(), chat=_Chat(_good())))
-    assert c.purpose.source == "model" and c.purpose.category == "컴플레인"
+    assert c.purpose.source == "model" and c.purpose.category == "후속 확인"
+
+
+def test_disagreeing_category_falls_back():
+    assert _run(ModelBriefingAdapter(_Rule(), chat=_Chat(_good(category="컴플레인")))) == RULE
 
 
 def test_out_of_list_category_falls_back():
