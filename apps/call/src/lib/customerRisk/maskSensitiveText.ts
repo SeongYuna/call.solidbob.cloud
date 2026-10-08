@@ -1,3 +1,10 @@
+/**
+ * ⚠ **mock 모드 전용이다.** 실서버(`isCoreApiConfigured()`)에서는 `TranscriptPanel` 이
+ * `customerRisks` 를 비워 두므로 이 함수들이 글자를 바꾸지 않는다 — 2026-10-08
+ * `decisions/326` 으로 **화면 자막은 원문**이고, 가리는 일은 서버가 저장 앞단에서 한다.
+ * 여기서 만드는 `is-pii`·`is-abuse` 구간은 「이미 가려진 자리」이고,
+ * 서버가 주는 `masked` 구간은 「저장할 때 가려질 자리」다 — 뜻이 다르다.
+ */
 import type { CustomerRiskMatch } from "./detectCustomerRisk";
 import type { CharRange } from "../text/highlight";
 

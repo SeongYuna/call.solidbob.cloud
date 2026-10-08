@@ -739,8 +739,8 @@ export function TranscriptPanel({
                         {piiMatches.length > 0 ? (
                           <span
                             className="pii-lock"
-                            title="민감정보가 마스킹되었습니다"
-                            aria-label="민감정보가 마스킹되었습니다"
+                            title="저장할 때 가려지는 부분입니다"
+                            aria-label="저장할 때 가려지는 부분입니다"
                           >
                             <LockIcon />
                           </span>
@@ -756,9 +756,19 @@ export function TranscriptPanel({
                           />
                         </p>
                       </div>
-                      {/* 마스킹된 줄임을 알리는 정적 배지다(`.claude/rules/call.md §2`) — 원문
-                          열람 토글은 SEC-1과 모순이라 걷었다(`decisions/408`, `w7-plaintext-reveal-sec1`). */}
-                      {hasAlert ? <span className="alert-pill">⚠ 경고</span> : null}
+                      {/* 이 줄에 개인정보 구간이 있다는 정적 표시다. 2026-10-08 `decisions/326` 으로
+                          **화면은 원문**이 되었으므로 「마스킹된 줄」이 아니라 「저장할 때 가려질 줄」이다 —
+                          옛 「⚠ 경고」는 상담원 위반 경고와 같은 빨간 배지라, 고객이 번호를 불렀을 뿐인
+                          줄에 붙어 「고객이 잘못했다」로 읽혔다(시연 영상 검토 2026-10-02).
+                          원문 열람 토글은 SEC-1과 모순이라 걷었다(`decisions/408`). */}
+                      {hasAlert ? (
+                        <span
+                          className="alert-pill is-mask"
+                          title="저장·전송할 때 이 부분은 가려집니다"
+                        >
+                          저장 시 가림
+                        </span>
+                      ) : null}
                     </div>
                     {!hideLegacyGuard
                       ? guards
