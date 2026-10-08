@@ -83,3 +83,25 @@ AI 가 같은 번호로 걸려 온 지난 통화들을 읽고 **이번 통화의
 1. `ready`·`first_contact`·`unidentified`·실패·대기 다섯 상태가 화면에 나온다(mock 모드에 다섯 상태 예시를 넣어 확인)
 2. 실서버 모드에서 재생기 `--ring-seconds` 시연(류준 대본 `dasan-briefing/`)으로 카드가 「통화받기」 전에 뜬다
 3. 파서 회귀 테스트(vitest) — 필드가 빠지거나 `status` 가 모르는 값이면 카드를 그리지 않는다(오류 배너 없이)
+
+## 2026-10-08 — 서버 쪽은 운영에서 봤다 (정성윤). 화면은 아직
+
+완료 조건 2 의 **절반**이다. 브라우저를 열어 「통화받기」 전에 카드가 뜨는 것을 **눈으로 보지는 못했다** —
+여기 적는 것은 그 카드를 채우는 **API 가 운영에서 도는 것을 확인했다**는 것뿐이다.
+
+`GET /hub/calls/shoot1-stt3/briefing` (운영, 토큰은 노드에서 읽음):
+
+```
+status            ready
+prior_call_count  4
+purpose           { category: "재문의", source: "rule" }
+briefing_lines    ["같은 번호로 걸려 온 지난 통화 4건 — 최근 10-02 유형 미정"]
+evidence          4건 (shoot1-stt2 · shoot1-stt · real-stt-02 · real-stt-01)
+signals           open_follow_ups 0 · call_guard_categories [] · blacklisted false
+```
+
+**`source: "rule"` 이 찍힌 것이 중요하다** — 모델 범주 판정이 0/9 라 규칙으로 되돌린 `decisions/220` 의
+결론이 운영에서 그대로다. 화면이 「추정 통화 목적」 꼬리표를 붙이는 근거이기도 하다(절대 원칙 9).
+
+**남은 것**: 재생기 `--ring-seconds` + `dasan-briefing/` 대본으로 **벨이 울리는 동안** 카드가 뜨는지 —
+타이밍은 화면에서만 보인다. 촬영 때 같이 본다.
