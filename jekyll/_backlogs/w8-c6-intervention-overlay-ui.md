@@ -2,7 +2,7 @@
 title: "C-6 베타 — 폭언 안내 일시정지 덮개 · 안내 음성 · 종료 권고 표시 (call_guard_intervention)"
 assignee: "조서희"
 role: "app"
-status: "todo"
+status: "in-progress"
 sprint: 8
 priority: 6
 date: 2026-10-06

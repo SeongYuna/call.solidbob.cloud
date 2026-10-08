@@ -2,7 +2,7 @@
 title: "F-3 통화 수신 전 고객 브리핑 카드 — 「통화받기」 모달에 지난 통화·추정 목적을 띄운다"
 assignee: "조서희"
 role: "app"
-status: "todo"
+status: "in-progress"
 sprint: 8
 priority: 5
 date: 2026-10-06

@@ -136,5 +136,57 @@ export const callGuardKoScenario: MockScenario = {
     seg_g005: { segment_id: 5, category: "insult" },
     seg_g007: { segment_id: 7, category: "insult" },
   },
+  /**
+   * C-6 베타(`?c6beta=1`) — 미디에이터 규칙(`call_guard_intervention.ts`)대로 1회 1차 안내 · 2회 2차 안내 ·
+   * 3회 종료 권고. 세 번째 폭언 발화는 베타 재생에만 더한다. 안내 문구는 미디에이터 고정 문안을 옮겼고,
+   * `pause_ms` 8000 은 미디에이터도 「예시값 — 잰 값이 아니다」라고 적은 값이다.
+   */
+  callGuardBeta: {
+    extraTranscripts: [
+      utterance(
+        CALL_ID,
+        DOMAIN,
+        "seg_g011",
+        "customer",
+        "아니 말귀를 못 알아들어? 정말 한심하네.",
+        45800,
+        null,
+      ),
+    ],
+    extraCallGuard: {
+      seg_g011: { segment_id: 11, category: "insult" },
+    },
+    interventions: {
+      seg_g005: {
+        call_id: CALL_ID,
+        segment_id: 5,
+        stage: "warning",
+        abuse_count: 1,
+        pause_ms: 8000,
+        announcement:
+          "고객님, 원활한 상담을 위해 업무와 무관한 표현은 삼가 주시기 바랍니다. 이후에도 계속되면 상담이 종료될 수 있습니다. 잠시 후 상담을 이어가겠습니다.",
+        source_doc_id: "DASAN-MANUAL-5.1",
+      },
+      seg_g007: {
+        call_id: CALL_ID,
+        segment_id: 7,
+        stage: "final_warning",
+        abuse_count: 2,
+        pause_ms: 8000,
+        announcement:
+          "다시 한 번 안내드립니다. 같은 표현이 계속되면 상담이 종료될 수 있습니다. 잠시 후 상담을 이어가겠습니다.",
+        source_doc_id: "DASAN-MANUAL-5.1",
+      },
+      seg_g011: {
+        call_id: CALL_ID,
+        segment_id: 11,
+        stage: "end_suggested",
+        abuse_count: 3,
+        pause_ms: 0,
+        announcement: null,
+        source_doc_id: "DASAN-MANUAL-5.2",
+      },
+    },
+  },
   closures: [],
 };

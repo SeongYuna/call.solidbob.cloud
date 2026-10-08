@@ -7,6 +7,7 @@ import type {
 } from "../types/contract";
 import type { CallMediatorClient, CallMediatorListener, WrapUpSegment } from "../lib/ws/types";
 import { getScenario } from "./scenarios";
+import { isCallGuardBetaPreview } from "./callGuardBeta";
 import { DEFAULT_LOCAL_RESOURCES } from "./localResources";
 import { sentimentFromScenario } from "./sentiment";
 import {
@@ -43,9 +44,13 @@ export class MockCallMediatorClient implements CallMediatorClient {
     const scenario = getScenario();
     this.playing = scenario;
     listeners.onCallLanguage?.(scenario.targetLanguage ?? null);
-    const playAt = playbackClock(scenario.transcripts);
+    // C-6 베타 — `?c6beta=1` 일 때만 대응 단계를 재생한다(미디에이터 베타 스위치와 같은 자리).
+    const beta = isCallGuardBetaPreview() ? scenario.callGuardBeta : undefined;
+    const transcripts =
+      beta === undefined ? scenario.transcripts : [...scenario.transcripts, ...beta.extraTranscripts];
+    const playAt = playbackClock(transcripts);
 
-    for (const event of scenario.transcripts) {
+    for (const event of transcripts) {
       this.schedule(playAt(event.utterance_end_ms), () => {
         listeners.onTranscript(event);
         const translation = mockCustomerTranslation(scenario, event.segment_id);
@@ -56,9 +61,14 @@ export class MockCallMediatorClient implements CallMediatorClient {
         if (tts !== undefined) {
           listeners.onAgentTts?.(event.segment_id, tts);
         }
-        const guard = scenario.callGuard?.[event.segment_id];
+        const guard =
+          scenario.callGuard?.[event.segment_id] ?? beta?.extraCallGuard[event.segment_id];
         if (guard !== undefined) {
           listeners.onCallGuard?.(event.segment_id, guard);
+        }
+        const intervention = beta?.interventions[event.segment_id];
+        if (intervention !== undefined) {
+          listeners.onCallGuardIntervention?.(intervention);
         }
         if (
           scenario.accentRecognition === true &&

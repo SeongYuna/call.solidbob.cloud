@@ -116,6 +116,26 @@ export function isCallGuardDistress(flag: CallGuardFlag): boolean {
   return flag.category === "distress";
 }
 
+/**
+ * C-6 베타 — 폭언 대응 단계(`decisions/221`). 미디에이터 `CallGuardInterventionPayload`
+ * (`services/call-mediator/src/app/ports.ts`)를 숫자로 되돌린 것. 미디에이터가
+ * `CALL_GUARD_INTERVENTION_BETA=1` 일 때만 보낸다 — 운영에서는 오지 않는다.
+ *
+ * 단계 판정은 미디에이터의 규칙(매뉴얼 5.1·5.2)이 한다. 화면은 받은 단계를 그릴 뿐이고,
+ * `end_suggested` 도 권고 표시일 뿐 **통화를 끊지 않는다**(5.2).
+ */
+export interface CallGuardIntervention {
+  call_id: string;
+  segment_id: number;
+  stage: "warning" | "final_warning" | "end_suggested";
+  abuse_count: number;
+  /** 덮개를 띄울 시간. `end_suggested` 는 0 */
+  pause_ms: number;
+  /** 고객 안내 문구(고정 문안). `end_suggested` 는 null */
+  announcement: string | null;
+  source_doc_id: string;
+}
+
 export interface DocumentSource {
   doc_id: string;
   title: string;
