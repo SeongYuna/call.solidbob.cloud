@@ -17,10 +17,11 @@
  *             합성 대본 재생기(`textProducer: "script"`)도 이 문으로 들어오고, 엔진은 `synthetic-script` 로 적는다 —
  *             사람의 말을 받아쓴 것이 아니라는 것을 기록에 남긴다
  *
- * SEC-1 — 원문(`RawTranscript`)은 `hub.ingestTranscript` 에만 들어간다. 대시보드로 가는 것은
- * **서버가 마스킹해 돌려준 응답**뿐이고, 서버가 실패하면 그 결과는 아무 데도 가지 않는다(확정은 일시 실패면
- * 몇 번 더 보낸다 — `INGEST_RETRY_DELAYS_MS`).
- * 로그에는 번호·상태 코드만 남긴다.
+ * SEC-1 — **2026-10-06 부터 상담원 화면에는 원문을 보여 준다**(`_project/decisions/326`). 마스킹은 저장 쪽(서버)의 일이다.
+ * - 대시보드 자막: 원문 + 서버가 준 마스킹 구간(개인정보 자리 강조). **서버가 저장을 마친 뒤에만** 보낸다 —
+ *   서버가 실패하면 그 결과는 아무 데도 가지 않는다(확정은 일시 실패면 몇 번 더 보낸다 — `INGEST_RETRY_DELAYS_MS`)
+ * - 하류(추천·콜 가드·컴플라이언스·필요서류): **서버 마스킹본만** — 그쪽은 받은 글을 저장한다
+ * - 로그에는 번호·상태 코드만 남긴다. 원문도 마스킹본도 남기지 않는다
  */
 import { SegmentCounter, OpenSegment, utteranceEndMs } from "../domain/segments.ts";
 import { FirstSpeakerIsAgent } from "../domain/diarization.ts";
@@ -578,7 +579,8 @@ export class Channel {
     if (masked === null) {
       return;
     }
-    this.deps.broadcaster.publish(this.callId, { type: "transcript", payload: masked });
+    // 화면에는 원문(decisions/326), 아래 하류에는 `masked.text`(마스킹본) — 둘을 섞지 않는다
+    this.deps.broadcaster.publish(this.callId, { type: "transcript", payload: forAgentScreen(item.raw.text, masked) });
 
     if (item.isFinal && masked.text.trim().length > 0) {
       this.track(this.recommend(item, masked.text));
@@ -886,6 +888,22 @@ export function withE2eLatency(
     return payload;
   }
   return { ...payload, e2e_latency_ms: String(Math.max(0, Math.round(broadcastAtMs - utteranceEndMs))) };
+}
+
+/**
+ * 상담원 화면으로 보낼 자막 — **원문 + 서버가 준 마스킹 구간**(`_project/decisions/326`, 2026-10-06).
+ *
+ * 상담원에게는 정보를 다 보여 주고, 가리는 것은 저장 쪽(서버)이 한다. 서버의 `masked` 구간은 그대로 둔다 — 화면이
+ * 그 자리를 강조해 «개인정보가 있는 자리»를 알려 준다. 서버 마스킹은 한 글자를 `*` 한 글자로 바꿔 **길이가 같으므로**
+ * (`server/apps/masking/domain/services/masker.py`) 마스킹본 기준 구간이 원문에서도 같은 자리다.
+ * 길이(코드포인트 수 — 서버 `len` 과 같은 단위)가 다르면 구간이 엉뚱한 글자를 가리키므로 **원문을 싣지 않고 마스킹본을
+ * 그대로 보낸다** — 애매하면 가린다(절대 원칙 3).
+ */
+export function forAgentScreen(rawText: string, masked: MaskedTranscript): MaskedTranscript {
+  if ([...rawText].length !== [...masked.text].length) {
+    return masked;
+  }
+  return { ...masked, text: rawText };
 }
 
 /**

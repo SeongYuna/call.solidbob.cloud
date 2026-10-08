@@ -13,10 +13,13 @@ from hub.adapter.outbound.log_transcript_ingest_record_adapter import LogTranscr
 from hub.adapter.outbound.postgres.connection import build_connection_factory
 from hub.adapter.outbound.postgres.transcript_segment_repository import PostgresTranscriptSegmentRepository
 from hub.app.ports.output.transcript_ingest_record_port import TranscriptIngestRecordPort
+from hub.dependencies.transcript_cipher_provider import transcript_cipher_of
 
 
 def get_transcript_record_port(request: Request) -> TranscriptIngestRecordPort:
     settings = request.app.state.settings
     if not settings.postgres_configured:
         return LogTranscriptIngestRecordAdapter()
-    return PostgresTranscriptSegmentRepository(build_connection_factory(settings))
+    return PostgresTranscriptSegmentRepository(
+        build_connection_factory(settings), cipher=transcript_cipher_of(settings)
+    )

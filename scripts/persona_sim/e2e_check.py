@@ -120,6 +120,15 @@ def fetch_record(core_url: str, call_id: str) -> dict[str, Any]:
     return body if isinstance(body, dict) else {}
 
 
+def _transcript_cipher():
+    """서버와 같은 키(`TRANSCRIPT_ENC_KEY`)로 전사 암호문을 푼다(`decisions/326`). 암호문을 그대로 넘기면 SEC-1 판정이
+    「원문 없음」으로 헛통과한다. 키가 없는데 암호문을 만나면 예외 — 아래에서 DB 판정을 건너뛴다고 알린다."""
+    sys.path.insert(0, str(ROOT / "server" / "apps"))
+    from hub.adapter.outbound.transcript_text_cipher import TranscriptTextCipher  # noqa: PLC0415
+
+    return TranscriptTextCipher(os.environ.get("TRANSCRIPT_ENC_KEY") or None)
+
+
 def fetch_db(database_url: str, call_id: str) -> dict[str, Any]:
     """DB 스냅샷 — psycopg 가 없거나 못 붙으면 빈 dict(그 판정은 건너뛴다)."""
     try:
@@ -130,7 +139,8 @@ def fetch_db(database_url: str, call_id: str) -> dict[str, Any]:
     try:
         with psycopg.connect(database_url, connect_timeout=5) as conn, conn.cursor() as cur:
             cur.execute("SELECT segment_id, text FROM transcript_segment WHERE call_id=%s AND is_final ORDER BY segment_id", (call_id,))
-            final_texts = {int(seg): str(text) for seg, text in cur.fetchall()}
+            cipher = _transcript_cipher()
+            final_texts = {int(seg): cipher.unseal(str(text)) for seg, text in cur.fetchall()}
             cur.execute("SELECT segment_id, category FROM call_guard_flag WHERE call_id=%s", (call_id,))
             call_guard = [(int(seg), str(cat)) for seg, cat in cur.fetchall()]
             cur.execute("SELECT segment_id, rule_code FROM compliance_flag WHERE call_id=%s", (call_id,))

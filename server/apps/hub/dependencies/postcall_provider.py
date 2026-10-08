@@ -17,9 +17,11 @@ from hub.app.ports.input.postcall_use_case import PostcallUseCase
 from hub.adapter.outbound.postgres.compliance_flag_repository import PostgresComplianceFlagRepository
 from hub.adapter.outbound.postgres.connection import build_connection_factory
 from hub.app.ports.output.compliance_flag_query_port import ComplianceFlagQueryPort
+from hub.app.ports.output.masking_port import MaskingPort
 from hub.app.ports.output.postcall_port import PostcallPort
 from hub.app.ports.output.postcall_record_port import PostcallRecordPort
 from hub.app.use_cases.postcall_interactor import PostcallInteractor
+from hub.dependencies.masking_provider import get_masking_port
 from hub.dependencies.postcall_record_provider import get_postcall_record_port
 
 
@@ -39,5 +41,7 @@ def get_postcall_use_case(
     postcall: PostcallPort = Depends(get_postcall_port),
     record: PostcallRecordPort = Depends(get_postcall_record_port),
     flags: ComplianceFlagQueryPort | None = Depends(get_compliance_flag_query_port),
+    # 화면 자막이 원문일 수 있다(`decisions/326`) — 전사 수신과 같은 마스킹(NER 이 꽂히면 그것까지)으로 가린다
+    masking: MaskingPort = Depends(get_masking_port),
 ) -> PostcallUseCase:
-    return PostcallInteractor(postcall=postcall, record=record, flags=flags)
+    return PostcallInteractor(postcall=postcall, record=record, masking=masking, flags=flags)

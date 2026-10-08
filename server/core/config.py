@@ -89,6 +89,12 @@ class Settings:
     # ⚠ 키를 바꾸거나 잃으면 기존 customer_id·블랙리스트 등록을 다시 찾을 수 없다(`decisions/205` ③)
     customer_ref_hmac_key: str | None
 
+    # --- 전사 본문 암호화(2026-10-06, `decisions/326`) — 마스킹본을 AES-256-GCM 으로 싸서 `transcript_segment.text` 에 둔다 ---
+    # base64 로 적은 32바이트(`openssl rand -base64 32`). **없으면 지금까지처럼 마스킹본 평문으로 저장한다** — `/health` 의
+    # `transcript_encryption` 이 "unset". 형식이 틀리면 서버가 뜨지 않는다(기동 때 한 번 만들어 본다).
+    # ⚠ 키를 바꾸거나 잃으면 이미 암호화된 전사를 다시 읽을 수 없다 — 운영 값은 따로 보관한다
+    transcript_enc_key: str | None = None
+
     # --- C-5 P6·P7 NER (2026-09-15, `w5-ner-p6-p7`) — `ai/apps/pii_ner` 가 규칙 마스킹 위에 한 겹 더 얹는다 ---
     # 모델 디렉터리(`scripts/download_models.py` → `models/koelectra-ner`). **비우면 규칙 마스킹만 돈다** — 지금 운영과 같다.
     # 서버 이미지에 torch·모델이 없으면 값을 넣어도 규칙으로 내려간다. 켜졌는지는 `/health` 의 `pii_ner` 로 본다.
@@ -164,6 +170,7 @@ def load_settings() -> Settings:
         admin_refresh_token_ttl_seconds=_env_int("ADMIN_REFRESH_TOKEN_TTL_SECONDS", 43200) or 43200,
         redis_url=_env("REDIS_URL"),
         customer_ref_hmac_key=_env("CUSTOMER_REF_HMAC_KEY"),
+        transcript_enc_key=_env("TRANSCRIPT_ENC_KEY"),
         pii_ner_model_dir=_env("PII_NER_MODEL_DIR"),
         retrieval_embed_model_dir=_env("RETRIEVAL_EMBED_MODEL_DIR"),
         retrieval_rerank_model_dir=_env("RETRIEVAL_RERANK_MODEL_DIR"),

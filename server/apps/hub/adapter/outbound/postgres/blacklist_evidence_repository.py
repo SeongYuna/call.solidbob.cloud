@@ -2,7 +2,8 @@
 """BlacklistEvidencePort 의 PostgreSQL 구현.
 
 - **자막은 `transcript_segment.text`(마스킹본)에서만 자른다.** 콜 가드가 잡힌 고객 발화를 우선 싣고,
-  없으면 마지막 고객 발화 몇 개를 싣는다. 길이를 제한한다 — 요청 1건에 통화 전체를 옮겨 적지 않는다
+  없으면 마지막 고객 발화 몇 개를 싣는다. 길이를 제한한다 — 요청 1건에 통화 전체를 옮겨 적지 않는다.
+  저장된 값은 암호화돼 있을 수 있다(`decisions/326`) — **풀고 나서** 자른다(암호문을 자르면 못 푼다)
 - 통화 길이는 `ended_at - started_at`, 아직 안 끝났으면 마지막 발화 종료 시각이다
 - `distress` 건수는 **돌려주되 저장하지 않는다**(`decisions/205` ④) — 저장 여부는 요청 리포지토리가 정한다
 - **온도 이상(`voice_outlier`)은 판정이 붙어 있을 때만 센다**(`decisions/316`). 서버 요청 경로에는 D-5 판정이 없어
@@ -16,6 +17,7 @@ from hub.app.dtos.blacklist_dto import RequestEvidence
 from hub.app.dtos.blacklist_request_create_dto import CallEvidence
 from hub.app.ports.output.blacklist_evidence_port import BlacklistEvidencePort
 
+from ..transcript_text_cipher import TranscriptTextCipher
 from .connection import ConnectionFactory
 
 _CALL = """
@@ -46,9 +48,16 @@ _FALLBACK_SEGMENTS = 3
 
 
 class PostgresBlacklistEvidenceRepository(BlacklistEvidencePort):
-    def __init__(self, connect: ConnectionFactory, *, voice_outliers_wired: bool = False) -> None:
+    def __init__(
+        self,
+        connect: ConnectionFactory,
+        *,
+        voice_outliers_wired: bool = False,
+        cipher: TranscriptTextCipher | None = None,
+    ) -> None:
         self._connect = connect
         self._voice_outliers_wired = voice_outliers_wired
+        self._cipher = cipher or TranscriptTextCipher(None)
 
     async def collect(self, call_id: str) -> CallEvidence | None:
         async with self._connect() as conn:
@@ -64,10 +73,10 @@ class PostgresBlacklistEvidenceRepository(BlacklistEvidencePort):
                     await cur.execute(_OUTLIERS, (call_id,))
                     outliers = int((await cur.fetchone())[0])
                 await cur.execute(_FLAGGED_TEXT, (call_id, call_id))
-                texts = [r[0] for r in await cur.fetchall()]
+                texts = [self._cipher.unseal(r[0]) for r in await cur.fetchall()]
                 if not texts:
                     await cur.execute(_LAST_CUSTOMER_TEXT, (call_id, _FALLBACK_SEGMENTS))
-                    texts = [r[0] for r in reversed(await cur.fetchall())]
+                    texts = [self._cipher.unseal(r[0]) for r in reversed(await cur.fetchall())]
 
         return CallEvidence(
             customer_ref=call[0],

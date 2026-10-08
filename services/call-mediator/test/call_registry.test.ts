@@ -219,16 +219,33 @@ test("utterance_end_ms 는 통화 시작 기준이다 — 늦게 붙은 채널�
   assert.equal(at["customer"], 4000);
 });
 
-test("SEC-1 — 대시보드로는 서버가 마스킹한 응답만 간다", async () => {
-  const { registry, broadcaster, stt } = setup();
+test("상담원 화면에는 원문을, 하류에는 서버 마스킹본을 보낸다 (decisions/326)", async () => {
+  const { registry, broadcaster, hub, stt } = setup();
+  hub.maskedSpans = [{ type: "P1", span: ["5", "19"] }];
+  const channel = await openOk(registry, "test-1", "customer");
+  stt.last().emit(RAW_PII, true, 1200);
+  await channel.close();
+
+  const transcript = broadcaster.ofType("transcript")[0];
+  assert.equal(transcript?.payload.text, RAW_PII, "상담원 화면은 원문을 본다");
+  assert.deepEqual(transcript?.payload.masked, [{ type: "P1", span: ["5", "19"] }], "서버가 준 강조 구간은 그대로");
+  // 하류는 받은 글을 저장한다 — 마스킹본만
+  assert.equal(hub.recommended[0]?.text, "주민번호 ******-******* 입니다");
+  assert.equal(hub.guarded[0]?.customer_utterance, "주민번호 ******-******* 입니다");
+  const downstream = JSON.stringify(broadcaster.messages.filter((m) => m.message.type !== "transcript"));
+  assert.ok(!downstream.includes("900101"), "자막 밖의 메시지에 원문이 있다");
+});
+
+test("서버 마스킹본과 원문 길이가 다르면 원문을 싣지 않는다 — 구간이 어긋나므로 가린다", async () => {
+  const { registry, broadcaster, hub, stt } = setup();
+  hub.maskShrinks = true; // 길이를 보존하지 않는 마스킹 — 구간이 원문의 다른 글자를 가리키게 된다
   const channel = await openOk(registry, "test-1", "customer");
   stt.last().emit(RAW_PII, true, 1200);
   await channel.close();
 
   const published = JSON.stringify(broadcaster.messages);
-  assert.ok(!published.includes("900101"), "원문 숫자가 대시보드 메시지에 있다");
-  const transcript = broadcaster.ofType("transcript")[0];
-  assert.equal(transcript?.payload.text, "주민번호 ******-******* 입니다");
+  assert.ok(!published.includes("900101"), "길이가 어긋났는데 원문이 화면으로 갔다");
+  assert.equal(broadcaster.ofType("transcript")[0]?.payload.text, "주민번호 *-* 입니다");
 });
 
 test("SEC-1 — 서버가 실패하면 그 결과는 아무 데도 가지 않고, 로그에 원문이 없다", async () => {
@@ -357,8 +374,9 @@ test("글자 채널 — 구글을 부르지 않고, 통화 기록에 엔진을 w
   await channel.close();
 
   assert.deepEqual(hub.ingested.map((r) => [r.segment_id, r.is_final]), [[1, false], [1, true]]);
-  const published = JSON.stringify(broadcaster.messages);
-  assert.ok(!published.includes("1234"), "SEC-1 — 글자 채널도 서버 마스킹을 거친 것만 흘린다");
+  // 글자 채널도 오디오 채널과 같다 — 화면은 원문, 하류는 서버 마스킹본(decisions/326)
+  const finals = broadcaster.ofType("transcript").filter((m) => m.payload.is_final === "true");
+  assert.equal(finals[0]?.payload.text, "전입신고 서류 뭐 필요해요 010-1234-5678");
   assert.equal(hub.recommended[0]?.text, "전입신고 서류 뭐 필요해요 ***-****-****");
 });
 

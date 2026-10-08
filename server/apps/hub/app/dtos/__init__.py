@@ -14,7 +14,7 @@ from .compliance_dto import ComplianceCheckCommand, ComplianceCheckResult
 from .compliance_finding_dto import ComplianceFinding
 from .domain_classification_dto import DomainClassification
 from .myself_dto import MyselfQuery, MyselfResult
-from .postcall_dto import PostcallCommand
+from .postcall_dto import PostcallCommand, PostcallSegment
 from .recommendation_card_dto import Card, RecommendationCards, Source
 from .recommendation_dto import RecommendCommand, RecommendResult
 from .retrieved_doc_dto import RetrievedDoc
@@ -41,6 +41,7 @@ __all__ = [
     "MyselfQuery",
     "MyselfResult",
     "PostcallCommand",
+    "PostcallSegment",
     "RecommendCommand",
     "RecommendResult",
     "RecommendationCards",

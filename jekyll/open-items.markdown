@@ -1104,3 +1104,12 @@ Environment Variables → **Production 만** → Deployments → Redeploy(`VITE_
 - [ ] **C-6 베타의 「일시정지·AI 안내」는 상담원 화면에서만 일어난다** — 고객에게 소리를 보내는 경로(교환기 보류·안내 송출)가 없다. 조사: [w8-c6-intervention-telephony](/backlog/w8-c6-intervention-telephony/)(정성윤). 화면: [w8-c6-intervention-overlay-ui](/backlog/w8-c6-intervention-overlay-ui/)(조서희)
 - [ ] **C-6 베타 `pause_ms` 8,000ms 는 예시값이다**(`decisions/141`) — 안내 문구를 읽는 시간을 어림했다. 잰 값이 아니다
 - [ ] **F-3 브리핑 카드는 조서희 님 대기** — [w8-f3-briefing-card-ui](/backlog/w8-f3-briefing-card-ui/). 서버 API 가 먼저 올라가야 실서버로 붙일 수 있다(10-14 머지 목표, `decisions/129`)
+
+### 2026-10-06 — 상담원 화면 원문 · 저장 마스킹 + 전사 암호화로 바꾸며 남긴 것 (장민석)
+
+- [ ] **운영 키가 아직 없다 — 배포해도 전사는 마스킹본 평문이다**(정성윤 님께 넘김 — [w8-transcript-enc-key-ops](/backlog/w8-transcript-enc-key-ops/)) — 서버 `0.1.46` 부터 `TRANSCRIPT_ENC_KEY` 가 있으면 `transcript_segment.text` 를 AES-256-GCM 으로 싼다. 넣는 절차는 런북 12-2-d. **키를 잃으면 암호화된 전사를 되돌릴 수 없다** — 시크릿 밖(SSM Parameter Store 등) 보관처를 먼저 정한다. `.env.example` 은 보호 훅이 막아 사람이 `TRANSCRIPT_ENC_KEY=` 를 넣는다
+- [ ] **배포 순서 — 서버가 미디에이터보다 먼저(또는 함께)**(정성윤 님 — 같은 티켓) — 미디에이터 `0.2.14` 만 먼저 나가면 화면 자막(원문)이 `/close` 요약에 섞여 마스킹 없이 저장된다. 같은 PR 이면 같은 릴리스로 나가지만, 서버 쪽 배포가 실패하고 미디에이터만 바뀌는 경우를 본다
+- [ ] **프론트 문구가 옛 정책 그대로다**(조서희 님께 넘김 — [w8-agent-screen-plain-copy](/backlog/w8-agent-screen-plain-copy/)) — 자막 잠금 아이콘 title 「민감정보가 마스킹되었습니다」(원문이 보이는데 이 문구가 뜬다) · `MaskedText.tsx`·`maskSensitiveText.ts` 주석 「실서버는 원문을 절대 주지 않는다」 · `.claude/rules/call.md §2`. 프론트는 고치지 않기로 했다(사용자 지시) — 문구를 바꿀지는 프론트 쪽 판단이다
+- [ ] **운영 DB 를 SQL 로 직접 보면 전사가 `enc:v1:…` 다** — 운영 확인(로그 10-02 처럼 DB 로 자막 보기)은 API(`GET /hub/calls/{id}/transcript`)나 같은 키를 쓰는 스크립트로 바꾼다. 일회성 복호화 도구는 만들지 않았다
+- [ ] **전사 본문 밖의 저장 텍스트는 암호화하지 않는다** — 요약 `summary_text` · 블랙리스트 사유·메모 · 지식 공백 설명 · 추천·컴플라이언스 기록은 마스킹만 한다(사용자가 범위를 전사 본문으로 골랐다). 넓힐지는 마감 뒤에 정한다
+- [ ] **10-02 촬영한 시연 영상은 마스킹된 화면이다** — 배포 뒤 화면(원문 + 강조)과 다르다. 영상을 다시 찍을지, 그대로 쓰고 발표에서 말할지 정한다

@@ -72,6 +72,7 @@ from hub.adapter.inbound.api.v1.transcript_query_router import transcript_query_
 from hub.adapter.inbound.api.v1.upload_router import upload_router  # noqa: E402
 from hub.dependencies.ingest_guard import ingest_guard_state, require_ingest_service  # noqa: E402
 from hub.dependencies.read_guard import read_guard_state, require_reader  # noqa: E402
+from hub.dependencies.transcript_cipher_provider import transcript_cipher_of  # noqa: E402
 
 SPOKES: list[str] = []  # 스포크를 꽂을 때 이름을 추가한다 — /health 가 그대로 보고한다
 
@@ -412,6 +413,9 @@ def _install_missing_index_handler(app: FastAPI) -> None:
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     settings = load_settings()
+    # 전사 암호화 키를 기동 때 한 번 만들어 본다 — 형식이 틀리면 여기서 ValueError 가 나고 서버가 뜨지 않는다(`decisions/326`).
+    # 요청마다 만들다 처음 실패하면 그때까지 쓴 전사가 평문인지 암호문인지 갈리고, 실패는 전사 저장 500 으로만 보인다
+    transcript_cipher_of(settings)
     app.state.settings = settings
 
     SPOKES.clear()
@@ -520,6 +524,8 @@ def health(request: Request) -> dict:
         "ingest_guard": ingest_guard_state(settings),
         # "open" = 토큰 없는 읽기가 지나간다(이행기, decisions/322). "locked" = READ_AUTH_REQUIRED
         "read_guard": read_guard_state(settings),
+        # "on" = 전사 본문을 암호화해 저장한다. "unset" = 키가 없어 마스킹본 평문으로 저장한다(`decisions/326`). 키 값은 싣지 않는다
+        "transcript_encryption": "on" if settings.transcript_enc_key else "unset",
         # 배포된 이미지 태그(빌드 인자 APP_VERSION). 로컬은 "unknown" — 지어내지 않는다
         "version": settings.app_version or "unknown",
     }

@@ -38,6 +38,10 @@ PyJWT==2.10.1                # access token 서명(HS256)
 redis==5.2.1                  # access token 세션 저장 — 테스트 스코프(ElastiCache 아님, infra/CLAUDE.md §1-2)
 google-auth==2.36.0           # 구글 id_token 검증(서명·issuer·audience)
 
+# --- 전사 본문 암호화(AES-256-GCM, 2026-10-06 `decisions/326`) — hub/adapter/outbound/transcript_text_cipher.py 에서만 import 한다 ---
+# google-auth 가 이미 끌어오던 것을 직접 고정한다 — 간접 의존에 기대면 그쪽이 빠질 때 조용히 사라진다
+cryptography==50.0.1
+
 # --- 검증 ---
 pytest==9.1.1
 httpx==0.28.1

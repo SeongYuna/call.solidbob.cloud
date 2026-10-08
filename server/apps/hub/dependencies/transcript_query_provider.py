@@ -14,6 +14,7 @@ from hub.adapter.outbound.postgres.transcript_query_repository import PostgresTr
 from hub.app.ports.input.transcript_query_use_case import TranscriptQueryUseCase
 from hub.app.ports.output.transcript_query_port import TranscriptQueryPort
 from hub.app.use_cases.transcript_query_interactor import TranscriptQueryInteractor
+from hub.dependencies.transcript_cipher_provider import transcript_cipher_of
 
 
 def get_transcript_query_port(request: Request) -> TranscriptQueryPort:
@@ -23,7 +24,7 @@ def get_transcript_query_port(request: Request) -> TranscriptQueryPort:
             status_code=status.HTTP_501_NOT_IMPLEMENTED,
             detail="PostgreSQL 이 설정되지 않았습니다 — infra/README.md 참고",
         )
-    return PostgresTranscriptQueryRepository(build_connection_factory(settings))
+    return PostgresTranscriptQueryRepository(build_connection_factory(settings), cipher=transcript_cipher_of(settings))
 
 
 def get_transcript_query_use_case(
