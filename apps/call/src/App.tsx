@@ -3,6 +3,7 @@ import { AgentCallBox } from "./components/AgentCallBox";
 import { AgentLoginScreen } from "./components/AgentLoginScreen";
 import { AgentStandbyScreen } from "./components/AgentStandbyScreen";
 import { AppHeader } from "./components/AppHeader";
+import { CallGuardInterventionLayer } from "./components/CallGuardInterventionLayer";
 import { CallSummaryHost } from "./components/CallSummaryPanel";
 import { ForcePasswordSetup } from "./components/ForcePasswordSetup";
 import { CallMediatorOverrideBanner } from "./components/CallMediatorOverrideBanner";
@@ -132,6 +133,8 @@ export function App(): ReactElement {
                 onEndCall={endCallAndAgentSession}
                 onLeaveToStandby={leaveToStandby}
               />
+              {/* C-6 베타 — 폭언 대응 단계(덮개·종료 권고). 메시지가 안 오면 아무것도 그리지 않는다. */}
+              <CallGuardInterventionLayer />
             </main>
             {/* 합성 통화 재생(mock 시나리오)에는 받을 실제 전화가 없다 — 재생 중엔
                 이 "통화받기" 모달이 자막을 덮지 않게 아예 안 띄운다. 실제 라이브

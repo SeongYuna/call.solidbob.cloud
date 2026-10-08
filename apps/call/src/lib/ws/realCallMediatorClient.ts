@@ -1,6 +1,7 @@
 import { closeCall, searchDocuments } from "../api/coreClient";
 import type {
   CallGuardFlag,
+  CallGuardIntervention,
   CallWrapUp,
   ClosureEvent,
   ClosureVerdict,
@@ -28,7 +29,10 @@ type ParsedMessage =
   | { kind: "compliance"; payload: { segment_id: string; findings: ComplianceFinding[] } }
   | { kind: "compliance_unavailable"; payload: { segment_id: string; event: ComplianceUnavailable } }
   | { kind: "closure"; payload: ClosureEvent }
-  | { kind: "routing_decision"; payload: RoutingDecision };
+  | { kind: "routing_decision"; payload: RoutingDecision }
+  | { kind: "call_guard_intervention"; payload: CallGuardIntervention }
+  /** 알아본 종류인데 형식이 어긋났다 — 오류 배너 없이 버린다(C-6 베타, 티켓 `w8-c6-intervention-overlay-ui`). */
+  | { kind: "ignored" };
 
 /** 재연결 대기 — 1초에서 두 배씩, 최대 30초. 콜 미디에이터의 25초 핑 끊김·네트워크 순단을 넘긴다. */
 const RECONNECT_BASE_MS = 1_000;
@@ -201,6 +205,9 @@ export class RealCallMediatorClient implements CallMediatorClient {
       listeners.onError("알 수 없는 콜 미디에이터 메시지입니다.");
       return;
     }
+    if (message.kind === "ignored") {
+      return;
+    }
 
     const frameCallId = callIdOfFrame(parsed);
     const decision = bindOrFilter(this.boundCallId, frameCallId);
@@ -247,6 +254,10 @@ export class RealCallMediatorClient implements CallMediatorClient {
       listeners.onRoutingDecision?.(message.payload);
       return;
     }
+    if (message.kind === "call_guard_intervention") {
+      listeners.onCallGuardIntervention?.(message.payload);
+      return;
+    }
     listeners.onClosure(message.payload);
   }
 }
@@ -258,6 +269,11 @@ export function parseCallMediatorMessage(value: unknown): ParsedMessage | null {
   }
 
   const tagged = readString(body, "type");
+  // C-6 베타 — 보조 표시라 형식이 어긋나도 오류 배너를 띄우지 않는다(다른 종류와 다르게 다룬다).
+  if (tagged === "call_guard_intervention") {
+    const payload = parseCallGuardIntervention(isRecord(body.payload) ? body.payload : body);
+    return payload === null ? { kind: "ignored" } : { kind: tagged, payload };
+  }
   if (
     tagged === "started" ||
     tagged === "transcript" ||
@@ -374,6 +390,42 @@ function parseCallGuard(
     flags.push(flag);
   }
   return { segment_id, flags };
+}
+
+/**
+ * C-6 베타 — 미디에이터 `CallGuardInterventionPayload`(값은 전부 문자열). 모르는 `stage`·빠진 필드면 null.
+ * `beta: "true"` 가 없으면 받지 않는다 — 베타 표시가 없는 메시지를 베타 꼬리표 없이 그리지 않으려고.
+ * 일시정지 단계(`warning`·`final_warning`)는 안내 문구와 0보다 큰 `pause_ms` 가 있어야 한다.
+ */
+export function parseCallGuardIntervention(body: Record<string, unknown>): CallGuardIntervention | null {
+  const call_id = readString(body, "call_id");
+  const segment_id = readNumber(body, "segment_id");
+  const stage = readString(body, "stage");
+  const abuse_count = readNumber(body, "abuse_count");
+  const pause_ms = readNumber(body, "pause_ms");
+  const announcement = readString(body, "announcement");
+  const source_doc_id = readString(body, "source_doc_id");
+  if (
+    call_id === null ||
+    segment_id === null ||
+    abuse_count === null ||
+    pause_ms === null ||
+    pause_ms < 0 ||
+    source_doc_id === null ||
+    readString(body, "beta") !== "true"
+  ) {
+    return null;
+  }
+  if (stage === "warning" || stage === "final_warning") {
+    if (announcement === null || announcement.trim().length === 0 || pause_ms <= 0) {
+      return null;
+    }
+    return { call_id, segment_id, stage, abuse_count, pause_ms, announcement, source_doc_id };
+  }
+  if (stage === "end_suggested") {
+    return { call_id, segment_id, stage, abuse_count, pause_ms: 0, announcement: null, source_doc_id };
+  }
+  return null;
 }
 
 function readCallGuardCategory(value: unknown): CallGuardFlag["category"] | null {

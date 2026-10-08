@@ -94,6 +94,9 @@ export function useCallMediatorSession(): CallMediatorSession {
         onCallGuard: (segmentId, event) => {
           useCallStore.getState().applyCallGuard(segmentId, event);
         },
+        onCallGuardIntervention: (event) => {
+          useCallStore.getState().applyCallGuardIntervention(event);
+        },
         onCompliance: (segmentId, event) => {
           useCallStore.getState().applyCompliance(segmentId, event);
         },

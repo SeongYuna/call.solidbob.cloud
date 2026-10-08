@@ -10,6 +10,7 @@ import type {
   TranslatedUtterance,
   AgentTtsStatus,
   CallGuardFlag,
+  CallGuardIntervention,
 } from "../../types/contract";
 import type { TargetLanguage } from "../language/languageMeta";
 
@@ -40,6 +41,11 @@ export interface CallMediatorListener {
   onAgentTts?: (transcriptSegmentId: string, event: AgentTtsStatus) => void;
   /** C-6. §7.3 미정 — mock만 보낸다. 키는 자막 segment_id. */
   onCallGuard?: (transcriptSegmentId: string, event: CallGuardFlag) => void;
+  /**
+   * C-6 베타 — 폭언 대응 단계(`decisions/221`). 미디에이터 베타 스위치가 켜졌을 때만 온다.
+   * mock 은 `?c6beta=1` 일 때만 보낸다. 형식이 어긋난 메시지는 오류 없이 버려진다.
+   */
+  onCallGuardIntervention?: (event: CallGuardIntervention) => void;
   /**
    * C-1~C-4. §7.3 미정 — 서버 `call_registry.ts`의 `announceCompliance`가 꺼져 있어
    * 아직 안 온다(켜지면 이 콜백이 불린다). mock은 안 보낸다. 키는 자막 segment_id.
