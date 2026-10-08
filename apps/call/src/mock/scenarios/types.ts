@@ -2,6 +2,7 @@ import type { TargetLanguage } from "../../lib/language/languageMeta";
 import type {
   AgentTtsStatus,
   CallGuardFlag,
+  CallGuardIntervention,
   CallWrapUp,
   ClosureEvent,
   SentimentSummary,
@@ -37,6 +38,16 @@ export interface MockScenario {
   accentRecognition?: boolean;
   /** C-6 mock. 키는 TranscriptEvent.segment_id. 경고만, 통화는 끊지 않는다. */
   callGuard?: Record<string, CallGuardFlag>;
+  /**
+   * C-6 베타 mock(`decisions/221`) — `?c6beta=1` 일 때만 재생한다. 꺼져 있으면 시나리오는 지금과 같다.
+   * 단계(1차·2차·종료 권고)를 다 보이려면 폭언이 세 번 필요해 `extraTranscripts` 로 발화를 더한다.
+   * `interventions` 키는 TranscriptEvent.segment_id — 그 발화의 콜가드 다음에 보낸다.
+   */
+  callGuardBeta?: {
+    extraTranscripts: TranscriptEvent[];
+    extraCallGuard: Record<string, CallGuardFlag>;
+    interventions: Record<string, CallGuardIntervention>;
+  };
   /**
    * §2.5 D-1~D-3. 요약·분류 모델이 아직 없어 손으로 적어둔 것이다.
    * 재생되는 transcripts 와 어긋나면 데모가 거짓말을 하게 되므로 같이 고친다.

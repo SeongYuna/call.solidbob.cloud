@@ -50,6 +50,7 @@ from hub.adapter.inbound.api.v1.call_start_router import call_start_router  # no
 from hub.adapter.inbound.api.v1.card_feedback_router import card_feedback_router  # noqa: E402
 from hub.adapter.inbound.api.v1.closure_router import closure_router  # noqa: E402
 from hub.adapter.inbound.api.v1.compliance_router import compliance_router  # noqa: E402
+from hub.adapter.inbound.api.v1.customer_briefing_router import customer_briefing_router  # noqa: E402
 from hub.adapter.inbound.api.v1.knowledge_gap_query_router import (  # noqa: E402
     knowledge_gap_query_router,
 )
@@ -76,7 +77,7 @@ from hub.dependencies.transcript_cipher_provider import transcript_cipher_of  # 
 SPOKES: list[str] = []  # 스포크를 꽂을 때 이름을 추가한다 — /health 가 그대로 보고한다
 
 # `server/` 안에 사는 규칙 기반 스포크. 프로바이더 기본값이라 조건 없이 붙는다.
-_BUILTIN_SPOKES = ("masking", "closure_gate", "postcall")
+_BUILTIN_SPOKES = ("masking", "closure_gate", "postcall", "briefing")
 
 AI_APPS = Path(__file__).resolve().parent.parent / "ai" / "apps"
 
@@ -325,6 +326,29 @@ def _wire_postcall_model(app: FastAPI, settings: Settings) -> str | None:
     return "postcall_model"
 
 
+def _wire_briefing_model(app: FastAPI, settings: Settings) -> str | None:
+    """F-3 통화 수신 전 브리핑의 모델 겹(`decisions/220`). 요약과 **같은 조건**이다 — 새 키 없음.
+    안 켜면 규칙 브리핑(`server/apps/briefing`)이 그대로 나간다."""
+    model = settings.postcall_model or settings.generation_model
+    if not (settings.ollama_url and model):
+        return None
+    sys.path.insert(0, str(AI_APPS))
+    sys.path.insert(0, str(AI_APPS.parent))
+    try:
+        from provider import build_briefing_provider  # noqa: PLC0415
+    except (ModuleNotFoundError, ImportError):
+        return None
+
+    from briefing.adapter.outbound.rule_briefing_adapter import RuleBriefingAdapter  # noqa: PLC0415
+    from hub.dependencies.customer_briefing_provider import get_customer_briefing_port  # noqa: PLC0415
+
+    app.dependency_overrides.setdefault(
+        get_customer_briefing_port,
+        build_briefing_provider(RuleBriefingAdapter(), ollama_url=settings.ollama_url, model=model),
+    )
+    return "briefing_model"
+
+
 def _wire_compliance(app: FastAPI) -> str | None:
     """`ai/` 의 컴플라이언스 탐지(C-1~C-4)를 꽂는다. 콜 가드와 같다 — 규칙표뿐이라 설정 조건이 없다.
 
@@ -404,6 +428,7 @@ async def lifespan(app: FastAPI):
         _wire_pii_ner(app, settings),
         _wire_generation(app, settings),
         _wire_postcall_model(app, settings),
+        _wire_briefing_model(app, settings),
         _wire_uploads(app, settings),
     ):
         if wired:
@@ -459,6 +484,7 @@ app.include_router(call_guard_check_router, dependencies=_INGEST_ONLY)
 app.include_router(call_guard_flag_list_router)
 app.include_router(call_list_router, dependencies=_READERS)
 app.include_router(call_record_router, dependencies=_READERS)
+app.include_router(customer_briefing_router, dependencies=_READERS)
 app.include_router(call_start_router, dependencies=_INGEST_ONLY)
 app.include_router(card_feedback_router)
 app.include_router(closure_router, dependencies=_INGEST_ONLY)

@@ -16,7 +16,8 @@
 # 스포크를 새로 만들면 root_packages 와 계약 1 의 containers 에 이름을 추가한다.
 # 등록됨: masking(C-5) · closure_gate(F-2) · blacklist(J-4·J-5, 2026-09-09 `decisions/204`) ·
 #         admin_auth(관리자 로그인, 2026-09-14 — hub 포트를 구현하는 스포크는 아니지만 같은
-#         클린 아키텍처 계약을 받는다) · agent_auth(상담원 토큰, 2026-09-15 `decisions/307`) · postcall(D-1~D-3 규칙 발췌 초안, 2026-09-15 `decisions/306`).
+#         클린 아키텍처 계약을 받는다) · agent_auth(상담원 토큰, 2026-09-15 `decisions/307`) · postcall(D-1~D-3 규칙 발췌 초안, 2026-09-15 `decisions/306`) ·
+#         briefing(F-3 규칙 브리핑, 2026-10-06 decisions/220).
 # D-4 공백 리포트는 postcall 이 아니라 **hub 의 `knowledge_gap_*`** 로 구현됐다(옛 「예정: postcall 에 붙인다」는 이행되지 않았다, 2026-09-21).
 # =============================================================================
 
@@ -26,6 +27,7 @@ root_packages =
     masking
     closure_gate
     postcall
+    briefing
     blacklist
     admin_auth
     agent_auth
@@ -49,6 +51,7 @@ containers =
     masking
     closure_gate
     postcall
+    briefing
     blacklist
     admin_auth
     agent_auth
@@ -67,6 +70,7 @@ source_modules =
     masking
     closure_gate
     postcall
+    briefing
     blacklist
     admin_auth
     agent_auth
@@ -94,6 +98,7 @@ source_modules =
     masking.domain
     closure_gate.domain
     postcall.domain
+    briefing.domain
     blacklist.domain
     admin_auth.app
     agent_auth.app
@@ -121,6 +126,7 @@ source_modules =
     masking.domain
     closure_gate.domain
     postcall.domain
+    briefing.domain
     blacklist.domain
     agent_auth.domain
 forbidden_modules =
@@ -140,6 +146,7 @@ forbidden_modules =
     masking
     closure_gate
     postcall
+    briefing
     blacklist
     admin_auth
     agent_auth

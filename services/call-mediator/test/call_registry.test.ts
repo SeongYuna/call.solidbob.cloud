@@ -20,6 +20,7 @@ function setup(
     announceStarted?: boolean;
     announcePending?: boolean;
     announceCallGuard?: boolean;
+    announceCallGuardIntervention?: boolean;
     announceCompliance?: boolean;
     announceClosure?: boolean;
     announceRouting?: boolean;
@@ -52,6 +53,7 @@ function setup(
     announceStarted: opts.announceStarted,
     announcePending: opts.announcePending,
     announceCallGuard: opts.announceCallGuard,
+    announceCallGuardIntervention: opts.announceCallGuardIntervention,
     announceCompliance: opts.announceCompliance,
     announceClosure: opts.announceClosure,
     announceRouting: opts.announceRouting,
@@ -514,6 +516,63 @@ test("C-6 — 켜면 잡힌 신호만 call_guard 로 보낸다. 잡힌 것이 �
     { category: "insult", phrase: "병신", span: ["2", "4"], source_doc_id: "DASAN-MANUAL-5.1" },
   ]);
   assert.ok(log.warnings.some((w) => w.includes("콜 가드 검사 실패") && w.includes("501")));
+});
+
+test("C-6 베타 — 기본은 꺼짐: call_guard_intervention 을 보내지 않는다", async () => {
+  const { registry, stt, broadcaster } = setup({ announceCallGuard: true });
+  const customer = await openOk(registry, "test-1", "customer");
+  stt.last().emit("이 병신 같은", true, 900);
+  await customer.close();
+  assert.equal(broadcaster.ofType("call_guard").length, 1);
+  assert.equal(broadcaster.ofType("call_guard_intervention").length, 0);
+});
+
+test("C-6 베타 — 켜면 1회 warning · 2회 final_warning · 3회 end_suggested, 값은 문자열", async () => {
+  const { registry, stt, broadcaster } = setup({ announceCallGuardIntervention: true });
+  const customer = await openOk(registry, "test-1", "customer");
+  stt.last().emit("이 병신 같은", true, 900);
+  await tick(10);
+  stt.last().emit("여권 재발급 서류요", true, 2000);
+  await tick(10);
+  stt.last().emit("또 병신", true, 3000);
+  await tick(10);
+  stt.last().emit("병신아", true, 4000);
+  await customer.close();
+  const sent = broadcaster.ofType("call_guard_intervention");
+  assert.deepEqual(sent.map((m) => m.payload.stage), ["warning", "final_warning", "end_suggested"]);
+  assert.deepEqual(sent.map((m) => m.payload.abuse_count), ["1", "2", "3"]);
+  assert.equal(sent[0]!.payload.pause_ms, "8000");
+  assert.equal(sent[0]!.payload.beta, "true");
+  assert.equal(sent[0]!.payload.call_id, "test-1");
+  assert.equal(typeof sent[0]!.payload.segment_id, "string");
+  assert.equal(sent[2]!.payload.announcement, null);
+  assert.equal(sent[2]!.payload.pause_ms, "0");
+});
+
+test("C-6 베타 — 서버 검사가 실패한 발화는 횟수에 넣지 않는다", async () => {
+  const { registry, hub, stt, broadcaster } = setup({ announceCallGuardIntervention: true });
+  const customer = await openOk(registry, "test-1", "customer");
+  hub.failGuard = 501;
+  stt.last().emit("이 병신 같은", true, 900);
+  await tick(10);
+  hub.failGuard = null;
+  stt.last().emit("또 병신", true, 2000);
+  await customer.close();
+  const sent = broadcaster.ofType("call_guard_intervention");
+  assert.deepEqual(sent.map((m) => m.payload.stage), ["warning"]);
+});
+
+test("C-6 베타 — 횟수는 통화별이다", async () => {
+  const { registry, stt, broadcaster } = setup({ announceCallGuardIntervention: true });
+  const a = await openOk(registry, "test-a", "customer");
+  stt.last().emit("이 병신 같은", true, 900);
+  await tick(10);
+  const b = await openOk(registry, "test-b", "customer");
+  stt.last().emit("이 병신 같은", true, 900);
+  await a.close();
+  await b.close();
+  const sent = broadcaster.ofType("call_guard_intervention");
+  assert.deepEqual(sent.map((m) => [m.payload.call_id, m.payload.stage]), [["test-a", "warning"], ["test-b", "warning"]]);
 });
 
 test("발신 번호는 통화를 처음 여는 채널 것만 통화 시작에 싣고, 로그에 남기지 않는다 (decisions/304)", async () => {

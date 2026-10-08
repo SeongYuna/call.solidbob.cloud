@@ -1098,6 +1098,13 @@ Environment Variables → **Production 만** → Deployments → Redeploy(`VITE_
 - [ ] **음성 자막이 문장·쉼마다 끊긴다 — 음성 파일의 쉼을 줄여 피했다** — 발화 끝 기준 0.7초(`0.2.13`)에 합성 음성의 쉼(약 0.9초)이 걸려 한 턴이 여러 줄이 된다(`shoot1-stt` 상담원 8·고객 11줄). 기준은 그대로 두고 **두 채널이 함께 조용한 구간을 0.3초로 줄인 파일**(`data/processed/stt-2ch/syn-004-tight-16k.wav`, gitignore)로 한 턴 한 줄을 얻었다(`shoot1-stt3` 1~7턴). 실제 사람의 말에서는 기준을 올리는 것(로컬 예측 1.0초 이상이면 턴당 한 줄)이 남은 방법이다 — 재지 않았다
 - [ ] **촬영 통화 일곱 건이 운영 DB 에 남아 있다** — `warmup-1` · `shoot1-a1` · `shoot1-b1`(블랙리스트 요청 9 승인, `****0903`) · `shoot1-a2` · `shoot1-stt` · `shoot1-stt2` · `shoot1-stt3`. 지울지, 시연 기록으로 둘지 정한다. `0903` 은 승인돼 있어 다시 쓰면 통화 시작부터 배정 배너가 뜬다
 
+### 2026-10-06 — F-3 브리핑 · C-6 일시정지 안내 베타를 열며 남긴 것 (류준)
+
+- [ ] **C-6 폭언 감지는 베타다 — AI 분류기는 데이터가 생기면 학습해서 베타 안에서 쓴다**(`_project/decisions/221` 5절). 지금 탐지는 규칙(어휘 사전)이고, 실제 고객 통화는 개인정보 때문에 모으기 어려워(절대 원칙 7) 학습·측정할 데이터가 없다. 데이터를 얻으면 ① 출처 확보 ② 학습용·측정용 분리 ③ 비속어·욕설 분류기 학습 → `CallGuardPort` 교체(규칙과 합집합) ④ 하네스로 재현율·정밀도 측정 ⑤ 새 결정 기록으로 운영 켜기. **그전까지 탐지 성능은 측정 불가** — 발표·소개에서 「AI 가 욕설을 정확히 잡는다」 고 말하지 않는다
+- [ ] **C-6 베타의 「일시정지·AI 안내」는 상담원 화면에서만 일어난다** — 고객에게 소리를 보내는 경로(교환기 보류·안내 송출)가 없다. 조사: [w8-c6-intervention-telephony](/backlog/w8-c6-intervention-telephony/)(정성윤). 화면: [w8-c6-intervention-overlay-ui](/backlog/w8-c6-intervention-overlay-ui/)(조서희)
+- [ ] **C-6 베타 `pause_ms` 8,000ms 는 예시값이다**(`decisions/141`) — 안내 문구를 읽는 시간을 어림했다. 잰 값이 아니다
+- [ ] **F-3 브리핑 카드는 조서희 님 대기** — [w8-f3-briefing-card-ui](/backlog/w8-f3-briefing-card-ui/). 서버 API 가 먼저 올라가야 실서버로 붙일 수 있다(10-14 머지 목표, `decisions/129`)
+
 ### 2026-10-06 — 상담원 화면 원문 · 저장 마스킹 + 전사 암호화로 바꾸며 남긴 것 (장민석)
 
 - [ ] **운영 키가 아직 없다 — 배포해도 전사는 마스킹본 평문이다**(정성윤 님께 넘김 — [w8-transcript-enc-key-ops](/backlog/w8-transcript-enc-key-ops/)) — 서버 `0.1.46` 부터 `TRANSCRIPT_ENC_KEY` 가 있으면 `transcript_segment.text` 를 AES-256-GCM 으로 싼다. 넣는 절차는 런북 12-2-d. **키를 잃으면 암호화된 전사를 되돌릴 수 없다** — 시크릿 밖(SSM Parameter Store 등) 보관처를 먼저 정한다. `.env.example` 은 보호 훅이 막아 사람이 `TRANSCRIPT_ENC_KEY=` 를 넣는다

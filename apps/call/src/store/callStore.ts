@@ -12,6 +12,7 @@ import type {
   TranslatedUtterance,
   AgentTtsStatus,
   CallGuardFlag,
+  CallGuardIntervention,
   ComplianceFinding,
   ComplianceUnavailable,
   RoutingDecision,
@@ -145,6 +146,13 @@ export interface CallState {
   /** C-6 mock. 키는 TranscriptEvent.segment_id. */
   callGuard: Record<string, CallGuardFlag[]>;
   /**
+   * C-6 베타 — 지금 떠 있는 일시정지 덮개(`warning`·`final_warning`). `endsAt` 은 epoch ms.
+   * 덮개는 화면만 가린다 — 자막·추천은 그 아래에서 계속 쌓인다. 상담원이 닫으면 null.
+   */
+  callGuardPause: { intervention: CallGuardIntervention; endsAt: number } | null;
+  /** C-6 베타 — `end_suggested` 권고 배너. 상담원이 닫을 때까지 남는다. 통화를 끊지 않는다. */
+  callGuardEndSuggestion: CallGuardIntervention | null;
+  /**
    * C-1~C-4. 키는 TranscriptEvent.segment_id, 값은 그 세그먼트에 쌓인 위반 목록 —
    * 한 세그먼트에 여러 건이 잡힐 수 있어(call_guard와 달리 override하지 않는다).
    * 서버 `announceCompliance`가 켜지기 전까지는 채워지지 않는다 — 어떤 컴포넌트도
@@ -203,6 +211,9 @@ export interface CallState {
   ) => void;
   applyAgentTts: (transcriptSegmentId: string, event: AgentTtsStatus) => void;
   applyCallGuard: (transcriptSegmentId: string, event: CallGuardFlag) => void;
+  applyCallGuardIntervention: (event: CallGuardIntervention, now?: number) => void;
+  dismissCallGuardPause: () => void;
+  dismissCallGuardEndSuggestion: () => void;
   applyCompliance: (transcriptSegmentId: string, event: ComplianceFinding) => void;
   applyComplianceUnavailable: (
     transcriptSegmentId: string,
@@ -273,6 +284,8 @@ const emptyCall = {
   translations: {} as Record<string, TranslatedUtterance>,
   agentTts: {} as Record<string, AgentTtsStatus>,
   callGuard: {} as Record<string, CallGuardFlag[]>,
+  callGuardPause: null as { intervention: CallGuardIntervention; endsAt: number } | null,
+  callGuardEndSuggestion: null as CallGuardIntervention | null,
   compliance: {} as Record<string, ComplianceFinding[]>,
   complianceUnavailable: {} as Record<string, ComplianceUnavailable>,
   noDocsSegments: {} as Record<string, true>,
@@ -739,6 +752,23 @@ export const useCallStore = create<CallState>((set, get) => ({
         },
       };
     });
+  },
+
+  applyCallGuardIntervention: (event, now = Date.now()) => {
+    if (event.stage === "end_suggested") {
+      // 권고가 오면 떠 있던 덮개는 걷는다 — 이제 판단은 상담원 몫이다(5.2).
+      set({ callGuardPause: null, callGuardEndSuggestion: event });
+      return;
+    }
+    set({ callGuardPause: { intervention: event, endsAt: now + event.pause_ms } });
+  },
+
+  dismissCallGuardPause: () => {
+    set({ callGuardPause: null });
+  },
+
+  dismissCallGuardEndSuggestion: () => {
+    set({ callGuardEndSuggestion: null });
   },
 
   applyCompliance: (transcriptSegmentId, event) => {

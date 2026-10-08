@@ -764,6 +764,183 @@ export async function fetchCallRecord(callId: string): Promise<CallRecord> {
   };
 }
 
+// ── GET /hub/calls/{call_id}/briefing ────────────────────────────────────
+
+/** 「통화받기」 전 고객 브리핑(F-3, `decisions/220`). 목적은 **추정**이다 — 판정이 아니다. */
+export type BriefingStatus = "ready" | "first_contact" | "unidentified";
+
+export interface BriefingPurpose {
+  /** 재문의 | 후속 확인 | 서류 보완 | 컴플레인 | 신규 문의 — 서버가 준 값 그대로. 없으면 null */
+  category: string | null;
+  text: string;
+  source: "model" | "rule";
+}
+
+export interface BriefingEvidence {
+  callId: string;
+  startedAt: string;
+  inquiryType: string | null;
+  summaryConfirmed: boolean;
+  incompleteProcedures: string[];
+}
+
+export interface CustomerBriefing {
+  callId: string;
+  status: BriefingStatus;
+  priorCallCount: number;
+  purpose: BriefingPurpose | null;
+  briefingLines: string[];
+  evidence: BriefingEvidence[];
+  signals: {
+    openFollowUps: number;
+    callGuardCategories: string[];
+    blacklisted: boolean;
+  };
+  generatedAt: string;
+}
+
+const BRIEFING_STATUSES: readonly BriefingStatus[] = ["ready", "first_contact", "unidentified"];
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function isStringArray(value: unknown): value is string[] {
+  return Array.isArray(value) && value.every((v) => typeof v === "string");
+}
+
+/** 문자열 불리언("true"/"false"). 그 밖은 null — 던지지 않는다. */
+function wireBool(value: unknown): boolean | null {
+  if (value === "true" || value === true) {
+    return true;
+  }
+  if (value === "false" || value === false) {
+    return false;
+  }
+  return null;
+}
+
+/** 0 이상 정수 문자열. 그 밖은 null — 던지지 않는다. */
+function wireCount(value: unknown): number | null {
+  if (typeof value !== "string" && typeof value !== "number") {
+    return null;
+  }
+  const n = Number(value);
+  return Number.isInteger(n) && n >= 0 ? n : null;
+}
+
+function parseBriefingPurpose(value: unknown): BriefingPurpose | null | undefined {
+  if (value === null || value === undefined) {
+    return null;
+  }
+  if (!isRecord(value)) {
+    return undefined;
+  }
+  const { category, text, source } = value;
+  if (category !== null && category !== undefined && typeof category !== "string") {
+    return undefined;
+  }
+  if (typeof text !== "string" || (source !== "model" && source !== "rule")) {
+    return undefined;
+  }
+  const trimmed = typeof category === "string" ? category.trim() : "";
+  return { category: trimmed.length > 0 ? trimmed : null, text, source };
+}
+
+function parseBriefingEvidence(value: unknown): BriefingEvidence | null {
+  if (!isRecord(value)) {
+    return null;
+  }
+  const confirmed = wireBool(value.summary_confirmed);
+  const inquiry = value.inquiry_type;
+  if (
+    typeof value.call_id !== "string" ||
+    typeof value.started_at !== "string" ||
+    Number.isNaN(Date.parse(value.started_at)) ||
+    (inquiry !== null && inquiry !== undefined && typeof inquiry !== "string") ||
+    confirmed === null ||
+    !isStringArray(value.incomplete_procedures)
+  ) {
+    return null;
+  }
+  return {
+    callId: value.call_id,
+    startedAt: value.started_at,
+    inquiryType: typeof inquiry === "string" && inquiry.length > 0 ? inquiry : null,
+    summaryConfirmed: confirmed,
+    incompleteProcedures: value.incomplete_procedures,
+  };
+}
+
+/**
+ * 응답을 화면 타입으로 바꾼다. **필드가 빠지거나 `status` 가 모르는 값이면 null** —
+ * 다른 읽기 경로와 달리 던지지 않는다. 브리핑은 보조 정보라 형식이 어긋나면 카드를
+ * 조용히 빼고 「통화받기」는 그대로 둔다(티켓 `w8-f3-briefing-card-ui` 완료 조건 3).
+ */
+export function parseCustomerBriefing(raw: unknown): CustomerBriefing | null {
+  if (!isRecord(raw)) {
+    return null;
+  }
+  const status = raw.status;
+  if (typeof status !== "string" || !BRIEFING_STATUSES.includes(status as BriefingStatus)) {
+    return null;
+  }
+  const priorCallCount = wireCount(raw.prior_call_count);
+  const purpose = parseBriefingPurpose(raw.purpose);
+  if (
+    typeof raw.call_id !== "string" ||
+    typeof raw.generated_at !== "string" ||
+    priorCallCount === null ||
+    purpose === undefined ||
+    !isStringArray(raw.briefing_lines) ||
+    !Array.isArray(raw.evidence) ||
+    !isRecord(raw.signals)
+  ) {
+    return null;
+  }
+  const evidence: BriefingEvidence[] = [];
+  for (const item of raw.evidence) {
+    const parsed = parseBriefingEvidence(item);
+    if (parsed === null) {
+      return null;
+    }
+    evidence.push(parsed);
+  }
+  const openFollowUps = wireCount(raw.signals.open_follow_ups);
+  const blacklisted = wireBool(raw.signals.blacklisted);
+  const categories = raw.signals.call_guard_categories;
+  if (openFollowUps === null || blacklisted === null || !isStringArray(categories)) {
+    return null;
+  }
+  return {
+    callId: raw.call_id,
+    status: status as BriefingStatus,
+    priorCallCount,
+    purpose,
+    briefingLines: raw.briefing_lines,
+    evidence,
+    signals: { openFollowUps, callGuardCategories: categories, blacklisted },
+    generatedAt: raw.generated_at,
+  };
+}
+
+/**
+ * 인증은 다른 통화 읽기(`/transcript`·`/record`)와 같다. 서버가 모델 상한(10초)을 넘기면
+ * 규칙 브리핑을 돌려주므로 여기서 재시도하지 않는다. 형식이 어긋나면 null(위 파서),
+ * 404·네트워크 실패는 `CoreApiError` — 둘 다 부르는 쪽은 카드를 그리지 않는다.
+ */
+export async function fetchCustomerBriefing(
+  callId: string,
+  signal?: AbortSignal,
+): Promise<CustomerBriefing | null> {
+  const raw = await request<unknown>(`/hub/calls/${encodeURIComponent(callId)}/briefing`, {
+    method: "GET",
+    headers: agentAuthHeaders(),
+    signal,
+  });
+  return parseCustomerBriefing(raw);
+}
+
 /**
  * GET /hub/calls 목록 API 연결 전 임시 mock. `isCoreApiConfigured()`가 false일 때
  * (또는 상담기록 "예시 재생" 화면에서) 화면이 이걸 그대로 쓴다 — 실제 API에는

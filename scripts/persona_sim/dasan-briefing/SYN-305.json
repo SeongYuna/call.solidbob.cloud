@@ -1,0 +1,87 @@
+{
+  "id": "SYN-305",
+  "version": "dasan-briefing",
+  "source": "synthetic",
+  "generated_by": "Claude Code (claude-opus-5-5) · 2026-10-06 · 사람 검토 전",
+  "title": "외국인 고객 여권 재발급 (후속조치 약속)",
+  "length_class": "short",
+  "turn_count": 7,
+  "caller_number": "01000000303",
+  "agent_persona": "A01",
+  "customer_persona": "C04",
+  "procedure": {
+    "doc_ids": [
+      "DASAN-TERM-4.23"
+    ],
+    "required_documents": []
+  },
+  "turns": [
+    {
+      "seq": 1,
+      "speaker": "agent",
+      "text": "네, 한별시 통합민원콜센터입니다. 무엇을 도와드릴까요?",
+      "tone": "calm"
+    },
+    {
+      "seq": 2,
+      "speaker": "customer",
+      "text": "안녕하세요. 저 여권, 잃어버렸어요. 새로 만들고 싶어요.",
+      "tone": "calm"
+    },
+    {
+      "seq": 3,
+      "speaker": "agent",
+      "text": "네, 여권 재발급 문의시군요. 천천히 말씀하셔도 괜찮아요. 분실 신고는 하셨나요?",
+      "tone": "calm"
+    },
+    {
+      "seq": 4,
+      "speaker": "customer",
+      "text": "아직... 어디서 해요? 잘 몰라요.",
+      "tone": "calm"
+    },
+    {
+      "seq": 5,
+      "speaker": "agent",
+      "text": "분실 신고부터 도와드릴게요. 접수되면 문자로 결과 안내드리겠습니다.",
+      "tone": "calm"
+    },
+    {
+      "seq": 6,
+      "speaker": "customer",
+      "text": "문자 와요? 알겠어요. 감사합니다.",
+      "tone": "calm"
+    },
+    {
+      "seq": 7,
+      "speaker": "agent",
+      "text": "네, 감사합니다.",
+      "tone": "calm"
+    }
+  ],
+  "expected": {
+    "pii_by_pattern": {},
+    "compliance": [],
+    "call_guard_by_type": {},
+    "customer_non_calm_turns": [],
+    "call_temperature": {
+      "customer_expected_outlier_turns": [],
+      "customer_calm_turns": [
+        2,
+        4,
+        6
+      ],
+      "customer_turns": 3,
+      "note": "의도한 연기에서 나온 기대값이다 — 측정값이 아니다. raised·tense 는 채점에서 뺀다"
+    },
+    "briefing": {
+      "role": "prior",
+      "for": "SYN-306"
+    }
+  },
+  "notes": [
+    "고객 C 의 지난 통화 — 서툰 한국어 외국인",
+    "후속조치: 「접수되면 문자로 결과 안내드리겠습니다」 — 약속 어미 + 동사 「문자」·「접수」 에 걸려 follow_up_action 이 남는다",
+    "DASAN-TERM-4.23 은 closure_rule.EXCLUDED(갈래마다 서류가 달라 규칙 없음, decisions/217)라 필요서류 판정(closure)은 생기지 않는다 — 이 고객의 재료는 후속조치뿐이다"
+  ]
+}

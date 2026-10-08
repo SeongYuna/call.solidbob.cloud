@@ -28,10 +28,13 @@ resources:
 images:
   # 0.1.41 은 건너뛰었다 — `origin/PM` 이 먼저 집었다(2026-09-23 `82924b3`). 겹치면 `tag-check` 오류다(`decisions/131`).
   # ⚠ 주석은 `- name:` 위에 쓴다 — 판정기가 `- name:` **바로 다음 줄**에서 newTag 를 찾는다(2026-09-24 실제로 깨뜨렸다).
+  # 0.1.46 · 0.2.14 는 **아무도 굽지 않았다** — `origin/server` 가 2026-10-06 에 집어 뒀지만,
+  # 그 PR(#166) 이 열려 있는 동안 main 이 0.1.47·0.1.48·0.2.15 로 지나갔다(#167·#168).
+  # 머지하며 둘 다 main 보다 위인 0.1.49 · 0.2.16 으로 올렸다 — 레지스트리 404 확인(`decisions/131`).
   - name: seongyuna/callguard-server
-    newTag: "0.1.46"
+    newTag: "0.1.49"
   - name: seongyuna/callguard-es
     newTag: "9.5.1"
   # 콜 미디에이터(services/call-mediator). server 와 태그를 따로 올린다 — release.yml 이 이미지마다 판단한다.
   - name: seongyuna/callguard-call-mediator
-    newTag: "0.2.14"
+    newTag: "0.2.16"

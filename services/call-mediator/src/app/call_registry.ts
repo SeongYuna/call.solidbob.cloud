@@ -28,6 +28,7 @@ import { FirstSpeakerIsAgent } from "../domain/diarization.ts";
 import { pcm16Seconds } from "../domain/budget.ts";
 import type { BudgetGuard } from "./budget_guard.ts";
 import { CoalescingQueue } from "./coalescing_queue.ts";
+import { categoriesOf, nextIntervention } from "../domain/call_guard_intervention.ts";
 import {
   HubError,
   type Broadcaster,
@@ -109,6 +110,11 @@ export interface RegistryDeps {
    */
   announceCallGuard?: boolean;
   /**
+   * C-6 베타 — 폭언 대응 단계(`call_guard_intervention`)를 보낼까(`decisions/221`). 기본 false.
+   * 꺼져 있으면 단계 판정도 하지 않는다. **켜도 통화를 끊지 않는다**(매뉴얼 5.2).
+   */
+  announceCallGuardIntervention?: boolean;
+  /**
    * 잡힌 컴플라이언스 위반(C-1~C-4)을 `compliance` 메시지로, 검사에 실패한 발화를 `compliance_unavailable` 로
    * 대시보드에 보낼까. 기본 false — 켜기 전에 대시보드 파서(`apps/call` realCallMediatorClient)가 두 타입을 다
    * 받아야 한다. **검사는 끄지 않는다.**
@@ -184,6 +190,8 @@ export function isRetryableIngestError(error: unknown): boolean {
 
 interface CallState {
   readonly callId: string;
+  /** C-6 베타 — 이 통화에서 폭언이 잡힌 고객 발화 수. 메모리에만 둔다(`decisions/221` 6절). */
+  abuseCount: number;
   readonly startedAtMs: number;
   readonly counter: SegmentCounter;
   readonly channels: Map<ChannelSpeaker, Channel>;
@@ -284,6 +292,7 @@ export class CallRegistry {
     }
     const call: CallState = {
       callId: spec.callId,
+      abuseCount: 0,
       startedAtMs: this.deps.nowMs(),
       counter: new SegmentCounter(),
       channels: new Map(),
@@ -678,6 +687,26 @@ export class Channel {
       });
       if (this.deps.announceCallGuard === true && payload.flags.length > 0) {
         this.deps.broadcaster.publish(this.callId, { type: "call_guard", payload });
+      }
+      if (this.deps.announceCallGuardIntervention === true) {
+        const intervention = nextIntervention(this.call.abuseCount, categoriesOf(payload.flags));
+        if (intervention !== null) {
+          this.call.abuseCount = intervention.abuseCount;
+          this.deps.broadcaster.publish(this.callId, {
+            type: "call_guard_intervention",
+            payload: {
+              call_id: this.callId,
+              segment_id: String(item.segmentId),
+              stage: intervention.stage,
+              abuse_count: String(intervention.abuseCount),
+              pause_ms: String(intervention.pauseMs),
+              announcement: intervention.announcement,
+              source_doc_id: intervention.sourceDocId,
+              beta: "true",
+            },
+          });
+          this.deps.log.info(`C-6 베타 대응 call=${this.callId} segment=${item.segmentId} stage=${intervention.stage} 횟수=${intervention.abuseCount}`);
+        }
       }
     } catch (error) {
       this.deps.log.warn(`콜 가드 검사 실패 call=${this.callId} segment=${item.segmentId} status=${statusOf(error)}`);
