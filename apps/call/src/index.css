@@ -1332,13 +1332,26 @@ button {
   line-height: 1;
 }
 
+/* 개인정보 구간 표시 — 상담원 위반 경고(.alert-pill)와 같은 빨강을 쓰지 않는다.
+   고객이 번호를 불렀을 뿐인 줄에 빨간 「경고」가 붙어 「고객이 잘못했다」로 읽혔다
+   (시연 영상 검토 2026-10-02 · `decisions/326`). */
+.alert-pill.is-mask {
+  background: rgba(120, 124, 132, 0.14);
+  color: #4a4f57;
+}
+
+/* 2026-10-08 `decisions/326` — 실서버 자막이 원문이 되면서 이 구간은 「이미 가려진 자리」가
+   아니라 「저장할 때 가려질 자리」다. 옛 빨강은 `*****` 를 덮던 색이라, 원문을 감싸면
+   번호로 눈이 쏠리고 위반처럼 읽힌다. 중립 회색 + 점선 밑줄로 뜻만 전한다.
+   ⚠ mock 모드의 `.is-pii`·`.is-abuse` 는 여전히 「이미 가려진 자리」라 아래 그대로 둔다. */
 .masked-span {
-  background: rgba(226, 75, 74, 0.12);
-  color: var(--pii);
+  background: rgba(120, 124, 132, 0.12);
+  color: #4a4f57;
   font-family: var(--mono);
   font-size: 13.5px;
   padding: 0 3px;
   border-radius: 4px;
+  border-bottom: 1px dashed rgba(120, 124, 132, 0.55);
 }
 
 .masked-span.is-pii {
