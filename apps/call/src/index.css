@@ -3102,6 +3102,128 @@ button {
   color: var(--muted);
 }
 
+/* --- F-3 고객 브리핑 카드(2026-10-08, CustomerBriefingCard) — 「통화받기」 위에 뜬다.
+   카드가 길어도 버튼이 화면 밖으로 밀리지 않게 모달 높이를 묶고 카드만 스크롤한다. --- */
+.agent-call-box:has(.briefing-card) {
+  width: min(480px, 100%);
+  max-height: calc(100vh - 48px);
+}
+
+.briefing-card {
+  flex: 0 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  border-radius: 12px;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: var(--text);
+}
+
+.briefing-card p,
+.briefing-card ul {
+  margin: 0;
+}
+
+.briefing-note {
+  color: var(--muted);
+}
+
+.briefing-title {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--muted);
+}
+
+.briefing-count {
+  font-family: var(--mono);
+  font-weight: 400;
+}
+
+.briefing-purpose {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.briefing-purpose-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.briefing-tag {
+  padding: 1px 8px;
+  border-radius: var(--radius-pill);
+  background: var(--keyword);
+  color: #1a1408;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.briefing-source {
+  font-size: 11px;
+  color: var(--dim);
+}
+
+.briefing-category {
+  font-weight: 700;
+}
+
+.briefing-purpose-text {
+  font-size: 13px;
+}
+
+.briefing-lines,
+.briefing-signals {
+  padding-left: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.briefing-evidence {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 10px;
+  color: var(--muted);
+}
+
+.briefing-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--dim);
+}
+
+.briefing-evidence-item {
+  font-family: var(--mono);
+  font-size: 12px;
+}
+
+.briefing-draft {
+  margin-left: 4px;
+  padding: 0 5px;
+  border-radius: var(--radius-badge);
+  border: 1px solid var(--line);
+  font-family: var(--font);
+  font-size: 10.5px;
+  color: var(--dim);
+}
+
+.briefing-signals {
+  color: var(--warn-fg);
+}
+
 .agent-call-turns {
   margin: 0;
   padding: 0;

@@ -1,7 +1,10 @@
 import { useEffect, useState, type ReactElement } from "react";
 import { captureAgentCallTokenFromUrl } from "../lib/agentCallToken";
+import { useCustomerBriefing } from "../hooks/useCustomerBriefing";
 import type { AgentCallSession } from "../lib/useAgentCallSession";
+import type { BriefingPreview } from "../mock/customerBriefing";
 import { useCallStore } from "../store/callStore";
+import { CustomerBriefingCard } from "./CustomerBriefingCard";
 
 function formatClock(totalSeconds: number): string {
   const m = Math.floor(totalSeconds / 60)
@@ -30,11 +33,24 @@ function formatClock(totalSeconds: number): string {
  * 자막이 이미 들어오기 시작하면 스스로 사라진다(마이크를 쓸 필요가 없어졌다는 뜻).
  * 실패 안내(토큰 없음·마이크 거부 등)는 이 박스가 아니라 `App.tsx`의 별도 배너가
  * 맡는다 — 여기서 숨겨도 안내는 남아야 하기 때문이다.
+ *
+ * 2026-10-08(F-3, `w8-f3-briefing-card-ui`) — 「통화받기」 위에 고객 브리핑 카드를 띄운다.
+ * `started` 로 `callId` 가 잡히면 한 번 부른다. 실패하면 카드만 빠지고 버튼은 그대로다.
+ * `briefingPreview`(`?briefing=`)는 실서버 없이 다섯 상태를 보는 미리보기 — 그동안은
+ * mock 자막이 들어와도 스스로 사라지지 않는다(닫기·통화받기로만 닫힌다).
  */
-export function AgentCallBox({ session }: { session: AgentCallSession }): ReactElement | null {
+export function AgentCallBox({
+  session,
+  briefingPreview = null,
+}: {
+  session: AgentCallSession;
+  briefingPreview?: BriefingPreview | null;
+}): ReactElement | null {
   const { status, elapsedSeconds, start } = session;
   const [dismissed, setDismissed] = useState(false);
   const hasTranscript = useCallStore((state) => state.utterances.length > 0);
+  const callId = useCallStore((state) => state.callId);
+  const briefing = useCustomerBriefing(callId, briefingPreview);
 
   useEffect(() => {
     captureAgentCallTokenFromUrl();
@@ -42,10 +58,10 @@ export function AgentCallBox({ session }: { session: AgentCallSession }): ReactE
 
   // 대본·다른 채널이 이미 자막을 채우기 시작했다 — 이 상담원이 직접 받을 필요가 없다.
   useEffect(() => {
-    if (hasTranscript) {
+    if (hasTranscript && briefingPreview === null) {
       setDismissed(true);
     }
-  }, [hasTranscript]);
+  }, [hasTranscript, briefingPreview]);
 
   // 새 통화 주기가 시작되면(idle/ended를 벗어나면) 다음 번을 위해 되돌린다.
   useEffect(() => {
@@ -86,6 +102,8 @@ export function AgentCallBox({ session }: { session: AgentCallSession }): ReactE
             ✕
           </button>
         </header>
+
+        <CustomerBriefingCard state={briefing} />
 
         <div className="agent-call-body">
           <p className="agent-call-hint">
