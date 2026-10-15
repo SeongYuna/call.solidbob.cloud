@@ -21,6 +21,15 @@ def test_entity_type_strips_bio_either_side(label, expected):
     assert _entity_type(label) == expected
 
 
+@pytest.mark.parametrize(
+    "label, expected",
+    # KLUE 기반 korean-pii-ner-v3 (decisions/222) — 도메인이 보는 PER·LOC 로 옮기고, ORG 는 그대로 둔다(개인정보 아님)
+    [("B-NAME", "PER"), ("I-NAME", "PER"), ("B-ADDRESS", "LOC"), ("B-ORG", "ORG"), ("B-PS", "PER"), ("I-LC", "LOC")],
+)
+def test_entity_type_maps_klue_style_labels(label, expected):
+    assert _entity_type(label) == expected
+
+
 @pytest.mark.slow
 @pytest.mark.skipif(not MODEL_DIR.exists(), reason="models/koelectra-ner 없음")
 @pytest.mark.parametrize(

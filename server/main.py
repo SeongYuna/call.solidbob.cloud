@@ -215,7 +215,7 @@ def _wire_uploads(app: FastAPI, settings: Settings) -> str | None:
     return "uploads"
 
 
-def _wire_call_guard(app: FastAPI) -> str | None:
+def _wire_call_guard(app: FastAPI, settings: Settings) -> str | None:
     """`ai/` 의 콜 가드 탐지(C-6)를 꽂는다. 꽂았으면 이름을, 못 꽂았으면 None.
 
     트리거와 같다 — 규칙 사전뿐이라 설정 조건이 없고, 구현 선택(`RuleCallGuardAdapter` v1)은 `ai/` 몫이다.
@@ -230,7 +230,11 @@ def _wire_call_guard(app: FastAPI) -> str | None:
 
     from hub.dependencies.call_guard_provider import get_call_guard_port  # noqa: PLC0415
 
-    app.dependency_overrides.setdefault(get_call_guard_port, build_call_guard_provider())
+    provider = build_call_guard_provider(settings.call_guard_model_dir)
+    app.dependency_overrides.setdefault(get_call_guard_port, provider)
+    # 학습한 폭언 분류기가 실제로 올라갔으면 `/health` 에 따로 알린다(`decisions/223`) — 경로가 틀리면 조용히 규칙만 돈다
+    if type(provider()).__name__ == "ModelCallGuardAdapter":
+        SPOKES.append("call_guard_model")
     return "call_guard"
 
 
@@ -423,7 +427,7 @@ async def lifespan(app: FastAPI):
     for wired in (
         _wire_retrieval(app, settings),
         _wire_trigger(app),
-        _wire_call_guard(app),
+        _wire_call_guard(app, settings),
         _wire_compliance(app),
         _wire_pii_ner(app, settings),
         _wire_generation(app, settings),

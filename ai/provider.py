@@ -38,6 +38,7 @@ import 하면 `.importlinter` 계약 2(module-independence)가 깨진다.
 
 from __future__ import annotations
 
+import logging
 from pathlib import Path
 from typing import Any, Callable
 
@@ -54,6 +55,9 @@ from call_guard.adapter.outbound.rule_call_guard_adapter import RuleCallGuardAda
 from retrieval.adapter.outbound.es_bm25_retriever import EsBm25Retriever
 from retrieval.adapter.outbound.es_index import SINGLE_INDEX
 from retrieval.adapter.outbound.is_final_trigger import IsFinalTrigger
+
+
+log = logging.getLogger(__name__)
 
 
 def build_es_client(url: str, api_key: str | None = None) -> Any:
@@ -257,12 +261,20 @@ def build_briefing_provider(
     return lambda: port
 
 
-def build_call_guard_provider() -> Callable[[], CallGuardPort]:
-    """`get_call_guard_port` 를 대체할 프로바이더(C-6). 규칙 사전뿐이라 외부 자원이 필요 없다.
+def build_call_guard_provider(model_dir: str | Path | None = None) -> Callable[[], CallGuardPort]:
+    """`get_call_guard_port` 를 대체할 프로바이더(C-6). 기본은 규칙 사전 — `model_dir` 이 있으면 **학습한 폭언 분류기**를 얹는다(`decisions/223`).
+    모델을 못 올리면(torch·폴더 없음) 규칙 사전만으로 돈다.
 
     ⚠ 호출하는 쪽이 **마스킹된 고객 발화**를 넘겨야 한다 — 잡힌 `phrase` 가 그대로 저장된다(MANUAL-5.5).
     """
-    port = RuleCallGuardAdapter()
+    port: CallGuardPort = RuleCallGuardAdapter()
+    if model_dir:
+        try:
+            from call_guard.adapter.outbound.model_call_guard_adapter import KcElectraAbuseClassifier, ModelCallGuardAdapter
+
+            port = ModelCallGuardAdapter(port, KcElectraAbuseClassifier(model_dir))
+        except (ModuleNotFoundError, FileNotFoundError, OSError) as e:
+            log.warning("폭언 분류기를 못 올렸다 — 규칙 사전만: %s", type(e).__name__)
     return lambda: port
 
 

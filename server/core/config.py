@@ -100,6 +100,10 @@ class Settings:
     # 서버 이미지에 torch·모델이 없으면 값을 넣어도 규칙으로 내려간다. 켜졌는지는 `/health` 의 `pii_ner` 로 본다.
     pii_ner_model_dir: str | None = None
 
+    # --- C-6 학습한 폭언 분류기 (2026-10-15, `decisions/223`) — 규칙 사전 위에 얹는다. **비우면 규칙 사전만**(지금 운영과 같다) ---
+    # 모델 디렉터리(`models/call-guard-kcelectra-v2`). 켜졌는지는 `/health` 의 `call_guard_model` 로 본다.
+    call_guard_model_dir: str | None = None
+
     # --- B-2·B-3 임베딩·리랭킹 검색 (2026-09-15, `decisions/206`) — 비우면 BM25 단독(지금 운영과 같다) ---
     # 임베딩 모델 디렉터리(`models/koe5`)가 있어야 켜진다. 리랭커(`models/bge-reranker-v2-m3`)는 선택.
     # ⚠ 인덱스에 벡터가 없으면(torch 없이 적재) 검색이 0건이 되는데, 그때는 BM25 로 내려간다.
@@ -172,6 +176,7 @@ def load_settings() -> Settings:
         customer_ref_hmac_key=_env("CUSTOMER_REF_HMAC_KEY"),
         transcript_enc_key=_env("TRANSCRIPT_ENC_KEY"),
         pii_ner_model_dir=_env("PII_NER_MODEL_DIR"),
+        call_guard_model_dir=_env("CALL_GUARD_MODEL_DIR"),
         retrieval_embed_model_dir=_env("RETRIEVAL_EMBED_MODEL_DIR"),
         retrieval_rerank_model_dir=_env("RETRIEVAL_RERANK_MODEL_DIR"),
         ollama_url=_env("OLLAMA_URL"),

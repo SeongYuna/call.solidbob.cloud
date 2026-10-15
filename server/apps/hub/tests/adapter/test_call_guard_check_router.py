@@ -21,7 +21,7 @@ def test_스포크가_없으면_501이다(monkeypatch):
     """빈 목록으로 200 을 주면 '탐지가 꺼진 것'이 '폭언 없음'으로 읽힌다."""
     import main
 
-    monkeypatch.setattr(main, "_wire_call_guard", lambda app: None)
+    monkeypatch.setattr(main, "_wire_call_guard", lambda app, settings: None)
     app.dependency_overrides.pop(get_call_guard_port, None)
     with TestClient(app, headers=INGEST_HEADERS) as client:
         r = client.post("/hub/call-guard-checks", json=BODY)
