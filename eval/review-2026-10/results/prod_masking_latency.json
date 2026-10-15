@@ -1,0 +1,10 @@
+{
+ "date": "2026-10-15 16:23 KST",
+ "where": "운영 노드 c7i.2xlarge (8 vCPU) · 임시 파드 · 이미지 seongyuna/callguard-server:0.1.50 · 모델 /opt/callguard/models · DB·시크릿 연결 없음 · torch 4 스레드",
+ "inputs": "팀 작성 발화 422건 = 골든 C-5 36 + 골든 B 102 + 시연 대본 고객 발화 284 (scripts/persona_sim) · 3회 반복 = 1,266",
+ "command": "python eval/review-2026-10/prod_masking_latency.py <rule|old|klue> [모델 경로]",
+ "rule":  {"p50_ms": 0.0,  "p95_ms": 0.1,   "max_ms": 0.5,   "mean_ms": 0.0,   "load_ms": 6,    "maxrss_mb": 222},
+ "old (koelectra-ner)": {"p50_ms": 27.7, "p95_ms": 62.7,  "max_ms": 91.3,  "mean_ms": 33.4,  "load_ms": 2145, "first_ms": 46.7,  "maxrss_mb": 725},
+ "klue (korean-pii-ner-v3, 운영 현재)": {"p50_ms": 103.3, "p95_ms": 242.6, "max_ms": 277.9, "mean_ms": 127.5, "load_ms": 2183, "first_ms": 128.0, "maxrss_mb": 1590},
+ "note": "마스킹 단계만(전사 수신 경로). 추천 내부 지연 722ms 구간(트리거→검색→카드)에는 포함되지 않는다. 운영 서버 프로세스가 아니라 같은 노드·같은 이미지의 별도 프로세스 값이다"
+}
