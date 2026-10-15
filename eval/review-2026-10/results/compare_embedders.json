@@ -78,5 +78,33 @@
   "pooling": "mean",
   "max_len": 512,
   "total_s": 11.3
+ },
+ "KoE5-ft s20261016": {
+  "recall_at_k": 0.9803921568627451,
+  "mrr": 0.8712418300653594,
+  "n": 102,
+  "missed": [
+   "GS-205",
+   "GS-286"
+  ],
+  "query_embed_ms_cpu": 18.9,
+  "params_fp32_mb": 2240,
+  "pooling": "mean",
+  "max_len": 512,
+  "total_s": 13.5
+ },
+ "KoE5-ft s20261017": {
+  "recall_at_k": 0.9803921568627451,
+  "mrr": 0.8986928104575164,
+  "n": 102,
+  "missed": [
+   "GS-205",
+   "GS-286"
+  ],
+  "query_embed_ms_cpu": 20.8,
+  "params_fp32_mb": 2240,
+  "pooling": "mean",
+  "max_len": 512,
+  "total_s": 13.3
  }
 }

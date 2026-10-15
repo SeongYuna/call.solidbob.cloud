@@ -78,7 +78,7 @@ def main():
     import torch
     from transformers import AutoModelForSequenceClassification, AutoTokenizer
     torch.set_num_threads(4)
-    md = ROOT / "models/call-guard-kcelectra-v2"
+    md = ROOT / (sys.argv[1] if len(sys.argv) > 1 else "models/call-guard-kcelectra-v2")   # 시드 반복 때 다른 모델 폴더
     tok = AutoTokenizer.from_pretrained(str(md)); m = AutoModelForSequenceClassification.from_pretrained(str(md)).eval()
 
     @torch.no_grad()
@@ -95,7 +95,8 @@ def main():
     out["kcelectra_cpu_seconds"] = round(time.time() - t0, 1)
 
     print(json.dumps(out, ensure_ascii=False, indent=1))
-    (ROOT / "eval/review-2026-10/results/call_guard_unsmile_train.json").write_text(json.dumps(out, ensure_ascii=False, indent=1))
+    suffix = "" if len(sys.argv) <= 1 else "_" + Path(sys.argv[1]).name
+    (ROOT / f"eval/review-2026-10/results/call_guard_unsmile_train{suffix}.json").write_text(json.dumps(out, ensure_ascii=False, indent=1))
 
 
 if __name__ == "__main__":

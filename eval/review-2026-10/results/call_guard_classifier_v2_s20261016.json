@@ -1,0 +1,88 @@
+{
+ "base": "models/kcelectra-base (beomi/KcELECTRA-base, MIT)",
+ "train": "kocohub korean-hate-speech train 7,896 (CC-BY-SA-4.0)",
+ "select": "kocohub dev 471 + 통화 도메인 정상 발화 1000",
+ "indomain_negatives_train": 8000,
+ "device": "mps",
+ "seed": 20261016,
+ "epochs": 3,
+ "dev_log": [
+  {
+   "precision": 0.941,
+   "recall": 0.775,
+   "f1": 0.85,
+   "n": 1471,
+   "positives": 311,
+   "epoch": 1,
+   "elapsed_s": 205
+  },
+  {
+   "precision": 0.937,
+   "recall": 0.81,
+   "f1": 0.869,
+   "n": 1471,
+   "positives": 311,
+   "epoch": 2,
+   "elapsed_s": 465
+  },
+  {
+   "precision": 0.942,
+   "recall": 0.781,
+   "f1": 0.854,
+   "n": 1471,
+   "positives": 311,
+   "epoch": 3,
+   "elapsed_s": 724
+  }
+ ],
+ "external": {
+  "APEACH test": {
+   "classifier": {
+    "precision": 0.795,
+    "recall": 0.94,
+    "f1": 0.862,
+    "n": 3770,
+    "positives": 1922,
+    "ms_per_text": 5.56
+   },
+   "lexicon(운영)": {
+    "precision": 0.97,
+    "recall": 0.067,
+    "f1": 0.125,
+    "n": 3770,
+    "positives": 1922
+   },
+   "union(사전 ∪ 분류기)": {
+    "precision": 0.795,
+    "recall": 0.941,
+    "f1": 0.862,
+    "n": 3770,
+    "positives": 1922
+   }
+  },
+  "UnSmile valid (욕설 vs clean)": {
+   "classifier": {
+    "precision": 0.629,
+    "recall": 0.897,
+    "f1": 0.739,
+    "n": 1721,
+    "positives": 786,
+    "ms_per_text": 4.56
+   },
+   "lexicon(운영)": {
+    "precision": 0.987,
+    "recall": 0.188,
+    "f1": 0.316,
+    "n": 1721,
+    "positives": 786
+   },
+   "union(사전 ∪ 분류기)": {
+    "precision": 0.631,
+    "recall": 0.905,
+    "f1": 0.743,
+    "n": 1721,
+    "positives": 786
+   }
+  }
+ }
+}
