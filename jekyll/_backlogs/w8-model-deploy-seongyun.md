@@ -1,8 +1,8 @@
 ---
 title: "학습 모델 운영 반영 + GPU 학습·측정 (집 PC)"
-assignee: "정성윤"
+assignee: "류준"
 role: "infra"
-status: "todo"
+status: "done"
 sprint: 8
 priority: 1
 date: 2026-10-15
@@ -42,3 +42,11 @@ PR 이 머지되면 `release.yml` 이 `0.1.50` 을 굽는다. 그 뒤 노드(SSM
 
 - 운영 `/health` 의 `spokes` 에 `pii_ner` · `call_guard_model` 이 있다
 - B 의 숫자가 명령·표본 수와 함께 `jekyll/_logs/` 에 남는다
+
+## 넘겨받음 (2026-10-15, 류준)
+
+정성윤 부재로 류준이 이어받았다(착수 전 `todo` 였다 — §4 「담당이 바뀌면」). 사용자 확인 뒤 진행.
+
+- A. 운영 반영 ✅ — PR #172 머지 → server `0.1.50`(상한 5Gi) · 노드에 모델 받기(해시 36줄 OK) · 시크릿 백업 → `PII_NER_MODEL_DIR=/models/korean-pii-ner-v3` → `CALL_GUARD_MODEL_DIR=/models/call-guard-kcelectra-v2` · `/health` 에 `pii_ner`·`call_guard_model` · `/health/ready` 200 · 재시작 0
+- 운영 이미지로 임시 파드 확인(DB·시크릿 없이): 이름·주소 P6·P7 · 전화 P4 가림 · 폭언 2건 규칙이 잡음 · 정상 발화 2건 분류기 통과(18~20 ms). 마스킹 발화당 약 90 ms(운영 CPU, 1회)
+- B. GPU 측정 — 집 PC 대신 맥북 MPS 로 리랭커만 쟀다(`10_training_results.md` ⑤). Whisper 미세조정은 **하지 않기로**(사용자 결정). 시드 3회는 ⑥
