@@ -1,0 +1,64 @@
+{
+ "mps": {
+  "device": "mps",
+  "reps": 3,
+  "n": 102,
+  "date": "2026-10-15",
+  "machine": "맥북 M5 (GPU 10코어 · MPS)",
+  "dense_only": {
+   "recall_at_5": 0.971,
+   "mrr": 0.875
+  },
+  "k=5": {
+   "recall_at_5": 0.971,
+   "hits": 99,
+   "mrr": 0.919,
+   "p50_ms": 133,
+   "p95_ms": 271,
+   "max_ms": 290,
+   "mean_ms": 161,
+   "samples": 306
+  },
+  "k=20": {
+   "recall_at_5": 1.0,
+   "hits": 102,
+   "mrr": 0.929,
+   "p50_ms": 999,
+   "p95_ms": 1423,
+   "max_ms": 1654,
+   "mean_ms": 975,
+   "samples": 306
+  }
+ },
+ "cpu": {
+  "device": "cpu",
+  "reps": 1,
+  "n": 102,
+  "date": "2026-10-15",
+  "machine": "맥북 M5 CPU",
+  "dense_only": {
+   "recall_at_5": 0.971,
+   "mrr": 0.875
+  },
+  "k=5": {
+   "recall_at_5": 0.971,
+   "hits": 99,
+   "mrr": 0.919,
+   "p50_ms": 316,
+   "p95_ms": 646,
+   "max_ms": 684,
+   "mean_ms": 380,
+   "samples": 102
+  },
+  "k=20": {
+   "recall_at_5": 1.0,
+   "hits": 102,
+   "mrr": 0.929,
+   "p50_ms": 1898,
+   "p95_ms": 2409,
+   "max_ms": 2491,
+   "mean_ms": 1750,
+   "samples": 102
+  }
+ }
+}

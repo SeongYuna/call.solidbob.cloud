@@ -1,0 +1,14 @@
+{
+ "naver": {
+  "model": "naver",
+  "rss_added_mb": 478,
+  "ms_per_utterance_cpu": 13.4,
+  "params_m": 112
+ },
+ "candidate": {
+  "model": "candidate",
+  "rss_added_mb": 1349,
+  "ms_per_utterance_cpu": 38.3,
+  "params_m": 336
+ }
+}

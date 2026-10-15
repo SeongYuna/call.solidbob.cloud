@@ -1,0 +1,15 @@
+{
+ "model": "/private/tmp/claude-501/-Users-ryujun-Documents-com-ryujun-demo/c357597c-7222-4a2b-b379-ead12e97c492/scratchpad/seedmodels/call-guard-kcelectra-v2-s20261016",
+ "aihub_customers_flagged_raw": 33,
+ "aihub_customers_flagged_stripped": 10,
+ "n": 10223,
+ "APEACH_stripped": {
+  "precision": 0.796,
+  "recall": 0.94
+ },
+ "UnSmile_stripped": {
+  "precision": 0.629,
+  "recall": 0.897
+ },
+ "remaining_flagged": 10
+}

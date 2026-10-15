@@ -50,8 +50,11 @@ spec:
           resources:
             # 2026-09-22 `decisions/124`: NER(0.45GB)+KoE5 임베딩(2.2GB)을 CPU 로 싣는다 → 상한 1Gi → 3Gi.
             # 노드는 7.6GB 이고 ES 힙 1GiB·redis·미디에이터가 같이 산다. 모델을 안 켜면(환경변수 없음) 전처럼 500MB 대다.
+            # 2026-10-15 `decisions/223`: NER 을 KLUE 기반(roberta-large)으로 바꾸고 C-6 분류기(KcELECTRA)를 더한다 → 3Gi → 5Gi.
+            # 실측(맥북 CPU fp32): KoE5+KLUE NER+분류기 적재 후 RSS 2,980MB(`eval/review-2026-10/results/model_memory_3models.json`).
+            # 노드는 c7i.2xlarge 15.7GB(런북 머리말) — ES·ollama(4Gi)·미디에이터와 합쳐도 들어간다.
             requests: { cpu: 200m, memory: 1Gi }
-            limits:   { memory: 3Gi }
+            limits:   { memory: 5Gi }
           volumeMounts:
             # 모델 파일(decisions/124). 노드 디스크의 /opt/callguard/models 를 그대로 본다 —
             # 이미지에 넣지 않고(수 GB), PVC 도 두지 않는다(노드가 하나라 hostPath 로 충분).

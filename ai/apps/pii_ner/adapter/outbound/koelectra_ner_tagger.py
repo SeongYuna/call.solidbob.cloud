@@ -1,8 +1,9 @@
 # Requirement: C-5
-"""`monologg/koelectra-base-v3-naver-ner` 로 토큰 태그를 낸다. 모델 라이브러리를 부르므로 adapter.
+"""토큰 분류 NER 로 토큰 태그를 낸다. 모델 라이브러리를 부르므로 adapter.
 
-모델 선택은 `_project/decisions/010`(NER `koelectra-ner` 유지)이다 — 여기서 다시 고르지 않는다.
-받는 법: `scripts/download_models.py` → `models/koelectra-ner/`.
+모델: **`vmaca123/korean-pii-ner-v3`**(klue/roberta-large · CC-BY-SA-4.0 · `models/korean-pii-ner-v3`) — `decisions/222`.
+옛 `monologg/koelectra-base-v3-naver-ner` 은 학습 데이터 동의서가 상업 이용을 막아 바꿨다. 둘 다 같은 어댑터로 돈다(라벨 대응만 다르다).
+받는 법: `scripts/download_models.py`. 어느 모델을 쓰는지는 `PII_NER_MODEL_DIR` 이 정한다.
 
 **CPU 로 돈다.** 2026-09-15 실측(Apple M 계열 CPU, 발화 1건 20~40자) 예열 뒤 **11~14ms**,
 첫 호출만 약 1초다. 그래서 생성자에서 한 번 예열한다 — 첫 통화의 첫 발화가 1초 늦으면
@@ -20,12 +21,19 @@ from pathlib import Path
 from ...domain.value_objects.entity import TokenTag
 
 
+# 모델마다 유형 이름이 다르다 — 도메인(`spans.py`)이 쓰는 이름(PER · LOC)으로 옮긴다.
+# `vmaca123/korean-pii-ner-v3`(KLUE 기반, CC-BY-SA-4.0)는 NAME·ADDRESS·ORG 를 준다(`decisions/222`).
+# ORG 는 옮기지 않는다 — 기관명은 개인정보가 아니다(도메인이 PER·LOC·AFW 만 본다).
+_LABEL_ALIASES = {"NAME": "PER", "ADDRESS": "LOC", "PS": "PER", "LC": "LOC"}
+
+
 def _entity_type(label: str) -> str:
     for sep in ("-", "_"):
         if sep in label:
             a, b = label.split(sep, 1)
-            return b if a in {"B", "I"} else a
-    return label
+            t = b if a in {"B", "I"} else a
+            return _LABEL_ALIASES.get(t, t)
+    return _LABEL_ALIASES.get(label, label)
 
 
 class KoElectraNerTagger:

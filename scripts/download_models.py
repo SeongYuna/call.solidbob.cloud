@@ -27,7 +27,8 @@ TARGETS = [
     ("nlpai-lab/KoE5", "koe5", "임베딩 — B-2 하이브리드 검색 dense_vector (2026-08-26, ko-sroberta-multitask 대체: 512토큰 지원, 1024차원)"),
     ("beomi/KcELECTRA-base", "kcelectra-base", "컴플라이언스 분류기 베이스 — C-1~C-4·B-0 파인튜닝 대상. 댓글 코퍼스라 STT 오탈자에 강함"),
     ("klue/roberta-base", "klue-roberta-base", "분류기 대조군 — 5주차 오류 내성 실험에서 KcELECTRA와 비교"),
-    ("monologg/koelectra-base-v3-naver-ner", "koelectra-ner", "NER — C-5 마스킹 P6(인명). P7(상세주소)은 태그가 없어 규칙으로 보강 예정"),
+    ("monologg/koelectra-base-v3-naver-ner", "koelectra-ner", "옛 NER — 학습 데이터 동의서가 상업 이용 금지(decisions/222). 비교·되돌리기용으로만 남긴다"),
+    ("vmaca123/korean-pii-ner-v3", "korean-pii-ner-v3", "NER — C-5 P6(이름)·P7(주소). KLUE 기반 CC-BY-SA-4.0 (decisions/222)"),
 ]
 
 for repo_id, local_name, purpose in TARGETS:

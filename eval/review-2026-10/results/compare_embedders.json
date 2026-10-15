@@ -1,0 +1,110 @@
+{
+ "KoE5 (운영)": {
+  "recall_at_k": 0.9705882352941176,
+  "mrr": 0.8745098039215686,
+  "n": 102,
+  "missed": [
+   "GS-102",
+   "GS-204",
+   "GS-205"
+  ],
+  "query_embed_ms_cpu": 16.2,
+  "params_fp32_mb": 2240,
+  "pooling": "mean",
+  "max_len": 512,
+  "total_s": 10.9
+ },
+ "ko-sroberta-multitask (이전 후보)": {
+  "recall_at_k": 0.9607843137254902,
+  "mrr": 0.8669934640522876,
+  "n": 102,
+  "missed": [
+   "GS-101",
+   "GS-205",
+   "GS-242",
+   "GS-290"
+  ],
+  "query_embed_ms_cpu": 4.1,
+  "params_fp32_mb": 442,
+  "pooling": "mean",
+  "max_len": 128,
+  "total_s": 3.0
+ },
+ "multilingual-e5-base": {
+  "recall_at_k": 0.9215686274509803,
+  "mrr": 0.8282679738562092,
+  "n": 102,
+  "missed": [
+   "GS-016",
+   "GS-101",
+   "GS-102",
+   "GS-202",
+   "GS-205",
+   "GS-218",
+   "GS-287",
+   "GS-290"
+  ],
+  "query_embed_ms_cpu": 5.0,
+  "params_fp32_mb": 1112,
+  "pooling": "mean",
+  "max_len": 512,
+  "total_s": 25.4
+ },
+ "bge-m3": {
+  "recall_at_k": 0.9803921568627451,
+  "mrr": 0.8856209150326797,
+  "n": 102,
+  "missed": [
+   "GS-102",
+   "GS-245"
+  ],
+  "query_embed_ms_cpu": 15.2,
+  "params_fp32_mb": 2271,
+  "pooling": "cls",
+  "max_len": 512,
+  "total_s": 40.6
+ },
+ "KoE5-ft (도메인 미세조정)": {
+  "recall_at_k": 0.9705882352941176,
+  "mrr": 0.8728758169934641,
+  "n": 102,
+  "missed": [
+   "GS-204",
+   "GS-205",
+   "GS-276"
+  ],
+  "query_embed_ms_cpu": 16.2,
+  "params_fp32_mb": 2240,
+  "pooling": "mean",
+  "max_len": 512,
+  "total_s": 11.3
+ },
+ "KoE5-ft s20261016": {
+  "recall_at_k": 0.9803921568627451,
+  "mrr": 0.8712418300653594,
+  "n": 102,
+  "missed": [
+   "GS-205",
+   "GS-286"
+  ],
+  "query_embed_ms_cpu": 18.9,
+  "params_fp32_mb": 2240,
+  "pooling": "mean",
+  "max_len": 512,
+  "total_s": 13.5
+ },
+ "KoE5-ft s20261017": {
+  "recall_at_k": 0.9803921568627451,
+  "mrr": 0.8986928104575164,
+  "n": 102,
+  "missed": [
+   "GS-205",
+   "GS-286"
+  ],
+  "query_embed_ms_cpu": 20.8,
+  "params_fp32_mb": 2240,
+  "pooling": "mean",
+  "max_len": 512,
+  "total_s": 13.3
+ }
+}

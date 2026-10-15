@@ -1,0 +1,90 @@
+{
+ "hf.co/LGAI-EXAONE/EXAONE-4.0-1.2B-GGUF:latest": {
+  "min_coverage": 0.6666666666666666,
+  "runs": [
+   {
+    "coverage_micro": 0.6666666666666666,
+    "hit": 40,
+    "by_kind": {
+     "문의": "10/10",
+     "서류": "18/23",
+     "안내": "8/10",
+     "조치": "0/10",
+     "요청": "4/7"
+    },
+    "numbered_list_outputs": 5,
+    "chars_median": 264
+   },
+   {
+    "coverage_micro": 0.6666666666666666,
+    "hit": 40,
+    "by_kind": {
+     "문의": "10/10",
+     "서류": "18/23",
+     "안내": "8/10",
+     "조치": "0/10",
+     "요청": "4/7"
+    },
+    "numbered_list_outputs": 5,
+    "chars_median": 264
+   },
+   {
+    "coverage_micro": 0.6666666666666666,
+    "hit": 40,
+    "by_kind": {
+     "문의": "10/10",
+     "서류": "18/23",
+     "안내": "8/10",
+     "조치": "0/10",
+     "요청": "4/7"
+    },
+    "numbered_list_outputs": 5,
+    "chars_median": 264
+   }
+  ]
+ },
+ "kanana-1.5-2.1b-instruct:q4_k_m": {
+  "min_coverage": 0.7166666666666667,
+  "runs": [
+   {
+    "coverage_micro": 0.7166666666666667,
+    "hit": 43,
+    "by_kind": {
+     "문의": "10/10",
+     "서류": "18/23",
+     "안내": "8/10",
+     "조치": "2/10",
+     "요청": "5/7"
+    },
+    "numbered_list_outputs": 0,
+    "chars_median": 127
+   },
+   {
+    "coverage_micro": 0.7166666666666667,
+    "hit": 43,
+    "by_kind": {
+     "문의": "10/10",
+     "서류": "18/23",
+     "안내": "8/10",
+     "조치": "2/10",
+     "요청": "5/7"
+    },
+    "numbered_list_outputs": 0,
+    "chars_median": 127
+   },
+   {
+    "coverage_micro": 0.7166666666666667,
+    "hit": 43,
+    "by_kind": {
+     "문의": "10/10",
+     "서류": "18/23",
+     "안내": "8/10",
+     "조치": "2/10",
+     "요청": "5/7"
+    },
+    "numbered_list_outputs": 0,
+    "chars_median": 127
+   }
+  ]
+ }
+}
