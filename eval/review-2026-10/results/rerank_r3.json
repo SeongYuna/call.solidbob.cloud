@@ -1,0 +1,53 @@
+{
+  "meta": {
+    "date": "2026-10-15",
+    "commit": "63c4d41-dirty",
+    "golden_set": "v1-150.json",
+    "index": "callguard-kb-single",
+    "embed_model": "koe5",
+    "rerank_model": "bge-reranker-v2-m3",
+    "device": "cpu",
+    "machine": "Darwin arm64",
+    "command": "scripts/compare_retrievers.py --only dense,rerank(dense) --out eval/review-2026-10/results/rerank_r3.json"
+  },
+  "results": {
+    "dense": {
+      "recall_at_5": 0.9705882352941176,
+      "mrr": 0.8745098039215686,
+      "hits": 99,
+      "n": 102,
+      "p50_ms": 47.805062000406906,
+      "p95_ms": 52.596631560300004,
+      "missed": [
+        "GS-102",
+        "GS-204",
+        "GS-205"
+      ],
+      "top1": 82
+    },
+    "rerank(dense) cand=5": {
+      "recall_at_5": 0.9705882352941176,
+      "mrr": 0.9186274509803922,
+      "hits": 99,
+      "n": 102,
+      "p50_ms": 354.792374491808,
+      "p95_ms": 642.0933770554257,
+      "missed": [
+        "GS-102",
+        "GS-204",
+        "GS-205"
+      ],
+      "top1": 90
+    },
+    "rerank(dense) cand=20": {
+      "recall_at_5": 1.0,
+      "mrr": 0.9292483660130719,
+      "hits": 102,
+      "n": 102,
+      "p50_ms": 1816.2103535141796,
+      "p95_ms": 2331.1530559338275,
+      "missed": [],
+      "top1": 90
+    }
+  }
+}

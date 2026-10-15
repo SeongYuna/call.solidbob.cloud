@@ -1,0 +1,89 @@
+{
+ "rule": {
+  "config": "rule",
+  "ner_enabled": false,
+  "model_dir": null,
+  "rss_before_load_mb": 254,
+  "rss_after_load_mb": 254,
+  "rss_added_mb": 0,
+  "cold_load_ms": 3,
+  "cold_first_mask_ms": 0.1,
+  "golden_c5": {
+   "n": 36,
+   "p50_ms": 0.0,
+   "p95_ms": 0.0,
+   "max_ms": 0.2,
+   "mean_ms": 0.0,
+   "mean_chars": 23.9
+  },
+  "aihub_500": {
+   "n": 500,
+   "p50_ms": 0.0,
+   "p95_ms": 0.0,
+   "max_ms": 0.0,
+   "mean_ms": 0.0,
+   "mean_chars": 18.1
+  },
+  "rss_end_mb": 254,
+  "machine": "맥북 M5 CPU (torch 4 threads)",
+  "date": "2026-10-15"
+ },
+ "old": {
+  "config": "old",
+  "ner_enabled": true,
+  "model_dir": "/Users/ryujun/Documents/com.ryujun.demo/models/koelectra-ner",
+  "rss_before_load_mb": 254,
+  "rss_after_load_mb": 708,
+  "rss_added_mb": 454,
+  "cold_load_ms": 2315,
+  "cold_first_mask_ms": 13.9,
+  "golden_c5": {
+   "n": 36,
+   "p50_ms": 12.4,
+   "p95_ms": 24.7,
+   "max_ms": 25.6,
+   "mean_ms": 15.0,
+   "mean_chars": 23.9
+  },
+  "aihub_500": {
+   "n": 500,
+   "p50_ms": 11.8,
+   "p95_ms": 22.1,
+   "max_ms": 24.8,
+   "mean_ms": 12.5,
+   "mean_chars": 18.1
+  },
+  "rss_end_mb": 739,
+  "machine": "맥북 M5 CPU (torch 4 threads)",
+  "date": "2026-10-15"
+ },
+ "klue": {
+  "config": "klue",
+  "ner_enabled": true,
+  "model_dir": "/Users/ryujun/Documents/com.ryujun.demo/models/korean-pii-ner-v3",
+  "rss_before_load_mb": 254,
+  "rss_after_load_mb": 1581,
+  "rss_added_mb": 1327,
+  "cold_load_ms": 5333,
+  "cold_first_mask_ms": 44.4,
+  "golden_c5": {
+   "n": 36,
+   "p50_ms": 39.6,
+   "p95_ms": 78.8,
+   "max_ms": 89.9,
+   "mean_ms": 48.5,
+   "mean_chars": 23.9
+  },
+  "aihub_500": {
+   "n": 500,
+   "p50_ms": 38.5,
+   "p95_ms": 75.9,
+   "max_ms": 81.9,
+   "mean_ms": 41.4,
+   "mean_chars": 18.1
+  },
+  "rss_end_mb": 1604,
+  "machine": "맥북 M5 CPU (torch 4 threads)",
+  "date": "2026-10-15"
+ }
+}

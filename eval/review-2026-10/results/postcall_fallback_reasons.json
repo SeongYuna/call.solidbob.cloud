@@ -1,0 +1,174 @@
+{
+ "hf.co/LGAI-EXAONE/EXAONE-4.0-1.2B-GGUF:latest": {
+  "model_used": 4,
+  "n": 10,
+  "problem_kinds": {
+   "길이 310자": 1,
+   "자막에 없는": 22,
+   "금지 표현": 1,
+   "길이 343자": 1,
+   "길이 330자": 1
+  },
+  "calls": [
+   {
+    "call": "PC-01",
+    "source": "model",
+    "problems": [],
+    "raw_chars": 95
+   },
+   {
+    "call": "PC-02",
+    "source": "rule",
+    "problems": [
+     "길이 310자 > 300",
+     "자막에 없는 숫자 1",
+     "자막에 없는 숫자 2",
+     "자막에 없는 숫자 3",
+     "자막에 없는 숫자 4"
+    ],
+    "raw_chars": 310
+   },
+   {
+    "call": "PC-03",
+    "source": "rule",
+    "problems": [
+     "자막에 없는 숫자 3"
+    ],
+    "raw_chars": 243
+   },
+   {
+    "call": "PC-04",
+    "source": "rule",
+    "problems": [
+     "자막에 없는 숫자 1",
+     "자막에 없는 숫자 2",
+     "자막에 없는 숫자 3",
+     "자막에 없는 숫자 4"
+    ],
+    "raw_chars": 264
+   },
+   {
+    "call": "PC-05",
+    "source": "model",
+    "problems": [],
+    "raw_chars": 93
+   },
+   {
+    "call": "PC-06",
+    "source": "rule",
+    "problems": [
+     "자막에 없는 숫자 1",
+     "자막에 없는 숫자 2",
+     "자막에 없는 숫자 3",
+     "자막에 없는 숫자 4",
+     "금지 표현 확실"
+    ],
+    "raw_chars": 299
+   },
+   {
+    "call": "PC-07",
+    "source": "rule",
+    "problems": [
+     "길이 343자 > 300",
+     "자막에 없는 숫자 1",
+     "자막에 없는 숫자 2",
+     "자막에 없는 숫자 3",
+     "자막에 없는 숫자 4"
+    ],
+    "raw_chars": 343
+   },
+   {
+    "call": "PC-08",
+    "source": "model",
+    "problems": [],
+    "raw_chars": 137
+   },
+   {
+    "call": "PC-09",
+    "source": "model",
+    "problems": [],
+    "raw_chars": 191
+   },
+   {
+    "call": "PC-10",
+    "source": "rule",
+    "problems": [
+     "길이 330자 > 300",
+     "자막에 없는 숫자 1",
+     "자막에 없는 숫자 2",
+     "자막에 없는 숫자 3",
+     "자막에 없는 숫자 4",
+     "자막에 없는 숫자 5"
+    ],
+    "raw_chars": 330
+   }
+  ]
+ },
+ "kanana-1.5-2.1b-instruct:q4_k_m": {
+  "model_used": 10,
+  "n": 10,
+  "problem_kinds": {},
+  "calls": [
+   {
+    "call": "PC-01",
+    "source": "model",
+    "problems": [],
+    "raw_chars": 99
+   },
+   {
+    "call": "PC-02",
+    "source": "model",
+    "problems": [],
+    "raw_chars": 86
+   },
+   {
+    "call": "PC-03",
+    "source": "model",
+    "problems": [],
+    "raw_chars": 156
+   },
+   {
+    "call": "PC-04",
+    "source": "model",
+    "problems": [],
+    "raw_chars": 88
+   },
+   {
+    "call": "PC-05",
+    "source": "model",
+    "problems": [],
+    "raw_chars": 99
+   },
+   {
+    "call": "PC-06",
+    "source": "model",
+    "problems": [],
+    "raw_chars": 223
+   },
+   {
+    "call": "PC-07",
+    "source": "model",
+    "problems": [],
+    "raw_chars": 178
+   },
+   {
+    "call": "PC-08",
+    "source": "model",
+    "problems": [],
+    "raw_chars": 103
+   },
+   {
+    "call": "PC-09",
+    "source": "model",
+    "problems": [],
+    "raw_chars": 149
+   },
+   {
+    "call": "PC-10",
+    "source": "model",
+    "problems": [],
+    "raw_chars": 171
+   }
+  ]
+ }
+}

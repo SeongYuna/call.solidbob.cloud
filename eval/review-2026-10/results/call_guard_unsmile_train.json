@@ -1,0 +1,105 @@
+{
+ "date": "2026-10-15",
+ "eval_split": "UnSmile v1.0 valid (원본 3,737문장 · 이진 채점 1,721)",
+ "train_split": "UnSmile v1.0 train 공식 분할 (이진)",
+ "train_n": 6882,
+ "train_positives": 3143,
+ "split_seed": null,
+ "model_seed": 20261015,
+ "license": "UnSmile CC-BY-NC-ND 4.0 — 측정 실험용, 모델 미저장·미배포",
+ "valid_total_rows": 3737,
+ "results": {
+  "사전 규칙(운영)": {
+   "recall": 0.188,
+   "precision": 0.987,
+   "false_positive_rate": 0.002,
+   "f1": 0.316,
+   "tp": 148,
+   "fp": 2,
+   "fn": 638,
+   "n": 1721,
+   "positives": 786,
+   "negatives": 935
+  },
+  "TF-IDF + 로지스틱 회귀": {
+   "recall": 0.626,
+   "precision": 0.787,
+   "false_positive_rate": 0.142,
+   "f1": 0.697,
+   "tp": 492,
+   "fp": 133,
+   "fn": 294,
+   "n": 1721,
+   "positives": 786,
+   "negatives": 935
+  },
+  "TF-IDF + 로지스틱 회귀 ∪ 사전": {
+   "recall": 0.634,
+   "precision": 0.788,
+   "false_positive_rate": 0.143,
+   "f1": 0.702,
+   "tp": 498,
+   "fp": 134,
+   "fn": 288,
+   "n": 1721,
+   "positives": 786,
+   "negatives": 935
+  },
+  "TF-IDF + 선형 SVM": {
+   "recall": 0.658,
+   "precision": 0.74,
+   "false_positive_rate": 0.195,
+   "f1": 0.696,
+   "tp": 517,
+   "fp": 182,
+   "fn": 269,
+   "n": 1721,
+   "positives": 786,
+   "negatives": 935
+  },
+  "TF-IDF + 선형 SVM ∪ 사전": {
+   "recall": 0.667,
+   "precision": 0.741,
+   "false_positive_rate": 0.196,
+   "f1": 0.702,
+   "tp": 524,
+   "fp": 183,
+   "fn": 262,
+   "n": 1721,
+   "positives": 786,
+   "negatives": 935
+  },
+  "KcELECTRA-v2 (UnSmile 미학습 · 배포 후보)": {
+   "recall": 0.915,
+   "precision": 0.625,
+   "false_positive_rate": 0.461,
+   "f1": 0.743,
+   "tp": 719,
+   "fp": 431,
+   "fn": 67,
+   "n": 1721,
+   "positives": 786,
+   "negatives": 935
+  },
+  "KcELECTRA-v2 ∪ 사전": {
+   "recall": 0.919,
+   "precision": 0.626,
+   "false_positive_rate": 0.461,
+   "f1": 0.745,
+   "tp": 722,
+   "fp": 431,
+   "fn": 64,
+   "n": 1721,
+   "positives": 786,
+   "negatives": 935
+  }
+ },
+ "hate_only_flag_rate": {
+  "사전 규칙(운영)": 0.121,
+  "TF-IDF + 로지스틱 회귀": 0.575,
+  "TF-IDF + 선형 SVM": 0.614,
+  "KcELECTRA-v2": 0.954
+ },
+ "tfidf_seconds": 0.4,
+ "kcelectra_cpu_seconds": 26.6
+}

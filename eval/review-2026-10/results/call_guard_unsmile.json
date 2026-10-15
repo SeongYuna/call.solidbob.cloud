@@ -1,0 +1,23 @@
+{
+ "n": 3737,
+ "악플/욕설": {
+  "n": 786,
+  "flagged": 148,
+  "rate": 0.188
+ },
+ "혐오(대상 있음)": {
+  "n": 2016,
+  "flagged": 244,
+  "rate": 0.121
+ },
+ "clean": {
+  "n": 935,
+  "flagged": 2,
+  "rate": 0.002
+ },
+ "악플/욕설_categories": {
+  "insult": 140,
+  "threat": 13
+ },
+ "clean_flagged_examples_count": 2
+}

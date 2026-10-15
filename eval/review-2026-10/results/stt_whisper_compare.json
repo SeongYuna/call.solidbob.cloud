@@ -1,0 +1,30 @@
+{
+ "dataset": "aihub-krespspeech/validation",
+ "n": 20,
+ "google_stt_v1_8k": {
+  "wer": 0.3584070796460177,
+  "cer": 0.12898089171974522,
+  "n": 20
+ },
+ "google_stt_v1_8k_recomputed": {
+  "wer": 0.3584070796460177,
+  "cer": 0.12898089171974522,
+  "n": 20
+ },
+ "whisper-small": {
+  "wer": 0.2345132743362832,
+  "cer": 0.09872611464968153,
+  "n": 20,
+  "cpu_seconds": 27.5,
+  "audio_seconds": 129.8,
+  "real_time_factor": 0.21
+ },
+ "whisper-large-v3-turbo": {
+  "wer": 0.13716814159292035,
+  "cer": 0.03503184713375796,
+  "n": 20,
+  "cpu_seconds": 100.9,
+  "audio_seconds": 129.8,
+  "real_time_factor": 0.78
+ }
+}

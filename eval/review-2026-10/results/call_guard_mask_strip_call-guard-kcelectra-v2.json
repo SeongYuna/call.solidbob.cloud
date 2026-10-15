@@ -1,0 +1,15 @@
+{
+ "model": "models/call-guard-kcelectra-v2",
+ "aihub_customers_flagged_raw": 43,
+ "aihub_customers_flagged_stripped": 9,
+ "n": 10223,
+ "APEACH_stripped": {
+  "precision": 0.77,
+  "recall": 0.948
+ },
+ "UnSmile_stripped": {
+  "precision": 0.625,
+  "recall": 0.915
+ },
+ "remaining_flagged": 9
+}

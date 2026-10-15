@@ -1,0 +1,9 @@
+{
+ "baseline_mb": 17,
+ "after_torch_mb": 205,
+ "after_koe5_mb": 1976,
+ "after_klue_ner_mb": 2583,
+ "after_call_guard_mb": 2980,
+ "peak_maxrss_mb": 2981,
+ "note": "CPU fp32, 맥북 M5, 2026-10-15. 서버 프로세스 나머지(FastAPI 등)는 포함 안 됨"
+}

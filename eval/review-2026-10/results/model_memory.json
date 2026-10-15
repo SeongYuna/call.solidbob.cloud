@@ -1,0 +1,12 @@
+{
+ "python_baseline_mb": 16,
+ "after_torch_mb": 199,
+ "after_koe5_mb": 1950,
+ "after_koelectra_ner_mb": 2274,
+ "files_on_disk": {
+  "koe5": "2.1G",
+  "koelectra-ner": "429M",
+  "kanana-1.5-2.1b q4_k_m gguf": "1.5G (Ollama 별도 프로세스)",
+  "bge-reranker-v2-m3": "2.1G (운영 미탑재)"
+ }
+}

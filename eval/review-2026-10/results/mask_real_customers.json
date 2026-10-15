@@ -1,0 +1,15 @@
+{
+ "customer_utterances": 10223,
+ "utterances_with_any_mask": 42,
+ "spans_rule_only_pipeline": {
+  "P7": 14,
+  "P6": 1
+ },
+ "spans_rule_plus_ner": {
+  "P7": 23,
+  "P6": 21
+ },
+ "ner_added_spans": 30,
+ "sample_for_manual_review": 30,
+ "seconds_cpu": 126.0
+}

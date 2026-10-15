@@ -1,0 +1,328 @@
+{
+ "rule": {
+  "runs": [
+   {
+    "coverage_micro": 0.8833333333333333,
+    "key_items_hit": 53,
+    "key_items": 60,
+    "coverage_by_kind": {
+     "문의": "10/10",
+     "서류": "23/23",
+     "안내": "4/10",
+     "조치": "9/10",
+     "요청": "7/7"
+    },
+    "model_summaries": 0,
+    "n_calls": 10,
+    "summaries_with_digit_problem": 0,
+    "sec_per_call_median": 0.0,
+    "chars_median": 422,
+    "calls": [
+     {
+      "call": "PC-01",
+      "model": false,
+      "chars": 181,
+      "problems": []
+     },
+     {
+      "call": "PC-02",
+      "model": false,
+      "chars": 476,
+      "problems": []
+     },
+     {
+      "call": "PC-03",
+      "model": false,
+      "chars": 529,
+      "problems": []
+     },
+     {
+      "call": "PC-04",
+      "model": false,
+      "chars": 324,
+      "problems": []
+     },
+     {
+      "call": "PC-05",
+      "model": false,
+      "chars": 185,
+      "problems": []
+     },
+     {
+      "call": "PC-06",
+      "model": false,
+      "chars": 217,
+      "problems": []
+     },
+     {
+      "call": "PC-07",
+      "model": false,
+      "chars": 517,
+      "problems": []
+     },
+     {
+      "call": "PC-08",
+      "model": false,
+      "chars": 295,
+      "problems": []
+     },
+     {
+      "call": "PC-09",
+      "model": false,
+      "chars": 599,
+      "problems": []
+     },
+     {
+      "call": "PC-10",
+      "model": false,
+      "chars": 422,
+      "problems": []
+     }
+    ]
+   }
+  ],
+  "min_coverage": 0.8833333333333333
+ },
+ "model": {
+  "runs": [
+   {
+    "coverage_micro": 0.7333333333333333,
+    "key_items_hit": 44,
+    "key_items": 60,
+    "coverage_by_kind": {
+     "문의": "10/10",
+     "서류": "19/23",
+     "안내": "8/10",
+     "조치": "2/10",
+     "요청": "5/7"
+    },
+    "model_summaries": 10,
+    "n_calls": 10,
+    "summaries_with_digit_problem": 0,
+    "sec_per_call_median": 1.84,
+    "chars_median": 160,
+    "calls": [
+     {
+      "call": "PC-01",
+      "model": true,
+      "chars": 110,
+      "problems": []
+     },
+     {
+      "call": "PC-02",
+      "model": true,
+      "chars": 97,
+      "problems": []
+     },
+     {
+      "call": "PC-03",
+      "model": true,
+      "chars": 167,
+      "problems": []
+     },
+     {
+      "call": "PC-04",
+      "model": true,
+      "chars": 99,
+      "problems": []
+     },
+     {
+      "call": "PC-05",
+      "model": true,
+      "chars": 110,
+      "problems": []
+     },
+     {
+      "call": "PC-06",
+      "model": true,
+      "chars": 234,
+      "problems": []
+     },
+     {
+      "call": "PC-07",
+      "model": true,
+      "chars": 189,
+      "problems": []
+     },
+     {
+      "call": "PC-08",
+      "model": true,
+      "chars": 114,
+      "problems": []
+     },
+     {
+      "call": "PC-09",
+      "model": true,
+      "chars": 160,
+      "problems": []
+     },
+     {
+      "call": "PC-10",
+      "model": true,
+      "chars": 182,
+      "problems": []
+     }
+    ]
+   },
+   {
+    "coverage_micro": 0.7166666666666667,
+    "key_items_hit": 43,
+    "key_items": 60,
+    "coverage_by_kind": {
+     "문의": "10/10",
+     "서류": "18/23",
+     "안내": "8/10",
+     "조치": "2/10",
+     "요청": "5/7"
+    },
+    "model_summaries": 10,
+    "n_calls": 10,
+    "summaries_with_digit_problem": 0,
+    "sec_per_call_median": 1.13,
+    "chars_median": 138,
+    "calls": [
+     {
+      "call": "PC-01",
+      "model": true,
+      "chars": 110,
+      "problems": []
+     },
+     {
+      "call": "PC-02",
+      "model": true,
+      "chars": 97,
+      "problems": []
+     },
+     {
+      "call": "PC-03",
+      "model": true,
+      "chars": 167,
+      "problems": []
+     },
+     {
+      "call": "PC-04",
+      "model": true,
+      "chars": 99,
+      "problems": []
+     },
+     {
+      "call": "PC-05",
+      "model": true,
+      "chars": 110,
+      "problems": []
+     },
+     {
+      "call": "PC-06",
+      "model": true,
+      "chars": 234,
+      "problems": []
+     },
+     {
+      "call": "PC-07",
+      "model": true,
+      "chars": 138,
+      "problems": []
+     },
+     {
+      "call": "PC-08",
+      "model": true,
+      "chars": 114,
+      "problems": []
+     },
+     {
+      "call": "PC-09",
+      "model": true,
+      "chars": 160,
+      "problems": []
+     },
+     {
+      "call": "PC-10",
+      "model": true,
+      "chars": 182,
+      "problems": []
+     }
+    ]
+   },
+   {
+    "coverage_micro": 0.7166666666666667,
+    "key_items_hit": 43,
+    "key_items": 60,
+    "coverage_by_kind": {
+     "문의": "10/10",
+     "서류": "18/23",
+     "안내": "8/10",
+     "조치": "2/10",
+     "요청": "5/7"
+    },
+    "model_summaries": 10,
+    "n_calls": 10,
+    "summaries_with_digit_problem": 0,
+    "sec_per_call_median": 1.12,
+    "chars_median": 138,
+    "calls": [
+     {
+      "call": "PC-01",
+      "model": true,
+      "chars": 110,
+      "problems": []
+     },
+     {
+      "call": "PC-02",
+      "model": true,
+      "chars": 97,
+      "problems": []
+     },
+     {
+      "call": "PC-03",
+      "model": true,
+      "chars": 167,
+      "problems": []
+     },
+     {
+      "call": "PC-04",
+      "model": true,
+      "chars": 99,
+      "problems": []
+     },
+     {
+      "call": "PC-05",
+      "model": true,
+      "chars": 110,
+      "problems": []
+     },
+     {
+      "call": "PC-06",
+      "model": true,
+      "chars": 234,
+      "problems": []
+     },
+     {
+      "call": "PC-07",
+      "model": true,
+      "chars": 138,
+      "problems": []
+     },
+     {
+      "call": "PC-08",
+      "model": true,
+      "chars": 114,
+      "problems": []
+     },
+     {
+      "call": "PC-09",
+      "model": true,
+      "chars": 160,
+      "problems": []
+     },
+     {
+      "call": "PC-10",
+      "model": true,
+      "chars": 182,
+      "problems": []
+     }
+    ]
+   }
+  ],
+  "min_coverage": 0.7166666666666667
+ }
+}

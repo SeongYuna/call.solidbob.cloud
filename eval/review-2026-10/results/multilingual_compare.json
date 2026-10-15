@@ -1,0 +1,132 @@
+{
+ "KoE5 (운영)": {
+  "ko": {
+   "recall_at_5": 0.975,
+   "hits": 39,
+   "mrr": 0.797,
+   "n": 40
+  },
+  "en": {
+   "recall_at_5": 0.975,
+   "hits": 39,
+   "mrr": 0.811,
+   "n": 40
+  },
+  "vi": {
+   "recall_at_5": 0.925,
+   "hits": 37,
+   "mrr": 0.764,
+   "n": 40
+  },
+  "zh": {
+   "recall_at_5": 0.975,
+   "hits": 39,
+   "mrr": 0.826,
+   "n": 40
+  }
+ },
+ "bge-m3": {
+  "ko": {
+   "recall_at_5": 0.95,
+   "hits": 38,
+   "mrr": 0.775,
+   "n": 40
+  },
+  "en": {
+   "recall_at_5": 0.975,
+   "hits": 39,
+   "mrr": 0.805,
+   "n": 40
+  },
+  "vi": {
+   "recall_at_5": 0.925,
+   "hits": 37,
+   "mrr": 0.761,
+   "n": 40
+  },
+  "zh": {
+   "recall_at_5": 0.925,
+   "hits": 37,
+   "mrr": 0.819,
+   "n": 40
+  }
+ },
+ "multilingual-e5-base": {
+  "ko": {
+   "recall_at_5": 0.875,
+   "hits": 35,
+   "mrr": 0.715,
+   "n": 40
+  },
+  "en": {
+   "recall_at_5": 0.85,
+   "hits": 34,
+   "mrr": 0.657,
+   "n": 40
+  },
+  "vi": {
+   "recall_at_5": 0.825,
+   "hits": 33,
+   "mrr": 0.596,
+   "n": 40
+  },
+  "zh": {
+   "recall_at_5": 0.8,
+   "hits": 32,
+   "mrr": 0.651,
+   "n": 40
+  }
+ },
+ "ko-sroberta-multitask (이전 후보)": {
+  "ko": {
+   "recall_at_5": 0.975,
+   "hits": 39,
+   "mrr": 0.823,
+   "n": 40
+  },
+  "en": {
+   "recall_at_5": 0.575,
+   "hits": 23,
+   "mrr": 0.44,
+   "n": 40
+  },
+  "vi": {
+   "recall_at_5": 0.0,
+   "hits": 0,
+   "mrr": 0.0,
+   "n": 40
+  },
+  "zh": {
+   "recall_at_5": 0.25,
+   "hits": 10,
+   "mrr": 0.14,
+   "n": 40
+  }
+ },
+ "KoE5-ft": {
+  "ko": {
+   "recall_at_5": 0.975,
+   "hits": 39,
+   "mrr": 0.782,
+   "n": 40
+  },
+  "en": {
+   "recall_at_5": 0.95,
+   "hits": 38,
+   "mrr": 0.761,
+   "n": 40
+  },
+  "vi": {
+   "recall_at_5": 0.85,
+   "hits": 34,
+   "mrr": 0.706,
+   "n": 40
+  },
+  "zh": {
+   "recall_at_5": 0.925,
+   "hits": 37,
+   "mrr": 0.765,
+   "n": 40
+  }
+ }
+}

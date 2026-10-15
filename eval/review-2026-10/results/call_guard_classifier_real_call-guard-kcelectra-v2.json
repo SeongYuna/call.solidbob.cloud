@@ -1,0 +1,33 @@
+{
+ "golden_c6": {
+  "n": 15,
+  "abusive_labels": 7,
+  "classifier_hits_on_abusive": 5,
+  "classifier_flags_on_non_abusive": 2,
+  "types": [
+   "insult",
+   "insult",
+   "insult",
+   "threat",
+   "threat",
+   "sexual",
+   "distress",
+   "distress",
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   "insult"
+  ]
+ },
+ "aihub_customers": {
+  "n": 10223,
+  "classifier_flagged": 43,
+  "rate": 0.0042,
+  "lexicon_flagged": 4,
+  "cpu_ms_per_utterance_batch64": 5.96
+ },
+ "cpu_ms_single_utterance": 26.5
+}
