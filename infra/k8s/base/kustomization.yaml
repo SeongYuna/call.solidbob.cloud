@@ -32,7 +32,7 @@ images:
   # 그 PR(#166) 이 열려 있는 동안 main 이 0.1.47·0.1.48·0.2.15 로 지나갔다(#167·#168).
   # 머지하며 둘 다 main 보다 위인 0.1.49 · 0.2.16 으로 올렸다 — 레지스트리 404 확인(`decisions/131`).
   - name: seongyuna/callguard-server
-    newTag: "0.1.49"
+    newTag: "0.1.50"
   - name: seongyuna/callguard-es
     newTag: "9.5.1"
   # 콜 미디에이터(services/call-mediator). server 와 태그를 따로 올린다 — release.yml 이 이미지마다 판단한다.
